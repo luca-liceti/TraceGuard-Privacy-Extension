@@ -12,11 +12,11 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     preserveSession: document.getElementById('preserveSession')
   };
 
-  const store = await storageGet(keys);
-  els.notifyNew.checked = !!store['tg_notify_new'];
-  els.notifyRepeat.checked = !!store['tg_notify_repeat'];
-  els.truncateUrls.checked = store['tg_truncate_urls'] !== false; // default true
-  els.preserveSession.checked = store['tg_preserve_session'] !== false; // default true
+    const store = await storageGet(keys);
+    els.notifyNew.checked = store['tg_notify_new'] !== false; // default true (on)
+    els.notifyRepeat.checked = store['tg_notify_repeat'] !== false; // default true (on)
+    els.truncateUrls.checked = store['tg_truncate_urls'] !== false; // default true
+    els.preserveSession.checked = store['tg_preserve_session'] === true; // default false
 
   document.getElementById('saveSettings').addEventListener('click', async ()=>{
     await storageSet({

@@ -21,6 +21,33 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function canonicalizeValue(value, type) {
+  if (!value) return '';
+  const trimmed = String(value).trim();
+  switch (type) {
+    case 'phone':
+    case 'ssn':
+    case 'credit':
+      return trimmed.replace(/\D/g, '');
+    case 'email':
+      return trimmed.toLowerCase();
+    default:
+      return trimmed;
+  }
+}
+
+async function fingerprintValue(value, type) {
+  const canonical = canonicalizeValue(value, type);
+  if (!canonical) return '';
+  const enc = new TextEncoder().encode(canonical);
+  const digest = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function isHexHash(str) {
+  return typeof str === 'string' && /^[0-9a-f]{64}$/i.test(str);
+}
+
 // Tab management: wire up tab buttons and show/hide the correct content pane
 document.querySelectorAll('.dashboard-tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -239,15 +266,60 @@ function sendDeleteRequest(site) {
 async function loadAllData() {
   try {
     const result = await chrome.storage.local.get([ENTRIES_KEY, PROFILE_KEY, LOGS_KEY]);
-    
+
     allEntries = result[ENTRIES_KEY] || [];
     allProfile = result[PROFILE_KEY] || [];
-    allLogs = result[LOGS_KEY] || [];
-    
+    const rawLogs = result[LOGS_KEY] || [];
+    allLogs = await ensureLogFingerprints(rawLogs);
+
     updateStats();
   } catch (error) {
     console.error('Error loading data:', error);
   }
+}
+
+async function ensureLogFingerprints(logs) {
+  let changed = false;
+
+  for (const log of logs) {
+    if (!log) continue;
+
+    if (log.fingerprint && isHexHash(log.fingerprint)) {
+      if (log.value !== log.fingerprint) {
+        log.value = log.fingerprint;
+        changed = true;
+      }
+      continue;
+    }
+
+    if (isHexHash(log.value)) {
+      log.fingerprint = log.value;
+      continue;
+    }
+
+    if (typeof log.value === 'string' && log.value) {
+      try {
+        const fp = await fingerprintValue(log.value, log.type);
+        if (fp) {
+          log.fingerprint = fp;
+          log.value = fp;
+          changed = true;
+        }
+      } catch (err) {
+        console.error('Failed to sanitize log value', err);
+      }
+    }
+  }
+
+  if (changed) {
+    try {
+      await chrome.storage.local.set({ [LOGS_KEY]: logs });
+    } catch (err) {
+      console.error('Error persisting sanitized logs:', err);
+    }
+  }
+
+  return logs;
 }
 
 // updateStats: write counters (total entries, profile count, logs, unique sites)
@@ -428,7 +500,7 @@ function renderEntries(filter = {}) {
 // renderProfile: show profile entries used for automatic detection. Each
 // profile entry includes detection statistics and a Delete button that
 // only deletes when the user confirms.
-function renderProfile() {
+async function renderProfile() {
   const list = document.getElementById('profile-list');
   list.innerHTML = '';
 
@@ -440,7 +512,18 @@ function renderProfile() {
   // Sort by timestamp (newest first)
   allProfile.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
 
-  allProfile.forEach((entry, idx) => {
+  const detectionCounts = allLogs.reduce((map, log) => {
+    if (!log) return map;
+    const key = log.fingerprint || (isHexHash(log.value) ? log.value : '');
+    if (!key) return map;
+    map.set(key, (map.get(key) || 0) + 1);
+    return map;
+  }, new Map());
+
+  let profileUpdated = false;
+
+  for (let idx = 0; idx < allProfile.length; idx++) {
+    const entry = allProfile[idx];
     const div = document.createElement('div');
     div.className = 'entry';
     div.style.background = 'var(--success)';
@@ -450,6 +533,21 @@ function renderProfile() {
     const fullValue = entry.value || '';
     const displayValue = fullValue.length > 48 ? (fullValue.slice(0, 48) + '…') : fullValue;
 
+    let fingerprint = entry.hash;
+    if (!fingerprint) {
+      try {
+        fingerprint = await fingerprintValue(entry.value, entry.type);
+        if (fingerprint) {
+          entry.hash = fingerprint;
+          profileUpdated = true;
+        }
+      } catch (err) {
+        fingerprint = '';
+      }
+    }
+
+    const detectionCount = fingerprint ? (detectionCounts.get(fingerprint) || 0) : 0;
+
     div.innerHTML = `
       <div class="entry-content">
         <div class="entry-main">
@@ -458,7 +556,7 @@ function renderProfile() {
         <div class="entry-details" style="color:rgba(255,255,255,0.8);">
           <div><strong>Added:</strong> ${new Date(entry.addedAt).toLocaleString()}</div>
           <div><strong>Status:</strong> Used for automatic detection on websites</div>
-          <div><strong>Detection:</strong> ${allLogs.filter(log => log.value === entry.value).length} times detected</div>
+          <div><strong>Detection:</strong> ${detectionCount} times detected</div>
           <div><strong>Value:</strong> ${escapeHtml(displayValue)}</div>
         </div>
       </div>
@@ -477,7 +575,15 @@ function renderProfile() {
     };
     
     list.appendChild(div);
-  });
+  }
+
+  if (profileUpdated) {
+    try {
+      await chrome.storage.local.set({ [PROFILE_KEY]: allProfile });
+    } catch (err) {
+      console.error('Failed to persist profile hash updates:', err);
+    }
+  }
 }
 
 // cleanupDetectionHashes: this function would normally remove orphaned

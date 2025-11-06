@@ -9,6 +9,28 @@ let knownEntries = [];
 let lastNotificationTime = {};
 const NOTIFICATION_COOLDOWN = 5000; // 5 seconds between notifications for same field
 let detectionHashes = []; // { hash, type, shortDisplay }
+const fieldTimers = new WeakMap();
+
+function canonicalizeValue(value, type) {
+  if (!value) return '';
+  const trimmed = String(value).trim();
+  switch (type) {
+    case 'phone':
+    case 'ssn':
+    case 'credit':
+      return trimmed.replace(/\D/g, '');
+    case 'email':
+      return trimmed.toLowerCase();
+    default:
+      return trimmed;
+  }
+}
+
+async function fingerprintValue(value, type) {
+  const canonical = canonicalizeValue(value, type);
+  if (!canonical) return '';
+  return sha256Hex(canonical);
+}
 
 // Field patterns for detection
 const FIELD_PATTERNS = {
@@ -81,14 +103,32 @@ function initFormMonitoring() {
   document.addEventListener('paste', handlePaste, true);
 }
 
+function queuePIICheck(element, value, delay = 500) {
+  if (!element) return;
+  const existing = fieldTimers.get(element);
+  if (existing) clearTimeout(existing);
+  const timeoutId = setTimeout(() => {
+    fieldTimers.delete(element);
+    checkForKnownPII(element, value);
+  }, delay);
+  fieldTimers.set(element, timeoutId);
+}
+
 // Handle input changes
 function handleInputChange(event) {
   if (!event.target.matches('input, textarea')) return;
 
   const value = event.target.value.trim();
-  if (value.length < 3) return;
+  if (value.length < 3) {
+    const existing = fieldTimers.get(event.target);
+    if (existing) {
+      clearTimeout(existing);
+      fieldTimers.delete(event.target);
+    }
+    return;
+  }
 
-  debounce(() => checkForKnownPII(event.target, value), 500)();
+  queuePIICheck(event.target, value);
 }
 
 // Handle paste events
@@ -98,7 +138,7 @@ function handlePaste(event) {
   setTimeout(() => {
     const value = event.target.value.trim();
     if (value.length >= 3) {
-      checkForKnownPII(event.target, value);
+      queuePIICheck(event.target, value, 150);
     }
   }, 100);
 }
@@ -135,8 +175,18 @@ async function checkForKnownPII(element, value) {
 
     if (matches.length > 0) {
       const match = matches[0];
-      logPIIUsage(match, element);
-      showNotification(match);
+      const fingerprint = match.hash || await fingerprintValue(match.value, match.type);
+      if (!fingerprint) return;
+      if (!match.hash) match.hash = fingerprint;
+      const decoratedMatch = {
+        type: match.type,
+        value: match.value,
+        shortDisplay: match.shortDisplay,
+        fingerprint,
+        source: 'profile'
+      };
+      logPIIUsage(decoratedMatch, element);
+      showNotification(decoratedMatch);
       return;
     }
   }
@@ -144,16 +194,23 @@ async function checkForKnownPII(element, value) {
   // 2) Hash-based detection: compute SHA-256 of typed value and compare to detectionHashes
   if (detectionHashes.length > 0) {
     try {
-      // Compute a few normalized variants to handle formatting differences
-      const variants = [value, value.replace(/\D/g, ''), value.toLowerCase()];
-      const hashes = await Promise.all(variants.map(v => sha256Hex(v)));
-      const match = detectionHashes.find(e => hashes.includes(e.hash));
-      if (match) {
-        const matchMeta = match;
-        const found = { type: matchMeta.type, value: matchMeta.hash, shortDisplay: matchMeta.shortDisplay };
-        logPIIUsage(found, element);
-        showNotification(found);
-        return;
+      const hashedByType = new Map();
+      for (const matchMeta of detectionHashes) {
+        if (!hashedByType.has(matchMeta.type)) {
+          hashedByType.set(matchMeta.type, await fingerprintValue(value, matchMeta.type));
+        }
+        const candidate = hashedByType.get(matchMeta.type);
+        if (candidate && candidate === matchMeta.hash) {
+          const found = {
+            type: matchMeta.type,
+            fingerprint: matchMeta.hash,
+            shortDisplay: matchMeta.shortDisplay,
+            source: matchMeta.source || 'hash'
+          };
+          logPIIUsage(found, element);
+          showNotification(found);
+          return;
+        }
       }
     } catch (err) {
       console.error('Error computing hash for detection:', err);
@@ -171,14 +228,19 @@ async function sha256Hex(msg) {
 // logPIIUsage: record a detection to storage, include page/context info,
 // and update the extension badge. Keeps logs capped to avoid unbounded growth.
 async function logPIIUsage(match, element) {
+  const fingerprint = match.fingerprint || match.hash || (match.value ? await fingerprintValue(match.value, match.type) : '');
+  if (!fingerprint) return;
+
   const log = {
     type: match.type,
-    value: match.value,
+    fingerprint,
+    value: fingerprint,
     shortDisplay: match.shortDisplay,
     site: window.location.hostname,
     url: window.location.href,
     timestamp: Date.now(),
-    fieldContext: getFieldContext(element)
+    fieldContext: getFieldContext(element),
+    detectionSource: match.source || 'unknown'
   };
   
   // Save to logs
@@ -308,19 +370,6 @@ async function updateBadge() {
   } catch (error) {
     console.error('Error updating badge:', error);
   }
-}
-
-// debounce utility: common debounce function to avoid spamming detection checks
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
 }
 
 // Handle form submission logging
