@@ -6,22 +6,31 @@
   <title>TraceGuard</title>
   <link rel="stylesheet" href="popup.css"/>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <h1>TraceGuard</h1>
-      <button id="lockNowBtn" class="lock-btn" title="Lock vault" style="display: none;">
-        <!-- minimalist lock icon (uses currentColor so it adapts to theme) -->
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 10V8a6 6 0 0112 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/>
-        </svg>
-      </button>
-    </header>
+  <body class="page-popup">
+    <div class="container app-shell">
+      <header class="app-header">
+        <div class="title-group">
+          <span class="brand-badge">Zero-trust protection</span>
+          <h1>TraceGuard</h1>
+          <p class="subtitle">Personal data vault &amp; live detection</p>
+        </div>
+        <div class="header-actions">
+          <button id="lockNowBtn" class="lock-btn" title="Lock vault" style="display: none;">
+            <!-- minimalist lock icon (uses currentColor so it adapts to theme) -->
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 10V8a6 6 0 0112 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+          </button>
+        </div>
+      </header>
 
     <!-- CREATE / UNLOCK PANEL -->
     <div id="lockPanel" class="card">
-      <h2 id="lockTitle">Create a master password</h2>
+      <div class="card-heading">
+        <h2 id="lockTitle">Create a master password</h2>
+        <p class="card-subtitle">Your master password keeps every TraceGuard entry encrypted end-to-end.</p>
+      </div>
 
       <label for="master">Password</label>
       <input id="master" type="password" placeholder="Enter password"/>
@@ -50,86 +59,102 @@
         <button class="tab-btn" data-tab="logs">Activity Logs</button>
       </div>
 
-      <!-- Manual Entry Tab -->
-      <div id="manualTab" class="tab-content active">
-        <form id="entryForm">
-          <label for="type">Information Type</label>
-          <select id="type">
-            <option value="email">Email Address</option>
-            <option value="phone">Phone Number</option>
-            <option value="address">Address</option>
-            <option value="ssn">Social Security Number</option>
-            <option value="credit">Credit Card</option>
-            <option value="license">Driver's License</option>
-            <option value="passport">Passport Number</option>
-          </select>
-
-          <label for="value">Value</label>
-          <input id="value" type="text" placeholder="Enter information"/>
-
-          <div class="row">
-            <button type="submit">Save (encrypt)</button>
-            <button type="button" id="clearForm" class="secondary">Clear</button>
+        <!-- Manual Entry Tab -->
+        <div id="manualTab" class="tab-content active">
+          <div class="section-header">
+            <div>
+              <h2>Manual Entry</h2>
+              <p class="section-hint">Securely encrypt sensitive snippets with site context for quick reference.</p>
+            </div>
           </div>
-        </form>
 
-        <div class="search-area">
-          <input id="search" type="text" placeholder="Filter by type, value, or website"/>
+          <form id="entryForm">
+            <label for="type">Information Type</label>
+            <select id="type">
+              <option value="email">Email Address</option>
+              <option value="phone">Phone Number</option>
+              <option value="address">Address</option>
+              <option value="ssn">Social Security Number</option>
+              <option value="credit">Credit Card</option>
+              <option value="license">Driver's License</option>
+              <option value="passport">Passport Number</option>
+            </select>
+
+            <label for="value">Value</label>
+            <input id="value" type="text" placeholder="Enter information"/>
+
+            <div class="row">
+              <button type="submit">Save (encrypt)</button>
+              <button type="button" id="clearForm" class="secondary">Clear</button>
+            </div>
+          </form>
+
+          <div class="search-area">
+            <input id="search" type="text" placeholder="Filter by type, value, or website"/>
+          </div>
+
+          <h2 class="list-title">Saved Entries</h2>
+          <div id="entriesList" class="list"></div>
         </div>
 
-        <h2>Saved Entries</h2>
-        <div id="entriesList" class="list"></div>
-      </div>
-
-      <!-- Profile Tab -->
-      <div id="profileTab" class="tab-content">
-        <h2>My Information Profile</h2>
-        <p class="note">Add your personal information for automatic detection on websites.</p>
-        
-        <form id="profileForm">
-          <label for="profileType">Information Type</label>
-          <select id="profileType">
-            <option value="email">Email Address</option>
-            <option value="phone">Phone Number</option>
-            <option value="address">Address</option>
-            <option value="ssn">Social Security Number</option>
-            <option value="credit">Credit Card</option>
-            <option value="license">Driver's License</option>
-            <option value="passport">Passport Number</option>
-          </select>
-
-          <label for="profileValue">Value</label>
-          <input id="profileValue" type="text" placeholder="Enter your information"/>
-
-          <div class="row">
-            <button type="submit">Add to Profile</button>
-            <button type="button" id="clearProfileForm" class="secondary">Clear</button>
+        <!-- Profile Tab -->
+        <div id="profileTab" class="tab-content">
+          <div class="section-header">
+            <div>
+              <h2>My Information Profile</h2>
+              <p class="section-hint">Teach TraceGuard the details it should watch for while you browse.</p>
+            </div>
           </div>
-        </form>
 
-        <h3>Profile Entries</h3>
-        <div id="profileList" class="list"></div>
-      </div>
+          <form id="profileForm">
+            <label for="profileType">Information Type</label>
+            <select id="profileType">
+              <option value="email">Email Address</option>
+              <option value="phone">Phone Number</option>
+              <option value="address">Address</option>
+              <option value="ssn">Social Security Number</option>
+              <option value="credit">Credit Card</option>
+              <option value="license">Driver's License</option>
+              <option value="passport">Passport Number</option>
+            </select>
 
-      <!-- Activity Logs Tab -->
-      <div id="logsTab" class="tab-content">
-        <h2>Activity Logs</h2>
-        <p class="note">Automatic detection of your information being entered on websites.</p>
-        
-        <div class="search-area">
-          <input id="logSearch" type="text" placeholder="Filter logs by site or type"/>
-          <button id="clearLogs" class="secondary" style="margin-top: 8px; width: 100%;">Clear All Logs</button>
+            <label for="profileValue">Value</label>
+            <input id="profileValue" type="text" placeholder="Enter your information"/>
+
+            <div class="row">
+              <button type="submit">Add to Profile</button>
+              <button type="button" id="clearProfileForm" class="secondary">Clear</button>
+            </div>
+          </form>
+
+          <h3 class="list-title">Profile Entries</h3>
+          <div id="profileList" class="list"></div>
         </div>
 
-        <div id="logsList" class="list"></div>
-      </div>
+        <!-- Activity Logs Tab -->
+        <div id="logsTab" class="tab-content">
+          <div class="section-header">
+            <div>
+              <h2>Activity Logs</h2>
+              <p class="section-hint">See when and where TraceGuard spotted your personal data in the wild.</p>
+            </div>
+          </div>
+
+          <div class="search-area">
+            <input id="logSearch" type="text" placeholder="Filter logs by site or type"/>
+            <button id="clearLogs" class="secondary full-width-btn">Clear All Logs</button>
+          </div>
+
+          <h2 class="list-title">Recent Activity</h2>
+          <div id="logsList" class="list"></div>
+        </div>
 
         <div class="footer-actions">
-        <span class="status-text">All data encrypted locally</span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <a href="dashboard.html" target="_blank" class="dashboard-link">Dashboard →</a>
+          <span class="status-text">All data encrypted locally</span>
+          <div class="footer-links">
+            <a href="dashboard.html" target="_blank" class="dashboard-link">Open dashboard</a>
+          </div>
         </div>
-      </div>
     </div>
 
     <div id="lockedMessage" class="note">Please unlock to access your encrypted vault.</div>
