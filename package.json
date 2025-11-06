@@ -1,0 +1,8 @@
+{
+  "name": "traceguard",
+  "version": "3.2.1",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

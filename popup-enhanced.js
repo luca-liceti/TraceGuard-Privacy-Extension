@@ -19,6 +19,19 @@ const PBKDF_ITER = 200000;
 const storageGet = (keys) => new Promise(res => chrome.storage.local.get(keys, res));
 const storageSet = (obj) => new Promise(res => chrome.storage.local.set(obj, res));
 const storageRemove = (key) => new Promise(res => chrome.storage.local.remove(key, res));
+const sessionStorageAvailable = !!(chrome.storage && chrome.storage.session);
+const sessionGet = (keys) => new Promise(resolve => {
+  if (!sessionStorageAvailable) return resolve({});
+  chrome.storage.session.get(keys, resolve);
+});
+const sessionSet = (obj) => new Promise(resolve => {
+  if (!sessionStorageAvailable) return resolve();
+  chrome.storage.session.set(obj, resolve);
+});
+const sessionRemove = (keys) => new Promise(resolve => {
+  if (!sessionStorageAvailable) return resolve();
+  chrome.storage.session.remove(keys, resolve);
+});
 
 /////  crypto helpers
 // Helpers to derive encryption keys, encrypt/decrypt JSON payloads,
@@ -73,6 +86,49 @@ async function sha256Hex(msg) {
   const enc = new TextEncoder().encode(msg);
   const digest = await crypto.subtle.digest('SHA-256', enc);
   return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function canonicalizeValue(value, type) {
+  if (!value) return '';
+  const trimmed = String(value).trim();
+  switch (type) {
+    case 'phone':
+    case 'ssn':
+    case 'credit':
+      return trimmed.replace(/\D/g, '');
+    case 'email':
+      return trimmed.toLowerCase();
+    default:
+      return trimmed;
+  }
+}
+
+async function fingerprintValue(value, type) {
+  const canonical = canonicalizeValue(value, type);
+  if (!canonical) return '';
+  return sha256Hex(canonical);
+}
+
+async function persistSessionKey(key, preserve) {
+  try { await storageRemove('tg_session_key'); } catch (e) { /* ignore */ }
+  if (!sessionStorageAvailable) return;
+  if (!preserve || !key) {
+    try { await sessionRemove('tg_session_key'); } catch (e) { /* ignore */ }
+    return;
+  }
+  try {
+    const rawKey = await crypto.subtle.exportKey('raw', key);
+    await sessionSet({ tg_session_key: bufToB64(rawKey) });
+  } catch (err) {
+    // Ignore export errors
+  }
+}
+
+async function clearSessionKey() {
+  try { await storageRemove('tg_session_key'); } catch (e) { /* ignore */ }
+  if (sessionStorageAvailable) {
+    try { await sessionRemove('tg_session_key'); } catch (e) { /* ignore */ }
+  }
 }
 
 /////  UI refs
@@ -227,14 +283,8 @@ authBtn.addEventListener('click', async () => {
 
     const hash = await sha256Hex(pw);
     MASTER_KEY = await deriveKey(pw);
-    // persist session key if user opted in
-    const preserve = (await storageGet(['tg_preserve_session'])).tg_preserve_session;
-    if (preserve !== false) {
-      try {
-        const rawKey = await crypto.subtle.exportKey('raw', MASTER_KEY);
-        await storageSet({ tg_session_key: bufToB64(rawKey) });
-      } catch (e) { /* ignore export errors */ }
-    }
+    const preserve = (await storageGet(['tg_preserve_session'])).tg_preserve_session === true;
+    await persistSessionKey(MASTER_KEY, preserve);
     await chrome.storage.local.set({ masterHash: hash, locked: false });
     IS_CREATED = true;
 
@@ -244,13 +294,8 @@ authBtn.addEventListener('click', async () => {
     // UNLOCK MODE
     if ((await sha256Hex(pw)) !== masterHash) return alert('Incorrect password');
     MASTER_KEY = await deriveKey(pw);
-    const preserve = (await storageGet(['tg_preserve_session'])).tg_preserve_session;
-    if (preserve !== false) {
-      try {
-        const rawKey = await crypto.subtle.exportKey('raw', MASTER_KEY);
-        await storageSet({ tg_session_key: bufToB64(rawKey) });
-      } catch (e) { /* ignore export errors */ }
-    }
+    const preserve = (await storageGet(['tg_preserve_session'])).tg_preserve_session === true;
+    await persistSessionKey(MASTER_KEY, preserve);
     await chrome.storage.local.set({ locked: false });
     IS_CREATED = true;
     setUnlocked(true);
@@ -262,6 +307,7 @@ authBtn.addEventListener('click', async () => {
 
 lockNowBtn.addEventListener('click', async () => {
   await chrome.storage.local.set({ locked: true });
+  await clearSessionKey();
   MASTER_KEY = null;
   IS_CREATED = true;
 
@@ -304,6 +350,8 @@ entryForm.addEventListener('submit', async (e) => {
         return;
       }
       MASTER_KEY = await deriveKey(pw);
+      const preserve = (await storageGet(['tg_preserve_session'])).tg_preserve_session === true;
+      await persistSessionKey(MASTER_KEY, preserve);
       // keep locked flag as false; we only change it when the lock button is pressed
     } else if (!state.masterHash) {
       return alert('Please set up a master password first using the popup.');
@@ -317,7 +365,8 @@ entryForm.addEventListener('submit', async (e) => {
   if (!raw) return alert('Please enter a value');
 
   const type = typeSelect.value;
-  const h = await sha256Hex(raw);
+  const fingerprint = await fingerprintValue(raw, type);
+  if (!fingerprint) return alert('Unable to save this value. Please check the input.');
 
   let short = createShortDisplay(raw, type);
 
@@ -327,17 +376,17 @@ entryForm.addEventListener('submit', async (e) => {
     domain = new URL(tabs[0]?.url || '').hostname || 'unknown';
   } catch { domain = 'unknown'; }
 
-  const payloadObj = { hash: h, type, fullHint: short, ts: Date.now(), site: domain, originalValue: raw };
+  const payloadObj = { hash: fingerprint, type, fullHint: short, ts: Date.now(), site: domain, originalValue: raw };
   const enc = await encryptJSON(payloadObj, MASTER_KEY);
   const store = await storageGet([ENTRIES_KEY]);
   const arr = store[ENTRIES_KEY] || [];
-  arr.push({ payload: enc, meta: { type, short, site: domain, ts: payloadObj.ts } });
+  arr.push({ payload: enc, meta: { type, short, site: domain, ts: payloadObj.ts, fingerprint } });
   await storageSet({ [ENTRIES_KEY]: arr });
   valueInput.value = '';
   await refreshEntries();
 
   // FIXED: Update detection hashes properly
-  await updateDetectionHashes(h, type, short);
+  await updateDetectionHashes(fingerprint, type, short, 'manual');
   // Append this manual save to the activity logs so manual entries show in the Logs tab
   try {
     // Try to get the current active tab URL for context
@@ -349,18 +398,20 @@ entryForm.addEventListener('submit', async (e) => {
       // ignore, fallback to 'popup'
     }
 
-    const logsStore = await storageGet([LOGS_KEY]);
-    const logsArr = logsStore[LOGS_KEY] || [];
-    const logObj = {
-      type,
-      value: h,
-      shortDisplay: short,
-      site: domain,
-      url: currentUrl,
-      timestamp: Date.now(),
-      fieldContext: { label: 'Manual Save' }
-    };
-    logsArr.push(logObj);
+      const logsStore = await storageGet([LOGS_KEY]);
+      const logsArr = logsStore[LOGS_KEY] || [];
+      const logObj = {
+        type,
+        fingerprint,
+        value: fingerprint,
+        shortDisplay: short,
+        site: domain,
+        url: currentUrl,
+        timestamp: Date.now(),
+        fieldContext: { label: 'Manual Save' },
+        detectionSource: 'manual'
+      };
+      logsArr.push(logObj);
     // Keep logs bounded
     if (logsArr.length > 1000) logsArr.splice(0, logsArr.length - 1000);
     await storageSet({ [LOGS_KEY]: logsArr });
@@ -402,6 +453,9 @@ profileForm.addEventListener('submit', async (e) => {
     return alert('Please enter a valid ' + type);
   }
 
+  const fingerprint = await fingerprintValue(raw, type);
+  if (!fingerprint) return alert('Unable to add this value. Please verify the input.');
+
   const short = createShortDisplay(raw, type);
 
   // Add to profile (unencrypted for detection)
@@ -417,6 +471,7 @@ profileForm.addEventListener('submit', async (e) => {
     type,
     value: raw,
     shortDisplay: short,
+    hash: fingerprint,
     addedAt: Date.now()
   });
 
@@ -435,20 +490,20 @@ profileForm.addEventListener('submit', async (e) => {
   }
 
   // FIXED: Add detection hash for this profile entry
-  const h = await sha256Hex(raw);
-  await updateDetectionHashes(h, type, short);
+  await updateDetectionHashes(fingerprint, type, short, 'profile');
 });
 
 // updateDetectionHashes: ensure the detection hash store contains a hash
 // for each profile/entry value so content scripts can match typed values
-async function updateDetectionHashes(hash, type, shortDisplay) {
+async function updateDetectionHashes(hash, type, shortDisplay, source = 'profile') {
+  if (!hash) return;
   try {
     const detectStore = await storageGet([DETECTION_KEY]);
     const detectArr = detectStore[DETECTION_KEY] || [];
     
     // Add if not already present
     if (!detectArr.some(d => d.hash === hash)) {
-      detectArr.push({ hash, type, shortDisplay });
+      detectArr.push({ hash, type, shortDisplay, source });
       await storageSet({ [DETECTION_KEY]: detectArr });
       
       // Notify content scripts about the update
@@ -521,10 +576,10 @@ async function removeProfileEntry(idx) {
 
   // FIXED: Remove detection hash for removed profile entry
   try {
-    const h = await sha256Hex(removed.value);
+    const fingerprint = removed.hash || await fingerprintValue(removed.value, removed.type);
     const detectStore = await storageGet([DETECTION_KEY]);
     let detectArr = detectStore[DETECTION_KEY] || [];
-    detectArr = detectArr.filter(d => d.hash !== h);
+    detectArr = detectArr.filter(d => d.hash !== fingerprint);
     await storageSet({ [DETECTION_KEY]: detectArr });
     
     try {
@@ -542,21 +597,56 @@ async function removeProfileEntry(idx) {
 // referenced by profile entries. This prevents detection store growth.
 async function cleanupDetectionHashes() {
   try {
-    const result = await storageGet([DETECTION_KEY, PROFILE_KEY]);
+    const result = await storageGet([DETECTION_KEY, PROFILE_KEY, ENTRIES_KEY]);
     const detectionHashes = result[DETECTION_KEY] || [];
     const profile = result[PROFILE_KEY] || [];
-    
-    // Get valid hashes from profile entries
+    const entries = result[ENTRIES_KEY] || [];
+
     const validHashes = new Set();
+    let profileUpdated = false;
+    let entriesUpdated = false;
+
     for (const profileEntry of profile) {
-      const hash = await sha256Hex(profileEntry.value);
-      validHashes.add(hash);
+      if (!profileEntry) continue;
+      let fp = profileEntry.hash;
+      if (!fp) {
+        fp = await fingerprintValue(profileEntry.value, profileEntry.type);
+        if (fp) {
+          profileEntry.hash = fp;
+          profileUpdated = true;
+        }
+      }
+      if (fp) validHashes.add(fp);
     }
-    
-    // Keep detection hashes that are still in profile
+
+    for (const entry of entries) {
+      if (!entry) continue;
+      let fp = entry.meta?.fingerprint;
+      if (!fp && MASTER_KEY) {
+        try {
+          const dec = await decryptJSON(entry.payload, MASTER_KEY);
+          fp = dec.hash || await fingerprintValue(dec.originalValue, dec.type);
+        } catch (e) {
+          fp = undefined;
+        }
+        if (fp) {
+          entry.meta = entry.meta || {};
+          entry.meta.fingerprint = fp;
+          entriesUpdated = true;
+        }
+      }
+      if (fp) validHashes.add(fp);
+    }
+
+    if (profileUpdated) {
+      await storageSet({ [PROFILE_KEY]: profile });
+    }
+    if (entriesUpdated) {
+      await storageSet({ [ENTRIES_KEY]: entries });
+    }
+
     const cleanedHashes = detectionHashes.filter(dh => validHashes.has(dh.hash));
-    
-    // Only update if something changed
+
     if (cleanedHashes.length !== detectionHashes.length) {
       await storageSet({ [DETECTION_KEY]: cleanedHashes });
       try {
@@ -779,30 +869,40 @@ confirmInput.addEventListener('keypress', (e) => {
 // Bootstrapping: decide whether the extension is in Create or Unlock mode
 // and set up the initial UI state accordingly.
 (async function init() {
-  const { locked, masterHash } = await chrome.storage.local.get(['locked', 'masterHash']);
+  const state = await chrome.storage.local.get(['locked', 'masterHash']);
+  let { locked, masterHash } = state;
 
-  // If preserveSession is enabled and a session key exists, try to import it
-  try {
-    const prefs = await storageGet(['tg_preserve_session', 'tg_session_key']);
-    if (prefs.tg_preserve_session !== false && prefs.tg_session_key) {
-      try {
-        const raw = b64ToBuf(prefs.tg_session_key);
+  const prefs = await storageGet(['tg_preserve_session']);
+  const preserveEnabled = prefs.tg_preserve_session === true;
+
+  // Clean up any legacy persisted session key in local storage
+  try { await storageRemove('tg_session_key'); } catch (e) { /* ignore */ }
+
+  let unlockedBySession = false;
+  if (preserveEnabled && sessionStorageAvailable && masterHash) {
+    try {
+      const sessionData = await sessionGet(['tg_session_key']);
+      const exportedKey = sessionData.tg_session_key;
+      if (exportedKey) {
+        const raw = b64ToBuf(exportedKey);
         MASTER_KEY = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
-        // If we successfully imported a session key and user opted to preserve session,
-        // ensure storage marks the vault as unlocked so UI shows unlocked state.
-        try {
-          await storageSet({ locked: false });
-        } catch (e) { /* ignore */ }
-      } catch (e) { /* ignore import errors */ }
+        await chrome.storage.local.set({ locked: false });
+        locked = false;
+        unlockedBySession = true;
+      }
+    } catch (err) {
+      await clearSessionKey();
     }
-  } catch (e) { /* ignore */ }
+  } else if (!preserveEnabled) {
+    await clearSessionKey();
+  }
 
   if (masterHash) {
     IS_CREATED = true;
     const confirmContainer = document.getElementById('confirmContainer');
     confirmContainer.style.display = 'none';
 
-    if (locked === false) {
+    if (locked === false || unlockedBySession) {
       lockTitle.textContent = 'Enter Password';
       authBtn.textContent = 'Unlock';
 
