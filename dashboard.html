@@ -7,457 +7,178 @@
   - Loads and runs `dashboard-enhanced.js` for interactive behavior
   - Contains styles scoped to the dashboard for quick local testing
 -->
-<head>
-  <meta charset="UTF-8"/>
-  <title>TraceGuard Dashboard</title>
-  <link rel="stylesheet" href="popup.css"/>
-  <style>
-    body{
-      max-width:900px;
-      margin:40px auto;
-      padding:0 20px;
-      width:auto;
-    }
-    
-    .dashboard-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:32px;
-    }
-    
-    .dashboard-header h1{
-      font-size:28px;
-      margin:0;
-    }
-    
-    .stats-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
-      gap:20px;
-      margin-bottom:32px;
-    }
-    
-    .stat-card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:20px;
-      text-align:center;
-    }
-    
-    .stat-number{
-      font-size:32px;
-      font-weight:700;
-      color:var(--accent);
-      margin-bottom:8px;
-    }
-    
-    .stat-label{
-      color:var(--muted);
-      font-size:14px;
-      font-weight:500;
-    }
-    
-    .dashboard-tabs{
-      display:flex;
-      background:var(--bg);
-      border-radius:8px;
-      padding:4px;
-      margin-bottom:24px;
-      border:1px solid var(--border);
-    }
-    
-    .dashboard-tab{
-      flex:1;
-      padding:12px 20px;
-      border:none;
-      background:transparent;
-      color:var(--muted);
-      font-size:14px;
-      font-weight:600;
-      border-radius:6px;
-      cursor:pointer;
-      transition:all 0.2s ease;
-    }
-    
-    .dashboard-tab.active{
-      background:var(--accent);
-      color:var(--btn-text);
-    }
-    
-    .dashboard-tab:hover:not(.active){
-      background:var(--card);
-      color:var(--text);
-    }
-    
-    .dashboard-content{
-      display:none;
-    }
-    
-    .dashboard-content.active{
-      display:block;
-    }
-    
-    .filter-section{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:20px;
-      margin-bottom:24px;
-    }
-    
-    .filter-row{
-      display:grid;
-      grid-template-columns:1fr 1fr auto;
-      gap:16px;
-      align-items:end;
-    }
-    
-    .entries-section{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:20px;
-    }
-    
-    .entry{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:16px;
-      border-radius:8px;
-      background:var(--bg);
-      border:1px solid var(--border);
-      margin-bottom:12px;
-      transition:all 0.2s ease;
-    }
-    
-    .entry:hover{
-      box-shadow:0 4px 12px rgba(0,0,0,0.08);
-    }
-    
-    .entry:last-child{
-      margin-bottom:0;
-    }
-    
-    .entry-content{
-      flex:1;
-    }
-    
-    .entry-main{
-      font-size:15px;
-      color:var(--text);
-      font-weight:600;
-      margin-bottom:6px;
-    }
-    
-    .entry-details{
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.4;
-    }
-    
-    .log-entry{
-      background:var(--bg);
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:16px;
-      margin-bottom:12px;
-      transition:all 0.2s ease;
-    }
-    
-    .log-entry:hover{
-      box-shadow:0 2px 8px rgba(0,0,0,0.08);
-    }
-    
-    .log-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:8px;
-    }
-    
-    .log-type{
-      background:var(--accent);
-      color:#ffffff; /* ensure readable */
-      padding:4px 8px;
-      border-radius:4px;
-      font-size:11px;
-      font-weight:600;
-      text-transform:uppercase;
-    }
-
-    .more-btn{
-      background:transparent;
-      border:none;
-      color:var(--muted);
-      cursor:pointer;
-      font-size:12px;
-      padding:0 6px;
-    }
-    .full-url{ display:block; word-break:break-word; max-width:100%; color:var(--text); }
-    
-    .log-time{
-      font-size:12px;
-      color:var(--muted);
-    }
-    
-    .log-site{
-      font-size:16px;
-      font-weight:600;
-      color:var(--text);
-      margin-bottom:6px;
-    }
-    
-    .log-details{
-      font-size:13px;
-      color:var(--muted);
-      line-height:1.4;
-    }
-  .log-details, .entry-details { word-break:break-word; overflow-wrap:anywhere; }
-    
-    .reset-section{
-      text-align:center;
-      margin-top:48px;
-      padding-top:32px;
-      border-top:1px solid var(--border);
-    }
-    
-    .reset-section h3{
-      color:var(--danger);
-      margin-bottom:16px;
-    }
-    
-    #resetAll{
-      background: transparent;
-      color: var(--danger);
-      padding:6px 10px;
-      font-size:12px;
-      font-weight:600;
-      border:1px solid var(--danger);
-      border-radius:6px;
-      cursor:pointer;
-      transition: background 150ms ease, color 150ms ease, transform 80ms ease;
-    }
-    #resetAll:hover{ background: rgba(255,0,0,0.06); transform: translateY(-1px); }
-    
-    .empty-state{
-      text-align:center;
-      color:var(--muted);
-      font-style:italic;
-      padding:40px 20px;
-      background:var(--bg);
-      border-radius:12px;
-      border:1px solid var(--border);
-    }
-    
-    .refresh-btn{
-      background:var(--accent);
-      color:var(--btn-text);
-      border:none;
-      padding:8px 16px;
-      border-radius:6px;
-      cursor:pointer;
-      font-size:12px;
-      font-weight:600;
-    }
-    /* subtle clear-logs button to be less alarming than a destructive reset */
-    .clear-logs-btn{
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      padding:6px 10px;
-      font-size:12px;
-      border-radius:6px;
-      cursor:pointer;
-      transition: background 120ms ease, color 120ms ease, transform 80ms ease;
-    }
-    .clear-logs-btn:hover{ background: rgba(0,0,0,0.03); transform: translateY(-1px); }
-    
-    @media (max-width: 768px){
-      body{
-        padding:0 16px;
-      }
-      
-      .filter-row{
-        grid-template-columns:1fr;
-        gap:12px;
-      }
-      
-      .stats-grid{
-        grid-template-columns:repeat(2, 1fr);
-      }
-      
-      .dashboard-tabs{
-        flex-direction:column;
-      }
-      
-      .dashboard-tab{
-        margin-bottom:4px;
-      }
-      
-      .entry{
-        flex-direction:column;
-        align-items:start;
-        gap:12px;
-      }
-    }
-  </style>
-</head>
-<body>
-    <div class="dashboard-header">
-    <h1>TraceGuard Dashboard</h1>
-    <div style="display:flex;gap:12px;align-items:center;">
-      
-      <button id="settingsBtn" title="Settings" class="icon-btn tg-gear-btn">
-        <!-- theme-aware inline gear SVG (uses currentColor so it adapts to light/dark) -->
-        <svg class="tg-gear" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 00.12-.63l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.02 7.02 0 00-1.62-.94l-.36-2.54A.5.5 0 0013.5 2h-3a.5.5 0 00-.5.42l-.36 2.54c-.56.22-1.09.52-1.59.87l-2.4-.96a.5.5 0 00-.6.22L2.7 8.5a.5.5 0 00.12.63l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.82 15.1a.5.5 0 00-.12.63l1.92 3.32c.15.26.46.36.72.27l2.39-.96c.5.35 1.03.65 1.59.87l.36 2.54c.05.25.27.42.5.42h3c.23 0 .45-.17.5-.42l.36-2.54c.56-.22 1.09-.52 1.62-.94l2.39.96c.26.09.57-.01.72-.27l1.92-3.32a.5.5 0 00-.12-.63l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/>
-        </svg>
-      </button>
-      
-      <button id="lockDashBtn" class="lock-btn" title="Lock vault">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 10V8a6 6 0 0112 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- Hovering settings modal (hidden by default). Will be toggled by dashboard-enhanced.js -->
-  <div id="tg-settings-modal" style="display:none;">
-    <div class="tg-settings">
-      <h2>Settings</h2>
-      <div id="tg-settings-body">Loading…</div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
-        <button id="tg-save-settings">Save</button>
-        <button id="tg-close-settings" class="secondary">Close</button>
-      </div>
-      <div style="border-top:1px solid var(--border); margin-top:16px; padding-top:12px; text-align:center;">
-        <h3 style="color:var(--danger);">Danger Zone</h3>
-        <p style="color:var(--muted);max-width:440px;margin:0 auto 12px;">Permanently delete all TraceGuard data including passwords and logs.</p>
-        <button id="tg-reset-all" style="background: transparent; color: var(--danger); padding:6px 10px; font-size:12px; font-weight:600; border:1px solid var(--danger); border-radius:6px; cursor:pointer;">Reset data</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-number" id="totalEntries">0</div>
-      <div class="stat-label">Manual Entries</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number" id="profileEntries">0</div>
-      <div class="stat-label">Profile Items</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number" id="totalLogs">0</div>
-      <div class="stat-label">Activity Logs</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number" id="uniqueSites">0</div>
-      <div class="stat-label">Tracked Sites</div>
-    </div>
-  </div>
-
-  <div class="dashboard-tabs">
-    <button class="dashboard-tab active" data-tab="logs">Activity Logs</button>
-    <button class="dashboard-tab" data-tab="entries">Manual Entries</button>
-    <button class="dashboard-tab" data-tab="profile">Profile Data</button>
-  <button class="dashboard-tab" data-tab="sites">Sites</button>
-  </div>
-
-  <!-- Activity Logs Tab -->
-  <div id="logsContent" class="dashboard-content active">
-    <div class="filter-section">
-      <h3>Filter Activity Logs</h3>
-      <div class="filter-row">
-        <div>
-          <label for="logTypeFilter">Type:</label>
-          <select id="logTypeFilter">
-            <option value="">All Types</option>
-            <option value="email">Email</option>
-            <option value="phone">Phone</option>
-            <option value="address">Address</option>
-            <option value="ssn">SSN</option>
-            <option value="credit">Credit Card</option>
-            <option value="license">License</option>
-            <option value="passport">Passport</option>
-          </select>
+  <head>
+    <meta charset="UTF-8"/>
+    <title>TraceGuard Dashboard</title>
+    <link rel="stylesheet" href="popup.css"/>
+  </head>
+  <body class="page-dashboard">
+    <main class="dashboard-shell">
+      <header class="dashboard-header">
+        <div class="title-group">
+          <span class="brand-badge">TraceGuard</span>
+          <h1>TraceGuard Dashboard</h1>
+          <p class="subtitle">Monitor detections, manage encrypted entries, and stay in control of your digital footprint.</p>
         </div>
-        <div>
-          <label for="logSiteFilter">Site:</label>
-          <input type="text" id="logSiteFilter" placeholder="Filter by website"/>
+        <div class="header-actions">
+          <button id="settingsBtn" title="Settings" class="icon-btn tg-gear-btn">
+            <!-- theme-aware inline gear SVG (uses currentColor so it adapts to light/dark) -->
+            <svg class="tg-gear" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 00.12-.63l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.02 7.02 0 00-1.62-.94l-.36-2.54A.5.5 0 0013.5 2h-3a.5.5 0 00-.5.42l-.36 2.54c-.56.22-1.09.52-1.59.87l-2.4-.96a.5.5 0 00-.6.22L2.7 8.5a.5.5 0 00.12.63l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.82 15.1a.5.5 0 00-.12.63l1.92 3.32c.15.26.46.36.72.27l2.39-.96c.5.35 1.03.65 1.59.87l.36 2.54c.05.25.27.42.5.42h3c.23 0 .45-.17.5-.42l.36-2.54c.56-.22 1.09-.52 1.62-.94l2.39.96c.26.09.57-.01.72-.27l1.92-3.32a.5.5 0 00-.12-.63l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/>
+            </svg>
+          </button>
+          <button id="lockDashBtn" class="lock-btn" title="Lock vault">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 10V8a6 6 0 0112 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+          </button>
         </div>
-        <div>
-          <button id="clearLogFilters" class="secondary">Clear Filters</button>
+      </header>
+
+      <!-- Hovering settings modal (hidden by default). Will be toggled by dashboard-enhanced.js -->
+      <div id="tg-settings-modal">
+        <div class="tg-settings">
+          <h2>Settings</h2>
+          <div id="tg-settings-body">Loading…</div>
+          <div class="tg-settings-actions">
+            <button id="tg-save-settings">Save</button>
+            <button id="tg-close-settings" class="secondary">Close</button>
+          </div>
+          <div class="tg-settings-danger">
+            <h3>Danger Zone</h3>
+            <p>Permanently delete all TraceGuard data including passwords and logs.</p>
+            <button id="tg-reset-all" class="secondary danger">Reset data</button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="entries-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <h3>Recent Activity</h3>
-        <button id="clearAllLogs" class="clear-logs-btn">Clear logs</button>
-      </div>
-      <div id="log-list"></div>
-    </div>
-  </div>
-
-  <!-- Manual Entries Tab -->
-  <div id="entriesContent" class="dashboard-content">
-    <div class="filter-section">
-      <h3>Filter Manual Entries</h3>
-      <div class="filter-row">
-        <div>
-          <label for="entryTypeFilter">Type:</label>
-          <select id="entryTypeFilter">
-            <option value="">All Types</option>
-            <option value="email">Email</option>
-            <option value="phone">Phone</option>
-            <option value="address">Address</option>
-            <option value="ssn">SSN</option>
-            <option value="credit">Credit Card</option>
-            <option value="license">License</option>
-            <option value="passport">Passport</option>
-          </select>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="totalEntries">0</div>
+          <div class="stat-label">Manual Entries</div>
         </div>
-        <div>
-          <label for="entrySiteFilter">Site:</label>
-          <input type="text" id="entrySiteFilter" placeholder="Filter by website"/>
+        <div class="stat-card">
+          <div class="stat-number" id="profileEntries">0</div>
+          <div class="stat-label">Profile Items</div>
         </div>
-        <div>
-          <button id="clearEntryFilters" class="secondary">Clear Filters</button>
+        <div class="stat-card">
+          <div class="stat-number" id="totalLogs">0</div>
+          <div class="stat-label">Activity Logs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="uniqueSites">0</div>
+          <div class="stat-label">Tracked Sites</div>
         </div>
       </div>
-    </div>
 
-    <div class="entries-section">
-      <h3>Manual Entries</h3>
-      <div id="entries-list"></div>
-    </div>
-  </div>
-
-  <!-- Profile Data Tab -->
-  <div id="profileContent" class="dashboard-content">
-    <div class="entries-section">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <h3>Profile Information</h3>
-        <div class="note">This data is used for automatic detection on websites</div>
+      <div class="dashboard-tabs">
+        <button class="dashboard-tab active" data-tab="logs">Activity Logs</button>
+        <button class="dashboard-tab" data-tab="entries">Manual Entries</button>
+        <button class="dashboard-tab" data-tab="profile">Profile Data</button>
+        <button class="dashboard-tab" data-tab="sites">Sites</button>
       </div>
-      <div id="profile-list"></div>
-    </div>
-  </div>
 
-  <!-- Sites Tab -->
-  <div id="sitesContent" class="dashboard-content">
-    <!-- renderSites() will populate this area -->
-  </div>
+      <!-- Activity Logs Tab -->
+      <div id="logsContent" class="dashboard-content active">
+        <div class="filter-section">
+          <h3>Filter Activity Logs</h3>
+          <div class="filter-row">
+            <div>
+              <label for="logTypeFilter">Type:</label>
+              <select id="logTypeFilter">
+                <option value="">All Types</option>
+                <option value="email">Email</option>
+                <option value="phone">Phone</option>
+                <option value="address">Address</option>
+                <option value="ssn">SSN</option>
+                <option value="credit">Credit Card</option>
+                <option value="license">License</option>
+                <option value="passport">Passport</option>
+              </select>
+            </div>
+            <div>
+              <label for="logSiteFilter">Site:</label>
+              <input type="text" id="logSiteFilter" placeholder="Filter by website"/>
+            </div>
+            <div>
+              <button id="clearLogFilters" class="secondary">Clear Filters</button>
+            </div>
+          </div>
+        </div>
 
-  <!-- Reset moved into the Settings modal to reduce prominence -->
+        <div class="entries-section">
+          <div class="section-header">
+            <div>
+              <h3>Recent Activity</h3>
+              <p class="section-hint">Latest detections captured by TraceGuard.</p>
+            </div>
+            <button id="clearAllLogs" class="clear-logs-btn">Clear logs</button>
+          </div>
+          <div id="log-list"></div>
+        </div>
+      </div>
 
-  <script src="dashboard-enhanced.js"></script>
-</body>
+      <!-- Manual Entries Tab -->
+      <div id="entriesContent" class="dashboard-content">
+        <div class="filter-section">
+          <h3>Filter Manual Entries</h3>
+          <div class="filter-row">
+            <div>
+              <label for="entryTypeFilter">Type:</label>
+              <select id="entryTypeFilter">
+                <option value="">All Types</option>
+                <option value="email">Email</option>
+                <option value="phone">Phone</option>
+                <option value="address">Address</option>
+                <option value="ssn">SSN</option>
+                <option value="credit">Credit Card</option>
+                <option value="license">License</option>
+                <option value="passport">Passport</option>
+              </select>
+            </div>
+            <div>
+              <label for="entrySiteFilter">Site:</label>
+              <input type="text" id="entrySiteFilter" placeholder="Filter by website"/>
+            </div>
+            <div>
+              <button id="clearEntryFilters" class="secondary">Clear Filters</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="entries-section">
+          <div class="section-header">
+            <div>
+              <h3>Manual Entries</h3>
+              <p class="section-hint">View encrypted items stored in your TraceGuard vault.</p>
+            </div>
+          </div>
+          <div id="entries-list"></div>
+        </div>
+      </div>
+
+      <!-- Profile Data Tab -->
+      <div id="profileContent" class="dashboard-content">
+        <div class="entries-section">
+          <div class="section-header">
+            <div>
+              <h3>Profile Information</h3>
+              <p class="section-hint">This data powers automatic detection on the sites you visit.</p>
+            </div>
+          </div>
+          <div id="profile-list"></div>
+        </div>
+      </div>
+
+      <!-- Sites Tab -->
+      <div id="sitesContent" class="dashboard-content">
+        <!-- renderSites() will populate this area -->
+      </div>
+
+      <!-- Reset moved into the Settings modal to reduce prominence -->
+
+    </main>
+    <script src="dashboard-enhanced.js"></script>
+  </body>
 </html>
