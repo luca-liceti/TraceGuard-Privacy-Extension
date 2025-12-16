@@ -148,7 +148,7 @@ function App() {
 
     const currentSiteWRS = state.currentSite?.wrs ?? null;
 
-    // Determine color and icon based on WRS (higher WRS = safer)
+    // Determine color based on WRS (standard: 0 = dangerous, 100 = safe)
     const getWRSColor = (wrs: number) => {
         if (wrs >= 80) return "text-green-500";
         if (wrs >= 50) return "text-yellow-500";
@@ -159,6 +159,13 @@ function App() {
         if (wrs >= 80) return <CheckCircle className="h-6 w-6" />;
         if (wrs >= 50) return <AlertTriangle className="h-6 w-6" />;
         return <AlertTriangle className="h-6 w-6" />;
+    };
+
+    // UPS color function (same logic as WRS - 0 = dangerous, 100 = safe)
+    const getUPSColor = (ups: number) => {
+        if (ups >= 80) return "text-green-500";
+        if (ups >= 50) return "text-yellow-500";
+        return "text-red-500";
     };
 
     const openDashboard = () => {
@@ -187,7 +194,7 @@ function App() {
                     {/* User Privacy Score */}
                     <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
                         <h3 className="font-semibold mb-2 text-sm">Privacy Score (UPS)</h3>
-                        <div className="text-3xl font-bold text-green-500">{state.ups}</div>
+                        <div className={`text-3xl font-bold ${getUPSColor(state.ups)}`}>{state.ups}</div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Sites analyzed: {state.sitesAnalyzed}
                         </p>
@@ -240,9 +247,9 @@ function App() {
                         </div>
                     )}
 
-                    {/* Trackers Blocked */}
+                    {/* Trackers Detected */}
                     <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                        <h3 className="font-semibold mb-2 text-sm">Trackers Blocked</h3>
+                        <h3 className="font-semibold mb-2 text-sm">Trackers Detected</h3>
                         <div className="text-3xl font-bold">{state.trackersBlocked}</div>
                     </div>
                 </div>

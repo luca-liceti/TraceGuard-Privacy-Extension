@@ -118,11 +118,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
                 sendResponse(result);
             }).catch(error => {
                 console.warn('ToS;DR check failed:', error);
-                sendResponse({ found: false, score: 100, source: 'fallback' });
+                sendResponse({ found: false, score: 0, source: 'fallback' });
             });
         }).catch(error => {
             console.error('Failed to load ToS;DR API:', error);
-            sendResponse({ found: false, score: 100, source: 'fallback' });
+            sendResponse({ found: false, score: 0, source: 'fallback' });
         });
 
         return true; // Keep channel open for async response

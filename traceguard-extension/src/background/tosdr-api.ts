@@ -29,7 +29,7 @@ interface TosDRResult {
     found: boolean;
     service?: TosDRService;
     grade?: string; // A-E
-    score: number; // 0-100 (0 = best, 100 = worst)
+    score: number; // 0-100 (0 = dangerous/no rating, 100 = safe/A-grade)
     source: 'tosdr' | 'fallback';
 }
 
@@ -51,21 +51,21 @@ function extractDomain(url: string): string {
 }
 
 /**
- * Convert ToS;DR grade to risk score
- * A = 0 (excellent), B = 20 (good), C = 40 (fair), D = 60 (poor), E = 80 (bad), None = 100 (no rating)
+ * Convert ToS;DR grade to risk score (standard: 0 = dangerous, 100 = safe)
+ * A = 100 (excellent), B = 80 (good), C = 60 (fair), D = 40 (poor), E = 20 (bad), None = 0 (no rating = dangerous)
  */
 function gradeToScore(grade: string | undefined): number {
-    if (!grade) return 100; // No rating = worst score
+    if (!grade) return 0; // No rating = dangerous (unknown policy)
 
     const gradeMap: Record<string, number> = {
-        'A': 0,   // Excellent privacy policy
-        'B': 20,  // Good privacy policy
-        'C': 40,  // Fair privacy policy
-        'D': 60,  // Poor privacy policy
-        'E': 80   // Bad privacy policy
+        'A': 100,  // Excellent privacy policy
+        'B': 80,   // Good privacy policy
+        'C': 60,   // Fair privacy policy
+        'D': 40,   // Poor privacy policy
+        'E': 20    // Bad privacy policy
     };
 
-    return gradeMap[grade.toUpperCase()] ?? 100;
+    return gradeMap[grade.toUpperCase()] ?? 0;
 }
 
 /**
@@ -156,7 +156,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
             if (!service) {
                 return {
                     found: false,
-                    score: 100, // No rating = assume worst
+                    score: 0, // No rating = dangerous (unknown policy)
                     source: 'fallback' as const
                 };
             }
@@ -198,7 +198,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
         // Return fallback result
         const fallbackResult: TosDRResult = {
             found: false,
-            score: 100,
+            score: 0,
             source: 'fallback'
         };
 

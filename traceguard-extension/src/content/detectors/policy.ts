@@ -4,11 +4,11 @@
  * Enhanced implementation using ToS;DR API for reliable privacy policy grading.
  * Falls back to local privacy policy link detection if API unavailable.
  * 
- * Returns: Risk score 0-100
- * - 0-20 = Excellent/Good privacy policy (ToS;DR grade A/B)
- * - 40 = Fair privacy policy (ToS;DR grade C)
- * - 60-80 = Poor/Bad privacy policy (ToS;DR grade D/E)
- * - 100 = No privacy policy found or no rating
+ * Returns: Risk score 0-100 (standard: 0 = dangerous, 100 = safe)
+ * - 100 = Excellent/Good privacy policy (ToS;DR grade A/B)
+ * - 60 = Fair privacy policy (ToS;DR grade C)
+ * - 20-40 = Poor/Bad privacy policy (ToS;DR grade D/E)
+ * - 0 = No privacy policy found or no ToS;DR rating
  */
 
 /**
@@ -86,14 +86,14 @@ export async function detectPrivacyPolicy(): Promise<number> {
         links: localResult.links.length > 0 ? localResult.links : 'none'
     });
 
-    // Score based on local detection
-    // 100 = Policy found (good), 50 = No policy (medium risk)
-    const score = localResult.found ? 100 : 50;
+    // Score based on local detection (standard: 0 = dangerous, 100 = safe)
+    // Policy found = 100 (safe), No policy = 0 (dangerous)
+    const score = localResult.found ? 100 : 0;
 
     console.log('[Policy] Score calculation:', {
         formula: localResult.found
-            ? 'Privacy policy link found → 100 (good)'
-            : 'No privacy policy link → 50 (medium risk)',
+            ? 'Privacy policy link found → 100 (safe)'
+            : 'No privacy policy link → 0 (dangerous)',
         score: score,
         source: 'local fallback'
     });
@@ -108,5 +108,5 @@ export async function detectPrivacyPolicy(): Promise<number> {
  */
 export function detectPrivacyPolicySync(): number {
     const localResult = detectLocalPrivacyPolicy();
-    return localResult.found ? 100 : 50;
+    return localResult.found ? 100 : 0;
 }

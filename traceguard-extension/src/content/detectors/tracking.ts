@@ -181,27 +181,27 @@ export function detectTrackingDetailed(): TrackingDetectionResult {
     // Suspicious trackers count 1x (lower confidence)
     const weightedCount = (knownTrackers.size * 3) + suspiciousTrackers.size;
 
-    // Score calculation (inverted: lower score = more trackers = higher risk)
-    // 0 trackers = 0 (safe)
-    // 1-3 trackers = 20 (low risk)
-    // 4-6 trackers = 40 (medium risk)
-    // 7-10 trackers = 60 (high risk)
-    // 11-15 trackers = 80 (very high risk)
-    // >15 trackers = 100 (extreme risk)
+    // Score calculation (standard: 0 = dangerous, 100 = safe)
+    // 0 trackers = 100 (safe)
+    // 1-3 trackers = 80 (low risk)
+    // 4-6 trackers = 60 (medium risk)
+    // 7-10 trackers = 40 (high risk)
+    // 11-15 trackers = 20 (very high risk)
+    // >15 trackers = 0 (extreme risk)
 
     let score: number;
     if (weightedCount === 0) {
-        score = 0;
-    } else if (weightedCount <= 3) {
-        score = 20;
-    } else if (weightedCount <= 6) {
-        score = 40;
-    } else if (weightedCount <= 10) {
-        score = 60;
-    } else if (weightedCount <= 15) {
-        score = 80;
-    } else {
         score = 100;
+    } else if (weightedCount <= 3) {
+        score = 80;
+    } else if (weightedCount <= 6) {
+        score = 60;
+    } else if (weightedCount <= 10) {
+        score = 40;
+    } else if (weightedCount <= 15) {
+        score = 20;
+    } else {
+        score = 0;
     }
 
     return {
@@ -213,10 +213,10 @@ export function detectTrackingDetailed(): TrackingDetectionResult {
 }
 
 function getScoreFormula(trackerCount: number): string {
-    if (trackerCount === 0) return '0 trackers → score 0 (safe)';
-    if (trackerCount <= 3) return '1-3 trackers → score 20 (low risk)';
-    if (trackerCount <= 6) return '4-6 trackers → score 40 (medium risk)';
-    if (trackerCount <= 10) return '7-10 trackers → score 60 (high risk)';
-    if (trackerCount <= 15) return '11-15 trackers → score 80 (very high risk)';
-    return '>15 trackers → score 100 (extreme risk)';
+    if (trackerCount === 0) return '0 trackers → score 100 (safe)';
+    if (trackerCount <= 3) return '1-3 trackers → score 80 (low risk)';
+    if (trackerCount <= 6) return '4-6 trackers → score 60 (medium risk)';
+    if (trackerCount <= 10) return '7-10 trackers → score 40 (high risk)';
+    if (trackerCount <= 15) return '11-15 trackers → score 20 (very high risk)';
+    return '>15 trackers → score 0 (extreme risk)';
 }
