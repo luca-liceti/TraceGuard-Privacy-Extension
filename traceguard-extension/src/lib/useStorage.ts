@@ -101,3 +101,54 @@ export function useDetectorLogs() {
 
     return logs;
 }
+
+export function useNotifications() {
+    const [notifications, setNotifications] = useState<import('./types').NotificationEvent[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        // Initial fetch
+        chrome.storage.local.get('notifications').then(res => {
+            const notifs = (res.notifications || []) as import('./types').NotificationEvent[];
+            setNotifications(notifs);
+            setUnreadCount(notifs.filter(n => !n.read).length);
+        });
+
+        // Listen for changes
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+            if (areaName === 'local' && changes.notifications) {
+                const notifs = (changes.notifications.newValue || []) as import('./types').NotificationEvent[];
+                setNotifications(notifs);
+                setUnreadCount(notifs.filter(n => !n.read).length);
+            }
+        };
+        chrome.storage.onChanged.addListener(listener);
+        return () => chrome.storage.onChanged.removeListener(listener);
+    }, []);
+
+    const markAsRead = async (id: string) => {
+        await storage.markAsRead(id);
+    };
+
+    const markAllAsRead = async () => {
+        await storage.markAllAsRead();
+    };
+
+    const clearAll = async () => {
+        await storage.clearNotifications();
+    };
+
+    const removeNotification = async (id: string) => {
+        await storage.removeNotification(id);
+    };
+
+    return {
+        notifications,
+        unreadCount,
+        markAsRead,
+        markAllAsRead,
+        clearAll,
+        removeNotification
+    };
+}
+

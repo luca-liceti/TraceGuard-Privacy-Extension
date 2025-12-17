@@ -1,21 +1,63 @@
 "use client"
 
-import React, { useState } from "react"
-import { useAppState } from "@/lib/useStorage"
-import { Globe, Calendar, TrendingUp, Search } from "lucide-react"
+import React, { useState, useEffect } from "react"
+import { Globe, Calendar, TrendingUp, Search, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
+import { SiteRiskData } from "@/lib/types"
+import { cn } from "@/lib/utils"
+
+// Stat card component
+function StatCard({
+    title,
+    value,
+    subtitle,
+    valueColor,
+}: {
+    title: string
+    value: string | number
+    subtitle?: string
+    valueColor?: string
+}) {
+    return (
+        <Card>
+            <CardContent className="p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {title}
+                </p>
+                <p className={cn("text-2xl font-bold mt-1", valueColor)}>{value}</p>
+                {subtitle && (
+                    <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+                )}
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function SitesAnalyzedPage() {
-    const state = useAppState()
     const [searchQuery, setSearchQuery] = useState("")
+    const [siteCache, setSiteCache] = useState<Record<string, SiteRiskData>>({})
 
-    if (!state) return <div className="p-4">Loading...</div>
+    // Load siteCache from chrome.storage
+    useEffect(() => {
+        chrome.storage.local.get('siteCache').then(res => {
+            setSiteCache((res.siteCache || {}) as Record<string, SiteRiskData>)
+        })
 
-    const siteScores = state.siteScores || {}
-    const sites = Object.entries(siteScores)
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+            if (areaName === 'local' && changes.siteCache) {
+                setSiteCache((changes.siteCache.newValue || {}) as Record<string, SiteRiskData>)
+            }
+        }
+
+        chrome.storage.onChanged.addListener(listener)
+        return () => chrome.storage.onChanged.removeListener(listener)
+    }, [])
+
+    const sites = Object.entries(siteCache)
 
     // Filter sites by search query
     const filteredSites = sites.filter(([domain]) =>
@@ -24,7 +66,7 @@ export default function SitesAnalyzedPage() {
 
     // Sort by last visited (most recent first)
     const sortedSites = [...filteredSites].sort((a, b) =>
-        b[1].lastAnalyzed - a[1].lastAnalyzed
+        (b[1].lastVisit || b[1].lastAnalyzed) - (a[1].lastVisit || a[1].lastAnalyzed)
     )
 
     // Prepare chart data (top 10 most visited sites)
@@ -32,13 +74,28 @@ export default function SitesAnalyzedPage() {
         .sort((a, b) => (b[1].visitCount || 0) - (a[1].visitCount || 0))
         .slice(0, 10)
         .map(([domain, data]) => ({
-            domain: domain.length > 20 ? domain.substring(0, 20) + '...' : domain,
-            visits: data.visitCount || 0,
+            domain: domain.length > 15 ? domain.substring(0, 15) + '...' : domain,
+            visits: data.visitCount || 1,
             wrs: data.wrs
         }))
 
-    const totalVisits = sites.reduce((sum, [_, data]) => sum + (data.visitCount || 0), 0)
+    const totalVisits = sites.reduce((sum, [_, data]) => sum + (data.visitCount || 1), 0)
     const avgVisitsPerSite = sites.length > 0 ? Math.round(totalVisits / sites.length) : 0
+
+    // Get today's sites
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayStart = today.getTime()
+    const todayCount = sites.filter(([_, data]) =>
+        (data.lastVisit || data.lastAnalyzed) >= todayStart
+    ).length
+
+    const getRiskColor = (wrs: number) => {
+        if (wrs >= 80) return "text-red-500"
+        if (wrs >= 60) return "text-orange-500"
+        if (wrs >= 40) return "text-yellow-500"
+        return "text-green-500"
+    }
 
     return (
         <div className="space-y-6 w-full">
@@ -53,55 +110,39 @@ export default function SitesAnalyzedPage() {
             </div>
 
             {/* Statistics */}
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
-                <Card className=" ">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Total Sites
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-blue-500">{sites.length}</div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            Unique domains analyzed
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card className=" ">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Total Visits
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-purple-500">{totalVisits}</div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            Across all sites
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card className=" ">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Avg Visits/Site
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-green-500">{avgVisitsPerSite}</div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            Average per domain
-                        </p>
-                    </CardContent>
-                </Card>
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                <StatCard
+                    title="Total Sites"
+                    value={sites.length}
+                    subtitle="Unique domains"
+                    valueColor="text-blue-500"
+                />
+                <StatCard
+                    title="Today"
+                    value={todayCount}
+                    subtitle="Sites visited"
+                    valueColor="text-green-500"
+                />
+                <StatCard
+                    title="Total Visits"
+                    value={totalVisits}
+                    subtitle="Across all sites"
+                    valueColor="text-purple-500"
+                />
+                <StatCard
+                    title="Avg Visits"
+                    value={avgVisitsPerSite}
+                    subtitle="Per site"
+                    valueColor="text-orange-500"
+                />
             </div>
 
             {/* Top Sites Chart */}
             {chartData.length > 0 && (
-                <Card className=" ">
+                <Card>
                     <CardHeader>
-                        <CardTitle className="text-lg font-semibold text-foreground">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                            <BarChart3 className="h-4 w-4 text-primary" />
                             Most Visited Sites
                         </CardTitle>
                         <CardDescription>
@@ -113,25 +154,22 @@ export default function SitesAnalyzedPage() {
                             config={{
                                 visits: {
                                     label: "Visits",
-                                    color: "hsl(217, 91%, 60%)",
+                                    color: "hsl(var(--primary))",
                                 },
                             }}
-                            className="h-[300px]"
+                            className="h-[250px]"
                         >
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300 dark:stroke-gray-700" />
-                                    <XAxis
-                                        dataKey="domain"
-                                        className="text-muted-foreground text-xs"
-                                        tick={{ fill: 'currentColor' }}
-                                        angle={-45}
-                                        textAnchor="end"
-                                        height={100}
-                                    />
+                                <BarChart data={chartData} layout="vertical">
+                                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={true} vertical={false} />
+                                    <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                                     <YAxis
-                                        className="text-muted-foreground text-xs"
-                                        tick={{ fill: 'currentColor' }}
+                                        dataKey="domain"
+                                        type="category"
+                                        tick={{ fontSize: 11 }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        width={100}
                                     />
                                     <ChartTooltip
                                         content={<ChartTooltipContent />}
@@ -142,8 +180,8 @@ export default function SitesAnalyzedPage() {
                                     />
                                     <Bar
                                         dataKey="visits"
-                                        fill="var(--color-visits)"
-                                        radius={[4, 4, 0, 0]}
+                                        fill="hsl(var(--primary))"
+                                        radius={[0, 4, 4, 0]}
                                     />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -153,14 +191,15 @@ export default function SitesAnalyzedPage() {
             )}
 
             {/* Sites List */}
-            <Card className=" ">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold text-foreground">
+            <Card>
+                <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-primary" />
                             All Sites
                         </CardTitle>
-                        <div className="relative w-64">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
                                 placeholder="Search sites..."
@@ -176,42 +215,36 @@ export default function SitesAnalyzedPage() {
                 </CardHeader>
                 <CardContent>
                     {sortedSites.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {sortedSites.map(([domain, data]) => (
                                 <div
                                     key={domain}
-                                    className="flex items-center justify-between p-4 rounded-lg border  hover:bg-accent dark:hover:bg-accent transition-colors"
+                                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                                 >
                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <Globe className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                                        <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="font-medium text-foreground truncate">
+                                            <h3 className="font-medium text-foreground text-sm truncate">
                                                 {domain}
                                             </h3>
-                                            <div className="flex items-center gap-4 mt-1">
-                                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <div className="flex items-center gap-3 mt-0.5">
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                     <Calendar className="h-3 w-3" />
-                                                    {new Date(data.lastAnalyzed).toLocaleDateString()}
-                                                </div>
-                                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                    {new Date(data.lastVisit || data.lastAnalyzed).toLocaleDateString()}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                     <TrendingUp className="h-3 w-3" />
                                                     {data.visitCount || 1} visits
-                                                </div>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 flex-shrink-0">
-                                        <div className="text-right">
-                                            <div className={`text-xl font-bold ${data.wrs >= 80 ? 'text-red-500' :
-                                                    data.wrs >= 60 ? 'text-orange-500' :
-                                                        data.wrs >= 40 ? 'text-yellow-500' :
-                                                            'text-green-500'
-                                                }`}>
-                                                {data.wrs}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                WRS
-                                            </div>
+                                    <div className="text-right ml-3">
+                                        <div className={cn("text-lg font-bold", getRiskColor(data.wrs))}>
+                                            {data.wrs}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            WRS
                                         </div>
                                     </div>
                                 </div>
@@ -219,6 +252,7 @@ export default function SitesAnalyzedPage() {
                         </div>
                     ) : (
                         <div className="text-center py-12 text-muted-foreground">
+                            <Globe className="h-12 w-12 mx-auto mb-3 opacity-30" />
                             {searchQuery ? "No sites match your search" : "No sites analyzed yet"}
                         </div>
                     )}

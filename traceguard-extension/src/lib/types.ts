@@ -94,6 +94,7 @@ export interface StorageSchema {
     scoreHistory?: ScoreHistoryEntry[]; // Historical score data for graphing
     piiDetections?: PIIDetectionEvent[]; // PII detection events
     crossSiteExposure?: CrossSiteExposure; // Track PII shared across sites
+    notifications?: NotificationEvent[]; // Real-time notification events
 }
 
 export interface LogEntry {
@@ -102,4 +103,20 @@ export interface LogEntry {
     type: 'info' | 'warning' | 'error' | 'block';
     message: string;
     domain?: string;
+}
+
+/**
+ * Notification event stored in chrome.storage
+ * Used to populate the notification dropdown in the top-nav
+ */
+export interface NotificationEvent {
+    id: string;
+    timestamp: number;
+    type: 'high_risk_site' | 'pii_detected' | 'tracker_alert' | 'daily_summary' | 'info';
+    title: string;
+    message: string;
+    domain?: string;
+    severity: 'critical' | 'warning' | 'info';
+    read: boolean;
+    actionUrl?: string; // Route to navigate on click
 }

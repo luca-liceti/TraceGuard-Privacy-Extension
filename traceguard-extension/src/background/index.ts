@@ -272,6 +272,34 @@ async function handlePageAnalysis(message: any) {
         message: detectorMessages.policy
     });
 
+    // Create notification for high-risk sites
+    const settings = await storage.getSettings();
+    const threshold = settings.wssThreshold || 50;
+
+    // Note: WSS is a safety score (0-100). Lower is more dangerous.
+    // Critical is hardcoded to very low safety (20)
+    if (wss <= 20) {
+        // Critical risk
+        await storage.addNotification({
+            type: 'high_risk_site',
+            title: 'Critical Risk Site!',
+            message: `${domain} has been flagged as a critical risk with a safety score of ${wss}`,
+            domain,
+            severity: 'critical',
+            actionUrl: '/website-safety'
+        });
+    } else if (wss < threshold) {
+        // Warning based on user threshold
+        await storage.addNotification({
+            type: 'high_risk_site',
+            title: 'High Risk Site Detected',
+            message: `${domain} falls below your safety threshold (Score: ${wss})`,
+            domain,
+            severity: 'warning',
+            actionUrl: '/website-safety'
+        });
+    }
+
     console.log('Analysis complete for:', domain, 'WSS:', wss);
     console.log('[WSS Calculation] Breakdown:', finalScores);
 }
@@ -334,6 +362,17 @@ async function handlePIIDetection(message: any) {
     });
 
     console.log(`[TraceGuard] UPS updated: ${state.ups} → ${newUPS} (PII events: ${newPiiCount})`);
+
+    // Create notification for PII detection
+    const notificationSeverity = event.sensitivity === 'HIGH' ? 'critical' : event.sensitivity === 'MEDIUM' ? 'warning' : 'info';
+    await storage.addNotification({
+        type: 'pii_detected',
+        title: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
+        message: `${event.fieldType} entered on ${event.site}${scoreImpact !== 0 ? ` (${scoreImpact} pts)` : ''}`,
+        domain: event.site,
+        severity: notificationSeverity,
+        actionUrl: '/activity-logs'
+    });
 
     // Send toast notification to content script (NO OS notifications per architecture rules)
     const settings = await storage.getSettings();

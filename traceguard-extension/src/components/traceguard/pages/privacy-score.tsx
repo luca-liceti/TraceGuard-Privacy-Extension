@@ -2,10 +2,66 @@
 
 import React from "react"
 import { useAppState, useScoreHistory } from "@/lib/useStorage"
-import { ShieldCheck, TrendingUp, TrendingDown, Info } from "lucide-react"
+import {
+    ShieldCheck,
+    TrendingUp,
+    TrendingDown,
+    Info,
+    Minus,
+    Calendar,
+    BarChart3,
+    Target,
+} from "lucide-react"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Area, AreaChart } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
+
+function getScoreLevel(score: number) {
+    if (score >= 90) return { level: "Excellent", color: "text-green-500", bg: "bg-green-500/10", description: "Your browsing habits are excellent!" }
+    if (score >= 70) return { level: "Good", color: "text-blue-500", bg: "bg-blue-500/10", description: "Good privacy practices, keep it up!" }
+    if (score >= 50) return { level: "Fair", color: "text-yellow-500", bg: "bg-yellow-500/10", description: "Room for improvement in privacy." }
+    if (score >= 30) return { level: "Poor", color: "text-orange-500", bg: "bg-orange-500/10", description: "Consider reviewing your browsing habits." }
+    return { level: "Critical", color: "text-red-500", bg: "bg-red-500/10", description: "Immediate attention recommended." }
+}
+
+// Stat card component
+function StatCard({
+    title,
+    value,
+    subtitle,
+    icon: Icon,
+    valueColor,
+}: {
+    title: string
+    value: string | number
+    subtitle?: string
+    icon: React.ComponentType<{ className?: string }>
+    valueColor?: string
+}) {
+    return (
+        <Card>
+            <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {title}
+                        </p>
+                        <p className={cn("text-2xl font-bold", valueColor)}>{value}</p>
+                        {subtitle && (
+                            <p className="text-xs text-muted-foreground">{subtitle}</p>
+                        )}
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function PrivacyScorePage() {
     const state = useAppState()
@@ -27,14 +83,15 @@ export default function PrivacyScorePage() {
         ? scoreHistory[scoreHistory.length - 1].ups - scoreHistory[scoreHistory.length - 2].ups
         : 0
 
-    // Get score level
-    const getScoreLevel = (score: number) => {
-        if (score >= 90) return { level: "EXCELLENT", color: "text-green-500", bg: "bg-green-500/10" }
-        if (score >= 70) return { level: "GOOD", color: "text-blue-500", bg: "bg-blue-500/10" }
-        if (score >= 50) return { level: "FAIR", color: "text-yellow-500", bg: "bg-yellow-500/10" }
-        if (score >= 30) return { level: "POOR", color: "text-orange-500", bg: "bg-orange-500/10" }
-        return { level: "CRITICAL", color: "text-red-500", bg: "bg-red-500/10" }
-    }
+    // Calculate average score
+    const avgScore = scoreHistory.length > 0
+        ? Math.round(scoreHistory.reduce((sum, entry) => sum + entry.ups, 0) / scoreHistory.length)
+        : state.ups
+
+    // Calculate lowest score
+    const lowestScore = scoreHistory.length > 0
+        ? Math.min(...scoreHistory.map(entry => entry.ups))
+        : state.ups
 
     const scoreLevel = getScoreLevel(state.ups)
 
@@ -43,86 +100,96 @@ export default function PrivacyScorePage() {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-foreground">
-                    Privacy Score (UPS)
+                    Privacy Score
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                    Your User Privacy Score reflects how safely you browse the web
+                    Your User Privacy Score (UPS) reflects how safely you browse the web
                 </p>
             </div>
 
-            {/* Score Overview */}
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
-                {/* Current Score */}
-                <Card className=" ">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Current Score
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className={`text-5xl font-bold ${scoreLevel.color}`}>
-                            {state.ups}
+            {/* Hero Score Card */}
+            <Card>
+                <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                        {/* Score Circle */}
+                        <div className={cn(
+                            "relative flex items-center justify-center w-32 h-32 rounded-full",
+                            scoreLevel.bg
+                        )}>
+                            <div className="text-center">
+                                <span className={cn("text-5xl font-bold", scoreLevel.color)}>
+                                    {state.ups}
+                                </span>
+                            </div>
+                            <ShieldCheck className={cn(
+                                "absolute -bottom-2 -right-2 h-10 w-10",
+                                scoreLevel.color
+                            )} />
                         </div>
-                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm mt-3 ${scoreLevel.bg} ${scoreLevel.color}`}>
-                            {scoreLevel.level}
-                        </div>
-                    </CardContent>
-                </Card>
 
-                {/* Trend */}
-                <Card className=" ">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Recent Trend
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-2">
-                            {trend > 0 ? (
-                                <>
-                                    <TrendingUp className="h-8 w-8 text-green-500" />
-                                    <span className="text-3xl font-bold text-green-500">+{trend}</span>
-                                </>
-                            ) : trend < 0 ? (
-                                <>
-                                    <TrendingDown className="h-8 w-8 text-red-500" />
-                                    <span className="text-3xl font-bold text-red-500">{trend}</span>
-                                </>
-                            ) : (
-                                <>
-                                    <TrendingUp className="h-8 w-8 text-gray-500" />
-                                    <span className="text-3xl font-bold text-gray-500">0</span>
-                                </>
-                            )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            {trend > 0 ? "Improving" : trend < 0 ? "Declining" : "Stable"}
-                        </p>
-                    </CardContent>
-                </Card>
+                        {/* Score Info */}
+                        <div className="flex-1 text-center md:text-left">
+                            <Badge className={cn("mb-2", scoreLevel.bg, scoreLevel.color, "border-0")}>
+                                {scoreLevel.level}
+                            </Badge>
+                            <p className="text-muted-foreground">
+                                {scoreLevel.description}
+                            </p>
 
-                {/* Total Events */}
-                <Card className=" ">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Score History
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-blue-500">
-                            {scoreHistory.length}
+                            {/* Trend */}
+                            <div className="flex items-center justify-center md:justify-start gap-2 mt-4">
+                                {trend > 0 ? (
+                                    <>
+                                        <TrendingUp className="h-5 w-5 text-green-500" />
+                                        <span className="text-green-500 font-medium">+{trend} from previous</span>
+                                    </>
+                                ) : trend < 0 ? (
+                                    <>
+                                        <TrendingDown className="h-5 w-5 text-red-500" />
+                                        <span className="text-red-500 font-medium">{trend} from previous</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Minus className="h-5 w-5 text-muted-foreground" />
+                                        <span className="text-muted-foreground font-medium">No change</span>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            Total data points
-                        </p>
-                    </CardContent>
-                </Card>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Stats Row */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+                <StatCard
+                    title="Current Score"
+                    value={state.ups}
+                    subtitle="Your privacy rating"
+                    icon={Target}
+                    valueColor={scoreLevel.color}
+                />
+                <StatCard
+                    title="Average Score"
+                    value={avgScore}
+                    subtitle="All-time average"
+                    icon={BarChart3}
+                    valueColor={getScoreLevel(avgScore).color}
+                />
+                <StatCard
+                    title="Lowest Score"
+                    value={lowestScore}
+                    subtitle="Historical low"
+                    icon={Calendar}
+                    valueColor={getScoreLevel(lowestScore).color}
+                />
             </div>
 
             {/* Score History Chart */}
-            <Card className=" ">
+            <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-foreground">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-primary" />
                         30-Day Privacy Score Trend
                     </CardTitle>
                     <CardDescription>
@@ -135,23 +202,33 @@ export default function PrivacyScorePage() {
                             config={{
                                 score: {
                                     label: "Privacy Score",
-                                    color: "hsl(142, 76%, 36%)",
+                                    color: "hsl(var(--primary))",
                                 },
                             }}
-                            className="h-[400px]"
+                            className="h-[300px]"
                         >
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300 dark:stroke-gray-700" />
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                                     <XAxis
                                         dataKey="date"
                                         className="text-muted-foreground text-xs"
-                                        tick={{ fill: 'currentColor' }}
+                                        tick={{ fill: 'currentColor', fontSize: 11 }}
+                                        tickLine={false}
+                                        axisLine={false}
                                     />
                                     <YAxis
                                         className="text-muted-foreground text-xs"
                                         domain={[0, 100]}
-                                        tick={{ fill: 'currentColor' }}
+                                        tick={{ fill: 'currentColor', fontSize: 11 }}
+                                        tickLine={false}
+                                        axisLine={false}
                                     />
                                     <ChartTooltip
                                         content={<ChartTooltipContent />}
@@ -161,57 +238,82 @@ export default function PrivacyScorePage() {
                                             return data?.fullDate || label
                                         }}
                                     />
-                                    <Line
+                                    <Area
                                         type="monotone"
                                         dataKey="score"
-                                        stroke="var(--color-score)"
-                                        strokeWidth={3}
-                                        dot={{ fill: "var(--color-score)", r: 5 }}
-                                        activeDot={{ r: 7 }}
-                                        name="Privacy Score"
+                                        stroke="hsl(var(--primary))"
+                                        strokeWidth={2}
+                                        fill="url(#scoreGradient)"
                                     />
-                                </LineChart>
+                                </AreaChart>
                             </ResponsiveContainer>
                         </ChartContainer>
                     ) : (
-                        <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                            No score history available yet
+                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                            <div className="text-center">
+                                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                                <p className="text-sm">No score history available yet</p>
+                                <p className="text-xs mt-1">Browse some websites to start tracking</p>
+                            </div>
                         </div>
                     )}
                 </CardContent>
             </Card>
 
             {/* How UPS is Calculated */}
-            <Card className=" ">
+            <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                        <Info className="h-5 w-5" />
+                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                        <Info className="h-4 w-4 text-primary" />
                         How Your Privacy Score is Calculated
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <h3 className="font-semibold text-foreground mb-2">Starting Score</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Everyone starts with a perfect score of 100. Your score decreases when you enter personal information on websites.
-                        </p>
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-foreground mb-2">Score Decay</h3>
-                        <p className="text-sm text-muted-foreground">
-                            When you enter sensitive information (passwords, credit cards, emails, etc.), your score decreases based on:
-                        </p>
-                        <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
-                            <li><strong>Sensitivity Level:</strong> High (passwords, credit cards) cause more decay than Low (names, usernames)</li>
-                            <li><strong>Website Risk:</strong> Entering data on risky websites causes more decay</li>
-                            <li><strong>Frequency:</strong> Multiple entries compound the effect</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-foreground mb-2">Score Recovery</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Your score gradually recovers over time when you practice safe browsing habits. Recovery is automatic and happens daily.
-                        </p>
+                <CardContent>
+                    <div className="space-y-4">
+                        <div className="flex gap-4">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                                1
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-foreground">Starting Score</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Everyone starts with a perfect score of 100. Your score decreases when you enter personal information on websites.
+                                </p>
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="flex gap-4">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                                2
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-foreground">Score Decay</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    When you enter sensitive information, your score decreases based on:
+                                </p>
+                                <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1 ml-2">
+                                    <li><strong>Sensitivity Level:</strong> High (passwords, credit cards) cause more decay</li>
+                                    <li><strong>Website Risk:</strong> Entering data on risky websites causes more decay</li>
+                                    <li><strong>Frequency:</strong> Multiple entries compound the effect</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="flex gap-4">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                                3
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-foreground">Score Recovery</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Your score gradually recovers over time when you practice safe browsing habits. Recovery is automatic and happens daily.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

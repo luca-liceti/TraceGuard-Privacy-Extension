@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Target,
   ShieldCheck,
+  Link as LinkIcon,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
@@ -51,9 +52,9 @@ const menuData: MenuSection[] = [
     label: "Overview",
     items: [
       {
-        id: "dashboard",
-        label: "Dashboard",
-        href: "/dashboard",
+        id: "overview",
+        label: "Overview",
+        href: "/overview",
         icon: Home,
       },
     ],
@@ -103,6 +104,13 @@ const menuData: MenuSection[] = [
         label: "Whitelist/Blacklist",
         href: "/whitelist-blacklist",
         icon: Database,
+      },
+      {
+        id: "integrations",
+        label: "Integrations",
+        href: "/integrations",
+        icon: LinkIcon,
+        isNew: true,
       },
     ],
   },

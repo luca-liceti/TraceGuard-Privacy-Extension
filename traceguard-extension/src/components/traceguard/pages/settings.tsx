@@ -1,61 +1,120 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { toast } from 'sonner'
-import { Bell, Database, Shield, Save, RotateCcw, Trash2, AlertTriangle, Monitor, Rocket, Palette, Menu, ChevronRight } from "lucide-react"
+import {
+    Bell,
+    Database,
+    Shield,
+    Save,
+    RotateCcw,
+    Trash2,
+    AlertTriangle,
+    Palette,
+    HardDrive,
+    Info,
+} from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTheme } from "@/components/theme-provider"
-import { cn } from "@/lib/utils"
 
-type SettingsSection =
-    | 'display'
-    | 'appearance'
-    | 'notifications'
-    | 'privacy'
-    | 'data-retention'
-    | 'clear-data'
-    | 'about'
+// Setting item component for consistent styling
+function SettingItem({
+    label,
+    description,
+    children
+}: {
+    label: string
+    description?: string
+    children: React.ReactNode
+}) {
+    return (
+        <div className="flex items-center justify-between py-4">
+            <div className="space-y-0.5 flex-1 mr-4">
+                <Label className="text-sm font-medium">{label}</Label>
+                {description && (
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                )}
+            </div>
+            <div className="flex-shrink-0">
+                {children}
+            </div>
+        </div>
+    )
+}
 
-const menuItems: { id: SettingsSection; label: string; icon: React.ElementType; description: string }[] = [
-    { id: 'display', label: 'Display Mode', icon: Monitor, description: 'Popup or sidebar' },
-    { id: 'appearance', label: 'Appearance', icon: Palette, description: 'Theme settings' },
-    { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Alert preferences' },
-    { id: 'privacy', label: 'Privacy Protection', icon: Shield, description: 'Detection & blocking' },
-    { id: 'data-retention', label: 'Data Retention', icon: Database, description: 'Storage settings' },
-    { id: 'clear-data', label: 'Clear Data', icon: Trash2, description: 'Manage data' },
-    { id: 'about', label: 'About', icon: Rocket, description: 'Extension info' },
-]
+// Slider component for consistency
+function SettingSlider({
+    label,
+    description,
+    value,
+    min,
+    max,
+    step,
+    unit,
+    onChange,
+}: {
+    label: string
+    description: string
+    value: number
+    min: number
+    max: number
+    step: number
+    unit: string
+    onChange: (value: number) => void
+}) {
+    return (
+        <div className="py-4">
+            <div className="flex items-center justify-between mb-3">
+                <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">{label}</Label>
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                </div>
+                <Badge variant="secondary" className="font-mono">
+                    {value} {unit}
+                </Badge>
+            </div>
+            <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                onChange={(e) => onChange(Number(e.target.value))}
+                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                <span>{min} {unit}</span>
+                <span>{max} {unit}</span>
+            </div>
+        </div>
+    )
+}
 
 export default function SettingsPage() {
     const state = useAppState()
     const settings = useSettings()
     const { setTheme: applyTheme } = useTheme()
+
     const [hasChanges, setHasChanges] = useState(false)
     const [storageInfo, setStorageInfo] = useState({ bytesInUse: 0, quota: 0 })
     const [manifestVersion, setManifestVersion] = useState("1.0.0")
     const [schemaVersion, setSchemaVersion] = useState(1)
-    const [activeSection, setActiveSection] = useState<SettingsSection>(() => {
-        // Persist active section across re-renders
-        const saved = sessionStorage.getItem('traceguard-settings-active-section')
-        return (saved as SettingsSection) || 'display'
-    })
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-
-    // Persist active section to sessionStorage
-    useEffect(() => {
-        sessionStorage.setItem('traceguard-settings-active-section', activeSection)
-    }, [activeSection])
+    const [activeTab, setActiveTab] = useState("appearance")
 
     // Local state for settings
     const [themeLocal, setThemeLocal] = useState(settings?.theme || "system")
     const [notificationLevel, setNotificationLevel] = useState(settings?.notificationLevel || "balanced")
     const [dataRetention, setDataRetention] = useState(settings?.dataRetention || 30)
-    const [wrsThreshold, setWrsThreshold] = useState(settings?.wrsThreshold || 50)
+    const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 50)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
     const [enableTrackerBlocking, setEnableTrackerBlocking] = useState(settings?.enableTrackerBlocking ?? false)
     const [displayMode, setDisplayMode] = useState(settings?.displayMode || "sidebar")
@@ -92,7 +151,7 @@ export default function SettingsPage() {
             setThemeLocal(settings.theme || "system")
             setNotificationLevel(settings.notificationLevel || "balanced")
             setDataRetention(settings.dataRetention || 30)
-            setWrsThreshold(settings.wrsThreshold || 50)
+            setWssThreshold(settings.wssThreshold || 50)
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
             setEnableTrackerBlocking(settings.enableTrackerBlocking ?? false)
             setDisplayMode(settings.displayMode || "sidebar")
@@ -111,7 +170,7 @@ export default function SettingsPage() {
             theme: themeLocal,
             notificationLevel,
             dataRetention,
-            wrsThreshold,
+            wssThreshold,
             enablePIIDetection,
             enableTrackerBlocking,
             displayMode,
@@ -133,35 +192,42 @@ export default function SettingsPage() {
     }
 
     const resetSettings = async () => {
-        const defaultSettings = {
+        const defaultPreferences = {
             theme: "system" as const,
             notificationLevel: "balanced" as const,
             dataRetention: 30,
-            wrsThreshold: 50,
+            wssThreshold: 50,
             enablePIIDetection: true,
             enableTrackerBlocking: false,
             displayMode: "sidebar" as const,
         }
 
-        setThemeLocal(defaultSettings.theme)
-        applyTheme(defaultSettings.theme)
-        setNotificationLevel(defaultSettings.notificationLevel)
-        setDataRetention(defaultSettings.dataRetention)
-        setWrsThreshold(defaultSettings.wrsThreshold)
-        setEnablePIIDetection(defaultSettings.enablePIIDetection)
-        setEnableTrackerBlocking(defaultSettings.enableTrackerBlocking)
-        setDisplayMode(defaultSettings.displayMode)
+        // Apply defaults to local state
+        setThemeLocal(defaultPreferences.theme)
+        applyTheme(defaultPreferences.theme)
+        setNotificationLevel(defaultPreferences.notificationLevel)
+        setDataRetention(defaultPreferences.dataRetention)
+        setWssThreshold(defaultPreferences.wssThreshold)
+        setEnablePIIDetection(defaultPreferences.enablePIIDetection)
+        setEnableTrackerBlocking(defaultPreferences.enableTrackerBlocking)
+        setDisplayMode(defaultPreferences.displayMode)
 
-        await chrome.storage.local.set({ settings: defaultSettings })
+        // Merge defaults with existing settings to preserve other data (whitelist, blacklist, etc.)
+        const newSettings = {
+            ...settings,
+            ...defaultPreferences
+        }
+
+        await chrome.storage.local.set({ settings: newSettings })
 
         chrome.runtime.sendMessage({
             type: 'SETTINGS_CHANGED',
-            settings: defaultSettings
+            settings: newSettings
         })
 
         setHasChanges(false)
         toast.info('Settings Reset', {
-            description: 'All settings have been restored to default values.',
+            description: 'Preferences restored to default values.',
             duration: 3000
         })
     }
@@ -212,496 +278,385 @@ export default function SettingsPage() {
         setTimeout(() => window.location.reload(), 2000)
     }
 
-    const handleMenuItemClick = (sectionId: SettingsSection) => {
-        setActiveSection(sectionId)
-        setIsMobileMenuOpen(false)
-    }
+    const storagePercentage = (storageInfo.bytesInUse / storageInfo.quota) * 100
 
-    const renderContent = () => {
-        switch (activeSection) {
-            case 'display':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                <Monitor className="h-5 w-5" />
-                                Display Mode
-                            </CardTitle>
-                            <CardDescription>
-                                Choose how TraceGuard opens when you click the extension icon
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="display-mode">Extension Display</Label>
-                                <Select
-                                    value={displayMode}
-                                    onValueChange={(value) => {
-                                        setDisplayMode(value as 'popup' | 'sidebar')
-                                        handleChange()
-                                        toast.info('Display Mode Changed', {
-                                            description: `Extension will now open in ${value === 'popup' ? 'popup window' : 'sidebar'} mode.`,
-                                            duration: 2500
-                                        })
-                                    }}
-                                >
-                                    <SelectTrigger id="display-mode">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="popup">Popup - Opens in a small window</SelectItem>
-                                        <SelectItem value="sidebar">Sidebar - Opens in the browser sidebar</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <p className="text-sm text-muted-foreground">
-                                    {displayMode === "popup" && "The extension will open as a popup window when you click the icon"}
-                                    {displayMode === "sidebar" && "The extension will open in the browser's sidebar for a persistent view"}
-                                </p>
+    return (
+        <div className="space-y-6 w-full max-w-3xl">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+                <p className="text-muted-foreground mt-2">
+                    Configure TraceGuard preferences and manage your data
+                </p>
+            </div>
+
+            {/* Save Changes Bar - At Top */}
+            {hasChanges && (
+                <Card className="border-primary/50 bg-background/95 backdrop-blur shadow-lg">
+                    <CardContent className="py-3 px-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm">
+                                <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+                                <span className="text-muted-foreground">You have unsaved changes</span>
                             </div>
-                        </CardContent>
-                    </Card>
-                )
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={resetSettings}
+                                >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reset
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    onClick={saveSettings}
+                                >
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
-            case 'appearance':
-                return (
+            {/* Horizontal Tab Menu */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 rounded-lg">
+                    <TabsTrigger
+                        value="appearance"
+                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        <Palette className="h-4 w-4" />
+                        Appearance
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="privacy"
+                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        <Shield className="h-4 w-4" />
+                        Privacy
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="notifications"
+                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        <Bell className="h-4 w-4" />
+                        Notifications
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="data"
+                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        <Database className="h-4 w-4" />
+                        Data
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="about"
+                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        <Info className="h-4 w-4" />
+                        About
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* Appearance Tab */}
+                <TabsContent value="appearance" className="mt-6 space-y-4">
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                <Palette className="h-5 w-5" />
-                                Appearance
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                Appearance Settings
                             </CardTitle>
                             <CardDescription>
-                                Choose your preferred color theme
+                                Customize how TraceGuard looks and opens
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="theme">Theme</Label>
+                        <CardContent className="space-y-1">
+                            <SettingItem
+                                label="Theme"
+                                description="Choose between light, dark, or system theme"
+                            >
                                 <Select
                                     value={themeLocal}
                                     onValueChange={(value) => {
                                         setThemeLocal(value as 'light' | 'dark' | 'system')
                                         handleChange()
-                                        const themeLabels = { system: 'Device', light: 'Light', dark: 'Dark' }
-                                        toast.info('Theme Changed', {
-                                            description: `Theme set to ${themeLabels[value as keyof typeof themeLabels]} mode.`,
-                                            duration: 2500
-                                        })
                                     }}
                                 >
-                                    <SelectTrigger id="theme">
+                                    <SelectTrigger className="w-[150px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="system">Device - Follow system theme</SelectItem>
-                                        <SelectItem value="light">Light - Always use light mode</SelectItem>
-                                        <SelectItem value="dark">Dark - Always use dark mode</SelectItem>
+                                        <SelectItem value="system">System</SelectItem>
+                                        <SelectItem value="light">Light</SelectItem>
+                                        <SelectItem value="dark">Dark</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <p className="text-sm text-muted-foreground">
-                                    {themeLocal === "system" && "The extension will automatically match your device's theme"}
-                                    {themeLocal === "light" && "The extension will always use light mode"}
-                                    {themeLocal === "dark" && "The extension will always use dark mode"}
-                                </p>
-                            </div>
+                            </SettingItem>
+
+                            <Separator />
+
+                            <SettingItem
+                                label="Display Mode"
+                                description="How TraceGuard opens when you click the extension icon"
+                            >
+                                <Select
+                                    value={displayMode}
+                                    onValueChange={(value) => {
+                                        setDisplayMode(value as 'popup' | 'sidebar')
+                                        handleChange()
+                                    }}
+                                >
+                                    <SelectTrigger className="w-[150px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="sidebar">Side Panel</SelectItem>
+                                        <SelectItem value="popup">Popup</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </SettingItem>
                         </CardContent>
                     </Card>
-                )
+                </TabsContent>
 
-            case 'notifications':
-                return (
+                {/* Privacy Tab */}
+                <TabsContent value="privacy" className="mt-6 space-y-4">
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                <Bell className="h-5 w-5" />
-                                Notifications
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                Privacy Protection
                             </CardTitle>
                             <CardDescription>
-                                Control when and how you receive alerts
+                                Configure privacy detection features and alerts
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="notification-level">Notification Level</Label>
+                        <CardContent className="space-y-1">
+                            <SettingItem
+                                label="PII Detection"
+                                description="Monitor when you enter personal information on websites"
+                            >
+                                <Switch
+                                    checked={enablePIIDetection}
+                                    onCheckedChange={(checked) => {
+                                        setEnablePIIDetection(checked)
+                                        handleChange()
+                                    }}
+                                />
+                            </SettingItem>
+
+                            <Separator />
+
+                            <SettingItem
+                                label="Tracker Blocking"
+                                description="Automatically block known tracking scripts"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">
+                                        Coming Soon
+                                    </Badge>
+                                    <Switch
+                                        checked={enableTrackerBlocking}
+                                        disabled={true}
+                                    />
+                                </div>
+                            </SettingItem>
+
+                            <Separator />
+
+                            <SettingSlider
+                                label="Safety Threshold"
+                                description="Get alerts when a site's safety score is below this value"
+                                value={wssThreshold}
+                                min={0}
+                                max={100}
+                                step={5}
+                                unit=""
+                                onChange={(value) => {
+                                    setWssThreshold(value)
+                                    handleChange()
+                                }}
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Notifications Tab */}
+                <TabsContent value="notifications" className="mt-6 space-y-4">
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                Notification Settings
+                            </CardTitle>
+                            <CardDescription>
+                                Control when and how you receive security alerts
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <SettingItem
+                                label="Alert Level"
+                                description={
+                                    notificationLevel === "silent"
+                                        ? "You won't receive any notifications"
+                                        : notificationLevel === "balanced"
+                                            ? "Notified for high-risk sites and critical PII events"
+                                            : "Notified for all site changes and tracker detections"
+                                }
+                            >
                                 <Select
                                     value={notificationLevel}
                                     onValueChange={(value) => {
                                         setNotificationLevel(value as 'silent' | 'balanced' | 'aggressive')
                                         handleChange()
-                                        const levelLabels = { silent: 'Silent', balanced: 'Balanced', aggressive: 'Aggressive' }
-                                        toast.info('Notification Level Changed', {
-                                            description: `Notifications set to ${levelLabels[value as keyof typeof levelLabels]} mode.`,
-                                            duration: 2500
-                                        })
                                     }}
                                 >
-                                    <SelectTrigger id="notification-level">
+                                    <SelectTrigger className="w-[150px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="silent">Silent - No notifications</SelectItem>
-                                        <SelectItem value="balanced">Balanced - Important alerts only</SelectItem>
-                                        <SelectItem value="aggressive">Aggressive - All security events</SelectItem>
+                                        <SelectItem value="silent">Silent</SelectItem>
+                                        <SelectItem value="balanced">Balanced</SelectItem>
+                                        <SelectItem value="aggressive">Aggressive</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <p className="text-sm text-muted-foreground">
-                                    {notificationLevel === "silent" && "You won't receive any notifications"}
-                                    {notificationLevel === "balanced" && "You'll be notified of high-risk sites and critical PII events"}
-                                    {notificationLevel === "aggressive" && "You'll be notified of all privacy and security events"}
-                                </p>
-                            </div>
+                            </SettingItem>
                         </CardContent>
                     </Card>
-                )
+                </TabsContent>
 
-            case 'privacy':
-                return (
+                {/* Data Tab */}
+                <TabsContent value="data" className="mt-6 space-y-4">
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                <Shield className="h-5 w-5" />
-                                Privacy Protection
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                Data Management
                             </CardTitle>
                             <CardDescription>
-                                Configure privacy detection and protection features
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="pii-detection">PII Detection</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Monitor when you enter personal information on websites
-                                    </p>
-                                </div>
-                                <Switch
-                                    id="pii-detection"
-                                    checked={enablePIIDetection}
-                                    onCheckedChange={(checked) => {
-                                        setEnablePIIDetection(checked)
-                                        handleChange()
-                                        toast.info('PII Detection ' + (checked ? 'Enabled' : 'Disabled'), {
-                                            description: checked ? 'Personal information monitoring is now active.' : 'Personal information monitoring is now disabled.',
-                                            duration: 2500
-                                        })
-                                    }}
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-between opacity-50">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="tracker-blocking">Tracker Blocking (Coming Soon)</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Automatically block known tracking scripts
-                                    </p>
-                                </div>
-                                <Switch
-                                    id="tracker-blocking"
-                                    checked={enableTrackerBlocking}
-                                    disabled={true}
-                                    onCheckedChange={(checked) => {
-                                        setEnableTrackerBlocking(checked)
-                                        handleChange()
-                                        toast.info('Tracker Blocking ' + (checked ? 'Enabled' : 'Disabled'), {
-                                            description: checked ? 'Tracker blocking is now active.' : 'Tracker blocking is now disabled.',
-                                            duration: 2500
-                                        })
-                                    }}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="wrs-threshold">
-                                    WRS Alert Threshold: {wrsThreshold}
-                                </Label>
-                                <input
-                                    type="range"
-                                    id="wrs-threshold"
-                                    min={0}
-                                    max={100}
-                                    step={5}
-                                    value={wrsThreshold}
-                                    onChange={(e) => {
-                                        const newValue = Number(e.target.value)
-                                        setWrsThreshold(newValue)
-                                        handleChange()
-                                        toast.info('WRS Threshold Updated', {
-                                            description: `Alert threshold set to ${newValue}. You'll be warned about sites above this score.`,
-                                            duration: 2500
-                                        })
-                                    }}
-                                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                                />
-                                <p className="text-sm text-muted-foreground">
-                                    You'll be warned when visiting sites with WRS above {wrsThreshold}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )
-
-            case 'data-retention':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                <Database className="h-5 w-5" />
-                                Data Retention
-                            </CardTitle>
-                            <CardDescription>
-                                Control how long data is stored
+                                Manage how long your data is stored
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="data-retention">
-                                    Data Retention: {dataRetention} days
-                                </Label>
-                                <input
-                                    type="range"
-                                    id="data-retention"
-                                    min={7}
-                                    max={90}
-                                    step={1}
-                                    value={dataRetention}
-                                    onChange={(e) => {
-                                        const newValue = Number(e.target.value)
-                                        setDataRetention(newValue)
-                                        handleChange()
-                                        toast.info('Data Retention Updated', {
-                                            description: `Data will be kept for ${newValue} days before automatic deletion.`,
-                                            duration: 2500
-                                        })
-                                    }}
-                                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                                />
-                                <p className="text-sm text-muted-foreground">
-                                    Activity logs and score history older than {dataRetention} days will be automatically deleted
-                                </p>
+                            <SettingSlider
+                                label="Data Retention"
+                                description="Old activity logs will be automatically deleted after this period"
+                                value={dataRetention}
+                                min={7}
+                                max={90}
+                                step={1}
+                                unit="days"
+                                onChange={(value) => {
+                                    setDataRetention(value)
+                                    handleChange()
+                                }}
+                            />
+
+                            <Separator />
+
+                            {/* Storage Usage */}
+                            <div className="py-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <HardDrive className="h-4 w-4 text-muted-foreground" />
+                                        <Label className="text-sm font-medium">Storage Used</Label>
+                                    </div>
+                                    <span className="text-sm text-muted-foreground">
+                                        {(storageInfo.bytesInUse / 1024).toFixed(1)} KB of {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
+                                    </span>
+                                </div>
+                                <Progress value={storagePercentage} className="h-2" />
                             </div>
                         </CardContent>
                     </Card>
-                )
 
-            case 'clear-data':
-                return (
+                    {/* Clear Data Actions */}
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                <Trash2 className="h-5 w-5" />
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
                                 Clear Data
                             </CardTitle>
                             <CardDescription>
-                                Manage and clear extension data for testing or privacy
+                                Remove specific data from the extension
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-3">
-                                <Label className="text-sm font-medium">Quick Actions</Label>
-                                <div className="grid gap-3">
-                                    <Button
-                                        variant="outline"
-                                        onClick={clearActivityLogs}
-                                        className="w-full justify-start text-left h-auto py-3 px-4"
-                                    >
-                                        <div className="flex items-start gap-3 w-full">
-                                            <Trash2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                            <div className="flex-1">
-                                                <div className="font-medium">Clear Activity Logs</div>
-                                                <div className="text-xs text-muted-foreground mt-0.5">
-                                                    Remove all logged events and PII detections
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Button>
-
-                                    <Button
-                                        variant="outline"
-                                        onClick={resetPrivacyScore}
-                                        className="w-full justify-start text-left h-auto py-3 px-4"
-                                    >
-                                        <div className="flex items-start gap-3 w-full">
-                                            <RotateCcw className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                            <div className="flex-1">
-                                                <div className="font-medium">Reset Privacy Score</div>
-                                                <div className="text-xs text-muted-foreground mt-0.5">
-                                                    Reset UPS to 100 and clear browsing history
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 pt-3 border-t">
-                                <Label className="text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2">
-                                    <AlertTriangle className="h-4 w-4" />
-                                    Danger Zone
-                                </Label>
+                        <CardContent>
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <Button
                                     variant="outline"
-                                    onClick={clearAllData}
-                                    className="w-full justify-start text-left h-auto py-3 px-4 border-red-500 text-red-500 hover:bg-red-500/10"
+                                    onClick={clearActivityLogs}
+                                    className="flex-1 justify-start"
                                 >
-                                    <div className="flex items-start gap-3 w-full">
-                                        <Trash2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                        <div className="flex-1">
-                                            <div className="font-medium">Clear All Data</div>
-                                            <div className="text-xs opacity-90 mt-0.5">
-                                                Delete everything including settings (cannot be undone)
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Clear Activity Logs
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={resetPrivacyScore}
+                                    className="flex-1 justify-start"
+                                >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reset Privacy Score
                                 </Button>
                             </div>
                         </CardContent>
                     </Card>
-                )
 
-            case 'about':
-                return (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                <Rocket className="h-5 w-5" />
-                                Extension Information
+                    {/* Danger Zone */}
+                    <Card className="border-destructive/50">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-destructive">
+                                <AlertTriangle className="h-4 w-4" />
+                                Danger Zone
                             </CardTitle>
+                            <CardDescription>
+                                Irreversible actions that will delete your data
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Version:</span>
-                                <span className="font-medium">{manifestVersion}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Schema Version:</span>
-                                <span className="font-medium">{schemaVersion}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Storage Used:</span>
-                                <span className="font-medium">
-                                    {(storageInfo.bytesInUse / 1024).toFixed(2)} KB / {(storageInfo.quota / 1024 / 1024).toFixed(1)} MB
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Storage Usage:</span>
-                                <span className="font-medium">
-                                    {((storageInfo.bytesInUse / storageInfo.quota) * 100).toFixed(1)}%
-                                </span>
-                            </div>
+                        <CardContent>
+                            <Button
+                                variant="outline"
+                                onClick={clearAllData}
+                                className="w-full sm:w-auto border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete All Data & Reset Extension
+                            </Button>
                         </CardContent>
                     </Card>
-                )
+                </TabsContent>
 
-            default:
-                return null
-        }
-    }
-
-    return (
-        <div className="flex h-full w-full">
-            {/* Mobile Menu Button */}
-            <div className="lg:hidden fixed top-4 left-4 z-50">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="flex items-center gap-2"
-                >
-                    <Menu className="h-4 w-4" />
-                    Settings Menu
-                </Button>
-            </div>
-
-            {/* Sidebar */}
-            <div className={cn(
-                "fixed lg:relative inset-y-0 left-0 z-40 w-64 bg-sidebar border-r transition-transform duration-300 lg:translate-x-0",
-                isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-            )}>
-                <div className="flex flex-col h-full">
-                    {/* Sidebar Header */}
-                    <div className="p-4 border-b">
-                        <h2 className="text-lg font-semibold">Settings</h2>
-                        <p className="text-sm text-muted-foreground">Configure preferences</p>
-                    </div>
-
-                    {/* Menu Items */}
-                    <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-                        {menuItems.map((item) => {
-                            const Icon = item.icon
-                            const isActive = activeSection === item.id
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => handleMenuItemClick(item.id)}
-                                    className={cn(
-                                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                                        isActive
-                                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                            : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
-                                    )}
-                                >
-                                    <Icon className="h-4 w-4 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-sm">{item.label}</div>
-                                        <div className="text-xs text-muted-foreground truncate">{item.description}</div>
-                                    </div>
-                                    {isActive && <ChevronRight className="h-4 w-4 flex-shrink-0" />}
-                                </button>
-                            )
-                        })}
-                    </nav>
-                </div>
-            </div>
-
-            {/* Overlay for mobile */}
-            {isMobileMenuOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                />
-            )}
-
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-0 lg:ml-0">
-                {/* Sticky Save/Reset Bar */}
-                <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg hidden sm:block">
-                            {menuItems.find(item => item.id === activeSection)?.label}
-                        </h3>
-                        {hasChanges && (
-                            <span className="text-xs bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 px-2 py-0.5 rounded">
-                                Unsaved changes
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={resetSettings}
-                            className="flex items-center gap-2"
-                        >
-                            <RotateCcw className="h-4 w-4" />
-                            <span className="hidden sm:inline">Reset</span>
-                        </Button>
-                        <Button
-                            size="sm"
-                            onClick={saveSettings}
-                            disabled={!hasChanges}
-                            className="flex items-center gap-2"
-                        >
-                            <Save className="h-4 w-4" />
-                            <span className="hidden sm:inline">Save Changes</span>
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Content Area */}
-                <div className="flex-1 overflow-y-auto p-6 lg:pt-6 pt-16">
-                    {renderContent()}
-                </div>
-            </div>
+                {/* About Tab */}
+                <TabsContent value="about" className="mt-6 space-y-4">
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold">
+                                About TraceGuard
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Version</p>
+                                    <p className="font-mono font-medium">{manifestVersion}</p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Schema</p>
+                                    <p className="font-mono font-medium">v{schemaVersion}</p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Storage</p>
+                                    <p className="font-mono font-medium">{(storageInfo.bytesInUse / 1024).toFixed(1)} KB</p>
+                                </div>
+                            </div>
+                            <Separator className="my-4" />
+                            <p className="text-sm text-muted-foreground">
+                                TraceGuard is a privacy-first extension designed to protect your data while you browse.
+                                It runs entirely on your device and does not send data to external servers.
+                            </p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }

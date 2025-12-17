@@ -156,5 +156,97 @@ export const storage = {
     getAllExposure: async (): Promise<import('./types').CrossSiteExposure> => {
         const result = await chrome.storage.local.get('crossSiteExposure');
         return (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
+    },
+
+    // ============================================
+    // Notification Methods
+    // ============================================
+
+    /**
+     * Add a new notification event
+     */
+    addNotification: async (notification: Omit<import('./types').NotificationEvent, 'id' | 'timestamp' | 'read'>): Promise<void> => {
+        const result = await chrome.storage.local.get('notifications');
+        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+
+        const newNotification: import('./types').NotificationEvent = {
+            ...notification,
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: Date.now(),
+            read: false
+        };
+
+        // Add to beginning (most recent first)
+        notifications.unshift(newNotification);
+
+        // Keep max 100 notifications
+        const trimmedNotifications = notifications.slice(0, 100);
+
+        await chrome.storage.local.set({ notifications: trimmedNotifications });
+        console.log(`[Notification] Added: ${notification.title}`);
+    },
+
+    /**
+     * Get all notifications, optionally limited
+     */
+    getNotifications: async (limit?: number): Promise<import('./types').NotificationEvent[]> => {
+        const result = await chrome.storage.local.get('notifications');
+        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+        return limit ? notifications.slice(0, limit) : notifications;
+    },
+
+    /**
+     * Get count of unread notifications
+     */
+    getUnreadCount: async (): Promise<number> => {
+        const result = await chrome.storage.local.get('notifications');
+        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+        return notifications.filter(n => !n.read).length;
+    },
+
+    /**
+     * Mark a notification as read
+     */
+    markAsRead: async (id: string): Promise<void> => {
+        const result = await chrome.storage.local.get('notifications');
+        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+
+        const updatedNotifications = notifications.map(n =>
+            n.id === id ? { ...n, read: true } : n
+        );
+
+        await chrome.storage.local.set({ notifications: updatedNotifications });
+    },
+
+    /**
+     * Mark all notifications as read
+     */
+    markAllAsRead: async (): Promise<void> => {
+        const result = await chrome.storage.local.get('notifications');
+        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+
+        const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
+
+        await chrome.storage.local.set({ notifications: updatedNotifications });
+    },
+
+    /**
+     * Clear all notifications
+     */
+    clearNotifications: async (): Promise<void> => {
+        await chrome.storage.local.set({ notifications: [] });
+    },
+
+    /**
+     * Remove a specific notification
+     */
+    removeNotification: async (id: string): Promise<void> => {
+        const result = await chrome.storage.local.get('notifications');
+        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+
+        const filteredNotifications = notifications.filter(n => n.id !== id);
+
+        await chrome.storage.local.set({ notifications: filteredNotifications });
     }
 };
+

@@ -2,13 +2,15 @@
 
 import { useState, useMemo } from "react"
 import { useDetectorLogs } from "@/lib/useStorage"
-import { Download, ChevronDown, ChevronUp, Globe } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Download, ChevronDown, ChevronUp, Globe, Search, Calendar } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DetectorType } from "@/lib/types"
+import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface GroupedSiteVisit {
     domain: string
@@ -21,6 +23,28 @@ interface GroupedSiteVisit {
             details: any
         }
     }
+}
+
+// Stat card component
+function StatCard({
+    title,
+    value,
+    valueColor,
+}: {
+    title: string
+    value: string | number
+    valueColor?: string
+}) {
+    return (
+        <Card>
+            <CardContent className="p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {title}
+                </p>
+                <p className={cn("text-2xl font-bold mt-1", valueColor)}>{value}</p>
+            </CardContent>
+        </Card>
+    )
 }
 
 export default function ActivityLogsPage() {
@@ -60,13 +84,14 @@ export default function ActivityLogsPage() {
         }
 
         // Calculate WRS for each group (weighted average)
-        const weights = {
+        const weights: Record<string, number> = {
             protocol: 0.25,
             reputation: 0.25,
             tracking: 0.20,
             cookies: 0.15,
             inputs: 0.10,
-            policy: 0.05
+            policy: 0.05,
+            permissions: 0
         }
 
         for (const group of groups.values()) {
@@ -126,24 +151,16 @@ export default function ActivityLogsPage() {
         return "low"
     }
 
-    const getRiskBadge = (wrs: number) => {
-        if (wrs >= 61) {
-            return <Badge variant="outline" className="ml-2 border-red-500 text-red-500">High Risk</Badge>
-        }
-        if (wrs >= 31) {
-            return <Badge variant="outline" className="ml-2 border-yellow-500 text-yellow-500">Medium Risk</Badge>
-        }
-        return <Badge variant="outline" className="ml-2 border-green-500 text-green-500">Low Risk</Badge>
+    const getRiskInfo = (wrs: number) => {
+        if (wrs >= 61) return { level: "High", color: "text-red-500", border: "border-red-500" }
+        if (wrs >= 31) return { level: "Medium", color: "text-yellow-500", border: "border-yellow-500" }
+        return { level: "Low", color: "text-green-500", border: "border-green-500" }
     }
 
-    const getScoreBadge = (score: number) => {
-        if (score >= 61) {
-            return <Badge variant="outline" className="border-red-500 text-red-500">{score}</Badge>
-        }
-        if (score >= 31) {
-            return <Badge variant="outline" className="border-yellow-500 text-yellow-500">{score}</Badge>
-        }
-        return <Badge variant="outline" className="border-green-500 text-green-500">{score}</Badge>
+    const getScoreColor = (score: number) => {
+        if (score >= 61) return "text-red-500"
+        if (score >= 31) return "text-yellow-500"
+        return "text-green-500"
     }
 
     const toggleExpanded = (key: string) => {
@@ -162,18 +179,31 @@ export default function ActivityLogsPage() {
         const url = URL.createObjectURL(dataBlob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `traceguard-site-visits-${new Date().toISOString().split('T')[0]}.json`
+        link.download = `traceguard-activity-${new Date().toISOString().split('T')[0]}.json`
         link.click()
         URL.revokeObjectURL(url)
+        toast.success("Export Complete", {
+            description: "Activity logs have been downloaded."
+        })
     }
 
     // Define detector order for consistent display
     const detectorOrder: DetectorType[] = ['protocol', 'reputation', 'tracking', 'cookies', 'inputs', 'policy']
 
+    const detectorLabels: Record<DetectorType, string> = {
+        protocol: 'Protocol',
+        reputation: 'Reputation',
+        tracking: 'Tracking',
+        cookies: 'Cookies',
+        inputs: 'Inputs',
+        policy: 'Policy',
+        permissions: 'Permissions'
+    }
+
     return (
         <div className="space-y-6 w-full">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground">
                         Activity Logs
@@ -185,109 +215,79 @@ export default function ActivityLogsPage() {
                 <Button
                     onClick={exportLogs}
                     variant="outline"
-                    className="flex items-center gap-2"
                     disabled={filteredVisits.length === 0}
+                    className="flex items-center gap-2"
                 >
                     <Download className="h-4 w-4" />
-                    Export Logs
+                    Export
                 </Button>
             </div>
 
             {/* Statistics */}
             <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                            Total Visits
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-500">{totalVisits}</div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                            High Risk
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-500">{highRiskVisits}</div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                            Medium Risk
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-yellow-500">{mediumRiskVisits}</div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                            Low Risk
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-500">{lowRiskVisits}</div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                            Unique Sites
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-purple-500">{uniqueSites}</div>
-                    </CardContent>
-                </Card>
+                <StatCard
+                    title="Total"
+                    value={totalVisits}
+                    valueColor="text-blue-500"
+                />
+                <StatCard
+                    title="High Risk"
+                    value={highRiskVisits}
+                    valueColor="text-red-500"
+                />
+                <StatCard
+                    title="Medium"
+                    value={mediumRiskVisits}
+                    valueColor="text-yellow-500"
+                />
+                <StatCard
+                    title="Low Risk"
+                    value={lowRiskVisits}
+                    valueColor="text-green-500"
+                />
+                <StatCard
+                    title="Unique Sites"
+                    value={uniqueSites}
+                    valueColor="text-purple-500"
+                />
             </div>
 
             {/* Filters */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-foreground">
-                        Filter Logs
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-                        <Input
-                            type="text"
-                            placeholder="Search domain..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                <CardContent className="p-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="text"
+                                placeholder="Search domains..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
 
                         <Select value={filterRisk} onValueChange={setFilterRisk}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Filter by risk" />
+                            <SelectTrigger className="w-full sm:w-[150px]">
+                                <SelectValue placeholder="Risk level" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Risk Levels</SelectItem>
-                                <SelectItem value="high">High Risk Only</SelectItem>
-                                <SelectItem value="medium">Medium Risk Only</SelectItem>
-                                <SelectItem value="low">Low Risk Only</SelectItem>
+                                <SelectItem value="all">All Risks</SelectItem>
+                                <SelectItem value="high">High Risk</SelectItem>
+                                <SelectItem value="medium">Medium</SelectItem>
+                                <SelectItem value="low">Low Risk</SelectItem>
                             </SelectContent>
                         </Select>
 
                         <Select value={filterDays} onValueChange={setFilterDays}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Filter by date" />
+                            <SelectTrigger className="w-full sm:w-[150px]">
+                                <SelectValue placeholder="Time range" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Time</SelectItem>
-                                <SelectItem value="1">Last 24 Hours</SelectItem>
-                                <SelectItem value="7">Last 7 Days</SelectItem>
-                                <SelectItem value="30">Last 30 Days</SelectItem>
+                                <SelectItem value="1">Last 24h</SelectItem>
+                                <SelectItem value="7">Last 7 days</SelectItem>
+                                <SelectItem value="30">Last 30 days</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -296,13 +296,16 @@ export default function ActivityLogsPage() {
 
             {/* Site Visits List */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-foreground">
-                        Site Visits
-                    </CardTitle>
-                    <CardDescription>
-                        Showing {filteredVisits.length} of {totalVisits} visits
-                    </CardDescription>
+                <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-primary" />
+                            Site Visits
+                        </CardTitle>
+                        <Badge variant="secondary">
+                            {filteredVisits.length} of {totalVisits}
+                        </Badge>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {filteredVisits.length > 0 ? (
@@ -310,84 +313,101 @@ export default function ActivityLogsPage() {
                             {filteredVisits.map((visit) => {
                                 const visitKey = `${visit.domain}-${visit.timestamp}`
                                 const isExpanded = expandedSites.has(visitKey)
+                                const riskInfo = getRiskInfo(visit.wrs)
+                                const hasTrackingDetails = visit.detectors.tracking?.details?.knownTrackers?.length > 0
 
                                 return (
                                     <div
                                         key={visitKey}
-                                        className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                                        className="p-4 rounded-lg border hover:bg-muted/30 transition-colors"
                                     >
                                         {/* Header */}
                                         <div className="flex items-start justify-between mb-3">
-                                            <div className="flex-1">
+                                            <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Globe className="h-4 w-4 text-muted-foreground" />
-                                                    <h3 className="font-semibold text-foreground">
+                                                    <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                    <h3 className="font-medium text-foreground truncate">
                                                         {visit.domain}
                                                     </h3>
-                                                    {getRiskBadge(visit.wrs)}
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn("flex-shrink-0", riskInfo.border, riskInfo.color)}
+                                                    >
+                                                        {riskInfo.level}
+                                                    </Badge>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">
-                                                    WRS: {visit.wrs} • {new Date(visit.timestamp).toLocaleString()}
+                                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <Calendar className="h-3 w-3" />
+                                                    {new Date(visit.timestamp).toLocaleString()}
                                                 </p>
+                                            </div>
+                                            <div className="text-right ml-4">
+                                                <span className={cn("text-xl font-bold", riskInfo.color)}>
+                                                    {visit.wrs}
+                                                </span>
+                                                <p className="text-xs text-muted-foreground">WRS</p>
                                             </div>
                                         </div>
 
-                                        {/* All Detectors - Same Format */}
-                                        <div className="space-y-1.5">
+                                        {/* Detector Scores Grid */}
+                                        <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                                             {detectorOrder.map((detector) => {
                                                 const data = visit.detectors[detector]
-                                                if (!data) return null
+                                                if (!data) return (
+                                                    <div key={detector} className="text-center p-2 rounded bg-muted/50">
+                                                        <div className="text-sm font-medium text-muted-foreground">—</div>
+                                                        <div className="text-xs text-muted-foreground capitalize">
+                                                            {detectorLabels[detector]}
+                                                        </div>
+                                                    </div>
+                                                )
 
                                                 return (
-                                                    <div key={detector} className="flex items-center justify-between text-sm py-1">
-                                                        <span className="text-foreground">
-                                                            <span className="capitalize text-muted-foreground font-medium min-w-[80px] inline-block">
-                                                                {detector}:
-                                                            </span>
-                                                            {' '}{data.message}
-                                                        </span>
-                                                        {getScoreBadge(data.score)}
+                                                    <div key={detector} className="text-center p-2 rounded bg-muted/50">
+                                                        <div className={cn("text-sm font-bold", getScoreColor(data.score))}>
+                                                            {data.score}
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground capitalize">
+                                                            {detectorLabels[detector]}
+                                                        </div>
                                                     </div>
                                                 )
                                             })}
                                         </div>
 
-                                        {/* Expand/Collapse for details (optional - can show tracker names, etc.) */}
-                                        {visit.detectors.tracking?.details?.knownTrackers?.length > 0 && (
+                                        {/* Expand/Collapse for details */}
+                                        {hasTrackingDetails && (
                                             <>
                                                 {isExpanded && (
-                                                    <div className="mt-3 pt-3 border-t">
-                                                        <p className="text-xs font-medium text-muted-foreground mb-2">Tracking Details:</p>
-                                                        <div className="text-xs text-muted-foreground space-y-1">
-                                                            {visit.detectors.tracking?.details?.knownTrackers?.length > 0 && (
-                                                                <div>
-                                                                    <span className="font-medium">Known trackers:</span>{' '}
-                                                                    {visit.detectors.tracking?.details?.knownTrackers?.join(', ')}
-                                                                </div>
-                                                            )}
-                                                            {visit.detectors.tracking?.details?.suspiciousTrackers?.length > 0 && (
-                                                                <div>
-                                                                    <span className="font-medium">Suspicious:</span>{' '}
-                                                                    {visit.detectors.tracking?.details?.suspiciousTrackers?.join(', ')}
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                    <div className="mt-3 pt-3 border-t text-xs text-muted-foreground space-y-1">
+                                                        {visit.detectors.tracking?.details?.knownTrackers?.length > 0 && (
+                                                            <div>
+                                                                <span className="font-medium">Known trackers: </span>
+                                                                {visit.detectors.tracking?.details?.knownTrackers?.join(', ')}
+                                                            </div>
+                                                        )}
+                                                        {visit.detectors.tracking?.details?.suspiciousTrackers?.length > 0 && (
+                                                            <div>
+                                                                <span className="font-medium">Suspicious: </span>
+                                                                {visit.detectors.tracking?.details?.suspiciousTrackers?.join(', ')}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => toggleExpanded(visitKey)}
-                                                    className="w-full mt-2"
+                                                    className="w-full mt-2 h-8"
                                                 >
                                                     {isExpanded ? (
                                                         <>
-                                                            <ChevronUp className="h-4 w-4 mr-2" />
+                                                            <ChevronUp className="h-4 w-4 mr-1" />
                                                             Hide details
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <ChevronDown className="h-4 w-4 mr-2" />
+                                                            <ChevronDown className="h-4 w-4 mr-1" />
                                                             Show tracker details
                                                         </>
                                                     )}
@@ -400,6 +420,7 @@ export default function ActivityLogsPage() {
                         </div>
                     ) : (
                         <div className="text-center py-12 text-muted-foreground">
+                            <Globe className="h-12 w-12 mx-auto mb-3 opacity-30" />
                             {searchQuery || filterRisk !== "all" || filterDays !== "all"
                                 ? "No visits match the selected filters"
                                 : "No site visits logged yet. Browse some websites to see activity."}
