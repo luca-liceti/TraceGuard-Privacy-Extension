@@ -260,31 +260,71 @@ export function detectCookies(): number {
             'Raw document.cookie length': document.cookie.length
         });
 
-        /**
-         * Weighted score calculation:
-         * - 0 weighted points = 100 (safe)
-         * - 1-5 weighted points = 80 (low risk) - e.g., 2-3 analytics cookies
-         * - 6-12 weighted points = 60 (medium risk) - e.g., 1 tracker + 2 analytics
-         * - 13-20 weighted points = 40 (high risk) - e.g., 2 trackers + analytics
-         * - >20 weighted points = 20 (very high risk) - e.g., multiple trackers
-         * 
-         * Examples:
-         * - 2 Google Analytics cookies (_ga, _gid) = 2x2 = 4 points → 80 (low risk)
-         * - 1 Facebook Pixel (_fbp) = 1x3 = 3 points → 80 (low risk)
-         * - 1 Facebook + 2 Analytics = 3 + 4 = 7 points → 60 (medium risk)
-         * - 2 Facebook + 2 DoubleClick = 6 + 6 = 12 points → 60 (medium risk)
-         * - 3 Facebook + 3 DoubleClick + 2 Analytics = 9 + 9 + 4 = 22 points → 20 (very high risk)
-         */
+        // Logarithmic score calculation (v3.0)
+        // Formula: max(0, 100 - K × log2(weightedScore + 1))
+        // K = 12 for cookies (slightly less sensitive than trackers)
+        //
+        // Examples:
+        // 0 weighted → 100
+        // 4 weighted (2 analytics) → 100 - 12×log2(5) ≈ 72
+        // 10 weighted → 100 - 12×log2(11) ≈ 58
+        // 20 weighted → 100 - 12×log2(21) ≈ 47
 
-        if (totalWeightedScore === 0) return 100;
-        if (totalWeightedScore <= 5) return 80;
-        if (totalWeightedScore <= 12) return 60;
-        if (totalWeightedScore <= 20) return 40;
-        return 20;
+        const K = 12;
+        const score = totalWeightedScore === 0
+            ? 100
+            : Math.max(0, Math.round(100 - (K * Math.log2(totalWeightedScore + 1))));
+
+        console.log(`[Cookie Detector] Logarithmic calculation: max(0, 100 - 12×log2(${totalWeightedScore}+1)) = ${score}`);
+
+        return score;
 
     } catch (error) {
         console.error('[Cookie Detector] Error detecting cookies:', error);
-        // Return neutral score on error
+        // Return safe score on error (assume no cookies detected)
         return 100;
+    }
+}
+
+/**
+ * Detailed cookie detection for sidepanel display
+ */
+export function detectCookiesDetailed(): {
+    score: number;
+    total: number;
+    tracking: number;
+    thirdParty: number;
+} {
+    try {
+        const cookies = parseCookies();
+
+        let totalWeightedScore = 0;
+        let crossSiteCount = 0;
+        let analyticsCount = 0;
+        let thirdPartyCount = 0;
+
+        for (const cookie of cookies) {
+            if (cookie.category !== 'first-party') {
+                totalWeightedScore += cookie.invasivenessWeight;
+                if (cookie.category === 'cross-site-tracker') crossSiteCount++;
+                else if (cookie.category === 'analytics') analyticsCount++;
+                else if (cookie.category === 'third-party') thirdPartyCount++;
+            }
+        }
+
+        const K = 12;
+        const score = totalWeightedScore === 0
+            ? 100
+            : Math.max(0, Math.round(100 - (K * Math.log2(totalWeightedScore + 1))));
+
+        return {
+            score,
+            total: cookies.length,
+            tracking: crossSiteCount + analyticsCount,
+            thirdParty: thirdPartyCount
+        };
+    } catch (error) {
+        console.error('[Cookie Detector] Error:', error);
+        return { score: 100, total: 0, tracking: 0, thirdParty: 0 };
     }
 }

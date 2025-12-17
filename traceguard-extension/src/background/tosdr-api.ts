@@ -8,29 +8,12 @@
  * No API key required - free and open
  */
 
-import { rateLimiters } from '../lib/rate-limiter';
-
-interface TosDRService {
-    id: number;
-    name: string;
-    rating?: string; // A, B, C, D, E (A = best, E = worst)
-    class?: string; // Alternative to rating
-}
-
-interface TosDRSearchResult {
-    parameters?: {
-        query: string;
-        services?: TosDRService[];
-    };
-    services?: TosDRService[];
-}
-
 interface TosDRResult {
     found: boolean;
-    service?: TosDRService;
     grade?: string; // A-E
     score: number; // 0-100 (0 = dangerous/no rating, 100 = safe/A-grade)
     source: 'tosdr' | 'fallback';
+    serviceName?: string;
 }
 
 // Cache for ToS;DR results (5 minute TTL)
@@ -38,171 +21,139 @@ const tosDRCache = new Map<string, { result: TosDRResult; timestamp: number }>()
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Extract domain from URL
+ * Extract the main/root domain from URL
+ * Examples:
+ * - www.google.com -> google.com
+ * - antigravity.google.com -> google.com
+ * - antigravity.google -> google (new-style brand TLD)
+ * - example.co.uk -> example.co.uk
  */
-function extractDomain(url: string): string {
+function extractMainDomain(url: string): string {
     try {
         const urlObj = new URL(url);
-        // Remove 'www.' prefix if present
-        return urlObj.hostname.replace(/^www\./, '');
+        const hostname = urlObj.hostname.toLowerCase();
+
+        // Split hostname into parts
+        const parts = hostname.split('.');
+
+        // Handle new-style brand TLDs (company owns the TLD itself)
+        // For domains like antigravity.google, search ToS;DR for "google"
+        const brandTLDs = ['google', 'microsoft', 'apple', 'amazon', 'facebook', 'meta', 'app', 'dev', 'page'];
+        if (parts.length === 2 && brandTLDs.includes(parts[1])) {
+            return parts[1]; // Return just "google" for antigravity.google
+        }
+
+        // Handle common multi-part TLDs (co.uk, com.au, etc.)
+        const multiPartTLDs = ['co.uk', 'com.au', 'co.nz', 'co.jp', 'com.br', 'co.in', 'org.uk'];
+        for (const tld of multiPartTLDs) {
+            if (hostname.endsWith('.' + tld)) {
+                return parts.slice(-3).join('.');
+            }
+        }
+
+        // Standard case: return last 2 parts (domain + TLD)
+        if (parts.length >= 2) {
+            return parts.slice(-2).join('.');
+        }
+
+        return hostname;
     } catch {
         return url;
     }
 }
+
 
 /**
  * Convert ToS;DR grade to risk score (standard: 0 = dangerous, 100 = safe)
  * A = 100 (excellent), B = 80 (good), C = 60 (fair), D = 40 (poor), E = 20 (bad), None = 0 (no rating = dangerous)
  */
 function gradeToScore(grade: string | undefined): number {
-    if (!grade) return 0; // No rating = dangerous (unknown policy)
+    if (!grade) return 0;
 
     const gradeMap: Record<string, number> = {
-        'A': 100,  // Excellent privacy policy
-        'B': 80,   // Good privacy policy
-        'C': 60,   // Fair privacy policy
-        'D': 40,   // Poor privacy policy
-        'E': 20    // Bad privacy policy
+        'A': 100,
+        'B': 80,
+        'C': 60,
+        'D': 40,
+        'E': 20
     };
 
     return gradeMap[grade.toUpperCase()] ?? 0;
 }
 
 /**
- * Search for a service by domain
- */
-async function searchService(domain: string): Promise<TosDRService | null> {
-    try {
-        const searchUrl = `https://api.tosdr.org/search/v4/?query=${encodeURIComponent(domain)}`;
-
-        console.log('[ToS;DR] Searching for service:', domain);
-
-        const response = await fetch(searchUrl);
-        if (!response.ok) {
-            console.warn('[ToS;DR] Search failed:', response.status, response.statusText);
-            return null;
-        }
-
-        const data: TosDRSearchResult = await response.json();
-
-        // Try to get services from either root level or parameters
-        const services = data.services || data.parameters?.services;
-
-        if (!services || services.length === 0) {
-            console.log('[ToS;DR] No services found for:', domain);
-            return null;
-        }
-
-        // Return first matching service
-        const service = services[0];
-        console.log('[ToS;DR] Found service:', service);
-        return service;
-    } catch (error) {
-        console.error('[ToS;DR] Search error:', error);
-        return null;
-    }
-}
-
-/**
- * Get service details by ID
- */
-async function getServiceDetails(serviceId: number): Promise<TosDRService | null> {
-    try {
-        const detailsUrl = `https://api.tosdr.org/service/v2/${serviceId}`;
-
-        console.log('[ToS;DR] Fetching service details:', serviceId);
-
-        const response = await fetch(detailsUrl);
-        if (!response.ok) {
-            console.warn('[ToS;DR] Details fetch failed:', response.status, response.statusText);
-            return null;
-        }
-
-        const data = await response.json();
-
-        if (!data.parameters) {
-            console.warn('[ToS;DR] Invalid response format');
-            return null;
-        }
-
-        console.log('[ToS;DR] Service details:', data.parameters);
-        return data.parameters as TosDRService;
-    } catch (error) {
-        console.error('[ToS;DR] Details fetch error:', error);
-        return null;
-    }
-}
-
-/**
  * Check ToS;DR rating for a domain
- * Returns risk score 0-100 (0 = best, 100 = worst)
+ * Simplified: Just use the search API which returns full service info with rating
  */
 export async function checkTosDR(url: string): Promise<TosDRResult> {
-    const domain = extractDomain(url);
+    const domain = extractMainDomain(url);
+
+    console.log(`[ToS;DR] Checking domain: ${domain} (from ${url})`);
 
     // Check cache first
     const cached = tosDRCache.get(domain);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log('[ToS;DR] Using cached result for:', domain);
+        console.log('[ToS;DR] Cache hit:', cached.result);
         return cached.result;
     }
 
     try {
-        // Use rate limiter to prevent API spam
-        const result = await rateLimiters.tosdr.execute(async () => {
-            // Search for service
-            const service = await searchService(domain);
+        const searchUrl = `https://api.tosdr.org/search/v4/?query=${encodeURIComponent(domain)}`;
+        console.log('[ToS;DR] Fetching:', searchUrl);
 
-            if (!service) {
-                return {
-                    found: false,
-                    score: 0, // No rating = dangerous (unknown policy)
-                    source: 'fallback' as const
-                };
+        const response = await fetch(searchUrl);
+
+        if (!response.ok) {
+            console.warn('[ToS;DR] API error:', response.status);
+            return { found: false, score: 0, source: 'fallback' };
+        }
+
+        const data = await response.json();
+        console.log('[ToS;DR] API response:', JSON.stringify(data).slice(0, 500));
+
+        // Get services from response
+        const services = data.parameters?.services || data.services;
+
+        if (!services || services.length === 0) {
+            console.log('[ToS;DR] No services found for:', domain);
+            const fallback: TosDRResult = { found: false, score: 0, source: 'fallback' };
+            tosDRCache.set(domain, { result: fallback, timestamp: Date.now() });
+            return fallback;
+        }
+
+        // Get first service
+        const service = services[0];
+        console.log('[ToS;DR] Service found:', service.name, 'Rating:', service.rating);
+
+        // Extract grade - handle rating object {hex, human, letter}
+        let grade: string | undefined;
+        if (service.rating) {
+            if (typeof service.rating === 'object') {
+                grade = service.rating.letter || service.rating.human;
+            } else if (typeof service.rating === 'string') {
+                grade = service.rating;
             }
+        }
 
-            // Get detailed service info if we have an ID
-            let detailedService = service;
-            if (service.id) {
-                const details = await getServiceDetails(service.id);
-                if (details) {
-                    detailedService = details;
-                }
-            }
+        const score = gradeToScore(grade);
+        console.log(`[ToS;DR] Grade: ${grade} -> Score: ${score}`);
 
-            // Extract grade (prefer 'rating' over 'class')
-            const grade = detailedService.rating || detailedService.class;
-            const score = gradeToScore(grade);
-
-            return {
-                found: true,
-                service: detailedService,
-                grade: grade,
-                score: score,
-                source: 'tosdr' as const
-            };
-        });
+        const result: TosDRResult = {
+            found: true,
+            grade: grade,
+            score: score,
+            source: 'tosdr',
+            serviceName: service.name
+        };
 
         // Cache the result
-        tosDRCache.set(domain, {
-            result,
-            timestamp: Date.now()
-        });
+        tosDRCache.set(domain, { result, timestamp: Date.now() });
 
-        console.log('[ToS;DR] Result for', domain, ':', result);
         return result;
 
     } catch (error) {
-        console.error('[ToS;DR] Check failed:', error);
-
-        // Return fallback result
-        const fallbackResult: TosDRResult = {
-            found: false,
-            score: 0,
-            source: 'fallback'
-        };
-
-        return fallbackResult;
+        console.error('[ToS;DR] Error:', error);
+        return { found: false, score: 0, source: 'fallback' };
     }
 }
 
@@ -212,11 +163,4 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
 export function clearTosDRCache(): void {
     tosDRCache.clear();
     console.log('[ToS;DR] Cache cleared');
-}
-
-/**
- * Get cache size
- */
-export function getTosDRCacheSize(): number {
-    return tosDRCache.size;
 }

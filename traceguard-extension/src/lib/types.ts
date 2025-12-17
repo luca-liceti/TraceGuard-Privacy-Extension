@@ -9,14 +9,21 @@ export interface ScoreBreakdown {
 
 export interface SiteRiskData {
     domain: string;
-    wrs: number;
+    wss: number;  // Website Safety Score (0 = dangerous, 100 = safe)
     breakdown: ScoreBreakdown;
     lastAnalyzed: string; // ISO Date
     visitCount?: number; // Track number of visits
     lastVisit?: number; // Timestamp
+    detectionDetails?: {
+        tracking?: { count: number; known: number; suspicious: number };
+        cookies?: { total: number; tracking: number; thirdParty: number };
+        input?: { total: number; sensitive: number; types: string[] };
+        policy?: { grade?: string; source: string };
+        reputation?: { checks: string[]; status: string };
+    };
 }
 
-export type DetectorType = 'protocol' | 'reputation' | 'tracking' | 'cookies' | 'inputs' | 'policy';
+export type DetectorType = 'protocol' | 'reputation' | 'tracking' | 'cookies' | 'inputs' | 'policy' | 'permissions';
 
 export interface DetectorLogEntry {
     id: string;
@@ -36,7 +43,7 @@ export interface UserSettings {
     blacklist: string[];
     notificationLevel?: 'silent' | 'balanced' | 'aggressive';
     dataRetention?: number; // days
-    wrsThreshold?: number; // trigger warnings above this
+    wssThreshold?: number; // trigger warnings below this (low safety = warning)
     lowPowerMode?: boolean; // Disable auto-refresh, manual only
     logRetentionDays?: number; // How long to keep logs (0 = forever, until storage full)
     enablePIIDetection?: boolean; // Enable/disable PII detection
@@ -56,17 +63,25 @@ export interface PIIDetectionEvent {
     site: string;
     fieldType: string;
     sensitivity: 'HIGH' | 'MEDIUM' | 'LOW';
-    siteWRS: number;
+    siteWSS: number;  // Website Safety Score at time of event
     scoreImpact: number;
 }
 
+/**
+ * Tracks which sites have received each type of PII
+ * Used to show "Your email is known to X sites" in dashboard
+ */
+export interface CrossSiteExposure {
+    [fieldType: string]: string[];  // fieldType -> array of domains
+}
+
 export interface AppState {
-    ups: number; // User Privacy Score
+    ups: number; // User Privacy Score (0 = exposed, 100 = protected)
     sitesAnalyzed: number;
-    trackersBlocked: number;
+    trackersDetected: number; // Total trackers detected (renamed from trackersBlocked)
     piiEventsCount: number; // Track how many times user has shared PII
     currentSite?: SiteRiskData;
-    safeVisitStreak: number; // Consecutive safe visits (WRS < 30)
+    safeVisitStreak: number; // Consecutive safe visits (WSS > 70)
 }
 
 export interface StorageSchema {
@@ -75,9 +90,10 @@ export interface StorageSchema {
     state: AppState;
     siteCache: Record<string, SiteRiskData>;
     logs: LogEntry[];
-    detectorLogs?: DetectorLogEntry[]; // Unified logs from all 6 detectors
+    detectorLogs?: DetectorLogEntry[]; // Unified logs from all detectors
     scoreHistory?: ScoreHistoryEntry[]; // Historical score data for graphing
     piiDetections?: PIIDetectionEvent[]; // PII detection events
+    crossSiteExposure?: CrossSiteExposure; // Track PII shared across sites
 }
 
 export interface LogEntry {

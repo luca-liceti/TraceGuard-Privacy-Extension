@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS: UserSettings = {
 const DEFAULT_STATE: AppState = {
     ups: 100,
     sitesAnalyzed: 0,
-    trackersBlocked: 0,
+    trackersDetected: 0,
     piiEventsCount: 0,
     safeVisitStreak: 0
 };
@@ -107,5 +107,54 @@ export const storage = {
         const bytesInUse = await chrome.storage.local.getBytesInUse();
         const quota = chrome.storage.local.QUOTA_BYTES || 5242880; // 5MB default
         return { bytesInUse, quota };
+    },
+
+    // Cross-site exposure tracking methods
+
+    /**
+     * Record that a PII type was shared with a specific domain
+     * Used to track "Your email is known to X sites"
+     */
+    addExposure: async (fieldType: string, domain: string): Promise<void> => {
+        const result = await chrome.storage.local.get('crossSiteExposure');
+        const exposure = (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
+
+        // Initialize array if needed
+        if (!exposure[fieldType]) {
+            exposure[fieldType] = [];
+        }
+
+        // Add domain if not already tracked
+        if (!exposure[fieldType].includes(domain)) {
+            exposure[fieldType].push(domain);
+            await chrome.storage.local.set({ crossSiteExposure: exposure });
+            console.log(`[Cross-Site Exposure] ${fieldType} now shared with ${exposure[fieldType].length} sites`);
+        }
+    },
+
+    /**
+     * Get count of sites that have received a specific PII type
+     */
+    getExposureCount: async (fieldType: string): Promise<number> => {
+        const result = await chrome.storage.local.get('crossSiteExposure');
+        const exposure = (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
+        return exposure[fieldType]?.length || 0;
+    },
+
+    /**
+     * Get list of sites that have received a specific PII type
+     */
+    getExposureSites: async (fieldType: string): Promise<string[]> => {
+        const result = await chrome.storage.local.get('crossSiteExposure');
+        const exposure = (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
+        return exposure[fieldType] || [];
+    },
+
+    /**
+     * Get all cross-site exposure data
+     */
+    getAllExposure: async (): Promise<import('./types').CrossSiteExposure> => {
+        const result = await chrome.storage.local.get('crossSiteExposure');
+        return (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
     }
 };

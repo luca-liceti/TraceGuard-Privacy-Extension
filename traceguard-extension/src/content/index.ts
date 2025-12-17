@@ -16,7 +16,7 @@ console.log('TraceGuard Content Script Loaded');
             type: 'PAGE_ANALYSIS_RESULT',
             url: window.location.href,
             scores: result.scores,
-            trackingDetails: result.trackingDetails
+            detectionDetails: result.detectionDetails
         }).catch(() => {
             // Ignore errors if background is not listening yet
         });

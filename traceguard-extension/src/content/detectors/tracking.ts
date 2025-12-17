@@ -176,33 +176,23 @@ export function detectTrackingDetailed(): TrackingDetectionResult {
         if (img.src) checkUrl(img.src);
     }
 
-    // Calculate total tracker count
-    // Known trackers count 3x (high confidence)
-    // Suspicious trackers count 1x (lower confidence)
-    const weightedCount = (knownTrackers.size * 3) + suspiciousTrackers.size;
+    // Weighted count: Known trackers = 5x, Suspicious = 2x (updated weights for v3.0)
+    const weightedCount = (knownTrackers.size * 5) + (suspiciousTrackers.size * 2);
 
-    // Score calculation (standard: 0 = dangerous, 100 = safe)
-    // 0 trackers = 100 (safe)
-    // 1-3 trackers = 80 (low risk)
-    // 4-6 trackers = 60 (medium risk)
-    // 7-10 trackers = 40 (high risk)
-    // 11-15 trackers = 20 (very high risk)
-    // >15 trackers = 0 (extreme risk)
+    // Logarithmic score calculation (v3.0)
+    // Formula: max(0, 100 - K × log2(weightedCount + 1))
+    // K = 15 provides good sensitivity
+    // 
+    // Examples:
+    // 0 trackers → 100 - 15×log2(1) = 100
+    // 1 known (5 weighted) → 100 - 15×log2(6) ≈ 61
+    // 2 known (10 weighted) → 100 - 15×log2(11) ≈ 48
+    // 5 known (25 weighted) → 100 - 15×log2(26) ≈ 29
 
-    let score: number;
-    if (weightedCount === 0) {
-        score = 100;
-    } else if (weightedCount <= 3) {
-        score = 80;
-    } else if (weightedCount <= 6) {
-        score = 60;
-    } else if (weightedCount <= 10) {
-        score = 40;
-    } else if (weightedCount <= 15) {
-        score = 20;
-    } else {
-        score = 0;
-    }
+    const K = 15;
+    const score = weightedCount === 0
+        ? 100
+        : Math.max(0, Math.round(100 - (K * Math.log2(weightedCount + 1))));
 
     return {
         score,
@@ -213,10 +203,8 @@ export function detectTrackingDetailed(): TrackingDetectionResult {
 }
 
 function getScoreFormula(trackerCount: number): string {
-    if (trackerCount === 0) return '0 trackers → score 100 (safe)';
-    if (trackerCount <= 3) return '1-3 trackers → score 80 (low risk)';
-    if (trackerCount <= 6) return '4-6 trackers → score 60 (medium risk)';
-    if (trackerCount <= 10) return '7-10 trackers → score 40 (high risk)';
-    if (trackerCount <= 15) return '11-15 trackers → score 20 (very high risk)';
-    return '>15 trackers → score 0 (extreme risk)';
+    if (trackerCount === 0) return '0 weighted → 100 (safe)';
+    const score = Math.max(0, Math.round(100 - (15 * Math.log2(trackerCount + 1))));
+    return `max(0, 100 - 15×log2(${trackerCount}+1)) = ${score}`;
 }
+

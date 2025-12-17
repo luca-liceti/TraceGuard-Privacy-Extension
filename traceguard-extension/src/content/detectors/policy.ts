@@ -1,15 +1,22 @@
 /**
  * Policy Detector - Privacy Policy Detection with ToS;DR API
  * 
- * Enhanced implementation using ToS;DR API for reliable privacy policy grading.
- * Falls back to local privacy policy link detection if API unavailable.
- * 
- * Returns: Risk score 0-100 (standard: 0 = dangerous, 100 = safe)
- * - 100 = Excellent/Good privacy policy (ToS;DR grade A/B)
- * - 60 = Fair privacy policy (ToS;DR grade C)
- * - 20-40 = Poor/Bad privacy policy (ToS;DR grade D/E)
- * - 0 = No privacy policy found or no ToS;DR rating
+ * SCORING: Higher = Better (100 = safe, 0 = dangerous)
+ * - A = 100 (excellent privacy policy)
+ * - B = 80 (good)
+ * - C = 60 (fair)
+ * - D = 40 (poor)
+ * - E = 20 (bad)
+ * - Not found = 50 (neutral, unknown)
  */
+
+export interface PolicyDetectionResult {
+    score: number;
+    source: 'tosdr' | 'local' | 'fallback';
+    grade?: string;
+    serviceName?: string;
+    hasLocalPolicy: boolean;
+}
 
 /**
  * Local fallback: Detect privacy policy links on page
@@ -46,6 +53,9 @@ export async function detectPrivacyPolicy(): Promise<number> {
     console.log('[Policy Detector] Starting analysis...');
     console.log('[Policy] URL:', window.location.href);
 
+    // Also check local policy presence
+    const localResult = detectLocalPrivacyPolicy();
+
     try {
         // Try ToS;DR API first
         const response = await chrome.runtime.sendMessage({
@@ -53,53 +63,76 @@ export async function detectPrivacyPolicy(): Promise<number> {
             url: window.location.href
         });
 
-        if (response && response.found && response.source === 'tosdr') {
-            // ToS;DR API returned a rating
+        console.log('[Policy] ToS;DR response:', response);
+
+        // Check if we got a valid ToS;DR response with a grade
+        if (response && response.found && response.grade) {
             console.log('[Policy] ToS;DR API result:', {
                 service: response.service?.name,
                 grade: response.grade,
                 score: response.score,
-                source: 'ToS;DR API'
+                source: 'tosdr'
             });
-            console.log('[Policy] Score calculation:', {
-                formula: `ToS;DR grade ${response.grade} → ${response.score}`,
-                mapping: 'A=0, B=20, C=40, D=60, E=80',
-                score: response.score
-            });
-            console.log('[Policy] Final Score:', response.score, '(from ToS;DR API)');
+
+            // Use the score from ToS;DR (already mapped: A=100, B=80, C=60, D=40, E=20)
+            console.log(`[Policy] Grade ${response.grade} → Score ${response.score}`);
             return response.score;
         }
 
-        // ToS;DR API didn't find service, fall back to local detection
-        console.log('[Policy] ToS;DR API: No rating found, using local detection fallback');
+        // ToS;DR didn't find a rating
+        console.log('[Policy] ToS;DR: No rating found for this domain');
 
     } catch (error) {
-        console.warn('[Policy] ToS;DR API check failed, using local detection fallback:', error);
+        console.warn('[Policy] ToS;DR API check failed:', error);
     }
 
-    // Fallback: Local privacy policy link detection
+    // Fallback: Use local detection with neutral score
+    // If we find a privacy policy link, give neutral score (50)
+    // If no link found, give low score (25)
+    const fallbackScore = localResult.found ? 50 : 25;
+
+    console.log('[Policy] Fallback score:', {
+        hasLocalPolicy: localResult.found,
+        linkCount: localResult.links.length,
+        score: fallbackScore,
+        reason: localResult.found
+            ? 'Privacy link found but no ToS;DR rating → neutral (50)'
+            : 'No privacy link and no ToS;DR rating → low (25)'
+    });
+
+    return fallbackScore;
+}
+
+/**
+ * Enhanced detection that returns full details for the UI
+ */
+export async function detectPrivacyPolicyDetailed(): Promise<PolicyDetectionResult> {
     const localResult = detectLocalPrivacyPolicy();
 
-    console.log('[Policy] Local detection result:', {
-        found: localResult.found,
-        linkCount: localResult.links.length,
-        links: localResult.links.length > 0 ? localResult.links : 'none'
-    });
+    try {
+        const response = await chrome.runtime.sendMessage({
+            type: 'CHECK_TOSDR',
+            url: window.location.href
+        });
 
-    // Score based on local detection (standard: 0 = dangerous, 100 = safe)
-    // Policy found = 100 (safe), No policy = 0 (dangerous)
-    const score = localResult.found ? 100 : 0;
+        if (response && response.found && response.grade) {
+            return {
+                score: response.score,
+                source: 'tosdr',
+                grade: response.grade,
+                serviceName: response.service?.name,
+                hasLocalPolicy: localResult.found
+            };
+        }
+    } catch (error) {
+        console.warn('[Policy] ToS;DR check failed:', error);
+    }
 
-    console.log('[Policy] Score calculation:', {
-        formula: localResult.found
-            ? 'Privacy policy link found → 100 (safe)'
-            : 'No privacy policy link → 0 (dangerous)',
-        score: score,
-        source: 'local fallback'
-    });
-    console.log('[Policy] Final Score:', score, '(from local detection)');
-
-    return score;
+    return {
+        score: localResult.found ? 50 : 25,
+        source: localResult.found ? 'local' : 'fallback',
+        hasLocalPolicy: localResult.found
+    };
 }
 
 /**
@@ -108,5 +141,5 @@ export async function detectPrivacyPolicy(): Promise<number> {
  */
 export function detectPrivacyPolicySync(): number {
     const localResult = detectLocalPrivacyPolicy();
-    return localResult.found ? 100 : 0;
+    return localResult.found ? 50 : 25;
 }

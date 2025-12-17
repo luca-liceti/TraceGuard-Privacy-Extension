@@ -1,131 +1,195 @@
 import { ThemeProvider } from "@/components/theme-provider"
-import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard } from "lucide-react"
+import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Activity, Cookie, FileText, Key, Lock } from "lucide-react"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { Button } from "@/components/ui/button"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { storage } from "@/lib/storage"
-import { SiteRiskData } from "@/lib/types"
+import { SiteRiskData, CrossSiteExposure } from "@/lib/types"
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion"
+import { Progress } from "@/components/ui/progress"
+
+// WSS Color based on score (higher = safer)
+function getWSSColor(wss: number): string {
+    if (wss >= 80) return "text-green-500";
+    if (wss >= 60) return "text-blue-500";
+    if (wss >= 40) return "text-yellow-500";
+    if (wss >= 20) return "text-orange-500";
+    return "text-red-500";
+}
+
+function getWSSBgColor(wss: number): string {
+    if (wss >= 80) return "bg-green-500";
+    if (wss >= 60) return "bg-blue-500";
+    if (wss >= 40) return "bg-yellow-500";
+    if (wss >= 20) return "bg-orange-500";
+    return "bg-red-500";
+}
+
+function getWSSLabel(wss: number): string {
+    if (wss >= 80) return "Safe";
+    if (wss >= 60) return "Low Risk";
+    if (wss >= 40) return "Medium";
+    if (wss >= 20) return "High Risk";
+    return "Critical";
+}
+
+function getWSSIcon(wss: number) {
+    if (wss >= 60) return <CheckCircle className="h-5 w-5" />;
+    return <AlertTriangle className="h-5 w-5" />;
+}
+
+// UPS color (same logic)
+function getUPSColor(ups: number): string {
+    if (ups >= 80) return "text-green-500";
+    if (ups >= 60) return "text-blue-500";
+    if (ups >= 40) return "text-yellow-500";
+    return "text-red-500";
+}
+
+// Detector info for display
+const detectorInfo: Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> = {
+    protocol: {
+        icon: Lock,
+        label: "Protocol",
+        description: "HTTPS/HTTP security",
+        weight: "25%"
+    },
+    reputation: {
+        icon: Shield,
+        label: "Reputation",
+        description: "Domain trustworthiness",
+        weight: "25%"
+    },
+    tracking: {
+        icon: Activity,
+        label: "Tracking",
+        description: "Third-party trackers",
+        weight: "20%"
+    },
+    cookies: {
+        icon: Cookie,
+        label: "Cookies",
+        description: "Tracking cookies",
+        weight: "15%"
+    },
+    input: {
+        icon: Key,
+        label: "Input Fields",
+        description: "Sensitive form fields",
+        weight: "10%"
+    },
+    policy: {
+        icon: FileText,
+        label: "Privacy Policy",
+        description: "ToS;DR rating",
+        weight: "5%"
+    }
+};
 
 function App() {
     const state = useAppState();
     const settings = useSettings();
+    const [crossSiteExposure, setCrossSiteExposure] = useState<CrossSiteExposure>({});
+
+    // Load cross-site exposure
+    useEffect(() => {
+        const loadExposure = async () => {
+            const exposure = await storage.getAllExposure();
+            setCrossSiteExposure(exposure);
+        };
+        loadExposure();
+
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+            if (changes.crossSiteExposure) loadExposure();
+
+            // Auto-update when siteCache changes (new analysis data available)
+            if (changes.siteCache) {
+                chrome.tabs.query({ active: true, currentWindow: true }).then(async (tabs) => {
+                    if (tabs[0]?.url && !tabs[0].url.startsWith('chrome://') && !tabs[0].url.startsWith('chrome-extension://')) {
+                        try {
+                            const domain = new URL(tabs[0].url).hostname;
+                            const newCache = changes.siteCache.newValue as Record<string, SiteRiskData>;
+                            const siteData = newCache?.[domain];
+
+                            if (siteData) {
+                                console.log('[Sidepanel] Auto-updating with new analysis data for:', domain);
+                                const currentState = await storage.getState();
+                                await storage.updateState({ ...currentState, currentSite: siteData });
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+                });
+            }
+        };
+        chrome.storage.local.onChanged.addListener(listener);
+        return () => chrome.storage.local.onChanged.removeListener(listener);
+    }, []);
 
     // Refresh state when active tab changes
     useEffect(() => {
         const handleTabActivated = async (activeInfo: { tabId: number; windowId: number }) => {
             try {
-                // Get the active tab
                 const tab = await chrome.tabs.get(activeInfo.tabId);
-                if (!tab.url) return;
+                if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://')) return;
 
-                // Skip chrome:// and other internal URLs
-                if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://')) {
-                    return;
-                }
-
-                // Extract domain from URL
-                let domain: string;
-                try {
-                    domain = new URL(tab.url).hostname;
-                } catch {
-                    return;
-                }
-
-                // Check if we have cached data for this domain
+                const domain = new URL(tab.url).hostname;
                 const result = await chrome.storage.local.get('siteCache');
                 const siteCache: Record<string, SiteRiskData> = (result.siteCache || {}) as Record<string, SiteRiskData>;
                 const siteData = siteCache[domain];
 
-                if (siteData) {
-                    // Update current site in state
-                    const currentState = await storage.getState();
-                    await storage.updateState({
-                        ...currentState,
-                        currentSite: siteData
-                    });
-                } else {
-                    // No cached data, clear current site
-                    const currentState = await storage.getState();
-                    await storage.updateState({
-                        ...currentState,
-                        currentSite: undefined
-                    });
-                }
+                const currentState = await storage.getState();
+                await storage.updateState({
+                    ...currentState,
+                    currentSite: siteData || undefined
+                });
             } catch (error) {
                 console.error('Error refreshing state on tab change:', error);
             }
         };
 
-        // Listen for tab activation
-        chrome.tabs.onActivated.addListener(handleTabActivated);
-
-        // Also listen for tab updates (when URL changes in same tab)
         const handleTabUpdated = async (_tabId: number, changeInfo: { status?: string }, tab: chrome.tabs.Tab) => {
             if (changeInfo.status === 'complete' && tab.url && tab.active) {
-                // Skip chrome:// and other internal URLs
-                if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://')) {
-                    return;
-                }
+                if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://')) return;
 
-                // Extract domain from URL
-                let domain: string;
                 try {
-                    domain = new URL(tab.url).hostname;
-                } catch {
-                    return;
-                }
+                    const domain = new URL(tab.url).hostname;
+                    const result = await chrome.storage.local.get('siteCache');
+                    const siteCache: Record<string, SiteRiskData> = (result.siteCache || {}) as Record<string, SiteRiskData>;
+                    const siteData = siteCache[domain];
 
-                // Check if we have cached data for this domain
-                const result = await chrome.storage.local.get('siteCache');
-                const siteCache: Record<string, SiteRiskData> = (result.siteCache || {}) as Record<string, SiteRiskData>;
-                const siteData = siteCache[domain];
-
-                if (siteData) {
-                    // Update current site in state
                     const currentState = await storage.getState();
                     await storage.updateState({
                         ...currentState,
-                        currentSite: siteData
+                        currentSite: siteData || undefined
                     });
-                } else {
-                    // No cached data, clear current site
-                    const currentState = await storage.getState();
-                    await storage.updateState({
-                        ...currentState,
-                        currentSite: undefined
-                    });
+                } catch (error) {
+                    console.error('Error on tab update:', error);
                 }
             }
         };
 
+        chrome.tabs.onActivated.addListener(handleTabActivated);
         chrome.tabs.onUpdated.addListener(handleTabUpdated);
 
-        // Also check the current active tab on mount
+        // Check current tab on mount
         chrome.tabs.query({ active: true, currentWindow: true }).then(async (tabs) => {
-            if (tabs[0]?.url) {
-                const tab = tabs[0];
-                if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://')) {
-                    return;
-                }
-
-                let domain: string;
+            if (tabs[0]?.url && !tabs[0].url.startsWith('chrome://') && !tabs[0].url.startsWith('chrome-extension://')) {
                 try {
-                    domain = new URL(tab.url).hostname;
-                } catch {
-                    return;
-                }
+                    const domain = new URL(tabs[0].url).hostname;
+                    const result = await chrome.storage.local.get('siteCache');
+                    const siteCache: Record<string, SiteRiskData> = (result.siteCache || {}) as Record<string, SiteRiskData>;
+                    const siteData = siteCache[domain];
 
-                const result = await chrome.storage.local.get('siteCache');
-                const siteCache: Record<string, SiteRiskData> = (result.siteCache || {}) as Record<string, SiteRiskData>;
-                const siteData = siteCache[domain];
-
-                if (siteData) {
-                    const currentState = await storage.getState();
-                    await storage.updateState({
-                        ...currentState,
-                        currentSite: siteData
-                    });
-                }
+                    if (siteData) {
+                        const currentState = await storage.getState();
+                        await storage.updateState({ ...currentState, currentSite: siteData });
+                    }
+                } catch (error) { /* ignore */ }
             }
         });
 
@@ -135,44 +199,15 @@ function App() {
         };
     }, []);
 
-    // Debug logging for state
-    useEffect(() => {
-        console.log('App State:', state);
-    }, [state]);
-
     if (!state) {
-        console.log('State is null, showing loading...');
         return <div className="p-4 text-foreground bg-background">Loading TraceGuard...</div>;
     }
 
-
-    const currentSiteWRS = state.currentSite?.wrs ?? null;
-
-    // Determine color based on WRS (standard: 0 = dangerous, 100 = safe)
-    const getWRSColor = (wrs: number) => {
-        if (wrs >= 80) return "text-green-500";
-        if (wrs >= 50) return "text-yellow-500";
-        return "text-red-500";
-    };
-
-    const getWRSIcon = (wrs: number) => {
-        if (wrs >= 80) return <CheckCircle className="h-6 w-6" />;
-        if (wrs >= 50) return <AlertTriangle className="h-6 w-6" />;
-        return <AlertTriangle className="h-6 w-6" />;
-    };
-
-    // UPS color function (same logic as WRS - 0 = dangerous, 100 = safe)
-    const getUPSColor = (ups: number) => {
-        if (ups >= 80) return "text-green-500";
-        if (ups >= 50) return "text-yellow-500";
-        return "text-red-500";
-    };
+    const currentSiteWSS = state.currentSite?.wss ?? null;
+    const exposureCount = Object.keys(crossSiteExposure).length;
 
     const openDashboard = () => {
-        chrome.tabs.create({
-            url: chrome.runtime.getURL('src/dashboard/index.html')
-        });
-        // Close the sidepanel after opening dashboard
+        chrome.tabs.create({ url: chrome.runtime.getURL('src/dashboard/index.html') });
         window.close();
     };
 
@@ -185,82 +220,215 @@ function App() {
             disableTransitionOnChange
         >
             <div className="min-h-screen bg-background text-foreground p-4 flex flex-col">
-                <div className="flex items-center gap-2 mb-6">
-                    <ShieldCheck className="h-8 w-8 text-primary" />
-                    <h1 className="text-xl font-bold">TraceGuard</h1>
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-4">
+                    <ShieldCheck className="h-7 w-7 text-primary" />
+                    <h1 className="text-lg font-bold">TraceGuard</h1>
                 </div>
 
-                <div className="space-y-4 flex-1">
+                <div className="space-y-3 flex-1 overflow-y-auto">
                     {/* User Privacy Score */}
-                    <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                        <h3 className="font-semibold mb-2 text-sm">Privacy Score (UPS)</h3>
-                        <div className={`text-3xl font-bold ${getUPSColor(state.ups)}`}>{state.ups}</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Sites analyzed: {state.sitesAnalyzed}
-                        </p>
+                    <div className="p-3 rounded-lg border bg-card shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-muted-foreground">Privacy Score</span>
+                            <span className="text-sm text-muted-foreground">{state.sitesAnalyzed} sites</span>
+                        </div>
+                        <div className={`text-3xl font-bold ${getUPSColor(state.ups)} mt-1`}>
+                            {state.ups}
+                        </div>
+                        <Progress value={state.ups} className="h-1.5 mt-2" />
                     </div>
 
-                    {/* Current Site Risk Score */}
-                    {currentSiteWRS !== null && state.currentSite ? (
-                        <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                            <h3 className="font-semibold mb-2 text-sm">Current Site (WRS)</h3>
-                            <div className={`text-3xl font-bold ${getWRSColor(currentSiteWRS)} flex items-center gap-2`}>
-                                {getWRSIcon(currentSiteWRS)}
-                                {currentSiteWRS}
+                    {/* Website Safety Score with Collapsible Breakdown */}
+                    {currentSiteWSS !== null && state.currentSite ? (
+                        <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+                            {/* Header */}
+                            <div className="p-3 border-b">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-muted-foreground">Website Safety</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${getWSSBgColor(currentSiteWSS)} text-white`}>
+                                        {getWSSLabel(currentSiteWSS)}
+                                    </span>
+                                </div>
+                                <div className={`text-3xl font-bold ${getWSSColor(currentSiteWSS)} flex items-center gap-2 mt-1`}>
+                                    {getWSSIcon(currentSiteWSS)}
+                                    {currentSiteWSS}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1 truncate">
+                                    {state.currentSite.domain}
+                                </p>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                {state.currentSite.domain}
-                            </p>
 
-                            {/* Breakdown */}
-                            <div className="mt-3 space-y-1 text-xs">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Protocol:</span>
-                                    <span>{state.currentSite.breakdown.protocol}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Reputation:</span>
-                                    <span>{state.currentSite.breakdown.reputation}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Tracking:</span>
-                                    <span>{state.currentSite.breakdown.tracking}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Cookies:</span>
-                                    <span>{state.currentSite.breakdown.cookies}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Input:</span>
-                                    <span>{state.currentSite.breakdown.input}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Policy:</span>
-                                    <span>{state.currentSite.breakdown.policy}</span>
-                                </div>
-                            </div>
+                            {/* Collapsible Detector Breakdown */}
+                            <Accordion type="multiple" className="w-full">
+                                {Object.entries(state.currentSite.breakdown).map(([key, score]) => {
+                                    const info = detectorInfo[key];
+                                    if (!info) return null;
+                                    const Icon = info.icon;
+
+                                    return (
+                                        <AccordionItem key={key} value={key} className="border-b last:border-b-0">
+                                            <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/50">
+                                                <div className="flex items-center gap-2 flex-1">
+                                                    <Icon className="h-4 w-4 text-muted-foreground" />
+                                                    <span className="text-sm font-medium">{info.label}</span>
+                                                    <span className="text-xs text-muted-foreground ml-auto mr-2">
+                                                        ({info.weight})
+                                                    </span>
+                                                    <span className={`text-sm font-semibold ${getWSSColor(score)}`}>
+                                                        {score}
+                                                    </span>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="px-3 pb-3">
+                                                <div className="space-y-2 text-sm">
+                                                    {/* Progress bar */}
+                                                    <div className="flex items-center gap-2">
+                                                        <Progress value={score} className="h-1.5 flex-1" />
+                                                    </div>
+
+                                                    {/* Detector-specific details */}
+                                                    <div className="text-muted-foreground bg-muted/30 rounded-sm px-2 py-1.5 space-y-1">
+                                                        {key === 'protocol' && (
+                                                            <div className="flex justify-between">
+                                                                <span>Connection</span>
+                                                                <span className="font-medium">{score === 100 ? 'HTTPS (Secure)' : 'HTTP (Insecure)'}</span>
+                                                            </div>
+                                                        )}
+                                                        {key === 'reputation' && (
+                                                            <>
+                                                                <div className="flex justify-between">
+                                                                    <span>Status</span>
+                                                                    <span className="font-medium">{score === 100 ? 'Clean' : score === 0 ? 'Blacklisted' : 'Suspicious'}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span>Checked</span>
+                                                                    <span className="font-medium">Blacklist + URLhaus</span>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        {key === 'tracking' && (
+                                                            <>
+                                                                <div className="flex justify-between">
+                                                                    <span>Trackers found</span>
+                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.tracking?.count ?? 0}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span>Known trackers</span>
+                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.tracking?.known ?? 0}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span>Suspicious</span>
+                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.tracking?.suspicious ?? 0}</span>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        {key === 'cookies' && (
+                                                            <>
+                                                                <div className="flex justify-between">
+                                                                    <span>Total cookies</span>
+                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.cookies?.total ?? 0}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span>Tracking</span>
+                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.cookies?.tracking ?? 0}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span>Third-party</span>
+                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.cookies?.thirdParty ?? 0}</span>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        {key === 'input' && (
+                                                            <>
+                                                                <div className="flex justify-between">
+                                                                    <span>Input fields</span>
+                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.input?.total ?? 0}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span>Sensitive (HIGH)</span>
+                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.input?.sensitive ?? 0}</span>
+                                                                </div>
+                                                                {state.currentSite?.detectionDetails?.input?.types && state.currentSite.detectionDetails.input.types.length > 0 && (
+                                                                    <div className="flex justify-between">
+                                                                        <span>Types</span>
+                                                                        <span className="font-medium text-xs">{state.currentSite.detectionDetails.input.types.join(', ')}</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                        {key === 'policy' && (
+                                                            <>
+                                                                <div className="flex justify-between">
+                                                                    <span>ToS;DR Grade</span>
+                                                                    <span className="font-medium">
+                                                                        {state.currentSite?.detectionDetails?.policy?.grade || 'Not rated'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span>Source</span>
+                                                                    <span className="font-medium capitalize">
+                                                                        {state.currentSite?.detectionDetails?.policy?.source === 'tosdr' ? 'ToS;DR API' : 'Local detection'}
+                                                                    </span>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    );
+                                })}
+                            </Accordion>
                         </div>
                     ) : (
-                        <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                            <h3 className="font-semibold mb-2 text-sm">Current Site</h3>
-                            <p className="text-sm text-muted-foreground">No site analyzed yet</p>
+                        <div className="p-3 rounded-lg border bg-card shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <Globe className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">Website Safety</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-2">
+                                Navigate to a website to see its safety score
+                            </p>
                         </div>
                     )}
 
-                    {/* Trackers Detected */}
-                    <div className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                        <h3 className="font-semibold mb-2 text-sm">Trackers Detected</h3>
-                        <div className="text-3xl font-bold">{state.trackersBlocked}</div>
+                    {/* Data Exposure Summary */}
+                    {exposureCount > 0 && (
+                        <div className="p-3 rounded-lg border bg-card shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">Data Exposure</span>
+                                <span className="text-xs text-muted-foreground">{exposureCount} PII types</span>
+                            </div>
+                            <div className="mt-2 space-y-1">
+                                {Object.entries(crossSiteExposure).slice(0, 3).map(([type, sites]) => (
+                                    <div key={type} className="flex items-center justify-between text-xs">
+                                        <span className="capitalize text-muted-foreground">{type}</span>
+                                        <span className="font-medium">{sites.length} sites</span>
+                                    </div>
+                                ))}
+                                {exposureCount > 3 && (
+                                    <div className="text-xs text-muted-foreground text-center pt-1">
+                                        +{exposureCount - 3} more...
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Trackers */}
+                    <div className="p-3 rounded-lg border bg-card shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Trackers Detected</span>
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="text-2xl font-bold mt-1">{state.trackersDetected}</div>
                     </div>
                 </div>
 
-                {/* Dashboard Button at Bottom */}
-                <div className="mt-6 pt-4 border-t border-border">
-                    <Button
-                        onClick={openDashboard}
-                        className="w-full"
-                        variant="outline"
-                    >
+                {/* Dashboard Button */}
+                <div className="mt-4 pt-3 border-t">
+                    <Button onClick={openDashboard} className="w-full" variant="outline" size="sm">
                         <LayoutDashboard className="h-4 w-4" />
                         Open Dashboard
                     </Button>

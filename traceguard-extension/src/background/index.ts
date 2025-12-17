@@ -1,9 +1,9 @@
 import { storage } from '../lib/storage';
 import { loadBlacklist, checkReputation } from './services/reputation';
-import { calculateWRS } from '../lib/scoring';
+import { calculateWSS } from '../lib/scoring';
 import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';
-import { rateLimiters } from '../lib/rate-limiter';
 import contentScriptPath from '../content/index.ts?script';
+import { checkTosDR } from './tosdr-api';
 
 console.log('TraceGuard Background Service Worker Running');
 
@@ -61,67 +61,40 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    // Handle CHECK_REPUTATION (local blacklist check)
+    // Handle CHECK_REPUTATION (blacklist + URLhaus check)
     if (message.type === 'CHECK_REPUTATION') {
-        const domain = message.domain;
-        checkReputation(`https://${domain}`).then(reputationScore => {
+        // Support both message.url and message.domain for backward compatibility
+        const url = message.url || (message.domain ? `https://${message.domain}` : undefined);
+        if (!url) {
+            console.warn('[Reputation] No URL or domain provided');
+            sendResponse({ isBlacklisted: false, score: 100 });
+            return true;
+        }
+        checkReputation(url).then(reputationScore => {
             const isBlacklisted = reputationScore === 0;
             sendResponse({ isBlacklisted, score: reputationScore });
         }).catch(error => {
             console.warn('Reputation check failed:', error);
             sendResponse({ isBlacklisted: false, score: 100 });
         });
-        return true; // Keep channel open for async response
+        return true;
     }
 
-    // Handle CHECK_SAFE_BROWSING (Google Safe Browsing API)
-    if (message.type === 'CHECK_SAFE_BROWSING') {
-        const url = message.url;
-
-        // Check if Safe Browsing API is available (type assertion for API availability)
-        const safeBrowsing = (chrome as any).safeBrowsing;
-        if (safeBrowsing && safeBrowsing.checkUrl) {
-            // Wrap in rate limiter to prevent API quota exhaustion (20 req/min limit)
-            rateLimiters.safeBrowsing.execute(async () => {
-                return new Promise<any>((resolve) => {
-                    safeBrowsing.checkUrl(url, (result: any) => {
-                        if (chrome.runtime.lastError) {
-                            console.warn('Safe Browsing check error:', chrome.runtime.lastError);
-                            resolve(null);
-                        } else {
-                            resolve(result);
-                        }
-                    });
-                });
-            }).then(threat => {
-                sendResponse({ threat });
-            }).catch(error => {
-                console.warn('Safe Browsing rate limit error:', error);
-                sendResponse({ threat: null });
-            });
-            return true; // Keep channel open for async response
-        } else {
-            // Fallback: Safe Browsing API not available
-            console.warn('Safe Browsing API not available in this Chrome version');
-            sendResponse({ threat: null });
-            return true;
-        }
-    }
+    // Note: Safe Browsing check removed - URLhaus is now used directly in reputation service
 
     // Handle CHECK_TOSDR (ToS;DR API check)
     if (message.type === 'CHECK_TOSDR') {
         const url = message.url;
+        if (!url) {
+            console.warn('[ToS;DR] No URL provided');
+            sendResponse({ found: false, score: 0, source: 'fallback' });
+            return true;
+        }
 
-        // Import ToS;DR API dynamically to avoid circular dependencies
-        import('./tosdr-api').then(({ checkTosDR }) => {
-            checkTosDR(url).then(result => {
-                sendResponse(result);
-            }).catch(error => {
-                console.warn('ToS;DR check failed:', error);
-                sendResponse({ found: false, score: 0, source: 'fallback' });
-            });
+        checkTosDR(url).then(result => {
+            sendResponse(result);
         }).catch(error => {
-            console.error('Failed to load ToS;DR API:', error);
+            console.warn('[ToS;DR] Check failed:', error);
             sendResponse({ found: false, score: 0, source: 'fallback' });
         });
 
@@ -163,18 +136,19 @@ async function handlePageAnalysis(message: any) {
     const reputationScore = await checkReputation(message.url);
     const finalScores = { ...message.scores, reputation: reputationScore };
 
-    // Calculate WRS
-    const wrs = calculateWRS(finalScores);
+    // Calculate WSS (Website Safety Score)
+    const wss = calculateWSS(finalScores);
 
     // Extract domain from URL
     const domain = new URL(message.url).hostname;
 
-    // Create site risk data
+    // Create site risk data with detection details
     const siteData: SiteRiskData = {
         domain,
-        wrs,
+        wss,
         breakdown: finalScores,
-        lastAnalyzed: new Date().toISOString()
+        lastAnalyzed: new Date().toISOString(),
+        detectionDetails: message.detectionDetails
     };
 
     // Store in cache
@@ -193,9 +167,9 @@ async function handlePageAnalysis(message: any) {
 
     // Update current site in state
     const state = await storage.getState();
-    // Calculate UPS Impact (Streak-Based)
+    // Calculate UPS Impact using new penalty/recovery system
     const { calculateVisitImpact } = await import('../lib/pii');
-    const upsImpact = calculateVisitImpact(state.ups || 100, wrs, state.safeVisitStreak || 0);
+    const upsImpact = calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0);
 
     await storage.updateState({
         ...state,
@@ -221,7 +195,7 @@ async function handlePageAnalysis(message: any) {
             history.push({
                 timestamp: Date.now(),
                 ups: upsImpact.newUPS,
-                avgSiteRisk: wrs,
+                avgSiteRisk: wss, // Now stores safety (high = safe)
                 reason: upsImpact.message
             });
             // Keep last 100
@@ -240,9 +214,9 @@ async function handlePageAnalysis(message: any) {
         protocol: finalScores.protocol === 100 ? 'HTTPS connection (secure)' : 'HTTP connection (insecure)',
         reputation: reputationScore === 100 ? 'Domain has good reputation' : reputationScore === 0 ? 'Domain blacklisted!' : `Domain reputation score: ${reputationScore}`,
         tracking: trackingMessage,
-        cookies: finalScores.cookies === 0 ? 'No third-party cookies detected' : `Third-party cookies detected (score: ${finalScores.cookies})`,
-        inputs: finalScores.input === 0 ? 'No sensitive input fields detected' : `Sensitive input fields detected (score: ${finalScores.input})`,
-        policy: finalScores.policy === 0 ? 'Good privacy policy' : finalScores.policy === 100 ? 'No privacy policy found' : `Privacy policy concerns (score: ${finalScores.policy})`
+        cookies: finalScores.cookies >= 80 ? 'No tracking cookies detected' : `Tracking cookies detected (safety: ${finalScores.cookies})`,
+        inputs: finalScores.input >= 80 ? 'No sensitive input fields' : `Sensitive input fields detected (safety: ${finalScores.input})`,
+        policy: finalScores.policy >= 80 ? 'Good privacy policy' : finalScores.policy <= 25 ? 'No privacy policy found' : `Privacy policy concerns (safety: ${finalScores.policy})`
     };
 
     // Log each detector's findings
@@ -298,8 +272,8 @@ async function handlePageAnalysis(message: any) {
         message: detectorMessages.policy
     });
 
-    console.log('Analysis complete for:', domain, 'WRS:', wrs);
-    console.log('[WRS Calculation] Breakdown:', finalScores);
+    console.log('Analysis complete for:', domain, 'WSS:', wss);
+    console.log('[WSS Calculation] Breakdown:', finalScores);
 }
 
 // Helper function for PII detection
@@ -313,9 +287,10 @@ async function handlePIIDetection(message: any) {
     // Increment PII events count
     const newPiiCount = state.piiEventsCount + 1;
 
-    // Calculate new UPS (Cumulative formatting)
+    // Calculate new UPS using granular penalty system
     const { calculatePIIPenalty } = await import('../lib/pii');
-    const { newUPS, penalty } = calculatePIIPenalty(state.ups || 100);
+    const siteWSS = state.currentSite?.wss || 50; // Use current site WSS or default to 50
+    const { newUPS, penalty } = calculatePIIPenalty(state.ups || 100, event.fieldType, siteWSS);
     const scoreImpact = -penalty;
 
     // Store PII detection event
@@ -329,7 +304,7 @@ async function handlePIIDetection(message: any) {
         site: event.site,
         fieldType: event.fieldType,
         sensitivity: event.sensitivity,
-        siteWRS: event.siteWRS,
+        siteWSS: siteWSS,
         scoreImpact: scoreImpact
     });
 
@@ -337,7 +312,7 @@ async function handlePIIDetection(message: any) {
     scoreHistory.push({
         timestamp: Date.now(),
         ups: newUPS,
-        avgSiteRisk: state.currentSite?.wrs || 0,
+        avgSiteRisk: state.currentSite?.wss || 0,
         reason: `PII entered on ${event.site} (${event.sensitivity} sensitivity)`
     });
 
@@ -347,6 +322,9 @@ async function handlePIIDetection(message: any) {
 
     // Save to storage
     await chrome.storage.local.set({ piiDetections, scoreHistory });
+
+    // Track cross-site exposure (which sites have received this PII type)
+    await storage.addExposure(event.fieldType, event.site);
 
     // Update state
     await storage.updateState({

@@ -66,29 +66,30 @@ export function detectSensitiveInputs(): InputDetectionResult {
             low.push({ element, type: type || 'text', sensitivity: 'LOW' });
         }
     }
+    // Logarithmic score calculation (v3.0)
+    // Weights: HIGH=10, MEDIUM=5, LOW=1
+    // Formula: max(0, 100 - K × log2(weightedCount + 1)), K=10
+    //
+    // Examples:
+    // 0 fields → 100
+    // 1 password (10 weighted) → 100 - 10×log2(11) ≈ 65
+    // 1 password + 1 email (15 weighted) → 100 - 10×log2(16) = 60
+    // 2 passwords (20 weighted) → 100 - 10×log2(21) ≈ 56
 
-    // Score calculation
-    // 100 = No sensitive inputs (Low Risk)
-    // 50 = Email/Personal info (Medium Risk)
-    // 0 = Password/Credit Card (High Risk)
-    let score = 100;
-    let riskLevel = 'none';
-
-    if (high.length > 0) {
-        score = 0;
-        riskLevel = 'high';
-    } else if (medium.length > 0) {
-        score = 50;
-        riskLevel = 'medium';
-    }
+    const weightedCount = (high.length * 10) + (medium.length * 5) + (low.length * 1);
+    const K = 10;
+    const score = weightedCount === 0
+        ? 100
+        : Math.max(0, Math.round(100 - (K * Math.log2(weightedCount + 1))));
 
     // Comprehensive console logging (field TYPES only, NO values)
     console.log('[Input Detector] Starting analysis...');
     console.log('[Input] Total input fields found:', inputs.length);
     console.log('[Input] Sensitive fields detected:', {
-        'HIGH sensitivity (passwords, credit cards)': high.length,
-        'MEDIUM sensitivity (email, phone, address)': medium.length,
-        'LOW sensitivity (name, username)': low.length
+        'HIGH sensitivity (passwords, cards)': high.length,
+        'MEDIUM sensitivity (email, phone)': medium.length,
+        'LOW sensitivity (name, username)': low.length,
+        'Weighted count': weightedCount
     });
 
     // Log field types (NOT values - zero PII storage)
@@ -102,21 +103,11 @@ export function detectSensitiveInputs(): InputDetectionResult {
         console.log('[Input] LOW sensitivity field types:', low.map(f => f.type));
     }
 
-    console.log('[Input] Risk assessment:', {
-        riskLevel: riskLevel,
-        formula: high.length > 0
-            ? 'HIGH sensitivity fields present → 0 (high risk)'
-            : medium.length > 0
-                ? 'MEDIUM sensitivity fields present → 50 (medium risk)'
-                : 'No sensitive fields → 100 (safe)',
-        score: score
-    });
-    console.log('[Input] Final Score:', score);
+    console.log(`[Input] Logarithmic calculation: max(0, 100 - 10×log2(${weightedCount}+1)) = ${score}`);
+    console.log(`[Input] Final Score: ${score} (${score >= 80 ? '✅ Safe' : score >= 60 ? '🔵 Low Risk' : score >= 40 ? '🟡 Medium' : '🟠 High Risk'})`);
 
     return {
         score,
         fields: { high, medium, low }
     };
 }
-
-
