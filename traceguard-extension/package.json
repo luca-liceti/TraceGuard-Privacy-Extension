@@ -1,17 +1,26 @@
 {
   "name": "traceguard-extension",
   "version": "1.0.0",
-  "description": "",
+  "description": "Real-time privacy scoring and protection Chrome extension with WSS/UPS metrics",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "npm run build:blacklist && vite build",
     "build:blacklist": "node scripts/build-blacklist.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "chrome-extension",
+    "privacy",
+    "security",
+    "tracker-detection",
+    "manifest-v3"
+  ],
+  "author": "Luca Liceti",
+  "license": "AGPL-3.0",
   "type": "commonjs",
   "dependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.33",
@@ -57,6 +66,10 @@
     "vite-plugin-static-copy": "^3.1.4"
   },
   "devDependencies": {
-    "sharp": "^0.34.5"
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "happy-dom": "^20.0.11",
+    "sharp": "^0.34.5",
+    "vitest": "^4.0.16"
   }
 }

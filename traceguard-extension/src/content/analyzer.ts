@@ -2,7 +2,6 @@ import { detectProtocol } from './detectors/protocol';
 import { detectTrackingDetailed } from './detectors/tracking';
 import { detectSensitiveInputs } from './detectors/input';
 import { detectPrivacyPolicy } from './detectors/policy';
-import { detectReputation } from './detectors/reputation';
 import { detectCookiesDetailed } from './detectors/cookie';
 import { ScoreBreakdown } from '@/lib/types';
 
@@ -30,8 +29,9 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
     const inputResult = detectSensitiveInputs();
     const cookieResult = detectCookiesDetailed();
 
-    // Multi-layer reputation check (blacklist + URLhaus)
-    const reputationScore = await detectReputation();
+    // Reputation check is handled by background service (includes blacklist + URLhaus)
+    // We pass a placeholder here; background will overwrite with actual score
+    const reputationScore = 100;
 
     // Privacy policy check with ToS;DR API (async)
     const policyScore = await detectPrivacyPolicy();

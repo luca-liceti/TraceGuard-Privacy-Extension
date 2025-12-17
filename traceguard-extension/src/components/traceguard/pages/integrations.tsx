@@ -23,11 +23,18 @@ interface IntegrationItem {
 
 const integrations: IntegrationItem[] = [
     {
+        name: "Privacy Tools",
+        description: "Integrate with other browser privacy extensions",
+        icon: Lock,
+        examples: ["uBlock Origin", "Privacy Badger", "HTTPS Everywhere"],
+        status: "coming-soon"
+    },
+    {
         name: "Password Managers",
         description: "Sync with your password manager to identify weak or reused passwords",
         icon: Key,
         examples: ["1Password", "Bitwarden", "LastPass", "Dashlane"],
-        status: "coming-soon"
+        status: "planned"
     },
     {
         name: "VPN Services",
@@ -41,13 +48,6 @@ const integrations: IntegrationItem[] = [
         description: "Generate anonymous email aliases to protect your identity",
         icon: Mail,
         examples: ["SimpleLogin", "Firefox Relay", "DuckDuckGo Email"],
-        status: "planned"
-    },
-    {
-        name: "Privacy Tools",
-        description: "Integrate with other browser privacy extensions",
-        icon: Lock,
-        examples: ["uBlock Origin", "Privacy Badger", "HTTPS Everywhere"],
         status: "planned"
     }
 ]

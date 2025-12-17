@@ -6,7 +6,6 @@ import {
     Globe,
     TrendingUp,
     TrendingDown,
-    Target,
     FileText,
     ShieldCheck,
     ShieldAlert,
@@ -15,10 +14,10 @@ import {
     AlertTriangle,
     AlertCircle,
     Info,
-    Eye,
-    ListFilter,
+    Flame,
     Minus,
 } from "lucide-react"
+import { ResponsiveContainer, AreaChart, Area } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -78,18 +77,18 @@ function StatCard({
 }) {
     const content = (
         <Card className={cn("transition-all", href && "hover:border-primary/50 hover:shadow-md cursor-pointer")}>
-            <CardContent className="p-4">
+            <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                             {title}
                         </p>
                         <p className="text-2xl font-bold">{value}</p>
                         {subtitle && (
-                            <p className="text-xs text-muted-foreground">{subtitle}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
                         )}
                     </div>
-                    <div className={cn("p-2 rounded-lg bg-muted", iconColor)}>
+                    <div className={cn("p-2.5 rounded-lg bg-muted", iconColor)}>
                         <Icon className="h-4 w-4" />
                     </div>
                 </div>
@@ -159,11 +158,16 @@ export default function OverviewPage() {
         ? scoreHistory[scoreHistory.length - 1].ups - scoreHistory[scoreHistory.length - 2].ups
         : 0
 
-    // Calculate average WRS
+    // Calculate average WSS (safety score)
     const siteValues = Object.values(siteCache)
-    const avgWRS = siteValues.length > 0
-        ? Math.round(siteValues.reduce((sum, site) => sum + (100 - site.wss), 0) / siteValues.length)
+    const avgWSS = siteValues.length > 0
+        ? Math.round(siteValues.reduce((sum, site) => sum + site.wss, 0) / siteValues.length)
         : 0
+
+    // Prepare sparkline data for Privacy Score hero (last 10 entries)
+    const sparklineData = scoreHistory.slice(-10).map(entry => ({
+        score: entry.ups
+    }))
 
     // Get recent notifications (last 5)
     const recentNotifications = notifications.slice(0, 5)
@@ -187,12 +191,12 @@ export default function OverviewPage() {
             {/* Hero - Privacy Score */}
             <Link to="/privacy-score">
                 <Card className="relative overflow-hidden hover:shadow-lg transition-all hover:border-primary/50">
-                    <CardContent className="p-6">
+                    <CardContent className="p-8">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-8">
                                 {/* Score Circle */}
                                 <div className={cn(
-                                    "relative flex items-center justify-center w-24 h-24 rounded-full",
+                                    "relative flex items-center justify-center w-28 h-28 rounded-full",
                                     scoreStatus.bgColor
                                 )}>
                                     <div className="text-center">
@@ -208,29 +212,52 @@ export default function OverviewPage() {
                                 </div>
 
                                 {/* Score Info */}
-                                <div>
-                                    <h2 className="text-lg font-semibold text-foreground">Privacy Score</h2>
+                                <div className="space-y-2">
+                                    <h2 className="text-xl font-semibold text-foreground">Privacy Score</h2>
                                     <Badge className={cn("mt-1", scoreStatus.bgColor, scoreStatus.color, "border-0")}>
                                         {scoreStatus.label}
                                     </Badge>
-                                    <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-                                        {trend > 0 ? (
-                                            <>
-                                                <TrendingUp className="h-4 w-4 text-green-500" />
-                                                <span className="text-green-500">+{trend} pts</span>
-                                            </>
-                                        ) : trend < 0 ? (
-                                            <>
-                                                <TrendingDown className="h-4 w-4 text-red-500" />
-                                                <span className="text-red-500">{trend} pts</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Minus className="h-4 w-4" />
-                                                <span>No change</span>
-                                            </>
-                                        )}
-                                    </div>
+                                    {/* Sparkline showing recent UPS trend */}
+                                    {sparklineData.length > 1 ? (
+                                        <div className="w-32 h-10 mt-2">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <AreaChart data={sparklineData}>
+                                                    <defs>
+                                                        <linearGradient id="upsGradient" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <Area
+                                                        type="monotone"
+                                                        dataKey="score"
+                                                        stroke="hsl(var(--primary))"
+                                                        strokeWidth={2}
+                                                        fill="url(#upsGradient)"
+                                                    />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                            {trend > 0 ? (
+                                                <>
+                                                    <TrendingUp className="h-4 w-4 text-green-500" />
+                                                    <span className="text-green-500">+{trend} pts</span>
+                                                </>
+                                            ) : trend < 0 ? (
+                                                <>
+                                                    <TrendingDown className="h-4 w-4 text-red-500" />
+                                                    <span className="text-red-500">{trend} pts</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Minus className="h-4 w-4" />
+                                                    <span>No change</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -251,12 +278,12 @@ export default function OverviewPage() {
                     href="/sites"
                 />
                 <StatCard
-                    title="Trackers Found"
-                    value={state.trackersDetected}
-                    subtitle="Across all sites"
-                    icon={Eye}
-                    iconColor="text-purple-500"
-                    href="/trackers"
+                    title="Safe Streak"
+                    value={state.safeVisitStreak}
+                    subtitle="Consecutive safe sites"
+                    icon={Flame}
+                    iconColor="text-orange-500"
+                    href="/privacy-score"
                 />
                 <StatCard
                     title="High Risk Sites"
@@ -294,23 +321,23 @@ export default function OverviewPage() {
                             </Link>
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
-                                <span className="text-sm text-muted-foreground">Average Risk Score</span>
+                    <CardContent className="space-y-2">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-muted/50">
+                                <span className="text-sm text-muted-foreground">Average Safety Score</span>
                                 <Badge variant="outline" className={cn(
-                                    avgWRS >= 60 ? "border-red-500 text-red-500" :
-                                        avgWRS >= 40 ? "border-yellow-500 text-yellow-500" :
-                                            "border-green-500 text-green-500"
+                                    avgWSS >= 70 ? "border-green-500 text-green-500" :
+                                        avgWSS >= 40 ? "border-yellow-500 text-yellow-500" :
+                                            "border-red-500 text-red-500"
                                 )}>
-                                    {avgWRS}
+                                    {avgWSS}
                                 </Badge>
                             </div>
-                            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                            <div className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-muted/50">
                                 <span className="text-sm text-muted-foreground">Trusted Sites</span>
                                 <Badge variant="secondary">{whitelistCount}</Badge>
                             </div>
-                            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                            <div className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-muted/50">
                                 <span className="text-sm text-muted-foreground">Blocked Sites</span>
                                 <Badge variant="secondary">{blacklistCount}</Badge>
                             </div>
@@ -336,13 +363,13 @@ export default function OverviewPage() {
                     </CardHeader>
                     <CardContent>
                         {recentNotifications.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 {recentNotifications.slice(0, 3).map((notification) => (
                                     <Link
                                         key={notification.id}
                                         to={notification.actionUrl || '/activity-logs'}
                                         className={cn(
-                                            "flex items-center gap-3 p-2 rounded-lg transition-colors hover:bg-muted/50",
+                                            "flex items-center gap-2.5 p-2.5 rounded-lg transition-colors hover:bg-muted/50",
                                             !notification.read && "bg-primary/5"
                                         )}
                                     >
@@ -356,7 +383,7 @@ export default function OverviewPage() {
                                             )}>
                                                 {notification.title}
                                             </p>
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-xs text-muted-foreground mt-0.5">
                                                 {formatTimeAgo(notification.timestamp)}
                                             </p>
                                         </div>

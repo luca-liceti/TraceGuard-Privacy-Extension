@@ -2,6 +2,3 @@ MASTER CURRENT PROJECT STATE ANALYZER:
 
 I want you to analyse the current state of the project. I want you to find all the critial flaws in the core logic that are fundamentally wrong, not opinion based. I want you do to do that for the UI, UX for the dashboard and the sidepanel/popup. As well as for the metrics that are being calculated. At any moment during your analysis you are allowed to stop and ask me questions. Do not make assumptions.
 
----
-
-I want my project to use WXT, React, and TypeScript (strict mode). Implement type-safe messaging using Zod. For all styling, use Tailwind CSS and only use official shadcn for all ui components/design.

@@ -1,9 +1,9 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Eye, Shield, Info, BarChart3, Search } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+
 import { Input } from "@/components/ui/input"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts"
@@ -263,7 +263,7 @@ export default function TrackersPage() {
                                                     {domain}
                                                 </h3>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Overall WRS: {data.wrs}
+                                                    Safety Score: {data.wss}
                                                 </p>
                                             </div>
                                         </div>

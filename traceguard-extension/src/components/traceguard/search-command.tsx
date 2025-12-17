@@ -1,19 +1,8 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
-import {
-    Search,
-    Home,
-    ShieldCheck,
-    Globe,
-    Target,
-    FileText,
-    Database,
-    Settings,
-    TrendingUp,
-    Link as LinkIcon
-} from "lucide-react"
+import { Search, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
     CommandDialog,
@@ -26,45 +15,22 @@ import {
 } from "@/components/ui/command"
 import { DialogTitle } from "@/components/ui/dialog"
 
-interface SearchableItem {
-    id: string
-    label: string
-    description?: string
-    icon: React.ComponentType<{ className?: string }>
-    href: string
-    category: 'pages' | 'sites' | 'settings'
-}
-
-// Static pages for navigation
-const pages: SearchableItem[] = [
-    { id: 'overview', label: 'Overview', description: 'Dashboard overview', icon: Home, href: '/overview', category: 'pages' },
-    { id: 'privacy-score', label: 'Privacy Score', description: 'Your UPS score and history', icon: ShieldCheck, href: '/privacy-score', category: 'pages' },
-    { id: 'website-safety', label: 'Website Safety', description: 'Site risk analysis', icon: Globe, href: '/website-safety', category: 'pages' },
-    { id: 'sites', label: 'Sites Analyzed', description: 'All visited sites', icon: TrendingUp, href: '/sites', category: 'pages' },
-    { id: 'trackers', label: 'Trackers', description: 'Tracker detection', icon: Target, href: '/trackers', category: 'pages' },
-    { id: 'activity-logs', label: 'Activity Logs', description: 'Browsing activity', icon: FileText, href: '/activity-logs', category: 'pages' },
-    { id: 'whitelist-blacklist', label: 'Whitelist & Blacklist', description: 'Trusted and blocked sites', icon: Database, href: '/whitelist-blacklist', category: 'pages' },
-    { id: 'integrations', label: 'Integrations', description: 'Third-party integrations', icon: LinkIcon, href: '/integrations', category: 'pages' },
-    { id: 'settings', label: 'Settings', description: 'Extension preferences', icon: Settings, href: '/settings', category: 'pages' },
-]
-
-const settingsItems: SearchableItem[] = [
-    { id: 's-theme', label: 'Theme & Appearance', description: 'Change color mode (Light/Dark)', icon: Settings, href: '/settings?tab=general', category: 'settings' },
-    { id: 's-display', label: 'Display Mode', description: 'Toggle between Popup and Side Panel', icon: Settings, href: '/settings?tab=general', category: 'settings' },
-    { id: 's-alerts', label: 'Notification Levels', description: 'Configure alert sensitivity', icon: Settings, href: '/settings?tab=notifications', category: 'settings' },
-    { id: 's-pii', label: 'PII Detection', description: 'Monitor personal information inputs', icon: ShieldCheck, href: '/settings?tab=privacy', category: 'settings' },
-    { id: 's-wss', label: 'Safety Score Threshold', description: 'Set minimum safety score for alerts', icon: ShieldCheck, href: '/settings?tab=privacy', category: 'settings' },
-    { id: 's-retention', label: 'Data Retention', description: 'Manage log storage duration', icon: Database, href: '/settings?tab=data', category: 'settings' },
-    { id: 's-clear', label: 'Clear Data', description: 'Clear logs, reset score, or factory reset', icon: Database, href: '/settings?tab=data', category: 'settings' },
-    { id: 'p-breakdown', label: 'Score Breakdown', description: 'See how your Privacy Score is calculated', icon: ShieldCheck, href: '/privacy-score', category: 'settings' },
-    { id: 'p-risks', label: 'Risk Analysis', description: 'View detailed site risk factors', icon: Globe, href: '/website-safety', category: 'settings' },
-]
+// Import navigation from shared source - pages automatically stay in sync!
+import { getAllSearchablePages, settingsSearchItems, type SettingsSearchItem } from "@/lib/navigation"
 
 export function SearchCommand() {
     const [open, setOpen] = useState(false)
     const [query, setQuery] = useState("")
     const [siteCache, setSiteCache] = useState<Record<string, any>>({})
     const navigate = useNavigate()
+
+    // Get pages from shared navigation config - automatically updated!
+    const pages = useMemo(() => {
+        return getAllSearchablePages().map(page => ({
+            ...page,
+            category: 'pages' as const
+        }))
+    }, [])
 
     // Keyboard shortcut
     useEffect(() => {
@@ -103,7 +69,7 @@ export function SearchCommand() {
             page.label.toLowerCase().includes(lowerQuery) ||
             page.description?.toLowerCase().includes(lowerQuery)
         )
-    }, [query])
+    }, [query, pages])
 
     const filteredSites = useMemo(() => {
         if (!query) return []
@@ -122,9 +88,9 @@ export function SearchCommand() {
     }, [query, siteCache])
 
     const filteredSettings = useMemo(() => {
-        if (!query) return []
+        if (!query) return [] as SettingsSearchItem[]
         const lowerQuery = query.toLowerCase()
-        return settingsItems.filter(item =>
+        return settingsSearchItems.filter((item: SettingsSearchItem) =>
             item.label.toLowerCase().includes(lowerQuery) ||
             item.description?.toLowerCase().includes(lowerQuery)
         )

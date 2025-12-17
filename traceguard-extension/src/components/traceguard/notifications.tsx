@@ -118,7 +118,7 @@ export function NotificationDropdown() {
                             <DropdownMenuItem
                                 key={notification.id}
                                 className={cn(
-                                    "flex items-start gap-3 p-3 cursor-pointer",
+                                    "flex items-start gap-2 p-3 cursor-pointer relative group",
                                     !notification.read && "bg-accent/50"
                                 )}
                                 onClick={() => handleNotificationClick(notification)}
@@ -141,24 +141,24 @@ export function NotificationDropdown() {
                                             )} />
                                         )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                                         {notification.message}
                                     </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
+                                    <p className="text-xs text-muted-foreground mt-1.5">
                                         {formatTimeAgo(notification.timestamp)}
                                     </p>
                                 </div>
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
                                     onClick={(e) => {
                                         e.preventDefault()
                                         e.stopPropagation()
                                         removeNotification(notification.id)
                                     }}
                                 >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-3.5 w-3.5" />
                                 </Button>
                             </DropdownMenuItem>
                         ))}

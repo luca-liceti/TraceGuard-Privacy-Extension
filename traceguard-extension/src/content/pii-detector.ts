@@ -83,10 +83,10 @@ class PIIDetector {
 
         console.warn(`[TraceGuard] PII detected: ${sensitivity} sensitivity field on ${domain}`);
 
-        // Get current site WRS from storage
+        // Get current site WSS from storage
         const storage = await chrome.storage.local.get('siteCache');
         const siteData = (storage.siteCache as Record<string, any>)?.[domain];
-        const siteWRS = siteData?.wrs || 50; // Default if not yet analyzed
+        const siteWSS = siteData?.wss || 50; // Default if not yet analyzed
 
         // Create detection event
         const event: PIIEvent = {
@@ -95,7 +95,7 @@ class PIIDetector {
             fieldType: fieldType,
             fieldName: fieldName,
             sensitivity: sensitivity,
-            siteWRS: siteWRS
+            siteWRS: siteWSS
         };
 
         this.detectionEvents.push(event);

@@ -38,9 +38,10 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
         policy: validateScore(breakdown.policy)
     };
 
-    // Check if policy is a fallback score (25 or 50 = no ToS;DR rating)
+    // Check if policy is a neutral fallback score (50 = found link but no ToS;DR rating)
+    // Score 25 (no privacy link) IS included as a known negative signal
     // Valid ToS;DR scores are: 20 (E), 40 (D), 60 (C), 80 (B), 100 (A)
-    const isPolicyFallback = validatedBreakdown.policy === 25 || validatedBreakdown.policy === 50;
+    const isPolicyFallback = validatedBreakdown.policy === 50;
 
     // Base weights
     let weights = {

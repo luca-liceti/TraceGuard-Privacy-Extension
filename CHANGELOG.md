@@ -1,6 +1,49 @@
-# Changelog - Session Dec 16, 2025
+# Changelog
 
-## Version 1.2.0 - ToS;DR Integration & UI Refinements
+## Version 1.3.0 - Dashboard Redesign & Testing Infrastructure (Dec 17, 2025)
+
+### ✨ New Features
+
+#### Testing Infrastructure
+- **Added Vitest** - Full unit testing framework with happy-dom environment
+- **Chrome API mocks** - Comprehensive mocking for `chrome.storage`, `chrome.runtime`, etc.
+- **Scoring tests** - Unit tests for WSS calculation covering all edge cases
+- **PII tests** - Unit tests for penalty/recovery logic and integration scenarios
+
+#### Navigation System
+- **Centralized navigation config** - Single source of truth in `lib/navigation.ts`
+- **Synced sidebar & search** - Adding a new page now auto-updates both sidebar and command palette
+
+### 🎨 UI/UX Improvements
+
+#### Dashboard Redesign
+- **Redesigned all core pages** - Overview, Privacy Score, Website Safety, Sites Analyzed, Trackers, Whitelist/Blacklist, Activity Logs, Settings, Help
+- **shadcn/ui sidebar-07** - Refactored to use official sidebar block for consistency
+- **New theme system** - oklch color variables for modern, vibrant design
+- **Clickable stat cards** - Cards now link to their relevant detail pages
+
+#### Settings Page
+- **Complete overhaul** - Grouped settings by category (Display, Privacy, Data, Reset)
+- **Display mode selector** - Choose between popup, sidebar, or both
+- **Notification confirmations** - Toast notifications on setting changes
+
+### 🔧 Improvements
+
+- **Fixed display mode sync** - Settings now correctly reflect active display mode
+- **Breadcrumb accuracy** - Updated to show correct page hierarchy
+- **README.md** - Professional readme with badges, architecture, and getting started guide
+- **package.json metadata** - Added description, keywords, author, and correct license
+
+### 📦 Project Polish
+
+- **Added LICENSE** - AGPL-3.0
+- **Added CHANGELOG.md** - Version history tracking
+- **Added docs/** - Logos and screenshots for documentation
+- **Updated .gitignore** - Comprehensive exclusions for build artifacts and dev files
+
+---
+
+## Version 1.2.0 - ToS;DR Integration & UI Refinements (Dec 16, 2025)
 
 ### 🔧 Bug Fixes
 

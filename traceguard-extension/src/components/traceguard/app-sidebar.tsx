@@ -3,18 +3,7 @@
 import * as React from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
-    Settings,
-    HelpCircle,
-    LayoutDashboard,
-    FileText,
-    ListChecks,
-    Globe,
-    BarChart3,
-    Eye,
-    ShieldCheck,
-    Link as LinkIcon,
     ChevronRight,
-    type LucideIcon,
 } from "lucide-react"
 
 import {
@@ -38,112 +27,10 @@ import {
     SidebarMenuSubItem,
     SidebarRail,
 } from "@/components/ui/sidebar"
+import { ShieldCheck } from "lucide-react"
 
-// Menu data structure
-interface NavItem {
-    id: string
-    title: string
-    url?: string
-    icon: LucideIcon
-    isNew?: boolean
-    badge?: string
-    items?: {
-        id: string
-        title: string
-        url: string
-    }[]
-}
-
-interface NavSection {
-    id: string
-    label: string
-    items: NavItem[]
-}
-
-const navSections: NavSection[] = [
-    {
-        id: "main",
-        label: "Main",
-        items: [
-            {
-                id: "overview",
-                title: "Overview",
-                url: "/overview",
-                icon: LayoutDashboard,
-            },
-            {
-                id: "privacy-score",
-                title: "Privacy Score",
-                url: "/privacy-score",
-                icon: ShieldCheck,
-            },
-        ],
-    },
-    {
-        id: "analysis",
-        label: "Analysis",
-        items: [
-            {
-                id: "website-safety",
-                title: "Website Safety",
-                url: "/website-safety",
-                icon: Globe,
-            },
-            {
-                id: "sites",
-                title: "Sites Analyzed",
-                url: "/sites",
-                icon: BarChart3,
-            },
-            {
-                id: "trackers",
-                title: "Trackers",
-                url: "/trackers",
-                icon: Eye,
-            },
-            {
-                id: "activity-logs",
-                title: "Activity Logs",
-                url: "/activity-logs",
-                icon: FileText,
-            },
-        ],
-    },
-    {
-        id: "management",
-        label: "Management",
-        items: [
-            {
-                id: "whitelist-blacklist",
-                title: "Domain Lists",
-                url: "/whitelist-blacklist",
-                icon: ListChecks,
-            },
-            {
-                id: "integrations",
-                title: "Integrations",
-                url: "/integrations",
-                icon: LinkIcon,
-                isNew: true,
-            },
-        ],
-    },
-]
-
-const footerItems: NavItem[] = [
-    {
-        id: "settings",
-        title: "Settings",
-        url: "/settings",
-        icon: Settings,
-    },
-    {
-        id: "help",
-        title: "Help",
-        url: "/help",
-        icon: HelpCircle,
-    },
-]
+// Import navigation config from shared source
+import { navSections, footerItems, type NavItem, type NavSection } from "@/lib/navigation"
 
 function NavMain({ sections }: { sections: NavSection[] }) {
     const location = useLocation()

@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@/components/theme-provider"
-import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Activity, Cookie, FileText, Key, Lock } from "lucide-react"
+import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Flame, Activity, Cookie, FileText, Key, Lock } from "lucide-react"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
@@ -416,13 +416,14 @@ function App() {
                         </div>
                     )}
 
-                    {/* Trackers */}
+                    {/* Safe Streak */}
                     <div className="p-3 rounded-lg border bg-card shadow-sm">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">Trackers Detected</span>
-                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Safe Streak</span>
+                            <Flame className="h-4 w-4 text-orange-500" />
                         </div>
-                        <div className="text-2xl font-bold mt-1">{state.trackersDetected}</div>
+                        <div className="text-2xl font-bold mt-1">{state.safeVisitStreak}</div>
+                        <p className="text-xs text-muted-foreground">Consecutive safe sites</p>
                     </div>
                 </div>
 

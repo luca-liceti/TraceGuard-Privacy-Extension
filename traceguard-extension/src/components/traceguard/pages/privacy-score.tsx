@@ -13,7 +13,7 @@ import {
     Target,
 } from "lucide-react"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Area, AreaChart } from "recharts"
+import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, Area, AreaChart } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -310,7 +310,7 @@ export default function PrivacyScorePage() {
                             <div>
                                 <h3 className="font-medium text-foreground">Score Recovery</h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Your score gradually recovers over time when you practice safe browsing habits. Recovery is automatic and happens daily.
+                                    Your score recovers when you visit safe websites (safety score ≥ 70). The safer the site, the more recovery you earn. Building a streak of 10+ safe sites grants bonus recovery.
                                 </p>
                             </div>
                         </div>

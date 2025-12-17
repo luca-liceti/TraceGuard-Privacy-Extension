@@ -100,6 +100,7 @@ traceguard-extension-*.zip
 *.bak
 *.backup
 *.old
+my_prompts.txt
 
 # Vercel (if using for dashboard)
 .vercel

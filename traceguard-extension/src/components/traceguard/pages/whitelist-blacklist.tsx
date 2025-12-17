@@ -45,16 +45,63 @@ export default function WhitelistBlacklistPage() {
     const settings = useSettings()
     const [whitelistInput, setWhitelistInput] = useState("")
     const [blacklistInput, setBlacklistInput] = useState("")
+    const [whitelistError, setWhitelistError] = useState("")
+    const [blacklistError, setBlacklistError] = useState("")
 
     if (!settings) return <div className="p-4">Loading...</div>
 
     const whitelist = settings.whitelist || []
     const blacklist = settings.blacklist || []
 
+    /**
+     * Validate domain format
+     * - Must have at least one dot (e.g., example.com)
+     * - No spaces allowed
+     * - No protocol prefixes (http://, https://)
+     * - Only valid domain characters
+     */
+    const validateDomain = (input: string): { valid: boolean; error: string; cleanDomain: string } => {
+        let domain = input.trim().toLowerCase()
+
+        // Remove protocol if user accidentally included it
+        domain = domain.replace(/^https?:\/\//, '')
+        // Remove trailing slashes and paths
+        domain = domain.split('/')[0]
+
+        if (!domain) {
+            return { valid: false, error: "Please enter a domain", cleanDomain: "" }
+        }
+
+        if (domain.includes(' ')) {
+            return { valid: false, error: "Domain cannot contain spaces", cleanDomain: "" }
+        }
+
+        if (!domain.includes('.')) {
+            return { valid: false, error: "Please enter a valid domain (e.g., example.com)", cleanDomain: "" }
+        }
+
+        // Basic domain character validation (letters, numbers, dots, hyphens)
+        const domainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
+        if (!domainRegex.test(domain)) {
+            return { valid: false, error: "Invalid domain format", cleanDomain: "" }
+        }
+
+        return { valid: true, error: "", cleanDomain: domain }
+    }
+
     const addToWhitelist = async () => {
         if (!whitelistInput.trim()) return
 
-        const domain = whitelistInput.trim().toLowerCase()
+        const validation = validateDomain(whitelistInput)
+        if (!validation.valid) {
+            setWhitelistError(validation.error)
+            toast.error("Invalid domain", {
+                description: validation.error
+            })
+            return
+        }
+
+        const domain = validation.cleanDomain
         if (whitelist.includes(domain)) {
             toast.error("Already whitelisted", {
                 description: `${domain} is already in your whitelist.`
@@ -74,6 +121,7 @@ export default function WhitelistBlacklistPage() {
 
         await chrome.storage.local.set({ settings: updatedSettings })
         setWhitelistInput("")
+        setWhitelistError("")
         toast.success("Added to whitelist", {
             description: `${domain} is now trusted.`
         })
@@ -94,7 +142,16 @@ export default function WhitelistBlacklistPage() {
     const addToBlacklist = async () => {
         if (!blacklistInput.trim()) return
 
-        const domain = blacklistInput.trim().toLowerCase()
+        const validation = validateDomain(blacklistInput)
+        if (!validation.valid) {
+            setBlacklistError(validation.error)
+            toast.error("Invalid domain", {
+                description: validation.error
+            })
+            return
+        }
+
+        const domain = validation.cleanDomain
         if (blacklist.includes(domain)) {
             toast.error("Already blacklisted", {
                 description: `${domain} is already in your blacklist.`
@@ -114,6 +171,7 @@ export default function WhitelistBlacklistPage() {
 
         await chrome.storage.local.set({ settings: updatedSettings })
         setBlacklistInput("")
+        setBlacklistError("")
         toast.success("Added to blacklist", {
             description: `${domain} is now blocked.`
         })
@@ -166,10 +224,10 @@ export default function WhitelistBlacklistPage() {
                         <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-muted-foreground space-y-1">
                             <p>
-                                <strong className="text-foreground">Whitelist:</strong> Trusted domains always receive a WRS of 0 (no risk).
+                                <strong className="text-foreground">Whitelist:</strong> Trusted domains always receive a safety score of 100 (fully trusted).
                             </p>
                             <p>
-                                <strong className="text-foreground">Blacklist:</strong> Blocked domains always receive a WRS of 100 (critical risk).
+                                <strong className="text-foreground">Blacklist:</strong> Blocked domains always receive a safety score of 0 (critical risk).
                             </p>
                         </div>
                     </div>
@@ -189,23 +247,31 @@ export default function WhitelistBlacklistPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {/* Add Input */}
-                    <div className="flex gap-2">
-                        <Input
-                            type="text"
-                            placeholder="example.com"
-                            value={whitelistInput}
-                            onChange={(e) => setWhitelistInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && addToWhitelist()}
-                            className="flex-1"
-                        />
-                        <Button
-                            onClick={addToWhitelist}
-                            disabled={!whitelistInput.trim()}
-                            className="flex items-center gap-2"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Add
-                        </Button>
+                    <div className="space-y-2">
+                        <div className="flex gap-2">
+                            <Input
+                                type="text"
+                                placeholder="example.com"
+                                value={whitelistInput}
+                                onChange={(e) => {
+                                    setWhitelistInput(e.target.value)
+                                    setWhitelistError("")
+                                }}
+                                onKeyPress={(e) => e.key === 'Enter' && addToWhitelist()}
+                                className={cn("flex-1", whitelistError && "border-red-500")}
+                            />
+                            <Button
+                                onClick={addToWhitelist}
+                                disabled={!whitelistInput.trim()}
+                                className="flex items-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add
+                            </Button>
+                        </div>
+                        {whitelistError && (
+                            <p className="text-sm text-red-500">{whitelistError}</p>
+                        )}
                     </div>
 
                     {/* List */}
@@ -258,24 +324,32 @@ export default function WhitelistBlacklistPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {/* Add Input */}
-                    <div className="flex gap-2">
-                        <Input
-                            type="text"
-                            placeholder="suspicious-site.com"
-                            value={blacklistInput}
-                            onChange={(e) => setBlacklistInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && addToBlacklist()}
-                            className="flex-1"
-                        />
-                        <Button
-                            onClick={addToBlacklist}
-                            variant="destructive"
-                            disabled={!blacklistInput.trim()}
-                            className="flex items-center gap-2"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Add
-                        </Button>
+                    <div className="space-y-2">
+                        <div className="flex gap-2">
+                            <Input
+                                type="text"
+                                placeholder="suspicious-site.com"
+                                value={blacklistInput}
+                                onChange={(e) => {
+                                    setBlacklistInput(e.target.value)
+                                    setBlacklistError("")
+                                }}
+                                onKeyPress={(e) => e.key === 'Enter' && addToBlacklist()}
+                                className={cn("flex-1", blacklistError && "border-red-500")}
+                            />
+                            <Button
+                                onClick={addToBlacklist}
+                                variant="destructive"
+                                disabled={!blacklistInput.trim()}
+                                className="flex items-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add
+                            </Button>
+                        </div>
+                        {blacklistError && (
+                            <p className="text-sm text-red-500">{blacklistError}</p>
+                        )}
                     </div>
 
                     {/* List */}

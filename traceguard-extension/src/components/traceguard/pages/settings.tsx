@@ -117,7 +117,7 @@ export default function SettingsPage() {
     const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 50)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
     const [enableTrackerBlocking, setEnableTrackerBlocking] = useState(settings?.enableTrackerBlocking ?? false)
-    const [displayMode, setDisplayMode] = useState(settings?.displayMode || "sidebar")
+    const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
 
     // Fetch manifest version
     useEffect(() => {
@@ -154,7 +154,7 @@ export default function SettingsPage() {
             setWssThreshold(settings.wssThreshold || 50)
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
             setEnableTrackerBlocking(settings.enableTrackerBlocking ?? false)
-            setDisplayMode(settings.displayMode || "sidebar")
+            setDisplayMode(settings.displayMode || "popup")
         }
     }, [settings])
 
@@ -199,7 +199,7 @@ export default function SettingsPage() {
             wssThreshold: 50,
             enablePIIDetection: true,
             enableTrackerBlocking: false,
-            displayMode: "sidebar" as const,
+            displayMode: "popup" as const,
         }
 
         // Apply defaults to local state
@@ -412,8 +412,8 @@ export default function SettingsPage() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="sidebar">Side Panel</SelectItem>
                                         <SelectItem value="popup">Popup</SelectItem>
+                                        <SelectItem value="sidebar">Side Panel</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </SettingItem>
