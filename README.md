@@ -2,7 +2,7 @@
 
 <div align="center">
   <a href="https://github.com/luca-liceti/TraceGuard-Privacy-Extension">
-    <img src="docs/logos/traceguard_logo_background_removed.svg" alt="TraceGuard Logo" width="100%">
+    <img src="docs/logos/traceguard_logo_black_bg.svg" alt="TraceGuard Logo" width="100%">
   </a>
 </div>
 
