@@ -1,21 +1,53 @@
 /**
- * Policy Detector - Privacy Policy Detection with ToS;DR API
+ * =============================================================================
+ * POLICY DETECTOR - Checking Privacy Policies with ToS;DR
+ * =============================================================================
  * 
- * SCORING: Higher = Better (100 = safe, 0 = dangerous)
- * - A = 100 (excellent privacy policy)
- * - B = 80 (good)
- * - C = 60 (fair)
- * - D = 40 (poor)
- * - E = 20 (bad)
- * - Not found = 50 (neutral, unknown)
+ * WHAT THIS FILE DOES:
+ * This detector checks if a website has a privacy policy and how good it is.
+ * We use ToS;DR (Terms of Service; Didn't Read) - a community project that
+ * grades privacy policies like school grades from A to E.
+ * 
+ * WHAT IS ToS;DR?
+ * ToS;DR is a website (tosdr.org) where volunteers read privacy policies and
+ * grade them. It's like a Yelp review for privacy policies! This saves you
+ * from having to read long, confusing legal documents.
+ * 
+ * HOW IT WORKS:
+ * 1. We ask the ToS;DR API if they have a rating for this website
+ * 2. If they do, we convert their grade to a score
+ * 3. If they don't, we check if the page at least has a privacy policy link
+ * 4. No rating and no link = lowest score (25)
+ * 
+ * SCORING (Higher = Better):
+ * Using ToS;DR grades:
+ * - A = 100 (Excellent policy - treats your privacy well)
+ * - B = 80 (Good policy)
+ * - C = 60 (Fair policy)
+ * - D = 40 (Poor policy - some concerning clauses)
+ * - E = 20 (Bad policy - significant privacy issues)
+ * 
+ * Fallback scores (when no ToS;DR rating exists):
+ * - 50 = Privacy policy link found (neutral - policy exists but unrated)
+ * - 25 = No privacy link at all (concerning - no policy visible)
+ * 
+ * EXAMPLES:
+ * - google.com → Grade C → Score 60
+ * - duckduckgo.com → Grade A → Score 100
+ * - random-site.com with privacy link → Score 50
+ * - sketchy-site.com with no privacy link → Score 25
+ * =============================================================================
  */
 
+/**
+ * The result of privacy policy detection.
+ */
 export interface PolicyDetectionResult {
-    score: number;
-    source: 'tosdr' | 'local' | 'fallback';
-    grade?: string;
-    serviceName?: string;
-    hasLocalPolicy: boolean;
+    score: number;            // Safety score (0-100, higher = better policy)
+    source: 'tosdr' | 'local' | 'fallback';  // Where the score came from
+    grade?: string;           // ToS;DR grade (A-E) if available
+    serviceName?: string;     // Name of the service from ToS;DR
+    hasLocalPolicy: boolean;  // Was a privacy policy link found on the page?
 }
 
 /**

@@ -1,66 +1,157 @@
-interface Blacklist {
-    version: string;
-    updated: string;
-    domains: string[];
-}
+/**
+ * =============================================================================
+ * REPUTATION SERVICE - Checking if Websites are Dangerous
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This file handles checking if a website is known to be dangerous. Think of it
+ * like a security guard checking names against a "do not enter" list.
+ * 
+ * HOW IT WORKS:
+ * The reputation check happens in layers (like multiple security checkpoints):
+ * 
+ * Layer 1: User Whitelist - Sites you personally trust (always safe = 100)
+ * Layer 2: User Blacklist - Sites you personally blocked (always dangerous = 0)
+ * Layer 3: Static Blacklist - A built-in list of known bad sites (dangerous = 0)
+ * Layer 4: URLhaus API - A live database of malware-hosting sites (dangerous = 0)
+ * Layer 5: Default - If nothing bad found, the site is considered safe (= 100)
+ * 
+ * SCORING:
+ * - 100 = Safe (passed all checks)
+ * - 0 = Dangerous (found on a blacklist or in malware database)
+ * 
+ * KEY TERMS:
+ * - Blacklist: A list of known dangerous websites to avoid
+ * - Whitelist: A list of websites you trust (overrides other checks)
+ * - URLhaus: A free online database of websites that host malware
+ * - Cache: Temporary storage so we don't have to check the same site repeatedly
+ * =============================================================================
+ */
 
-let staticBlacklist: Set<string> = new Set();
-
-// URLhaus API cache (domain -> {isMalicious: boolean, timestamp: number})
-const urlhausCache: Map<string, { isMalicious: boolean; timestamp: number }> = new Map();
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour cache
+// =============================================================================
+// TYPE DEFINITIONS
+// These define the "shape" of data we work with (like a blueprint)
+// =============================================================================
 
 /**
- * Load the static blacklist from bundled assets
+ * Represents the structure of our blacklist file.
+ * The blacklist is a list of known dangerous domains loaded from a JSON file.
+ */
+interface Blacklist {
+    version: string;      // Version number of the blacklist (e.g., "1.0.0")
+    updated: string;      // When the blacklist was last updated
+    domains: string[];    // Array of dangerous domain names
+}
+
+// =============================================================================
+// MODULE STATE
+// Variables that persist across function calls (like the extension's memory)
+// =============================================================================
+
+// This Set stores all domains from our built-in blacklist
+// A Set is like an array but automatically prevents duplicates and is faster to search
+let staticBlacklist: Set<string> = new Set();
+
+// Cache for URLhaus API results - prevents us from making the same API call repeatedly
+// Key = domain name, Value = {whether it's malicious, when we checked}
+const urlhausCache: Map<string, { isMalicious: boolean; timestamp: number }> = new Map();
+
+// How long to keep cached results (1 hour in milliseconds)
+// After this time, we'll check the API again to see if anything changed
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+// =============================================================================
+// BLACKLIST LOADING
+// Loads the list of known dangerous sites from our bundled file
+// =============================================================================
+
+/**
+ * Loads the static blacklist from the extension's assets folder.
+ * 
+ * This function reads a JSON file that comes bundled with the extension,
+ * containing a list of known dangerous domain names. This list is like
+ * a "do not visit" list that we check every website against.
+ * 
+ * This is called when:
+ * - The extension is first installed
+ * - The browser starts up
  */
 export async function loadBlacklist() {
     try {
+        // Get the URL to our blacklist file (it's packaged with the extension)
         const url = chrome.runtime.getURL('assets/blacklist.json');
+
+        // Fetch and parse the JSON file
         const response = await fetch(url);
         const data: Blacklist = await response.json();
+
+        // Store domains in a Set for fast lookup
+        // (Checking if something is in a Set is much faster than searching an array)
         staticBlacklist = new Set(data.domains);
+
         console.log(`[Reputation] Loaded ${staticBlacklist.size} domains into static blacklist`);
     } catch (error) {
         console.error('[Reputation] Failed to load static blacklist:', error);
     }
 }
 
+// =============================================================================
+// URLHAUS API CHECK
+// Checks a domain against a live malware database
+// =============================================================================
+
 /**
- * Check URLhaus API for malware-associated domains
- * Free API, no key required - https://urlhaus-api.abuse.ch/
+ * Checks if a domain is in the URLhaus malware database.
  * 
- * @param domain - Domain to check
- * @returns true if domain is known malicious, false otherwise
+ * URLhaus is a free, community-driven project that tracks websites hosting malware.
+ * By checking against this database, we can detect newly-discovered dangerous sites
+ * that aren't in our static blacklist yet.
+ * 
+ * HOW IT WORKS:
+ * 1. First, check if we recently looked up this domain (use cached result)
+ * 2. If not cached, send a request to the URLhaus API
+ * 3. The API tells us if this domain has been reported for hosting malware
+ * 4. We cache the result so we don't have to ask again for an hour
+ * 
+ * @param domain - The domain name to check (e.g., "example.com")
+ * @returns true if the domain is known to be malicious, false otherwise
  */
 async function checkURLhaus(domain: string): Promise<boolean> {
-    // Check cache first
+    // STEP 1: Check if we have a recent cached result for this domain
     const cached = urlhausCache.get(domain);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        // Cache hit! We checked this domain recently, so use the cached result
         console.log(`[URLhaus] Cache hit for ${domain}: ${cached.isMalicious ? 'malicious' : 'clean'}`);
         return cached.isMalicious;
     }
 
+    // STEP 2: No cache or cache expired - make an API request
     try {
-        // URLhaus host lookup API
+        // URLhaus provides a free API to check domains
+        // Documentation: https://urlhaus-api.abuse.ch/
         const response = await fetch('https://urlhaus-api.abuse.ch/v1/host/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `host=${encodeURIComponent(domain)}`
+            body: `host=${encodeURIComponent(domain)}`  // URL-encode the domain for safety
         });
 
+        // Check if the request succeeded
         if (!response.ok) {
             console.warn(`[URLhaus] API returned ${response.status}`);
-            return false;
+            return false;  // If API is down, assume safe (fail-open)
         }
 
+        // Parse the response
         const data = await response.json();
 
-        // URLhaus returns query_status: "ok" if found, "no_results" if not
+        // STEP 3: Interpret the response
+        // URLhaus returns "ok" if the domain is in their database (meaning it's malicious)
         const isMalicious = data.query_status === 'ok' && data.urls && data.urls.length > 0;
 
-        // Cache the result
+        // STEP 4: Cache the result for future lookups
         urlhausCache.set(domain, { isMalicious, timestamp: Date.now() });
 
+        // Log the result for debugging
         if (isMalicious) {
             console.log(`[URLhaus] ⚠️ MALICIOUS: ${domain} has ${data.url_count} known malware URLs`);
         } else {
@@ -69,8 +160,10 @@ async function checkURLhaus(domain: string): Promise<boolean> {
 
         return isMalicious;
     } catch (error) {
+        // If something goes wrong (network error, etc.), assume safe
+        // This is called "fail-open" - we don't want API issues to block browsing
         console.warn(`[URLhaus] API check failed for ${domain}:`, error);
-        return false; // Fail open - don't block on API errors
+        return false;
     }
 }
 

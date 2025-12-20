@@ -1,3 +1,32 @@
+/**
+ * =============================================================================
+ * BUILD BLACKLIST SCRIPT - Generate Malware Domain List
+ * =============================================================================
+ * 
+ * WHAT THIS SCRIPT DOES:
+ * This Node.js script generates the blacklist.json file that contains a list
+ * of known dangerous domain names. The extension uses this list to warn users
+ * when they visit potentially harmful websites.
+ * 
+ * HOW TO RUN:
+ * node scripts/build-blacklist.js
+ * 
+ * WHAT IT CREATES:
+ * - src/assets/blacklist.json containing:
+ *   - version: Semantic version of the blacklist
+ *   - updated: ISO timestamp of when the list was generated
+ *   - domains: Array of known dangerous domain names
+ * 
+ * FUTURE IMPROVEMENTS:
+ * In a production system, this script would:
+ * - Fetch from EasyList to get known tracking domains
+ * - Fetch from PhishTank API to get known phishing sites
+ * - Fetch from URLhaus to get known malware-hosting domains
+ * - Combine and deduplicate the lists
+ * 
+ * Currently uses a small placeholder list for MVP demonstration.
+ * =============================================================================
+ */
 const fs = require('fs');
 const path = require('path');
 const https = require('https');

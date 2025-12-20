@@ -1,9 +1,39 @@
-import { detectProtocol } from './detectors/protocol';
-import { detectTrackingDetailed } from './detectors/tracking';
-import { detectSensitiveInputs } from './detectors/input';
-import { detectPrivacyPolicy } from './detectors/policy';
-import { detectCookiesDetailed } from './detectors/cookie';
-import { ScoreBreakdown } from '@/lib/types';
+/**
+ * =============================================================================
+ * PAGE ANALYZER - The Privacy Inspection Coordinator
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This is the "coordinator" that runs all privacy detectors on a webpage.
+ * Think of it like a building inspector who checks electrical, plumbing, and
+ * structure - this analyzer checks protocol, trackers, cookies, inputs, and policy.
+ * 
+ * HOW IT WORKS:
+ * 1. When called, it runs 5 different detectors (reputation is checked separately)
+ * 2. Each detector examines one aspect of the page's privacy
+ * 3. Results are collected and packaged together
+ * 4. The data is sent back to be scored and stored
+ * 
+ * THE 6 DETECTION AREAS:
+ * 1. Protocol - Is the connection HTTPS (secure) or HTTP (insecure)?
+ * 2. Tracking - Are there third-party trackers following you?
+ * 3. Inputs - Are there sensitive form fields (password, credit card)?
+ * 4. Cookies - Are there tracking or advertising cookies?
+ * 5. Policy  - What does the privacy policy say (ToS;DR rating)?
+ * 6. Reputation - Is the domain on any blacklists? (checked by background)
+ * 
+ * Note: Reputation is checked by the background script, not here, because
+ * content scripts can't make cross-origin requests to the reputation APIs.
+ * =============================================================================
+ */
+
+// Import all the individual detector functions
+import { detectProtocol } from './detectors/protocol';         // Checks HTTPS/HTTP
+import { detectTrackingDetailed } from './detectors/tracking'; // Finds trackers
+import { detectSensitiveInputs } from './detectors/input';     // Finds sensitive fields
+import { detectPrivacyPolicy } from './detectors/policy';      // Checks privacy policy
+import { detectCookiesDetailed } from './detectors/cookie';    // Analyzes cookies
+import { ScoreBreakdown } from '@/lib/types';                  // Type definitions
 
 export interface DetectionDetails {
     tracking: { count: number; known: number; suspicious: number };

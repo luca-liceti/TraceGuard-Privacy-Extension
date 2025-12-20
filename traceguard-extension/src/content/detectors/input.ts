@@ -1,12 +1,65 @@
+/**
+ * =============================================================================
+ * INPUT DETECTOR - Finding Sensitive Form Fields
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This detector finds sensitive input fields on webpages - places where you
+ * might enter personal information like passwords, credit cards, or emails.
+ * 
+ * CRITICAL PRIVACY GUARANTEE:
+ * We ONLY detect the TYPE of field (e.g., "password field").
+ * We NEVER read or store what you actually type!
+ * 
+ * WHY THIS MATTERS:
+ * Entering sensitive info on a risky website is dangerous. This detector
+ * helps identify pages where you might be asked for personal data so we can:
+ * 1. Warn you if the site is unsafe
+ * 2. Track your privacy score based on data exposure
+ * 3. Show which types of data sites are requesting
+ * 
+ * SENSITIVITY LEVELS:
+ * 
+ * HIGH (weight: 10) - Most sensitive:
+ *   - Passwords
+ *   - Credit card numbers
+ *   - CVV/security codes
+ *   - Social Security Numbers
+ * 
+ * MEDIUM (weight: 5) - Moderately sensitive:
+ *   - Email addresses
+ *   - Phone numbers
+ *   - Physical addresses
+ * 
+ * LOW (weight: 1) - Less sensitive:
+ *   - Names
+ *   - Usernames
+ * 
+ * SCORING FORMULA:
+ * Uses logarithmic calculation: 100 - 10 × log₂(weighted_count + 1)
+ * 
+ * EXAMPLES:
+ * - 0 sensitive fields → Score: 100 (safe page)
+ * - 1 password field (10 weighted) → Score: ~65
+ * - 1 password + 1 email (15 weighted) → Score: ~60
+ * =============================================================================
+ */
+
+/**
+ * Represents a sensitive input field found on the page.
+ */
 interface SensitiveField {
-    element: HTMLInputElement | HTMLTextAreaElement;
-    type: string;
-    sensitivity: 'HIGH' | 'MEDIUM' | 'LOW';
+    element: HTMLInputElement | HTMLTextAreaElement;  // The actual HTML element
+    type: string;                                      // Field type (password, email, etc.)
+    sensitivity: 'HIGH' | 'MEDIUM' | 'LOW';           // How sensitive is this data?
 }
 
+/**
+ * The result of input field detection.
+ */
 export interface InputDetectionResult {
-    score: number;
-    fields: {
+    score: number;           // Safety score (0-100, higher = safer)
+    fields: {                // Fields grouped by sensitivity level
         high: SensitiveField[];
         medium: SensitiveField[];
         low: SensitiveField[];

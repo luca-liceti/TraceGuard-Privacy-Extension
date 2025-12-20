@@ -1,9 +1,51 @@
 /**
- * Rate Limiter - Generic rate limiting utility for API calls
+ * =============================================================================
+ * RATE LIMITER - Preventing Too Many API Calls
+ * =============================================================================
  * 
- * Prevents excessive API calls by queuing requests and enforcing rate limits.
- * Uses a token bucket algorithm for smooth rate limiting.
+ * WHAT THIS FILE DOES:
+ * This file helps us avoid making too many requests to external APIs.
+ * When you browse the web, every page might need to check the ToS;DR database
+ * or other services. Without rate limiting, we might overwhelm these services
+ * and get blocked!
+ * 
+ * HOW IT WORKS - THE "TOKEN BUCKET" ALGORITHM:
+ * Imagine a bucket that can hold a certain number of tokens (like arcade tokens).
+ * - Each API call "spends" one token
+ * - The bucket slowly refills over time
+ * - If the bucket is empty, requests must wait until tokens refill
+ * 
+ * EXAMPLE:
+ * If we allow 10 requests per minute:
+ * - We start with 10 tokens
+ * - Each request uses 1 token
+ * - Every 6 seconds, we get 1 token back (10 tokens / 60 seconds = ~6s per token)
+ * - If all tokens are used, new requests queue up and wait
+ * 
+ * WHY THIS MATTERS:
+ * - Prevents us from getting blocked by external services
+ * - Keeps the extension running smoothly
+ * - Respects the resources of free APIs we depend on
+ * =============================================================================
  */
+
+/**
+ * Configuration options for creating a rate limiter.
+ */
+interface RateLimiterConfig {
+    maxRequestsPerMinute: number;  // How many requests allowed per minute
+    queueSize?: number;            // Max requests that can wait in line (default: 100)
+}
+
+/**
+ * Represents a request waiting in the queue.
+ */
+interface QueuedRequest<T> {
+    execute: () => Promise<T>;     // The function to run
+    resolve: (value: T) => void;   // Success callback
+    reject: (error: any) => void;  // Error callback
+    timestamp: number;             // When this request was queued
+}
 
 interface RateLimiterConfig {
     maxRequestsPerMinute: number;

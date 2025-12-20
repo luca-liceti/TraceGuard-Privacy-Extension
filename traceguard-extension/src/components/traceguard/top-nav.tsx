@@ -1,3 +1,31 @@
+/**
+ * =============================================================================
+ * TOP NAV - Header Bar Component
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This is the header bar at the top of every page. It shows where you are
+ * in the app and provides quick access to search, notifications, and themes.
+ * 
+ * LAYOUT:
+ * ┌─[Sidebar Toggle]─[Breadcrumbs]───────[Search]───────[Notifications]─[Theme]─┐
+ * │      ≡        │ Overview > Analysis > Current Page │ 🔍 │     🔔      │ ☀️  │
+ * └──────────────────────────────────────────────────────────────────────────────┘
+ * 
+ * COMPONENTS:
+ * - Left: Sidebar toggle button + breadcrumb navigation
+ * - Center: Search command palette (hidden on mobile)
+ * - Right: Notification dropdown + theme toggle
+ * 
+ * BREADCRUMB LOGIC:
+ * - Always shows Overview as home
+ * - Shows section name (Main, Analysis, Management) when applicable
+ * - Shows current page with icon
+ * 
+ * ROUTE CONFIG:
+ * Maps each route path to its label, section, and icon for display.
+ * =============================================================================
+ */
 "use client"
 
 import {

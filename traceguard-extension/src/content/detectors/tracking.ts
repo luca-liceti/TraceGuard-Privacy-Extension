@@ -1,7 +1,52 @@
+/**
+ * =============================================================================
+ * TRACKING DETECTOR - Finding Third-Party Trackers
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This detector finds third-party tracking scripts on webpages. These are
+ * little pieces of code that companies use to follow you around the internet
+ * and build a profile of your browsing habits.
+ * 
+ * WHAT IS A TRACKER?
+ * Trackers are scripts loaded from external domains that collect data about you:
+ * - Google Analytics: Knows which pages you visit
+ * - Facebook Pixel: Tracks you across sites showing FB ads
+ * - Ad networks: Build profiles to show targeted ads
+ * 
+ * HOW WE DETECT THEM:
+ * 1. We check all external scripts, images, and iframes on the page
+ * 2. We compare their domains against a list of known trackers
+ * 3. We also look for suspicious keywords like "track", "pixel", "analytics"
+ * 
+ * SCORING MATH:
+ * We use a logarithmic formula so the score decreases smoothly:
+ * - Known trackers count 5x (they're definitely tracking you)
+ * - Suspicious domains count 2x (might be tracking)
+ * Formula: 100 - 15 × log₂(weighted_count + 1)
+ * 
+ * EXAMPLES:
+ * - 0 trackers → Score: 100 (perfect!)
+ * - 1 known tracker → Score: ~61
+ * - 5 known trackers → Score: ~29
+ * 
+ * TRACKER DATABASE:
+ * Based on research from:
+ * - EFF Privacy Badger
+ * - Disconnect.me
+ * - Industry research on ad/analytics networks
+ * =============================================================================
+ */
+
+// =============================================================================
+// KNOWN TRACKER DATABASE
+// A comprehensive list of domains known to track users
+// =============================================================================
+
 // Comprehensive list of known tracking domains
 // Based on EFF Privacy Badger, Disconnect.me, and industry research
 const KNOWN_TRACKERS = new Set([
-    // Google Analytics & Ads
+    // Google Analytics & Ads - The most common trackers on the web
     'google-analytics.com',
     'googletagmanager.com',
     'googletagservices.com',
@@ -11,31 +56,31 @@ const KNOWN_TRACKERS = new Set([
     'googletag.com',
     'googletagservice.com',
 
-    // Facebook/Meta
+    // Facebook/Meta - Tracks you across all sites with Facebook buttons or pixels
     'facebook.com',
     'facebook.net',
     'fbcdn.net',
     'connect.facebook.net',
 
-    // Amazon
+    // Amazon - Tracks shopping behavior
     'amazon-adsystem.com',
     'assoc-amazon.com',
 
-    // Microsoft
+    // Microsoft - Analytics and ads
     'bing.com',
     'clarity.ms',
 
-    // Adobe
+    // Adobe - Analytics suite
     'omtrdc.net',
     'demdex.net',
     '2o7.net',
 
-    // Twitter/X
+    // Twitter/X - Social tracking
     'twitter.com',
     'twimg.com',
     't.co',
 
-    // Common Analytics
+    // Common Analytics Services - Tools websites use to analyze visitors
     'hotjar.com',
     'mixpanel.com',
     'segment.com',
@@ -47,7 +92,7 @@ const KNOWN_TRACKERS = new Set([
     'datadoghq.com',
     'sentry.io',
 
-    // Ad Networks
+    // Ad Networks - These show and track ads
     'adnxs.com',
     'adsrvr.org',
     'advertising.com',
@@ -63,11 +108,11 @@ const KNOWN_TRACKERS = new Set([
     'contextweb.com',
     'smartadserver.com',
 
-    // CDNs with tracking
+    // CDNs with tracking capabilities
     'cloudflare.com',
     'akamaihd.net',
 
-    // Other trackers
+    // Other tracking services
     'quantserve.com',
     'scorecardresearch.com',
     'chartbeat.com',
@@ -80,16 +125,24 @@ const KNOWN_TRACKERS = new Set([
     'smartlook.com',
 ]);
 
+// Keywords that suggest a script might be a tracker
 const TRACKING_KEYWORDS = [
     'ads', 'analytics', 'pixel', 'tracker', 'metric', 'telemetry',
     'tag', 'beacon', 'track', 'stat', 'collect', 'monitor'
 ];
 
+// =============================================================================
+// TYPE DEFINITIONS
+// =============================================================================
+
+/**
+ * The result of tracking detection.
+ */
 export interface TrackingDetectionResult {
-    score: number;
-    trackerCount: number;
-    knownTrackers: string[];
-    suspiciousTrackers: string[];
+    score: number;               // Safety score (0-100, higher = safer)
+    trackerCount: number;        // Weighted count of trackers found
+    knownTrackers: string[];     // Domains from our known tracker list
+    suspiciousTrackers: string[]; // Domains with suspicious keywords
 }
 
 export function detectTracking(): number {

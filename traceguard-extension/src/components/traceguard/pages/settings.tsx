@@ -1,3 +1,43 @@
+/**
+ * =============================================================================
+ * SETTINGS PAGE - User Preferences and Data Management
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This is the main settings page where users can customize TraceGuard's
+ * behavior and manage their stored data.
+ * 
+ * SETTINGS TABS:
+ * 
+ * 1. APPEARANCE TAB
+ *    - Theme: Light/Dark/System mode
+ *    - Display Mode: Popup vs Side Panel
+ * 
+ * 2. PRIVACY TAB
+ *    - PII Detection: Toggle personal info monitoring
+ *    - Tracker Blocking: Future feature (coming soon)
+ *    - Safety Threshold: Alert level for risky sites (0-100)
+ * 
+ * 3. NOTIFICATIONS TAB
+ *    - Alert Level: Silent/Balanced/Aggressive notification modes
+ * 
+ * 4. DATA TAB
+ *    - Data Retention: How long to keep logs (7-90 days)
+ *    - Storage Usage: Visual display of storage used
+ *    - Clear Actions: Delete activity logs, reset score
+ *    - Danger Zone: Factory reset option
+ * 
+ * 5. ABOUT TAB
+ *    - Version info and extension description
+ * 
+ * FEATURES:
+ *    - Changes are tracked and require manual save
+ *    - Reset to defaults option
+ *    - Storage usage monitoring
+ *    - Danger zone with confirmation dialogs
+ * =============================================================================
+ */
+
 "use client"
 
 import { useState, useEffect } from "react"

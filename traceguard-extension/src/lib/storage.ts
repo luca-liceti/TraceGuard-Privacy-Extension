@@ -1,21 +1,65 @@
+/**
+ * =============================================================================
+ * STORAGE UTILITY - Saving and Loading Extension Data
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This file provides easy ways to save and load data using Chrome's storage.
+ * Think of it like a filing cabinet for the extension - we can store settings,
+ * logs, site data, and notifications here.
+ * 
+ * WHY WE NEED THIS:
+ * Chrome extensions can't use normal databases. Instead, we use chrome.storage
+ * which saves data locally on your computer. This file wraps that API to make
+ * it easier to use throughout the extension.
+ * 
+ * WHAT WE STORE:
+ * 1. Settings - Your preferences (theme, notifications, whitelist/blacklist)
+ * 2. App State - Your UPS score, sites analyzed count, safe streak
+ * 3. Detector Logs - History of what we've detected on sites
+ * 4. Notifications - Alerts and warnings we've shown you
+ * 5. Cross-Site Exposure - Which sites know your email, phone, etc.
+ * 6. Site Cache - Analyzed data about websites you've visited
+ * 
+ * STORAGE LIMITS:
+ * Chrome gives extensions about 5MB of local storage. We automatically:
+ * - Clean up old logs based on retention settings
+ * - Limit logs to 1000 entries max
+ * - Limit notifications to 100 entries max
+ * =============================================================================
+ */
+
 import { StorageSchema, UserSettings, AppState } from './types';
 
+// =============================================================================
+// DEFAULT VALUES
+// These are used when data doesn't exist yet (first install)
+// =============================================================================
+
+/**
+ * Default settings for a new user.
+ * These are sensible defaults that work well for most people.
+ */
 const DEFAULT_SETTINGS: UserSettings = {
-    enabled: true,
-    notifications: true,
-    theme: 'system',
-    whitelist: [],
-    blacklist: [],
-    lowPowerMode: false,
-    logRetentionDays: 0 // 0 = forever, until storage full
+    enabled: true,                // Extension is active
+    notifications: true,          // Show alerts for risky sites
+    theme: 'system',              // Match your OS theme (light/dark)
+    whitelist: [],                // Sites you've marked as always safe
+    blacklist: [],                // Sites you've marked as always dangerous
+    lowPowerMode: false,          // Reduce CPU usage (skip some checks)
+    logRetentionDays: 0           // 0 = keep forever, until storage is full
 };
 
+/**
+ * Default app state for a new user.
+ * Everyone starts with a perfect privacy score!
+ */
 const DEFAULT_STATE: AppState = {
-    ups: 100,
-    sitesAnalyzed: 0,
-    trackersDetected: 0,
-    piiEventsCount: 0,
-    safeVisitStreak: 0
+    ups: 100,                     // User Privacy Score (starts at 100)
+    sitesAnalyzed: 0,             // Number of sites we've analyzed
+    trackersDetected: 0,          // Total trackers found across all sites
+    piiEventsCount: 0,            // Times you've entered personal info
+    safeVisitStreak: 0            // Consecutive safe site visits
 };
 
 export const storage = {

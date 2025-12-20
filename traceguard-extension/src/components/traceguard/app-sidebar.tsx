@@ -1,3 +1,31 @@
+/**
+ * =============================================================================
+ * APP SIDEBAR - Main Navigation Component
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This is the sidebar navigation that appears on the left side of the dashboard.
+ * It shows all the pages you can visit and highlights the current page.
+ * 
+ * COMPONENTS:
+ * - AppSidebar: Main sidebar container with header, content, and footer
+ * - NavMain: Renders the main navigation sections with collapsible groups
+ * - NavFooter: Renders footer items (Settings, Help)
+ * 
+ * NAVIGATION STRUCTURE (from @/lib/navigation):
+ * - Main: Overview, Privacy Score
+ * - Analysis: Website Safety, Sites Analyzed, Trackers, Activity Logs
+ * - Management: Domain Lists, Integrations
+ * - Footer: Settings, Help
+ * 
+ * FEATURES:
+ * - Collapsible sidebar (icon-only mode on collapse)
+ * - Active page highlighting based on current route
+ * - Sub-menu support for grouped items
+ * - "New" and custom badges for menu items
+ * - Hover tooltips when collapsed
+ * =============================================================================
+ */
 "use client"
 
 import * as React from "react"

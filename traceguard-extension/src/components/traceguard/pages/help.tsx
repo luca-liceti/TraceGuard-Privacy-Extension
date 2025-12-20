@@ -1,3 +1,42 @@
+/**
+ * =============================================================================
+ * HELP PAGE - User Guide and FAQ
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This is the help center for TraceGuard. It explains how to use the extension
+ * and answers common questions. Think of it as the instruction manual!
+ * 
+ * SECTIONS ON THIS PAGE:
+ * 
+ * 1. QUICK START GUIDE
+ *    - Step-by-step instructions for new users
+ *    - How to get started with TraceGuard
+ * 
+ * 2. KEY FEATURES
+ *    - Privacy Score Tracking: Monitor your privacy over time
+ *    - Website Risk Analysis: See how safe each site is
+ *    - Tracker Detection: Find tracking scripts on websites
+ *    - Activity Logging: Review your browsing history with risk info
+ * 
+ * 3. FREQUENTLY ASKED QUESTIONS (FAQ)
+ *    - What is UPS? (User Privacy Score)
+ *    - What is WRS? (Website Risk Score)
+ *    - How does TraceGuard protect you?
+ *    - What data does it collect?
+ *    - What are whitelists and blacklists?
+ *    - How to improve your score?
+ * 
+ * 4. UNDERSTANDING SCORES
+ *    - Color-coded guide to UPS levels (90-100, 70-89, etc.)
+ *    - Color-coded guide to WRS levels (0-39, 40-59, etc.)
+ * 
+ * 5. VERSION INFO
+ *    - Current extension version
+ *    - Privacy commitment (all data stays on your device)
+ * =============================================================================
+ */
+
 "use client"
 
 import React from "react"

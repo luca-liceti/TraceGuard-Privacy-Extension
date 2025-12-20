@@ -1,16 +1,58 @@
+/**
+ * =============================================================================
+ * PII DETECTOR - Watching for Personal Information Entry
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This file monitors sensitive input fields on webpages to detect when you
+ * enter personal information (PII = Personally Identifiable Information).
+ * 
+ * IMPORTANT PRIVACY PROMISE:
+ * We NEVER read or store what you actually type! We only detect THAT you typed
+ * something in a sensitive field, not WHAT you typed. For example:
+ * - ✅ We know: "User typed something in a password field on amazon.com"
+ * - ❌ We DON'T know: "User typed 'MySecretPassword123'"
+ * 
+ * HOW IT WORKS:
+ * 1. The analyzer finds sensitive input fields (password, email, credit card)
+ * 2. This module attaches "input" listeners to those fields
+ * 3. When you type in a field, we notify the background script
+ * 4. The background script updates your privacy score accordingly
+ * 5. When you leave the page, we clean up all the listeners
+ * 
+ * WHY THIS MATTERS:
+ * Entering personal info on risky websites is a privacy concern. By tracking
+ * this (without seeing your actual data), we can:
+ * - Warn you when you're about to enter data on an unsafe site
+ * - Track which sites have received your information
+ * - Adjust your privacy score based on your data exposure
+ * =============================================================================
+ */
+
+// =============================================================================
+// TYPE DEFINITIONS
+// =============================================================================
+
+/**
+ * Represents a sensitive input field on the page that we should monitor.
+ */
 interface SensitiveField {
-    element: HTMLInputElement | HTMLTextAreaElement;
-    type: string;
-    sensitivity: 'HIGH' | 'MEDIUM' | 'LOW';
+    element: HTMLInputElement | HTMLTextAreaElement;  // The HTML input element
+    type: string;                                      // What kind of field
+    sensitivity: 'HIGH' | 'MEDIUM' | 'LOW';           // How sensitive is this?
 }
 
+/**
+ * Data sent to the background script when PII entry is detected.
+ * IMPORTANT: We send the field TYPE, not the field VALUE!
+ */
 interface PIIEvent {
-    timestamp: number;
-    site: string;
-    fieldType: string;
-    fieldName: string;
-    sensitivity: 'HIGH' | 'MEDIUM' | 'LOW';
-    siteWRS: number;
+    timestamp: number;                     // When the event happened
+    site: string;                          // The website domain
+    fieldType: string;                     // Type of field (password, text, etc.)
+    fieldName: string;                     // Name attribute of the field
+    sensitivity: 'HIGH' | 'MEDIUM' | 'LOW'; // How sensitive is this data?
+    siteWRS: number;                       // Website Safety Score at the time
 }
 
 class PIIDetector {

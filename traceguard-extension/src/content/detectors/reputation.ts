@@ -1,12 +1,39 @@
 /**
- * Reputation Detector - Multi-Layer Domain Reputation System
+ * =============================================================================
+ * REPUTATION DETECTOR - Domain Safety Checker
+ * =============================================================================
  * 
- * Uses background service for all reputation checks:
- * - Layer 1: User whitelist/blacklist
- * - Layer 2: Static blacklist
- * - Layer 3: URLhaus malware database
+ * WHAT THIS FILE DOES:
+ * This detector checks if a website domain is known to be dangerous (malware,
+ * phishing, etc.) by asking the background service to check multiple sources.
  * 
- * Returns: Risk score 0-100 (0 = high risk, 100 = safe)
+ * REPUTATION LAYERS:
+ * The background service checks three layers (in priority order):
+ * 
+ * Layer 1: User Whitelist/Blacklist
+ *   - Sites YOU have manually marked as trusted or blocked
+ *   - Highest priority - overrides all other checks
+ * 
+ * Layer 2: Static Blacklist
+ *   - Built-in list of known dangerous domains
+ *   - Common phishing and malware sites
+ * 
+ * Layer 3: URLhaus Malware Database
+ *   - Real-time online database of malware distributing sites
+ *   - Updated regularly by security researchers
+ * 
+ * SCORING:
+ * - 0 = DANGER - Site is blacklisted or known malware
+ * - 50 = UNKNOWN - Not in any database (proceed with caution)
+ * - 100 = SAFE - Site is whitelisted or verified clean
+ * 
+ * WHY BACKGROUND SERVICE?
+ * Content scripts can't make cross-origin requests to URLhaus API.
+ * The background service handles the network request securely.
+ * 
+ * PRIVACY NOTE:
+ * We only check the domain name, not the full URL or page content.
+ * =============================================================================
  */
 
 /**

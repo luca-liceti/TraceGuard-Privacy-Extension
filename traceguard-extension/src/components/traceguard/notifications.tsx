@@ -1,3 +1,33 @@
+/**
+ * =============================================================================
+ * NOTIFICATIONS DROPDOWN - Alert Center
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This component shows the notification bell icon in the header. When clicked,
+ * it shows a dropdown with all your recent privacy alerts and warnings.
+ * 
+ * NOTIFICATION TYPES (shown with different icons):
+ * - Critical (Red triangle): Severe security issues
+ * - Warning (Orange circle): Moderate concerns
+ * - Info (Blue circle): General updates
+ * 
+ * FEATURES:
+ * - Badge showing unread count (up to 99+)
+ * - Click notification to navigate to relevant page
+ * - "Mark all read" button to clear unread status
+ * - Remove individual notifications with X button
+ * - Scrollable list showing up to 10 recent notifications
+ * - Empty state with helpful message
+ * 
+ * DATA SOURCE:
+ * Uses useNotifications() hook which reads from chrome.storage.local
+ * and provides methods to mark as read or remove notifications.
+ * 
+ * TIME FORMAT:
+ * Shows relative time: "Just now", "5m ago", "2h ago", "3d ago"
+ * =============================================================================
+ */
 "use client"
 
 import { useNavigate } from "react-router-dom"

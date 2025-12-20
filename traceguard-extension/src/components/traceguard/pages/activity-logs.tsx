@@ -1,3 +1,43 @@
+/**
+ * =============================================================================
+ * ACTIVITY LOGS PAGE - Browsing History and Detector Results
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This page shows a log of all your site visits with detailed detector scores.
+ * It groups logs by site visit (logs within 5 seconds = same visit).
+ * 
+ * DISPLAYED INFORMATION:
+ * 
+ * 1. STATISTICS ROW
+ *    - Total: Total number of site visits logged
+ *    - High Risk: Visits to high risk sites (WRS >= 61)
+ *    - Medium: Moderate risk visits (WRS 31-60)
+ *    - Low Risk: Safe site visits (WRS <= 30)
+ *    - Unique Sites: Number of distinct domains visited
+ * 
+ * 2. FILTERS
+ *    - Search: Find visits by domain name
+ *    - Risk Level: Filter by High/Medium/Low risk
+ *    - Time Range: Filter by 24h/7 days/30 days/All time
+ * 
+ * 3. VISIT CARDS
+ *    - Domain and timestamp
+ *    - Overall WRS (Website Risk Score)
+ *    - Individual detector scores in a grid:
+ *      Protocol, Reputation, Tracking, Cookies, Inputs, Policy
+ *    - Expandable tracker details when available
+ * 
+ * 4. EXPORT
+ *    - Download filtered logs as JSON file
+ * 
+ * WRS CALCULATION:
+ * Weighted average of detector scores:
+ *    - Protocol: 25%, Reputation: 25%, Tracking: 20%
+ *    - Cookies: 15%, Inputs: 10%, Policy: 5%
+ * =============================================================================
+ */
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -11,11 +51,13 @@ import { Button } from "@/components/ui/button"
 import { DetectorType } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { StatCard } from "@/components/ui/stat-card"
+import { getSafetyLevel, getSafetyConfig, SAFETY_CONFIGS } from "@/lib/risk-utils"
 
 interface GroupedSiteVisit {
     domain: string
     timestamp: number
-    wrs: number
+    wss: number  // Website Safety Score (higher = safer)
     detectors: {
         [key in DetectorType]?: {
             score: number
@@ -25,27 +67,8 @@ interface GroupedSiteVisit {
     }
 }
 
-// Stat card component
-function StatCard({
-    title,
-    value,
-    valueColor,
-}: {
-    title: string
-    value: string | number
-    valueColor?: string
-}) {
-    return (
-        <Card>
-            <CardContent className="p-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {title}
-                </p>
-                <p className={cn("text-2xl font-bold mt-1", valueColor)}>{value}</p>
-            </CardContent>
-        </Card>
-    )
-}
+// StatCard now imported from @/components/ui/stat-card
+
 
 export default function ActivityLogsPage() {
     const detectorLogs = useDetectorLogs()
@@ -70,7 +93,7 @@ export default function ActivityLogsPage() {
                 groups.set(key, {
                     domain: log.domain,
                     timestamp: log.timestamp,
-                    wrs: 0,
+                    wss: 0,
                     detectors: {}
                 })
             }
@@ -104,7 +127,8 @@ export default function ActivityLogsPage() {
                 totalWeight += weight
             }
 
-            group.wrs = totalWeight > 0 ? Math.round(totalScore / totalWeight) : 0
+            // WSS = weighted average of detector safety scores (higher = safer)
+            group.wss = totalWeight > 0 ? Math.round(totalScore / totalWeight) : 0
         }
 
         return Array.from(groups.values())
@@ -117,11 +141,11 @@ export default function ActivityLogsPage() {
             const matchesSearch = searchQuery === "" ||
                 visit.domain.toLowerCase().includes(searchQuery.toLowerCase())
 
-            // Risk filter
-            let matchesRisk = true
+            // Safety filter (using WSS thresholds)
+            let matchesSafety = true
             if (filterRisk !== "all") {
-                const riskLevel = getRiskLevel(visit.wrs)
-                matchesRisk = riskLevel === filterRisk
+                const safetyLevel = getSafetyLevelLocal(visit.wss)
+                matchesSafety = safetyLevel === filterRisk
             }
 
             // Date filter
@@ -134,33 +158,41 @@ export default function ActivityLogsPage() {
                 matchesDate = logDate >= cutoffDate
             }
 
-            return matchesSearch && matchesRisk && matchesDate
+            return matchesSearch && matchesSafety && matchesDate
         })
     }, [groupedVisits, searchQuery, filterRisk, filterDays])
 
-    // Calculate statistics
+    // Calculate statistics using WSS thresholds (higher = safer)
     const totalVisits = groupedVisits.length
-    const highRiskVisits = groupedVisits.filter(v => v.wrs >= 61).length
-    const mediumRiskVisits = groupedVisits.filter(v => v.wrs >= 31 && v.wrs <= 60).length
-    const lowRiskVisits = groupedVisits.filter(v => v.wrs <= 30).length
+    const excellentSafetyVisits = groupedVisits.filter(v => v.wss >= 80).length
+    const goodSafetyVisits = groupedVisits.filter(v => v.wss >= 60 && v.wss < 80).length
+    const atRiskVisits = groupedVisits.filter(v => v.wss < 40).length  // Poor + Critical
     const uniqueSites = new Set(groupedVisits.map(v => v.domain)).size
 
-    const getRiskLevel = (wrs: number): string => {
-        if (wrs >= 61) return "high"
-        if (wrs >= 31) return "medium"
-        return "low"
+    // Helper to get safety level (matches filter options)
+    const getSafetyLevelLocal = (wss: number): string => {
+        if (wss >= 80) return "excellent"
+        if (wss >= 60) return "good"
+        if (wss >= 40) return "fair"
+        if (wss >= 20) return "poor"
+        return "critical"
     }
 
-    const getRiskInfo = (wrs: number) => {
-        if (wrs >= 61) return { level: "High", color: "text-red-500", border: "border-red-500" }
-        if (wrs >= 31) return { level: "Medium", color: "text-yellow-500", border: "border-yellow-500" }
-        return { level: "Low", color: "text-green-500", border: "border-green-500" }
+    // Get safety info for display
+    const getSafetyInfo = (wss: number) => {
+        if (wss >= 80) return { level: "Excellent", color: "text-green-500", border: "border-green-500" }
+        if (wss >= 60) return { level: "Good", color: "text-blue-500", border: "border-blue-500" }
+        if (wss >= 40) return { level: "Fair", color: "text-yellow-500", border: "border-yellow-500" }
+        if (wss >= 20) return { level: "Poor", color: "text-orange-500", border: "border-orange-500" }
+        return { level: "Critical", color: "text-red-500", border: "border-red-500" }
     }
 
+    // Color for individual detector scores (all are safety scores, higher = better)
     const getScoreColor = (score: number) => {
-        if (score >= 61) return "text-red-500"
-        if (score >= 31) return "text-yellow-500"
-        return "text-green-500"
+        if (score >= 80) return "text-green-500"
+        if (score >= 60) return "text-blue-500"
+        if (score >= 40) return "text-yellow-500"
+        return "text-red-500"
     }
 
     const toggleExpanded = (key: string) => {
@@ -313,7 +345,7 @@ export default function ActivityLogsPage() {
                             {filteredVisits.map((visit) => {
                                 const visitKey = `${visit.domain}-${visit.timestamp}`
                                 const isExpanded = expandedSites.has(visitKey)
-                                const riskInfo = getRiskInfo(visit.wrs)
+                                const safetyInfo = getSafetyInfo(visit.wss)
                                 const hasTrackingDetails = visit.detectors.tracking?.details?.knownTrackers?.length > 0
 
                                 return (
@@ -331,9 +363,9 @@ export default function ActivityLogsPage() {
                                                     </h3>
                                                     <Badge
                                                         variant="outline"
-                                                        className={cn("flex-shrink-0", riskInfo.border, riskInfo.color)}
+                                                        className={cn("flex-shrink-0", safetyInfo.border, safetyInfo.color)}
                                                     >
-                                                        {riskInfo.level}
+                                                        {safetyInfo.level}
                                                     </Badge>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -342,10 +374,10 @@ export default function ActivityLogsPage() {
                                                 </p>
                                             </div>
                                             <div className="text-right ml-4">
-                                                <span className={cn("text-xl font-bold", riskInfo.color)}>
-                                                    {visit.wrs}
+                                                <span className={cn("text-xl font-bold", safetyInfo.color)}>
+                                                    {visit.wss}
                                                 </span>
-                                                <p className="text-xs text-muted-foreground">WRS</p>
+                                                <p className="text-xs text-muted-foreground">WSS</p>
                                             </div>
                                         </div>
 

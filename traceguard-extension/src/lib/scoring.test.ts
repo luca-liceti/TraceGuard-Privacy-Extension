@@ -1,3 +1,44 @@
+/**
+ * =============================================================================
+ * WEBSITE SAFETY SCORE (WSS) TESTS - Automated Tests for Scoring Algorithm
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This test file verifies that the Website Safety Score (WSS) calculation
+ * works correctly. The WSS combines 6 detector scores into one overall score.
+ * 
+ * TEST CATEGORIES:
+ * 
+ * 1. Basic Calculation
+ *    - Perfect scores (all 100) should produce WSS of 100
+ *    - Worst scores (all 0) should produce WSS of 0
+ *    - Weighted average calculation is correct
+ * 
+ * 2. Score Validation
+ *    - Scores above 100 are clamped to 100
+ *    - Negative scores are clamped to 0
+ *    - NaN values fallback to 50
+ * 
+ * 3. Policy Fallback Handling
+ *    - Policy score of 50 (neutral) is excluded from calculation
+ *    - Policy scores of 25 or 20 are included as penalties
+ * 
+ * 4. Weight Distribution
+ *    - Protocol: 25%
+ *    - Reputation: 25%
+ *    - Tracking: 20%
+ *    - Cookies: 15%
+ *    - Input: 10%
+ *    - Policy: 5%
+ * 
+ * 5. Real-World Scenarios
+ *    - Safe site (like Google): ~83 WSS
+ *    - Risky site (HTTP with trackers): ~44 WSS
+ *    - Malicious site (blacklisted): ~8 WSS
+ * 
+ * TO RUN THESE TESTS: npm run test
+ * =============================================================================
+ */
 import { describe, it, expect } from 'vitest'
 import { calculateWSS } from './scoring'
 import type { ScoreBreakdown } from './types'

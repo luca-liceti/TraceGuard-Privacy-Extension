@@ -1,3 +1,41 @@
+/**
+ * =============================================================================
+ * INTEGRATIONS PAGE - Connect TraceGuard with Other Privacy Tools
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This page shows future integrations that will allow TraceGuard to work with
+ * other privacy and security tools. Think of it as a "coming soon" preview!
+ * 
+ * PLANNED INTEGRATIONS:
+ * 
+ * 1. PRIVACY TOOLS
+ *    - uBlock Origin: Blocks ads and trackers
+ *    - Privacy Badger: Learns to block invisible trackers
+ *    - HTTPS Everywhere: Forces secure connections
+ * 
+ * 2. PASSWORD MANAGERS
+ *    - 1Password, Bitwarden, LastPass, Dashlane
+ *    - Could help identify weak or reused passwords
+ * 
+ * 3. VPN SERVICES
+ *    - NordVPN, ExpressVPN, ProtonVPN, Mullvad
+ *    - Shows VPN connection status for extra privacy
+ * 
+ * 4. EMAIL ALIASES
+ *    - SimpleLogin, Firefox Relay, DuckDuckGo Email
+ *    - Hide your real email address when signing up for sites
+ * 
+ * STATUS BADGES:
+ * - "Available": Ready to use now
+ * - "Coming Soon": Being actively developed
+ * - "Planned": On our roadmap for the future
+ * 
+ * NOTE: This page is currently a preview. These integrations will be added
+ * in future updates to make TraceGuard even more powerful!
+ * =============================================================================
+ */
+
 "use client"
 
 import React from "react"

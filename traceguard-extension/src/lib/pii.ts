@@ -1,19 +1,56 @@
 /**
- * PII (Personally Identifiable Information) Detection & UPS Calculation
+ * =============================================================================
+ * PII DETECTION & UPS CALCULATION - Privacy Score System
+ * =============================================================================
  * 
- * UPS = User Privacy Score (0 = exposed, 100 = protected)
- * WSS = Website Safety Score (0 = dangerous, 100 = safe)
+ * WHAT THIS FILE DOES:
+ * This file handles your User Privacy Score (UPS) - a number from 0 to 100
+ * that represents how well you're protecting your personal information.
  * 
- * SCORING PHILOSOPHY (v3.0):
- * - Higher = Better for all scores
- * - UPS changes based on USER ACTIONS only (no time decay)
- * - Penalties for risky behavior, recovery for safe behavior
+ * KEY TERMS:
+ * - PII = Personally Identifiable Information (email, SSN, credit card, etc.)
+ * - UPS = User Privacy Score (your personal score, 0-100)
+ * - WSS = Website Safety Score (a website's score, 0-100)
+ * 
+ * SCORING PHILOSOPHY (Higher = Better):
+ * - 100 = Perfect privacy (you haven't shared sensitive data)
+ * - 50 = Some exposure (you've shared data on some sites)
+ * - 0 = High exposure (you've shared sensitive data on risky sites)
+ * 
+ * HOW YOUR SCORE CHANGES:
+ * 
+ * PENALTIES (score goes DOWN):
+ * 1. Visiting risky sites: Small penalty based on site's WSS
+ * 2. Entering PII: Bigger penalty, especially on unsafe sites
+ *    - Password on safe site: -8 points
+ *    - Password on risky site: -16 points (2x multiplier!)
+ * 
+ * RECOVERY (score goes UP):
+ * 1. Visiting safe sites (WSS >= 70): Small recovery
+ * 2. Safe streak bonus: +2 every 10 consecutive safe sites
+ * 
+ * PENALTY EXAMPLES:
+ * | Field Type     | Base Penalty | On Safe Site (WSS 100) | On Risky Site (WSS 0) |
+ * |----------------|--------------|------------------------|----------------------|
+ * | SSN            | 10           | 10                     | 20                   |
+ * | Credit Card    | 9            | 9                      | 18                   |
+ * | Password       | 8            | 8                      | 16                   |
+ * | Phone          | 5            | 5                      | 10                   |
+ * | Email          | 4            | 4                      | 8                    |
+ * | Address        | 3            | 3                      | 6                    |
+ * | Name           | 1            | 1                      | 2                    |
+ * =============================================================================
  */
 
 // ============================================================================
 // PII PATTERNS (for content scanning)
+// Regular expressions to detect common PII formats
 // ============================================================================
 
+/**
+ * Regular expressions to detect PII patterns in text.
+ * These are used to identify sensitive data WITHOUT storing it.
+ */
 export const PII_PATTERNS = {
     email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
     phone: /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/,
@@ -21,12 +58,22 @@ export const PII_PATTERNS = {
     creditCard: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/,
 };
 
+/**
+ * Result of scanning text for PII patterns.
+ */
 export interface PIIDetectionResult {
-    hasPII: boolean;
-    types: string[];
-    count: number;
+    hasPII: boolean;    // Was any PII found?
+    types: string[];    // Which types were found (email, phone, etc.)
+    count: number;      // Total number of matches
 }
 
+/**
+ * Scans text for PII patterns.
+ * Used to detect if a page contains visible personal information.
+ * 
+ * @param text - The text to scan
+ * @returns Information about PII found (types and count)
+ */
 export function detectPII(text: string): PIIDetectionResult {
     const types: string[] = [];
     let count = 0;

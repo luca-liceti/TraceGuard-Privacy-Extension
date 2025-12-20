@@ -1,3 +1,46 @@
+/**
+ * =============================================================================
+ * DOMAIN LISTS PAGE - Manage Trusted and Blocked Sites
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This page lets you manually control which sites you trust and which you
+ * want to avoid. Think of it like a VIP list and a "do not enter" list!
+ * 
+ * TWO TYPES OF LISTS:
+ * 
+ * 1. WHITELIST (Trusted Sites)
+ *    - Sites you completely trust
+ *    - Always get a safety score of 100 (fully safe)
+ *    - Good for sites you use often and know are safe
+ *    - Example: Your school's website, your bank's website
+ * 
+ * 2. BLACKLIST (Blocked Sites)
+ *    - Sites you want to avoid
+ *    - Always get a safety score of 0 (critical risk)
+ *    - Good for sites you know are dangerous or problematic
+ *    - Example: Known scam sites, sites that spam you
+ * 
+ * HOW IT WORKS:
+ * - Type a domain name (like "example.com") and click Add
+ * - The extension automatically cleans up the input
+ *   (removes http://, trailing slashes, etc.)
+ * - A site can only be on ONE list at a time
+ *   (adding to whitelist removes from blacklist and vice versa)
+ * 
+ * DOMAIN FORMAT:
+ * - Just the domain name: example.com
+ * - No need for http:// or https://
+ * - No need for www.
+ * - Must have at least one dot (example.com, not just "example")
+ * 
+ * WHY USE THIS?
+ * - Override TraceGuard's automatic scoring for sites you know well
+ * - Quickly mark known-bad sites as dangerous
+ * - Trust sites that might trigger false positives
+ * =============================================================================
+ */
+
 "use client"
 
 import React, { useState } from "react"

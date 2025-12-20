@@ -1,3 +1,41 @@
+/**
+ * =============================================================================
+ * OVERVIEW PAGE - Dashboard Home Screen
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This is the main dashboard page - the first thing you see when opening
+ * the TraceGuard dashboard. It provides a quick summary of your privacy status.
+ * 
+ * WHAT IT DISPLAYS:
+ * 
+ * 1. HERO SECTION - Privacy Score
+ *    - Your current UPS (User Privacy Score) in a large circle
+ *    - Color-coded status (Excellent/Good/Fair/Poor/Critical)
+ *    - Trend sparkline showing score history
+ * 
+ * 2. STATS GRID - Key Metrics
+ *    - Sites Analyzed: Total sites visited
+ *    - Safe Streak: Consecutive safe site visits
+ *    - High Risk Sites: Sites with low safety scores
+ *    - PII Events: Times you've entered personal data
+ * 
+ * 3. QUICK ACTIONS CARDS
+ *    - Website Safety: Average WSS, trusted/blocked site counts
+ *    - Recent Activity: Latest notifications and alerts
+ * 
+ * SCORE STATUS COLORS:
+ * - 90-100: Excellent (Green)
+ * - 70-89: Good (Blue)
+ * - 50-69: Fair (Yellow)
+ * - 30-49: Poor (Orange)
+ * - 0-29: Critical (Red)
+ * 
+ * NAVIGATION:
+ * Clicking on any card takes you to the detailed page for that section.
+ * =============================================================================
+ */
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -22,31 +60,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
-import { cn } from "@/lib/utils"
+import { cn, formatTimeAgo } from "@/lib/utils"
 import { SiteRiskData, NotificationEvent } from "@/lib/types"
+import { StatCard } from "@/components/ui/stat-card"
+import { getStatusConfig } from "@/lib/risk-utils"
 
-function getScoreStatus(score: number): { label: string; color: string; bgColor: string } {
-    if (score >= 90) return { label: 'Excellent', color: 'text-green-500', bgColor: 'bg-green-500/10' }
-    if (score >= 70) return { label: 'Good', color: 'text-blue-500', bgColor: 'bg-blue-500/10' }
-    if (score >= 50) return { label: 'Fair', color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' }
-    if (score >= 30) return { label: 'Poor', color: 'text-orange-500', bgColor: 'bg-orange-500/10' }
-    return { label: 'Critical', color: 'text-red-500', bgColor: 'bg-red-500/10' }
-}
+// =============================================================================
+// HELPER FUNCTIONS
+// These convert scores/timestamps into human-friendly formats
+// =============================================================================
 
-function formatTimeAgo(timestamp: number): string {
-    const now = Date.now()
-    const diff = now - timestamp
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
+// Helper functions moved to shared modules:
+// - getScoreStatus -> @/lib/risk-utils (getStatusConfig)
+// - formatTimeAgo -> @/lib/utils
 
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
-    return new Date(timestamp).toLocaleDateString()
-}
-
+/**
+ * Get the appropriate icon for notification severity level.
+ */
 function getSeverityIcon(severity: NotificationEvent['severity']) {
     switch (severity) {
         case 'critical':
@@ -59,48 +89,12 @@ function getSeverityIcon(severity: NotificationEvent['severity']) {
     }
 }
 
-// Stat card component for consistent styling
-function StatCard({
-    title,
-    value,
-    subtitle,
-    icon: Icon,
-    iconColor = "text-primary",
-    href,
-}: {
-    title: string
-    value: string | number
-    subtitle?: string
-    icon: React.ComponentType<{ className?: string }>
-    iconColor?: string
-    href?: string
-}) {
-    const content = (
-        <Card className={cn("transition-all", href && "hover:border-primary/50 hover:shadow-md cursor-pointer")}>
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1.5">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            {title}
-                        </p>
-                        <p className="text-2xl font-bold">{value}</p>
-                        {subtitle && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
-                        )}
-                    </div>
-                    <div className={cn("p-2.5 rounded-lg bg-muted", iconColor)}>
-                        <Icon className="h-4 w-4" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
+// =============================================================================
+// STAT CARD COMPONENT
+// Reusable card for displaying a single statistic
+// =============================================================================
 
-    if (href) {
-        return <Link to={href}>{content}</Link>
-    }
-    return content
-}
+// StatCard component moved to @/components/ui/stat-card.tsx
 
 export default function OverviewPage() {
     const state = useAppState()
@@ -176,7 +170,7 @@ export default function OverviewPage() {
     const whitelistCount = settings?.whitelist?.length || 0
     const blacklistCount = settings?.blacklist?.length || 0
 
-    const scoreStatus = getScoreStatus(state.ups)
+    const scoreStatus = getStatusConfig(state.ups)
 
     return (
         <div className="space-y-6 w-full">

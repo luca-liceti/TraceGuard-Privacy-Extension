@@ -1,3 +1,40 @@
+/**
+ * =============================================================================
+ * PII PENALTY SYSTEM TESTS - Automated Tests for Privacy Score Logic
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This test file verifies that the PII (Personally Identifiable Information)
+ * penalty and recovery system works correctly. These tests ensure that:
+ * 
+ * TEST CATEGORIES:
+ * 
+ * 1. BASE_PENALTIES
+ *    - Verifies that sensitive data types have appropriate penalties
+ *    - SSN should have the highest penalty, name should have the lowest
+ * 
+ * 2. PII_PATTERNS
+ *    - Tests regex patterns that detect PII formats
+ *    - Email, phone, SSN, and credit card pattern matching
+ * 
+ * 3. calculatePIIPenalty
+ *    - Tests how entering PII affects your privacy score
+ *    - Verifies context multiplier based on site safety
+ *    - Ensures score never goes below 0
+ * 
+ * 4. calculateRecovery
+ *    - Tests how visiting safe sites restores your score
+ *    - Verifies streak bonus every 10 safe visits
+ *    - Ensures score never exceeds 100
+ * 
+ * 5. Integration Scenarios
+ *    - Simulates realistic browsing sessions
+ *    - Tests UPS decay through risky browsing
+ *    - Tests UPS recovery through safe browsing
+ * 
+ * TO RUN THESE TESTS: npm run test
+ * =============================================================================
+ */
 import { describe, it, expect } from 'vitest'
 import {
     calculatePIIPenalty,

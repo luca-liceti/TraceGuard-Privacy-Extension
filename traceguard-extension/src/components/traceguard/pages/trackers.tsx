@@ -1,62 +1,62 @@
+/**
+ * =============================================================================
+ * TRACKERS PAGE - See Who's Watching You Online
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This page shows you all the tracking scripts and tools that websites use
+ * to follow your activity online. It's like seeing all the "spies" that
+ * are watching you as you browse the web!
+ * 
+ * WHAT ARE TRACKERS?
+ * Trackers are small pieces of code that websites put on their pages to:
+ * - See which pages you visit
+ * - Show you targeted advertisements
+ * - Collect data about your browsing habits
+ * - Share your activity with third parties
+ * 
+ * DISPLAYED INFORMATION:
+ * 
+ * 1. STATISTICS ROW
+ *    - Avg Tracking: Average tracking score across all sites
+ *    - Clean Sites: Sites with no trackers (the good ones!)
+ *    - High Tracking: Sites with lots of trackers (be careful!)
+ *    - Total Sites: How many sites we've analyzed
+ * 
+ * 2. PIE CHART
+ *    - Visual breakdown of sites by tracking level
+ *    - Clean (green), Low (yellow), Medium (orange), High (red)
+ * 
+ * 3. TOP TRACKING SITES
+ *    - List of the 10 sites with the most trackers
+ *    - Searchable so you can find specific sites
+ * 
+ * TRACKING SCORE (0-100):
+ * - 0: No trackers found (best!)
+ * - 1-30: Few trackers (acceptable)
+ * - 31-60: Moderate tracking (be aware)
+ * - 61-100: Heavy tracking (privacy concern!)
+ * =============================================================================
+ */
+
 "use client"
 
-import { useState, useEffect } from "react"
-import { Eye, Shield, Info, BarChart3, Search } from "lucide-react"
+import { useState } from "react"
+import { Eye, Shield, Info, BarChart3, Search, Globe } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { Input } from "@/components/ui/input"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts"
-import { SiteRiskData } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { StatCard } from "@/components/ui/stat-card"
+import { getTrackingColor } from "@/lib/risk-utils"
+import { useSiteCache } from "@/lib/useStorage"
 
-// Stat card component
-function StatCard({
-    title,
-    value,
-    subtitle,
-    valueColor,
-}: {
-    title: string
-    value: string | number
-    subtitle?: string
-    valueColor?: string
-}) {
-    return (
-        <Card>
-            <CardContent className="p-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {title}
-                </p>
-                <p className={cn("text-2xl font-bold mt-1", valueColor)}>{value}</p>
-                {subtitle && (
-                    <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-                )}
-            </CardContent>
-        </Card>
-    )
-}
 
 export default function TrackersPage() {
     const [searchQuery, setSearchQuery] = useState("")
-    const [siteCache, setSiteCache] = useState<Record<string, SiteRiskData>>({})
-
-    useEffect(() => {
-        chrome.storage.local.get('siteCache').then(res => {
-            setSiteCache((res.siteCache || {}) as Record<string, SiteRiskData>)
-        })
-
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-            if (areaName === 'local' && changes.siteCache) {
-                setSiteCache((changes.siteCache.newValue || {}) as Record<string, SiteRiskData>)
-            }
-        }
-
-        chrome.storage.onChanged.addListener(listener)
-        return () => chrome.storage.onChanged.removeListener(listener)
-    }, [])
-
-    const sites = Object.entries(siteCache)
+    const { sites } = useSiteCache()
     const sitesAnalyzed = sites.length
 
     // Calculate tracker stats from breakdown
@@ -89,12 +89,6 @@ export default function TrackersPage() {
         .slice(0, 10)
         .filter(([domain]) => domain.toLowerCase().includes(searchQuery.toLowerCase()))
 
-    const getTrackingColor = (score: number) => {
-        if (score >= 70) return "text-red-500"
-        if (score >= 40) return "text-orange-500"
-        if (score >= 20) return "text-yellow-500"
-        return "text-green-500"
-    }
 
     return (
         <div className="space-y-6 w-full">
@@ -114,24 +108,32 @@ export default function TrackersPage() {
                     title="Avg Tracking"
                     value={avgTrackingScore}
                     subtitle="Average score"
+                    icon={BarChart3}
+                    iconColor={getTrackingColor(avgTrackingScore)}
                     valueColor={getTrackingColor(avgTrackingScore)}
                 />
                 <StatCard
                     title="Clean Sites"
                     value={noTracking}
                     subtitle="No tracking"
+                    icon={Shield}
+                    iconColor="text-green-500"
                     valueColor="text-green-500"
                 />
                 <StatCard
                     title="High Tracking"
                     value={highTracking}
                     subtitle="Heavy trackers"
+                    icon={Eye}
+                    iconColor="text-red-500"
                     valueColor="text-red-500"
                 />
                 <StatCard
                     title="Total Sites"
                     value={sitesAnalyzed}
                     subtitle="Analyzed"
+                    icon={Globe}
+                    iconColor="text-blue-500"
                     valueColor="text-blue-500"
                 />
             </div>
@@ -177,7 +179,7 @@ export default function TrackersPage() {
                                         </Pie>
                                         <ChartTooltip
                                             content={<ChartTooltipContent />}
-                                            formatter={(value: number, name: string) => [`${value} sites`, name]}
+                                            formatter={(value: any, name: any) => [`${value} sites`, name]}
                                         />
                                         <Legend
                                             verticalAlign="bottom"

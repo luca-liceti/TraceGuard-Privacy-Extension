@@ -1,3 +1,30 @@
+/**
+ * =============================================================================
+ * LAYOUT COMPONENT - Main Dashboard Container
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This is the main layout wrapper for the TraceGuard dashboard. It provides
+ * the consistent structure that appears on every page - the sidebar and header.
+ * 
+ * STRUCTURE:
+ * ┌─────────────────────────────────────────────────────────┐
+ * │ ┌─────────┐ ┌─────────────────────────────────────────┐ │
+ * │ │         │ │ TopNav (header with breadcrumbs)        │ │
+ * │ │ Sidebar │ ├─────────────────────────────────────────┤ │
+ * │ │         │ │                                         │ │
+ * │ │  App    │ │       { children } - Page Content       │ │
+ * │ │ Sidebar │ │                                         │ │
+ * │ │         │ │                                         │ │
+ * │ └─────────┘ └─────────────────────────────────────────┘ │
+ * └─────────────────────────────────────────────────────────┘
+ * 
+ * KEY FEATURES:
+ * - Uses SidebarProvider for collapsible sidebar state
+ * - Applies dark mode class based on theme
+ * - Waits for client mount to avoid hydration mismatch
+ * =============================================================================
+ */
 "use client"
 
 import type { ReactNode } from "react"

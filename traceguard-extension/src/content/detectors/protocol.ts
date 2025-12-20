@@ -1,18 +1,44 @@
 /**
- * Protocol Detector - HTTP/HTTPS Check with Mixed Content Detection
+ * =============================================================================
+ * PROTOCOL DETECTOR - Checking for Secure Connections (HTTPS)
+ * =============================================================================
  * 
- * Detects whether the current page is using secure HTTPS protocol
- * and checks for mixed content (HTTPS page loading HTTP resources).
+ * WHAT THIS FILE DOES:
+ * This detector checks if you're connecting to the website securely.
+ * It's like checking if the door to a building has a lock or not!
  * 
- * Returns:
- * - 100: Pure HTTPS (secure, no mixed content)
- * - 60: HTTPS with mixed content (partially secure)
- * - 0: HTTP (insecure)
+ * HTTPS vs HTTP - WHAT'S THE DIFFERENCE?
+ * - HTTP = "HyperText Transfer Protocol" - data is sent in plain text
+ *   Anyone on the network can read what you're sending! (like a postcard)
+ * 
+ * - HTTPS = "HTTP Secure" - data is encrypted
+ *   Only you and the website can read it (like a sealed letter)
+ * 
+ * WHAT IS "MIXED CONTENT"?
+ * Even if a page uses HTTPS, it might load some resources over HTTP.
+ * For example: An HTTPS page loading images from HTTP sources.
+ * This is dangerous because those resources aren't encrypted!
+ * 
+ * SCORING:
+ * - 100 = Pure HTTPS (fully secure, no mixed content) ✅
+ * - 60 = HTTPS with mixed content (partially secure) ⚠️
+ * - 0 = HTTP (completely insecure) 🔴
+ * 
+ * RESOURCES CHECKED FOR MIXED CONTENT:
+ * - Scripts (.js files)
+ * - Images
+ * - Iframes (embedded pages)
+ * - Stylesheets (.css files)
+ * - Video and audio files
+ * =============================================================================
  */
 
+/**
+ * Result of the mixed content check.
+ */
 interface MixedContentResult {
-    hasMixedContent: boolean;
-    insecureResources: string[];
+    hasMixedContent: boolean;    // Were insecure resources found?
+    insecureResources: string[]; // List of HTTP resources on this HTTPS page
 }
 
 /**

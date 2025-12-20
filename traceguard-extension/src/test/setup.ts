@@ -1,4 +1,40 @@
+/**
+ * =============================================================================
+ * TEST SETUP FILE - Mocking Chrome APIs for Unit Tests
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * Chrome extensions use special APIs (like chrome.storage, chrome.runtime)
+ * that only exist in the browser. Since our tests run in Node.js, these APIs
+ * don't exist! This file creates "mock" versions of those APIs so our tests
+ * can run without the real Chrome browser.
+ * 
+ * WHAT IS MOCKING?
+ * Mocking is creating fake versions of things for testing. For example,
+ * instead of actually saving to Chrome storage, our mock just pretends to.
+ * This lets us:
+ * - Test our code without a real browser
+ * - Control what the APIs return (for testing edge cases)
+ * - Run tests much faster
+ * 
+ * MOCKED APIS:
+ * - chrome.storage.local: get(), set(), remove(), clear(), getBytesInUse()
+ * - chrome.runtime: sendMessage(), getURL(), getManifest()
+ * - chrome.tabs: query(), sendMessage(), get()
+ * - chrome.action: setPopup(), setBadgeText(), setBadgeBackgroundColor()
+ * - chrome.sidePanel: setPanelBehavior()
+ * 
+ * LIFECYCLE:
+ * - beforeEach: Clears all mock call history before each test
+ * - This ensures tests don't affect each other
+ * 
+ * HOW IT WORKS:
+ * We create an object that looks like the chrome API, then assign it to
+ * globalThis.chrome so all code that uses chrome.* will find our mock.
+ * =============================================================================
+ */
 import '@testing-library/jest-dom'
+import { vi, beforeEach } from 'vitest'
 
 // Mock chrome API globally
 const chromeMock = {

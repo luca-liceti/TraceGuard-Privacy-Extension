@@ -101,6 +101,8 @@ traceguard-extension-*.zip
 *.backup
 *.old
 my_prompts.txt
+TEST_WEBSITES.md
+open_test_sites.ps1
 
 # Vercel (if using for dashboard)
 .vercel

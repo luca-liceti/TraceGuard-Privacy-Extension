@@ -1,3 +1,44 @@
+/**
+ * =============================================================================
+ * SITES ANALYZED PAGE - Your Complete Browsing History
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This page shows every website TraceGuard has analyzed while you browse.
+ * It's like a smart history that includes privacy information about each site!
+ * 
+ * DISPLAYED INFORMATION:
+ * 
+ * 1. STATISTICS ROW
+ *    - Total Sites: Number of unique websites you've visited
+ *    - Today: How many sites you visited today
+ *    - Total Visits: Total page loads across all sites
+ *    - Avg Visits: Average visits per site
+ * 
+ * 2. TOP SITES CHART
+ *    - Bar chart showing your 10 most-visited sites
+ *    - Helps you see which sites you use the most
+ * 
+ * 3. SITE LIST
+ *    - Complete list of all analyzed sites
+ *    - Searchable to find specific sites
+ *    - Shows for each site:
+ *      - Domain name
+ *      - Last visit date
+ *      - Number of visits
+ *      - WRS (Website Risk Score)
+ * 
+ * SORTING:
+ * Sites are sorted by last visit time (most recent first)
+ * 
+ * RISK SCORE COLORS:
+ * - Green (0-39): Safe site
+ * - Yellow (40-59): Some concerns
+ * - Orange (60-79): Higher risk
+ * - Red (80-100): Critical - be careful!
+ * =============================================================================
+ */
+
 "use client"
 
 import React, { useState, useEffect } from "react"
@@ -65,9 +106,11 @@ export default function SitesAnalyzedPage() {
     )
 
     // Sort by last visited (most recent first)
-    const sortedSites = [...filteredSites].sort((a, b) =>
-        (b[1].lastVisit || b[1].lastAnalyzed) - (a[1].lastVisit || a[1].lastAnalyzed)
-    )
+    const sortedSites = [...filteredSites].sort((a, b) => {
+        const timeA = new Date(a[1].lastVisit || a[1].lastAnalyzed || 0).getTime()
+        const timeB = new Date(b[1].lastVisit || b[1].lastAnalyzed || 0).getTime()
+        return timeB - timeA
+    })
 
     // Prepare chart data (top 10 most visited sites)
     const chartData = sites
@@ -76,7 +119,7 @@ export default function SitesAnalyzedPage() {
         .map(([domain, data]) => ({
             domain: domain.length > 15 ? domain.substring(0, 15) + '...' : domain,
             visits: data.visitCount || 1,
-            wrs: data.wrs
+            wss: data.wss
         }))
 
     const totalVisits = sites.reduce((sum, [_, data]) => sum + (data.visitCount || 1), 0)
@@ -87,14 +130,16 @@ export default function SitesAnalyzedPage() {
     today.setHours(0, 0, 0, 0)
     const todayStart = today.getTime()
     const todayCount = sites.filter(([_, data]) =>
-        (data.lastVisit || data.lastAnalyzed) >= todayStart
+        new Date(data.lastVisit || data.lastAnalyzed || 0).getTime() >= todayStart
     ).length
 
-    const getRiskColor = (wrs: number) => {
-        if (wrs >= 80) return "text-red-500"
-        if (wrs >= 60) return "text-orange-500"
-        if (wrs >= 40) return "text-yellow-500"
-        return "text-green-500"
+    // Get safety color based on WSS (higher = safer = green)
+    const getSafetyColor = (wss: number) => {
+        if (wss >= 80) return "text-green-500"  // Excellent
+        if (wss >= 60) return "text-blue-500"   // Good
+        if (wss >= 40) return "text-yellow-500" // Fair
+        if (wss >= 20) return "text-orange-500" // Poor
+        return "text-red-500"                    // Critical
     }
 
     return (
@@ -173,9 +218,9 @@ export default function SitesAnalyzedPage() {
                                     />
                                     <ChartTooltip
                                         content={<ChartTooltipContent />}
-                                        formatter={(value: number, name: string, props: any) => [
+                                        formatter={(value: any, name: any, props: any) => [
                                             `${value} visits`,
-                                            `WRS: ${props.payload.wrs}`
+                                            `WSS: ${props.payload.wss}`
                                         ]}
                                     />
                                     <Bar
@@ -240,11 +285,11 @@ export default function SitesAnalyzedPage() {
                                         </div>
                                     </div>
                                     <div className="text-right ml-3">
-                                        <div className={cn("text-lg font-bold", getRiskColor(data.wrs))}>
-                                            {data.wrs}
+                                        <div className={cn("text-lg font-bold", getSafetyColor(data.wss))}>
+                                            {data.wss}
                                         </div>
                                         <div className="text-xs text-muted-foreground">
-                                            WRS
+                                            WSS
                                         </div>
                                     </div>
                                 </div>

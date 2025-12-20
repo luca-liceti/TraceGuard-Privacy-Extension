@@ -1,3 +1,41 @@
+/**
+ * =============================================================================
+ * SIDEPANEL APP - The Main Extension Interface
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This is the React component that creates the sidepanel/popup you see when
+ * you click the TraceGuard icon. It shows your privacy scores and website
+ * analysis results.
+ * 
+ * WHAT IT DISPLAYS:
+ * 1. Privacy Score (UPS) - Your personal privacy score (0-100)
+ * 2. Website Safety (WSS) - Current site's safety score with breakdown
+ * 3. Detector Details - Expandable section showing each detector's findings
+ * 4. Data Exposure - Which sites know your email, phone, etc.
+ * 5. Safe Streak - Consecutive safe sites visited
+ * 6. Dashboard Button - Opens the full dashboard for more details
+ * 
+ * COLOR CODING (same for UPS and WSS):
+ * - Green (80-100): Safe / Excellent
+ * - Blue (60-79): Low Risk / Good
+ * - Yellow (40-59): Medium / Fair
+ * - Orange (20-39): High Risk / Poor
+ * - Red (0-19): Critical / Dangerous
+ * 
+ * HOW IT WORKS:
+ * 1. Loads saved state from chrome.storage
+ * 2. Listens for tab changes to update the current site's data
+ * 3. When siteCache changes, automatically updates the display
+ * 4. Uses React hooks to keep the UI in sync with data
+ * 
+ * REACT CONCEPTS USED:
+ * - useState: Stores component state (like crossSiteExposure)
+ * - useEffect: Runs code when component mounts or data changes
+ * - Custom hooks (useAppState, useSettings): Load data from storage
+ * =============================================================================
+ */
+
 import { ThemeProvider } from "@/components/theme-provider"
 import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Flame, Activity, Cookie, FileText, Key, Lock } from "lucide-react"
 import { useAppState, useSettings } from "@/lib/useStorage"
@@ -12,6 +50,11 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Progress } from "@/components/ui/progress"
+
+// =============================================================================
+// HELPER FUNCTIONS
+// These functions determine colors and labels based on scores
+// =============================================================================
 
 // WSS Color based on score (higher = safer)
 function getWSSColor(wss: number): string {

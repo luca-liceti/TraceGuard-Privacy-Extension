@@ -1,11 +1,41 @@
 /**
- * ToS;DR API Integration
+ * =============================================================================
+ * ToS;DR API INTEGRATION - Privacy Policy Ratings
+ * =============================================================================
  * 
- * Terms of Service; Didn't Read (ToS;DR) is a project that rates privacy policies
- * and terms of service for various online services.
+ * WHAT THIS FILE DOES:
+ * This file integrates with ToS;DR (Terms of Service; Didn't Read) - a community
+ * project that reads privacy policies so you don't have to! They grade policies
+ * from A (best) to E (worst), like school grades.
  * 
- * API Documentation: https://tosdr.org/api
- * No API key required - free and open
+ * WHAT IS ToS;DR?
+ * ToS;DR (tosdr.org) is a volunteer project where people read the long, boring
+ * legal documents (Terms of Service, Privacy Policies) for popular websites
+ * and summarize the good, bad, and ugly parts. Then they give each site a grade.
+ * 
+ * HOW WE USE IT:
+ * 1. When you visit a website, we send the domain to ToS;DR's API
+ * 2. They tell us if they have a rating for that site
+ * 3. We convert their grade (A-E) to a score (100, 80, 60, 40, 20)
+ * 4. That score contributes to the Website Safety Score (WSS)
+ * 
+ * SCORING CONVERSION:
+ * - Grade A = 100 (Excellent - respects your privacy)
+ * - Grade B = 80 (Good - mostly fair terms)
+ * - Grade C = 60 (Fair - some concerns)
+ * - Grade D = 40 (Poor - problematic terms)
+ * - Grade E = 20 (Bad - serious privacy issues)
+ * - No rating = 0 (Unknown - can't evaluate)
+ * 
+ * CACHING:
+ * Results are cached for 5 minutes to avoid hammering the API.
+ * The cache is stored in memory and clears when the extension reloads.
+ * 
+ * API INFO:
+ * - URL: https://api.tosdr.org/search/v4/
+ * - No API key required (free and open)
+ * - Documentation: https://tosdr.org/api
+ * =============================================================================
  */
 
 interface TosDRResult {

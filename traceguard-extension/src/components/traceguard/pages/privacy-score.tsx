@@ -1,6 +1,46 @@
+/**
+ * =============================================================================
+ * PRIVACY SCORE PAGE - User Privacy Score (UPS) Dashboard
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This page shows a detailed view of your User Privacy Score (UPS), including
+ * history, trends, and explanations of how the score is calculated.
+ * 
+ * DISPLAYED INFORMATION:
+ * 
+ * 1. HERO SECTION
+ *    - Large score display with color-coded status
+ *    - Status levels: Excellent (90+), Good (70-89), Fair (50-69), 
+ *      Poor (30-49), Critical (0-29)
+ *    - Trend indicator showing improvement/decline
+ * 
+ * 2. STATISTICS ROW
+ *    - Current Score: Your current UPS
+ *    - Average Score: All-time average
+ *    - Lowest Score: Historical minimum
+ * 
+ * 3. SCORE HISTORY CHART
+ *    - 30-day trend chart showing UPS over time
+ *    - Interactive area chart with tooltips
+ * 
+ * 4. HOW IT'S CALCULATED
+ *    - Explanation of starting score (100)
+ *    - Score decay factors (PII entry, site risk, frequency)
+ *    - Score recovery through safe browsing
+ * 
+ * SCORE COLORS:
+ *    - Green (90+): Excellent privacy practices
+ *    - Blue (70-89): Good habits
+ *    - Yellow (50-69): Room for improvement
+ *    - Orange (30-49): Needs attention
+ *    - Red (0-29): Critical - action needed
+ * =============================================================================
+ */
+
 "use client"
 
-import React from "react"
+import * as React from "react"
 import { useAppState, useScoreHistory } from "@/lib/useStorage"
 import {
     ShieldCheck,
@@ -18,50 +58,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { StatCard } from "@/components/ui/stat-card"
+import { getStatusConfig } from "@/lib/risk-utils"
 
-function getScoreLevel(score: number) {
-    if (score >= 90) return { level: "Excellent", color: "text-green-500", bg: "bg-green-500/10", description: "Your browsing habits are excellent!" }
-    if (score >= 70) return { level: "Good", color: "text-blue-500", bg: "bg-blue-500/10", description: "Good privacy practices, keep it up!" }
-    if (score >= 50) return { level: "Fair", color: "text-yellow-500", bg: "bg-yellow-500/10", description: "Room for improvement in privacy." }
-    if (score >= 30) return { level: "Poor", color: "text-orange-500", bg: "bg-orange-500/10", description: "Consider reviewing your browsing habits." }
-    return { level: "Critical", color: "text-red-500", bg: "bg-red-500/10", description: "Immediate attention recommended." }
-}
-
-// Stat card component
-function StatCard({
-    title,
-    value,
-    subtitle,
-    icon: Icon,
-    valueColor,
-}: {
-    title: string
-    value: string | number
-    subtitle?: string
-    icon: React.ComponentType<{ className?: string }>
-    valueColor?: string
-}) {
-    return (
-        <Card>
-            <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            {title}
-                        </p>
-                        <p className={cn("text-2xl font-bold", valueColor)}>{value}</p>
-                        {subtitle && (
-                            <p className="text-xs text-muted-foreground">{subtitle}</p>
-                        )}
-                    </div>
-                    <div className="p-2 rounded-lg bg-muted">
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
-}
+// getScoreLevel replaced by getStatusConfig from @/lib/risk-utils
+// StatCard moved to @/components/ui/stat-card.tsx
 
 export default function PrivacyScorePage() {
     const state = useAppState()
@@ -93,7 +94,7 @@ export default function PrivacyScorePage() {
         ? Math.min(...scoreHistory.map(entry => entry.ups))
         : state.ups
 
-    const scoreLevel = getScoreLevel(state.ups)
+    const scoreLevel = getStatusConfig(state.ups)
 
     return (
         <div className="space-y-6 w-full">
@@ -114,7 +115,7 @@ export default function PrivacyScorePage() {
                         {/* Score Circle */}
                         <div className={cn(
                             "relative flex items-center justify-center w-32 h-32 rounded-full",
-                            scoreLevel.bg
+                            scoreLevel.bgColor
                         )}>
                             <div className="text-center">
                                 <span className={cn("text-5xl font-bold", scoreLevel.color)}>
@@ -129,8 +130,8 @@ export default function PrivacyScorePage() {
 
                         {/* Score Info */}
                         <div className="flex-1 text-center md:text-left">
-                            <Badge className={cn("mb-2", scoreLevel.bg, scoreLevel.color, "border-0")}>
-                                {scoreLevel.level}
+                            <Badge className={cn("mb-2", scoreLevel.bgColor, scoreLevel.color, "border-0")}>
+                                {scoreLevel.label}
                             </Badge>
                             <p className="text-muted-foreground">
                                 {scoreLevel.description}
@@ -174,14 +175,14 @@ export default function PrivacyScorePage() {
                     value={avgScore}
                     subtitle="All-time average"
                     icon={BarChart3}
-                    valueColor={getScoreLevel(avgScore).color}
+                    valueColor={getStatusConfig(avgScore).color}
                 />
                 <StatCard
                     title="Lowest Score"
                     value={lowestScore}
                     subtitle="Historical low"
                     icon={Calendar}
-                    valueColor={getScoreLevel(lowestScore).color}
+                    valueColor={getStatusConfig(lowestScore).color}
                 />
             </div>
 

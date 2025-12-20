@@ -1,3 +1,43 @@
+/**
+ * =============================================================================
+ * WEBSITE SAFETY PAGE - Site Risk Analysis Dashboard
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This page displays all websites you've visited along with their Website
+ * Risk Scores (WRS). Higher WRS = more risky site.
+ * 
+ * DISPLAYED INFORMATION:
+ * 
+ * 1. STATISTICS ROW
+ *    - Total Sites: Number of unique websites analyzed
+ *    - Average Risk: Mean WRS across all sites
+ *    - High Risk: Count of critical + high risk sites
+ *    - Safe Sites: Count of low risk sites
+ * 
+ * 2. RISK DISTRIBUTION BAR
+ *    - Visual breakdown of sites by risk category
+ *    - Color-coded segments: Critical/High/Medium/Low
+ * 
+ * 3. FILTERS
+ *    - Search: Find sites by domain name
+ *    - Risk Level: Filter by Critical/High/Medium/Low
+ * 
+ * 4. SITE CARDS
+ *    - Expandable cards for each analyzed site
+ *    - Shows WRS, last analyzed date, risk breakdown
+ * 
+ * RISK LEVELS (based on WRS):
+ *    - Critical (80-100): Major security concerns - RED
+ *    - High (60-79): Significant risks - ORANGE
+ *    - Medium (40-59): Some concerns - YELLOW
+ *    - Low (0-39): Generally safe - GREEN
+ * 
+ * NOTE: WRS is INVERSE of WSS. High WRS = more risky (bad).
+ * This is different from UPS where higher = better.
+ * =============================================================================
+ */
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -24,48 +64,46 @@ import { Progress } from "@/components/ui/progress"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { SiteRiskData } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { getSafetyLevel, getSafetyConfig, SafetyLevel, SAFETY_CONFIGS } from "@/lib/risk-utils"
 
-// Risk configuration
-const riskConfig = {
-    critical: {
-        label: "Critical",
-        color: "text-red-500",
-        bg: "bg-red-500/10",
-        border: "border-red-500/30",
-        icon: XCircle,
+// Safety configuration with icons for display
+// WSS thresholds: higher = safer
+const safetyConfig = {
+    excellent: {
+        ...SAFETY_CONFIGS.excellent,
+        icon: CheckCircle,
+        border: SAFETY_CONFIGS.excellent.borderColor,
+        bg: SAFETY_CONFIGS.excellent.bgColor,
         range: [80, 100]
     },
-    high: {
-        label: "High",
-        color: "text-orange-500",
-        bg: "bg-orange-500/10",
-        border: "border-orange-500/30",
-        icon: AlertTriangle,
+    good: {
+        ...SAFETY_CONFIGS.good,
+        icon: CheckCircle,
+        border: SAFETY_CONFIGS.good.borderColor,
+        bg: SAFETY_CONFIGS.good.bgColor,
         range: [60, 79]
     },
-    medium: {
-        label: "Medium",
-        color: "text-yellow-500",
-        bg: "bg-yellow-500/10",
-        border: "border-yellow-500/30",
+    fair: {
+        ...SAFETY_CONFIGS.fair,
         icon: AlertTriangle,
+        border: SAFETY_CONFIGS.fair.borderColor,
+        bg: SAFETY_CONFIGS.fair.bgColor,
         range: [40, 59]
     },
-    low: {
-        label: "Low",
-        color: "text-green-500",
-        bg: "bg-green-500/10",
-        border: "border-green-500/30",
-        icon: CheckCircle,
-        range: [0, 39]
+    poor: {
+        ...SAFETY_CONFIGS.poor,
+        icon: AlertTriangle,
+        border: SAFETY_CONFIGS.poor.borderColor,
+        bg: SAFETY_CONFIGS.poor.bgColor,
+        range: [20, 39]
+    },
+    critical: {
+        ...SAFETY_CONFIGS.critical,
+        icon: XCircle,
+        border: SAFETY_CONFIGS.critical.borderColor,
+        bg: SAFETY_CONFIGS.critical.bgColor,
+        range: [0, 19]
     }
-}
-
-function getRiskLevel(wrs: number): keyof typeof riskConfig {
-    if (wrs >= 80) return "critical"
-    if (wrs >= 60) return "high"
-    if (wrs >= 40) return "medium"
-    return "low"
 }
 
 // Stat card component
@@ -194,8 +232,8 @@ function RiskDistributionBar({
 // Site card component
 function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
     const [isOpen, setIsOpen] = useState(false)
-    const risk = getRiskLevel(data.wrs)
-    const config = riskConfig[risk]
+    const safety = getSafetyLevel(data.wss)
+    const config = safetyConfig[safety]
     const Icon = config.icon
 
     const breakdownItems = data.breakdown ? Object.entries(data.breakdown).filter(([_, v]) => v !== undefined) : []
@@ -230,12 +268,12 @@ function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
                             </div>
 
                             <div className="flex items-center gap-4">
-                                {/* WRS Score */}
+                                {/* WSS Score */}
                                 <div className="text-right">
                                     <div className="flex items-center gap-1.5">
                                         <Icon className={cn("h-5 w-5", config.color)} />
                                         <span className={cn("text-2xl font-bold", config.color)}>
-                                            {data.wrs}
+                                            {data.wss}
                                         </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground">Risk Score</p>
@@ -265,8 +303,9 @@ function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
                                 </p>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                                     {breakdownItems.map(([context, value]) => {
-                                        const itemRisk = getRiskLevel(value as number)
-                                        const itemConfig = riskConfig[itemRisk]
+                                        // Breakdown values are safety scores (higher = safer)
+                                        const itemSafety = getSafetyLevel(value as number)
+                                        const itemConfig = safetyConfig[itemSafety]
                                         return (
                                             <div
                                                 key={context}
@@ -318,31 +357,34 @@ export default function WebsiteSafetyPage() {
 
     const sites = Object.entries(siteCache)
 
-    // Filter sites by risk level and search
+    // Filter sites by safety level and search
     const filteredSites = sites.filter(([domain, data]) => {
         const matchesSearch = searchQuery === "" ||
             domain.toLowerCase().includes(searchQuery.toLowerCase())
 
         let matchesFilter = true
-        if (filterLevel === "critical") matchesFilter = data.wrs >= 80
-        else if (filterLevel === "high") matchesFilter = data.wrs >= 60 && data.wrs < 80
-        else if (filterLevel === "medium") matchesFilter = data.wrs >= 40 && data.wrs < 60
-        else if (filterLevel === "low") matchesFilter = data.wrs < 40
+        // WSS thresholds (higher = safer)
+        if (filterLevel === "excellent") matchesFilter = data.wss >= 80
+        else if (filterLevel === "good") matchesFilter = data.wss >= 60 && data.wss < 80
+        else if (filterLevel === "fair") matchesFilter = data.wss >= 40 && data.wss < 60
+        else if (filterLevel === "poor") matchesFilter = data.wss >= 20 && data.wss < 40
+        else if (filterLevel === "critical") matchesFilter = data.wss < 20
 
         return matchesSearch && matchesFilter
     })
 
-    // Sort by risk score (highest first)
-    const sortedSites = [...filteredSites].sort((a, b) => b[1].wrs - a[1].wrs)
+    // Sort by safety score (lowest/riskiest first for review)
+    const sortedSites = [...filteredSites].sort((a, b) => a[1].wss - b[1].wss)
 
-    // Calculate statistics
+    // Calculate statistics using WSS thresholds
     const totalSites = sites.length
-    const criticalSites = sites.filter(([_, data]) => data.wrs >= 80).length
-    const highRiskSites = sites.filter(([_, data]) => data.wrs >= 60 && data.wrs < 80).length
-    const mediumRiskSites = sites.filter(([_, data]) => data.wrs >= 40 && data.wrs < 60).length
-    const safeSites = sites.filter(([_, data]) => data.wrs < 40).length
-    const avgWRS = sites.length > 0
-        ? Math.round(sites.reduce((sum, [_, data]) => sum + data.wrs, 0) / sites.length)
+    const excellentSites = sites.filter(([_, data]) => data.wss >= 80).length
+    const goodSites = sites.filter(([_, data]) => data.wss >= 60 && data.wss < 80).length
+    const fairSites = sites.filter(([_, data]) => data.wss >= 40 && data.wss < 60).length
+    const poorSites = sites.filter(([_, data]) => data.wss >= 20 && data.wss < 40).length
+    const criticalSites = sites.filter(([_, data]) => data.wss < 20).length
+    const avgWSS = sites.length > 0
+        ? Math.round(sites.reduce((sum, [_, data]) => sum + data.wss, 0) / sites.length)
         : 0
 
     return (
@@ -367,50 +409,50 @@ export default function WebsiteSafetyPage() {
                     iconColor="text-blue-500"
                 />
                 <StatCard
-                    title="Average Risk"
-                    value={avgWRS}
-                    subtitle={avgWRS >= 60 ? "Needs attention" : avgWRS >= 40 ? "Moderate" : "Looking good"}
+                    title="Avg Safety"
+                    value={avgWSS}
+                    subtitle={avgWSS >= 80 ? "Excellent" : avgWSS >= 60 ? "Good" : avgWSS >= 40 ? "Fair" : "Needs attention"}
                     icon={Shield}
                     iconColor={
-                        avgWRS >= 80 ? "text-red-500" :
-                            avgWRS >= 60 ? "text-orange-500" :
-                                avgWRS >= 40 ? "text-yellow-500" :
-                                    "text-green-500"
+                        avgWSS >= 80 ? "text-green-500" :
+                            avgWSS >= 60 ? "text-blue-500" :
+                                avgWSS >= 40 ? "text-yellow-500" :
+                                    "text-red-500"
                     }
                 />
                 <StatCard
-                    title="High Risk"
-                    value={criticalSites + highRiskSites}
-                    subtitle="Critical & high risk sites"
+                    title="At Risk"
+                    value={criticalSites + poorSites}
+                    subtitle="Critical & poor safety"
                     icon={AlertTriangle}
                     iconColor="text-red-500"
                 />
                 <StatCard
                     title="Safe Sites"
-                    value={safeSites}
-                    subtitle="Low risk sites"
+                    value={excellentSites + goodSites}
+                    subtitle="Excellent & good safety"
                     icon={CheckCircle}
                     iconColor="text-green-500"
                 />
             </div>
 
-            {/* Risk Distribution */}
+            {/* Safety Distribution */}
             {totalSites > 0 && (
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base font-semibold">
-                            Risk Distribution
+                            Safety Distribution
                         </CardTitle>
                         <CardDescription>
-                            Overview of website risk levels across all analyzed sites
+                            Overview of website safety levels across all analyzed sites
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <RiskDistributionBar
                             critical={criticalSites}
-                            high={highRiskSites}
-                            medium={mediumRiskSites}
-                            low={safeSites}
+                            high={poorSites}
+                            medium={fairSites}
+                            low={excellentSites + goodSites}
                             total={totalSites}
                         />
                     </CardContent>

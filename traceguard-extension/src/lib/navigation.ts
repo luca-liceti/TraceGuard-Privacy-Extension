@@ -1,3 +1,36 @@
+/**
+ * =============================================================================
+ * NAVIGATION CONFIGURATION - Dashboard Menu Structure
+ * =============================================================================
+ * 
+ * WHAT THIS FILE DOES:
+ * This file defines the navigation menu structure for the TraceGuard dashboard.
+ * It's the "single source of truth" - all menu items are defined here, and
+ * both the sidebar and search use this configuration.
+ * 
+ * WHY A CENTRAL CONFIG?
+ * Instead of duplicating menu items in multiple places, we define them once
+ * here. This makes it easy to:
+ * - Add new pages (just add to this file)
+ * - Rename or reorganize pages
+ * - Keep the sidebar and search in sync
+ * 
+ * SECTIONS:
+ * 1. Main - Overview and Privacy Score
+ * 2. Analysis - Website Safety, Sites, Trackers, Activity
+ * 3. Management - Domain Lists, Integrations
+ * 4. Footer - Settings, Help
+ * 
+ * DATA STRUCTURES:
+ * - NavSection: A labeled group of navigation items
+ * - NavItem: A single menu item with id, title, icon, and optional sub-items
+ * - SettingsSearchItem: Deep links into specific settings tabs
+ * 
+ * HELPER FUNCTIONS:
+ * - getAllSearchablePages(): Flattens the navigation for search functionality
+ * =============================================================================
+ */
+
 "use client"
 
 import {
@@ -15,6 +48,11 @@ import {
     type LucideIcon,
 } from "lucide-react"
 
+// =============================================================================
+// TYPE DEFINITIONS
+// These define the shape of our navigation data
+// =============================================================================
+
 /**
  * Shared navigation configuration
  * 
@@ -24,16 +62,16 @@ import {
  *   2. The sidebar and search will automatically include it
  */
 
-// Menu data structure
+// Menu data structure - represents a single navigation item
 export interface NavItem {
-    id: string
-    title: string
-    description?: string  // Used by search
-    url?: string
-    icon: LucideIcon
-    isNew?: boolean
-    badge?: string
-    items?: {
+    id: string              // Unique identifier for this item
+    title: string           // Display name shown in menu
+    description?: string    // Used by search to help users find pages
+    url?: string            // URL path for this page (e.g., "/settings")
+    icon: LucideIcon        // Icon component from lucide-react
+    isNew?: boolean         // Show a "New" badge?
+    badge?: string          // Optional text badge
+    items?: {               // Sub-menu items (for expandable menus)
         id: string
         title: string
         description?: string
@@ -41,11 +79,17 @@ export interface NavItem {
     }[]
 }
 
+// A section groups related navigation items together
 export interface NavSection {
-    id: string
-    label: string
-    items: NavItem[]
+    id: string              // Unique identifier for this section
+    label: string           // Section header displayed in sidebar
+    items: NavItem[]        // Navigation items in this section
 }
+
+// =============================================================================
+// MAIN NAVIGATION SECTIONS
+// The primary menu structure for the dashboard
+// =============================================================================
 
 export const navSections: NavSection[] = [
     {

@@ -1,18 +1,57 @@
 /**
- * Cookie Detector - Third-Party Cookie Detection
+ * =============================================================================
+ * COOKIE DETECTOR - Analyzing Tracking Cookies
+ * =============================================================================
  * 
- * Detects cross-site cookies that may be used for tracking.
- * Note: document.cookie only shows cookies accessible to JavaScript (no HttpOnly cookies).
- * For enhanced detection with full cookie attributes, use chrome.cookies API (planned for v1.1).
+ * WHAT THIS FILE DOES:
+ * This detector analyzes cookies on the webpage to find tracking and
+ * third-party cookies. Cookies are like little sticky notes that websites
+ * leave in your browser to remember things about you.
  * 
- * Returns: Risk score 0-100 (0 = many third-party cookies, 100 = no third-party cookies)
+ * WHAT ARE COOKIES?
+ * Cookies are small pieces of data stored in your browser. They can be:
+ * - First-party: Set by the website you're visiting (usually harmless)
+ * - Third-party: Set by other companies to track you across sites (privacy risk)
+ * 
+ * COOKIE CATEGORIES (by invasiveness):
+ * 
+ * 3× CROSS-SITE TRACKERS (Most invasive):
+ *    These follow you across multiple websites to build a profile
+ *    Examples: DoubleClick (IDE), Facebook Pixel (_fbp), LinkedIn (bcookie)
+ * 
+ * 2× ANALYTICS (Moderately invasive):
+ *    These track your behavior on individual sites
+ *    Examples: Google Analytics (_ga, _gid), Hotjar (_hjid), Mixpanel (mp_)
+ * 
+ * 1× OTHER THIRD-PARTY (Less invasive but still tracking):
+ *    Examples: Google preferences (NID, PREF, CONSENT)
+ * 
+ * 0× FIRST-PARTY (Safe):
+ *    These are usually session or authentication cookies from the site itself
+ * 
+ * SCORING FORMULA:
+ * Uses logarithmic calculation: 100 - 12 × log₂(weighted_score + 1)
+ * 
+ * EXAMPLES:
+ * - 0 tracking cookies → Score: 100 (safe)
+ * - 2 analytics cookies (4 weighted) → Score: ~72
+ * - 2 cross-site trackers (6 weighted) → Score: ~66
+ * 
+ * TECHNICAL NOTE:
+ * document.cookie only shows cookies accessible to JavaScript (not HttpOnly).
+ * For enhanced detection with full cookie attributes, the chrome.cookies API
+ * could be used in a future version.
+ * =============================================================================
  */
 
+/**
+ * Represents information about a single cookie.
+ */
 interface CookieInfo {
-    name: string;
-    value: string;
+    name: string;                 // The cookie's name
+    value: string;                // The cookie's value
     category: 'cross-site-tracker' | 'analytics' | 'third-party' | 'first-party';
-    invasivenessWeight: number; // 3x, 2x, 1x, or 0
+    invasivenessWeight: number;   // 3x, 2x, 1x, or 0 depending on category
 }
 
 /**
