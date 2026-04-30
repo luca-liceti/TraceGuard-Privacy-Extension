@@ -39,7 +39,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAppState, useNotifications, useScoreHistory, useSettings } from "@/lib/useStorage"
+import { useAppState, useNotifications, useScoreHistory, useSettings, useSiteCache } from "@/lib/useStorage"
 import {
     Globe,
     TrendingUp,
@@ -101,51 +101,20 @@ export default function OverviewPage() {
     const settings = useSettings()
     const scoreHistory = useScoreHistory()
     const { notifications } = useNotifications()
-    const [siteCache, setSiteCache] = useState<Record<string, SiteRiskData>>({})
-    const [todayVisits, setTodayVisits] = useState(0)
-    const [highRiskCount, setHighRiskCount] = useState(0)
-
-    // Load site cache
-    useEffect(() => {
-        const loadSiteCache = async () => {
-            const result = await chrome.storage.local.get('siteCache')
-            const cache = (result.siteCache || {}) as Record<string, SiteRiskData>
-            setSiteCache(cache)
-
-            // Calculate today's visits
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            const todayStart = today.getTime()
-
-            let todayCount = 0
-            let highRisk = 0
-
-            Object.values(cache).forEach(site => {
-                if (site.lastVisit && site.lastVisit >= todayStart) {
-                    todayCount++
-                }
-                // High risk = low safety score (WSS < 40)
-                if (site.wss < 40) {
-                    highRisk++
-                }
-            })
-
-            setTodayVisits(todayCount)
-            setHighRiskCount(highRisk)
-        }
-
-        loadSiteCache()
-
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-            if (areaName === 'local' && changes.siteCache) {
-                loadSiteCache()
-            }
-        }
-        chrome.storage.onChanged.addListener(listener)
-        return () => chrome.storage.onChanged.removeListener(listener)
-    }, [])
+    const { siteCache, sites } = useSiteCache()
 
     if (!state) return <div className="p-4">Loading...</div>
+
+    // Calculate today's visits and high risk count
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayStart = today.getTime()
+
+    const todayVisits = sites.filter(([_, data]) =>
+        new Date(data.lastVisit || data.lastAnalyzed || 0).getTime() >= todayStart
+    ).length
+
+    const highRiskCount = sites.filter(([_, data]) => data.wss < 40).length
 
     // Calculate trend
     const trend = scoreHistory.length >= 2

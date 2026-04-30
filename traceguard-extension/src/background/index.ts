@@ -36,6 +36,7 @@ import { calculateWSS } from '../lib/scoring';  // Calculates website safety sco
 import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';  // Type definitions (like a template for data)
 import contentScriptPath from '../content/index.ts?script';  // The script that analyzes webpages
 import { checkTosDR } from './tosdr-api';  // Checks privacy policy ratings
+import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii'; // Calculates privacy score impact
 
 // This message appears in the browser's developer console to confirm the script is running
 console.log('TraceGuard Background Service Worker Running');
@@ -65,6 +66,9 @@ chrome.runtime.onInstalled.addListener(async () => {
 
     // Set up how the extension opens (popup window vs sidebar)
     await configureDisplayMode(settings.displayMode || 'popup');
+
+    // Sync corrupted/missing state from cache
+    await syncStateWithCache();
 });
 
 /**
@@ -78,6 +82,9 @@ chrome.runtime.onStartup.addListener(async () => {
     // Make sure the display mode matches user preferences
     const settings = await storage.getSettings();
     await configureDisplayMode(settings.displayMode || 'popup');
+
+    // Sync corrupted/missing state from cache
+    await syncStateWithCache();
 });
 
 // =============================================================================
@@ -101,6 +108,79 @@ async function configureDisplayMode(mode: 'popup' | 'sidebar') {
         await chrome.action.setPopup({ popup: 'src/popup/index.html' });
         await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
         console.log('Display mode: Popup');
+    }
+}
+
+// =============================================================================
+// STATE RECOVERY / SYNC
+// =============================================================================
+
+/**
+ * Heals state and scoreHistory if previous dynamic import crashes left them at 0
+ * while siteCache correctly accumulated data.
+ */
+async function syncStateWithCache() {
+    try {
+        const state = await storage.getState();
+        const result = await chrome.storage.local.get(['siteCache', 'scoreHistory']);
+        const siteCache = (result.siteCache || {}) as Record<string, SiteRiskData>;
+        const history = (result.scoreHistory || []) as ScoreHistoryEntry[];
+        
+        const sites = Object.values(siteCache);
+        let updated = false;
+
+        // Sync sitesAnalyzed
+        if (sites.length > 0 && state.sitesAnalyzed === 0) {
+            console.log('[Sync] Syncing sitesAnalyzed with siteCache...');
+            const totalVisits = sites.reduce((sum, site) => sum + (site.visitCount || 1), 0);
+            state.sitesAnalyzed = totalVisits;
+            
+            await storage.updateState(state);
+            updated = true;
+        }
+        
+        // Sync scoreHistory
+        if (sites.length > 0 && history.length === 0) {
+            console.log('[Sync] Rebuilding scoreHistory from siteCache...');
+            // Sort by last analyzed
+            const sortedSites = sites.filter(s => s.lastAnalyzed).sort((a, b) => Number(a.lastAnalyzed) - Number(b.lastAnalyzed));
+            
+            let currentUps = 100;
+            let streak = 0;
+            const newHistory: ScoreHistoryEntry[] = [];
+            
+            // Replay the history
+            for (const site of sortedSites) {
+                const impact = calculateVisitImpact(currentUps, site.wss, streak);
+                currentUps = impact.newUPS;
+                streak = impact.newStreak;
+                
+                newHistory.push({
+                    timestamp: Number(site.lastAnalyzed) || Date.now(),
+                    ups: currentUps,
+                    avgSiteRisk: site.wss,
+                    reason: impact.message || `Visited ${site.domain}`
+                });
+            }
+            
+            // Keep last 100
+            if (newHistory.length > 100) newHistory.splice(0, newHistory.length - 100);
+            await chrome.storage.local.set({ scoreHistory: newHistory });
+            
+            // Update final UPS
+            await storage.updateState({
+                ...await storage.getState(),
+                ups: currentUps,
+                safeVisitStreak: streak
+            });
+            updated = true;
+        }
+
+        if (updated) {
+            console.log('[Sync] Sync complete.');
+        }
+    } catch (err) {
+        console.error('[Sync] Error syncing state:', err);
     }
 }
 
@@ -301,7 +381,6 @@ async function handlePageAnalysis(message: any) {
 
     // Calculate how this visit affects your User Privacy Score (UPS)
     // Safe sites give you a recovery bonus, risky sites apply a penalty
-    const { calculateVisitImpact } = await import('../lib/pii');
     const upsImpact = calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0);
 
     // Save the updated state
@@ -322,22 +401,20 @@ async function handlePageAnalysis(message: any) {
             details: { upsChange: upsImpact.newUPS - (state.ups || 100), newStreak: upsImpact.newStreak },
             message: upsImpact.message
         });
-
-        // Add to the score history graph if the score changed
-        if (upsImpact.newUPS !== state.ups) {
-            const history = ((await chrome.storage.local.get('scoreHistory')).scoreHistory || []) as ScoreHistoryEntry[];
-            history.push({
-                timestamp: Date.now(),
-                ups: upsImpact.newUPS,
-                avgSiteRisk: wss,
-                reason: upsImpact.message
-            });
-
-            // Keep only the last 100 entries to save storage space
-            if (history.length > 100) history.splice(0, history.length - 100);
-            await chrome.storage.local.set({ scoreHistory: history });
-        }
     }
+
+    // Always add to the score history graph to keep the charts updated
+    const history = ((await chrome.storage.local.get('scoreHistory')).scoreHistory || []) as ScoreHistoryEntry[];
+    history.push({
+        timestamp: Date.now(),
+        ups: upsImpact.newUPS,
+        avgSiteRisk: wss,
+        reason: upsImpact.message || `Visited ${domain}`
+    });
+
+    // Keep only the last 100 entries to save storage space
+    if (history.length > 100) history.splice(0, history.length - 100);
+    await chrome.storage.local.set({ scoreHistory: history });
 
     // Step 7: Log detailed information from each detector
     // This creates activity logs that show up in the "Activity Logs" page
@@ -489,7 +566,6 @@ async function handlePIIDetection(message: any) {
     // Calculate the penalty based on:
     // - What type of info you entered (password = bigger penalty than name)
     // - How safe the current website is (risky site = bigger penalty)
-    const { calculatePIIPenalty } = await import('../lib/pii');
     const siteWSS = state.currentSite?.wss || 50;  // Get current site's safety score (default to 50 if unknown)
     const { newUPS, penalty } = calculatePIIPenalty(state.ups || 100, event.fieldType, siteWSS);
     const scoreImpact = -penalty;  // Negative because it's a penalty

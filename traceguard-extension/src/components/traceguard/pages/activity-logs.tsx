@@ -164,9 +164,10 @@ export default function ActivityLogsPage() {
 
     // Calculate statistics using WSS thresholds (higher = safer)
     const totalVisits = groupedVisits.length
-    const excellentSafetyVisits = groupedVisits.filter(v => v.wss >= 80).length
-    const goodSafetyVisits = groupedVisits.filter(v => v.wss >= 60 && v.wss < 80).length
-    const atRiskVisits = groupedVisits.filter(v => v.wss < 40).length  // Poor + Critical
+    const excellentSafetyVisits = groupedVisits.filter(v => v.wss >= 80).length  // Excellent safety
+    const goodSafetyVisits = groupedVisits.filter(v => v.wss >= 60 && v.wss < 80).length  // Good safety
+    const fairSafetyVisits = groupedVisits.filter(v => v.wss >= 40 && v.wss < 60).length  // Fair safety
+    const atRiskVisits = groupedVisits.filter(v => v.wss < 40).length  // Poor + Critical (high risk)
     const uniqueSites = new Set(groupedVisits.map(v => v.domain)).size
 
     // Helper to get safety level (matches filter options)
@@ -241,7 +242,7 @@ export default function ActivityLogsPage() {
                         Activity Logs
                     </h1>
                     <p className="text-muted-foreground mt-2">
-                        Site visits grouped by domain with risk assessment
+                        Site visits grouped by domain with safety assessment
                     </p>
                 </div>
                 <Button
@@ -263,18 +264,18 @@ export default function ActivityLogsPage() {
                     valueColor="text-blue-500"
                 />
                 <StatCard
-                    title="High Risk"
-                    value={highRiskVisits}
+                    title="At Risk"
+                    value={atRiskVisits}
                     valueColor="text-red-500"
                 />
                 <StatCard
-                    title="Medium"
-                    value={mediumRiskVisits}
+                    title="Fair"
+                    value={fairSafetyVisits}
                     valueColor="text-yellow-500"
                 />
                 <StatCard
-                    title="Low Risk"
-                    value={lowRiskVisits}
+                    title="Safe"
+                    value={excellentSafetyVisits + goodSafetyVisits}
                     valueColor="text-green-500"
                 />
                 <StatCard
