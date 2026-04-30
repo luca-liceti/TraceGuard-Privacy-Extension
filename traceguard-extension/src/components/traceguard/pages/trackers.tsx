@@ -126,7 +126,7 @@ export default function TrackersPage() {
                     subtitle="Heavy trackers"
                     icon={Eye}
                     iconColor="text-red-500"
-                    valueColor="text-red-500"
+                    valueColor={highTracking > 0 ? "text-red-500" : "text-green-500"}
                 />
                 <StatCard
                     title="Total Sites"
@@ -134,7 +134,7 @@ export default function TrackersPage() {
                     subtitle="Analyzed"
                     icon={Globe}
                     iconColor="text-blue-500"
-                    valueColor="text-blue-500"
+                    valueColor="text-foreground"
                 />
             </div>
 

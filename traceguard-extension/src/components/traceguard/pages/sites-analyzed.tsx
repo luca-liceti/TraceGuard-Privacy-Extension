@@ -51,33 +51,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 
 import { SiteRiskData } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { useSiteCache } from "@/lib/useStorage"
+import { StatCard } from "@/components/ui/stat-card"
 
-// Stat card component
-function StatCard({
-    title,
-    value,
-    subtitle,
-    valueColor,
-}: {
-    title: string
-    value: string | number
-    subtitle?: string
-    valueColor?: string
-}) {
-    return (
-        <Card>
-            <CardContent className="p-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {title}
-                </p>
-                <p className={cn("text-2xl font-bold mt-1", valueColor)}>{value}</p>
-                {subtitle && (
-                    <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-                )}
-            </CardContent>
-        </Card>
-    )
-}
+// Local StatCard removed in favor of global @/components/ui/stat-card.tsx
 
 export default function SitesAnalyzedPage() {
     const [searchQuery, setSearchQuery] = useState("")
@@ -100,10 +76,16 @@ export default function SitesAnalyzedPage() {
         .sort((a, b) => (b[1].visitCount || 0) - (a[1].visitCount || 0))
         .slice(0, 10)
         .map(([domain, data]) => ({
-            domain: domain.length > 15 ? domain.substring(0, 15) + '...' : domain,
+            domain: domain.length > 20 ? domain.substring(0, 20) + '...' : domain,
             visits: data.visitCount || 1,
             wss: data.wss
         }))
+    
+    // Calculate x-axis ticks (intervals of 5)
+    const maxVisits = chartData.length > 0 ? Math.max(...chartData.map(d => d.visits), 5) : 5
+    const tickMax = Math.ceil(maxVisits / 5) * 5
+    const xAxisTicks = Array.from({ length: (tickMax / 5) + 1 }, (_, i) => i * 5)
+
 
     const totalVisits = sites.reduce((sum, [_, data]) => sum + (data.visitCount || 1), 0)
     const avgVisitsPerSite = sites.length > 0 ? Math.round(totalVisits / sites.length) : 0
@@ -143,31 +125,40 @@ export default function SitesAnalyzedPage() {
                     title="Total Sites"
                     value={sites.length}
                     subtitle="Unique domains"
-                    valueColor="text-blue-500"
+                    icon={Globe}
+                    iconColor="text-blue-500"
+                    valueColor="text-foreground"
                 />
                 <StatCard
                     title="Today"
                     value={todayCount}
                     subtitle="Sites visited"
+                    icon={Calendar}
+                    iconColor="text-green-500"
                     valueColor="text-green-500"
                 />
                 <StatCard
                     title="Total Visits"
                     value={totalVisits}
                     subtitle="Across all sites"
-                    valueColor="text-purple-500"
+                    icon={TrendingUp}
+                    iconColor="text-blue-500"
+                    valueColor="text-foreground"
                 />
                 <StatCard
                     title="Avg Visits"
                     value={avgVisitsPerSite}
                     subtitle="Per site"
-                    valueColor="text-orange-500"
+                    icon={BarChart3}
+                    iconColor="text-orange-500"
+                    valueColor="text-foreground"
                 />
             </div>
 
             {/* Top Sites Chart */}
             {chartData.length > 0 && (
-                <Card>
+                <div className="w-full lg:w-1/2">
+                    <Card>
                     <CardHeader>
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
                             <BarChart3 className="h-4 w-4 text-primary" />
@@ -177,7 +168,7 @@ export default function SitesAnalyzedPage() {
                             Top 10 sites by visit count
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pb-4">
                         <ChartContainer
                             config={{
                                 visits: {
@@ -185,30 +176,44 @@ export default function SitesAnalyzedPage() {
                                     color: "hsl(var(--primary))",
                                 },
                             }}
-                            className="h-[250px]"
+                            className="h-[300px] w-full aspect-auto"
                         >
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData} layout="vertical">
+                                    <BarChart 
+                                        data={chartData} 
+                                        layout="vertical"
+                                        margin={{ left: 0, right: 20, top: 0, bottom: 0 }}
+                                    >
                                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={true} vertical={false} />
-                                    <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                                    <XAxis 
+                                        type="number" 
+                                        tick={{ fontSize: 11 }} 
+                                        tickLine={false} 
+                                        axisLine={false}
+                                        allowDecimals={false}
+                                        ticks={xAxisTicks}
+                                        domain={[0, tickMax]}
+                                    />
                                     <YAxis
                                         dataKey="domain"
                                         type="category"
                                         tick={{ fontSize: 11 }}
                                         tickLine={false}
                                         axisLine={false}
-                                        width={100}
+                                        width={120}
                                     />
                                     <ChartTooltip
                                         content={<ChartTooltipContent />}
-                                        formatter={(value: any, name: any, props: any) => [
-                                            `${value} visits`,
-                                            `WSS: ${props.payload.wss}`
-                                        ]}
+                                        formatter={(value: any, _name: any, props: any) => (
+                                            <div className="flex flex-col gap-1 py-1">
+                                                <div className="font-bold text-foreground">{value} visits</div>
+                                                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">WSS Score: {props.payload.wss}</div>
+                                            </div>
+                                        )}
                                     />
                                     <Bar
                                         dataKey="visits"
-                                        fill="hsl(var(--primary))"
+                                        fill="#FFFFFF"
                                         radius={[0, 4, 4, 0]}
                                     />
                                 </BarChart>
@@ -216,6 +221,7 @@ export default function SitesAnalyzedPage() {
                         </ChartContainer>
                     </CardContent>
                 </Card>
+                </div>
             )}
 
             {/* Sites List */}

@@ -58,6 +58,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { StatCard } from "@/components/ui/stat-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -105,58 +106,6 @@ const safetyConfig = {
         bg: SAFETY_CONFIGS.critical.bgColor,
         range: [0, 19]
     }
-}
-
-// Stat card component
-function StatCard({
-    title,
-    value,
-    subtitle,
-    icon: Icon,
-    iconColor,
-    trend,
-}: {
-    title: string
-    value: string | number
-    subtitle?: string
-    icon: React.ComponentType<{ className?: string }>
-    iconColor?: string
-    trend?: { direction: 'up' | 'down' | 'stable', value: string }
-}) {
-    return (
-        <Card>
-            <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            {title}
-                        </p>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-bold">{value}</span>
-                            {trend && (
-                                <span className={cn(
-                                    "text-xs flex items-center",
-                                    trend.direction === 'up' ? "text-red-500" :
-                                        trend.direction === 'down' ? "text-green-500" :
-                                            "text-muted-foreground"
-                                )}>
-                                    {trend.direction === 'up' && <TrendingUp className="h-3 w-3 mr-0.5" />}
-                                    {trend.direction === 'down' && <TrendingDown className="h-3 w-3 mr-0.5" />}
-                                    {trend.value}
-                                </span>
-                            )}
-                        </div>
-                        {subtitle && (
-                            <p className="text-xs text-muted-foreground">{subtitle}</p>
-                        )}
-                    </div>
-                    <div className={cn("p-2.5 rounded-xl", iconColor ? `${iconColor}/10` : "bg-muted")}>
-                        <Icon className={cn("h-5 w-5", iconColor || "text-muted-foreground")} />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
 }
 
 // Risk distribution bar component
@@ -389,6 +338,7 @@ export default function WebsiteSafetyPage() {
                     subtitle="Websites analyzed"
                     icon={Globe}
                     iconColor="text-blue-500"
+                    valueColor="text-foreground"
                 />
                 <StatCard
                     title="Avg Safety"
@@ -401,6 +351,12 @@ export default function WebsiteSafetyPage() {
                                 avgWSS >= 40 ? "text-yellow-500" :
                                     "text-red-500"
                     }
+                    valueColor={
+                        avgWSS >= 80 ? "text-green-500" :
+                            avgWSS >= 60 ? "text-green-500" : // Still good
+                                avgWSS >= 40 ? "text-yellow-500" :
+                                    "text-red-500"
+                    }
                 />
                 <StatCard
                     title="At Risk"
@@ -408,6 +364,7 @@ export default function WebsiteSafetyPage() {
                     subtitle="Critical & poor safety"
                     icon={AlertTriangle}
                     iconColor="text-red-500"
+                    valueColor={criticalSites + poorSites > 0 ? "text-red-500" : "text-green-500"}
                 />
                 <StatCard
                     title="Safe Sites"
@@ -415,6 +372,7 @@ export default function WebsiteSafetyPage() {
                     subtitle="Excellent & good safety"
                     icon={CheckCircle}
                     iconColor="text-green-500"
+                    valueColor="text-green-500"
                 />
             </div>
 

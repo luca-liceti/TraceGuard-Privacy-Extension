@@ -179,19 +179,7 @@ export function StatCard({
 
                     {/* Icon (if provided) */}
                     {Icon && (
-                        <div
-                            className={cn(
-                                "p-2.5 rounded-lg flex-shrink-0 ml-3",
-                                iconColor
-                                    ? `bg-${iconColor.replace('text-', '')}/10`.replace('bg-text-', 'bg-')
-                                    : "bg-muted"
-                            )}
-                            style={iconColor ? {
-                                backgroundColor: `color-mix(in srgb, currentColor 10%, transparent)`
-                            } : undefined}
-                        >
-                            <Icon className={cn("h-4 w-4", iconColor || "text-muted-foreground")} />
-                        </div>
+                        <Icon className={cn("h-5 w-5 flex-shrink-0 ml-3", iconColor || "text-muted-foreground")} />
                     )}
                 </div>
             </CardContent>

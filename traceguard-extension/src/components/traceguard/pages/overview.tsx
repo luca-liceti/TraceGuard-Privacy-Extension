@@ -238,6 +238,7 @@ export default function OverviewPage() {
                     subtitle={`${state.sitesAnalyzed} total visits`}
                     icon={Globe}
                     iconColor="text-blue-500"
+                    valueColor="text-foreground"
                     href="/sites"
                 />
                 <StatCard
@@ -246,6 +247,7 @@ export default function OverviewPage() {
                     subtitle="Consecutive safe sites"
                     icon={Flame}
                     iconColor="text-orange-500"
+                    valueColor="text-green-500"
                     href="/privacy-score"
                 />
                 <StatCard
@@ -254,6 +256,7 @@ export default function OverviewPage() {
                     subtitle="Need attention"
                     icon={AlertTriangle}
                     iconColor="text-red-500"
+                    valueColor={highRiskCount > 0 ? "text-red-500" : "text-green-500"}
                     href="/website-safety"
                 />
                 <StatCard
@@ -262,6 +265,7 @@ export default function OverviewPage() {
                     subtitle="Data entries logged"
                     icon={FileText}
                     iconColor="text-orange-500"
+                    valueColor="text-foreground"
                     href="/activity-logs"
                 />
             </div>

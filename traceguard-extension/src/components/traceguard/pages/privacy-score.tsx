@@ -168,6 +168,7 @@ export default function PrivacyScorePage() {
                     value={state.ups}
                     subtitle="Your privacy rating"
                     icon={Target}
+                    iconColor="text-blue-500"
                     valueColor={scoreLevel.color}
                 />
                 <StatCard
@@ -175,6 +176,7 @@ export default function PrivacyScorePage() {
                     value={avgScore}
                     subtitle="All-time average"
                     icon={BarChart3}
+                    iconColor="text-orange-500"
                     valueColor={getStatusConfig(avgScore).color}
                 />
                 <StatCard
@@ -182,6 +184,7 @@ export default function PrivacyScorePage() {
                     value={lowestScore}
                     subtitle="Historical low"
                     icon={Calendar}
+                    iconColor="text-red-500"
                     valueColor={getStatusConfig(lowestScore).color}
                 />
             </div>
