@@ -51,6 +51,21 @@
 import { useState, useEffect } from 'react';
 import { storage } from './storage';
 import { AppState, UserSettings, SiteRiskData } from './types';
+import { importKey, decryptData } from './crypto';
+
+// Helper to decrypt data if it was encrypted
+async function decryptIfNeeded(data: any): Promise<any> {
+    if (typeof data !== 'string') return data;
+    try {
+        const session = await chrome.storage.session.get('cryptoKeyHex');
+        if (!session.cryptoKeyHex) return null; // Vault is locked
+        const key = await importKey(session.cryptoKeyHex);
+        return await decryptData(key, data);
+    } catch (e) {
+        console.error("Decryption failed in hook:", e);
+        return null;
+    }
+}
 
 // =============================================================================
 // APP STATE HOOK
@@ -121,13 +136,15 @@ export function useScoreHistory() {
     const [history, setHistory] = useState<import('./types').ScoreHistoryEntry[]>([]);
 
     useEffect(() => {
-        chrome.storage.local.get('scoreHistory').then(res => {
-            setHistory((res.scoreHistory || []) as import('./types').ScoreHistoryEntry[]);
+        chrome.storage.local.get('scoreHistory').then(async res => {
+            const decrypted = await decryptIfNeeded(res.scoreHistory);
+            setHistory((decrypted || []) as import('./types').ScoreHistoryEntry[]);
         });
 
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+        const listener = async (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.scoreHistory) {
-                setHistory((changes.scoreHistory.newValue || []) as import('./types').ScoreHistoryEntry[]);
+                const decrypted = await decryptIfNeeded(changes.scoreHistory.newValue);
+                setHistory((decrypted || []) as import('./types').ScoreHistoryEntry[]);
             }
         };
         chrome.storage.onChanged.addListener(listener);
@@ -141,13 +158,15 @@ export function useActivityLogs() {
     const [logs, setLogs] = useState<import('./types').PIIDetectionEvent[]>([]);
 
     useEffect(() => {
-        chrome.storage.local.get('piiDetections').then(res => {
-            setLogs((res.piiDetections || []) as import('./types').PIIDetectionEvent[]);
+        chrome.storage.local.get('piiDetections').then(async res => {
+            const decrypted = await decryptIfNeeded(res.piiDetections);
+            setLogs((decrypted || []) as import('./types').PIIDetectionEvent[]);
         });
 
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+        const listener = async (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.piiDetections) {
-                setLogs((changes.piiDetections.newValue || []) as import('./types').PIIDetectionEvent[]);
+                const decrypted = await decryptIfNeeded(changes.piiDetections.newValue);
+                setLogs((decrypted || []) as import('./types').PIIDetectionEvent[]);
             }
         };
         chrome.storage.onChanged.addListener(listener);
@@ -251,20 +270,28 @@ export function useSiteCache() {
 
     useEffect(() => {
         // Initial fetch
-        chrome.storage.local.get('siteCache').then(res => {
-            setSiteCache((res.siteCache || {}) as Record<string, SiteRiskData>);
+        chrome.storage.local.get('siteCache').then(async res => {
+            const decrypted = await decryptIfNeeded(res.siteCache);
+            let finalCache = decrypted || {};
+            if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
+                finalCache = {};
+            }
+            setSiteCache(finalCache as Record<string, SiteRiskData>);
             setIsLoading(false);
         });
 
         // Listen for changes
-        const listener = (
+        const listener = async (
             changes: { [key: string]: chrome.storage.StorageChange },
             areaName: string
         ) => {
             if (areaName === 'local' && changes.siteCache) {
-                setSiteCache(
-                    (changes.siteCache.newValue || {}) as Record<string, SiteRiskData>
-                );
+                const decrypted = await decryptIfNeeded(changes.siteCache.newValue);
+                let finalCache = decrypted || {};
+                if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
+                    finalCache = {};
+                }
+                setSiteCache(finalCache as Record<string, SiteRiskData>);
             }
         };
 

@@ -29,14 +29,56 @@
  * =============================================================================
  */
 
-// Import helper modules that this file needs to work
-import { storage } from '../lib/storage';  // Helps us save and load data
-import { loadBlacklist, checkReputation } from './services/reputation';  // Checks if websites are dangerous
-import { calculateWSS } from '../lib/scoring';  // Calculates website safety scores
-import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';  // Type definitions (like a template for data)
-import contentScriptPath from '../content/index.ts?script';  // The script that analyzes webpages
-import { checkTosDR } from './tosdr-api';  // Checks privacy policy ratings
-import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii'; // Calculates privacy score impact
+import { storage } from '../lib/storage';
+import { loadBlacklist, checkReputation } from './services/reputation';
+import { calculateWSS } from '../lib/scoring';
+import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';
+import { checkTosDR } from './tosdr-api';
+import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
+import { encryptData, decryptData, importKey } from '../lib/crypto';
+
+async function getCryptoKey(): Promise<CryptoKey | null> {
+    const session = await chrome.storage.session.get('cryptoKeyHex');
+    if (session.cryptoKeyHex) {
+        return importKey(session.cryptoKeyHex);
+    }
+    return null;
+}
+
+async function flushBufferedTelemetry() {
+    const key = await getCryptoKey();
+    if (!key) return; // Should not happen since UI just set it
+
+    const session = await chrome.storage.session.get(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache']);
+    const local = await chrome.storage.local.get(['piiDetections', 'scoreHistory', 'siteCache']);
+    
+    // Flush PII
+    if (session.bufferedPii && session.bufferedPii.length > 0) {
+        let pii = typeof local.piiDetections === 'string' ? await decryptData(key, local.piiDetections) || [] : local.piiDetections || [];
+        pii = [...pii, ...session.bufferedPii];
+        if (pii.length > 100) pii = pii.slice(-100);
+        await chrome.storage.local.set({ piiDetections: await encryptData(key, pii) });
+    }
+
+    // Flush History
+    if (session.bufferedScoreHistory && session.bufferedScoreHistory.length > 0) {
+        let history = typeof local.scoreHistory === 'string' ? await decryptData(key, local.scoreHistory) || [] : local.scoreHistory || [];
+        history = [...history, ...session.bufferedScoreHistory];
+        if (history.length > 100) history = history.slice(-100);
+        await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
+    }
+
+    // Flush Site Cache
+    if (session.bufferedSiteCache && Object.keys(session.bufferedSiteCache).length > 0) {
+        let cache = typeof local.siteCache === 'string' ? await decryptData(key, local.siteCache) || {} : local.siteCache || {};
+        cache = { ...cache, ...session.bufferedSiteCache };
+        await chrome.storage.local.set({ siteCache: await encryptData(key, cache) });
+    }
+
+    // Clear buffers
+    await chrome.storage.session.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache']);
+    console.log('[Vault] Buffered telemetry flushed to encrypted storage.');
+}
 
 // This message appears in the browser's developer console to confirm the script is running
 console.log('TraceGuard Background Service Worker Running');
@@ -121,10 +163,34 @@ async function configureDisplayMode(mode: 'popup' | 'sidebar') {
  */
 async function syncStateWithCache() {
     try {
+        const key = await getCryptoKey();
+        if (!key) {
+            console.log('[Sync] Vault locked. Skipping sync.');
+            return;
+        }
+
         const state = await storage.getState();
         const result = await chrome.storage.local.get(['siteCache', 'scoreHistory']);
-        const siteCache = (result.siteCache || {}) as Record<string, SiteRiskData>;
-        const history = (result.scoreHistory || []) as ScoreHistoryEntry[];
+        
+        let siteCacheData = result.siteCache;
+        let historyData = result.scoreHistory;
+        
+        if (typeof siteCacheData === 'string') {
+            siteCacheData = await decryptData(key, siteCacheData) || {};
+        }
+        if (typeof historyData === 'string') {
+            historyData = await decryptData(key, historyData) || [];
+        }
+
+        // Failsafe healing for corrupted siteCache
+        if (siteCacheData && typeof siteCacheData === 'object' && typeof siteCacheData[0] === 'string') {
+            console.warn('[Sync] Detected corrupted siteCache. Healing...');
+            siteCacheData = {};
+            await chrome.storage.local.set({ siteCache: await encryptData(key, siteCacheData) });
+        }
+
+        const siteCache = (siteCacheData || {}) as Record<string, SiteRiskData>;
+        const history = (historyData || []) as ScoreHistoryEntry[];
         
         const sites = Object.values(siteCache);
         let updated = false;
@@ -165,7 +231,7 @@ async function syncStateWithCache() {
             
             // Keep last 100
             if (newHistory.length > 100) newHistory.splice(0, newHistory.length - 100);
-            await chrome.storage.local.set({ scoreHistory: newHistory });
+            await chrome.storage.local.set({ scoreHistory: await encryptData(key, newHistory) });
             
             // Update final UPS
             await storage.updateState({
@@ -185,31 +251,9 @@ async function syncStateWithCache() {
 }
 
 // =============================================================================
-// CONTENT SCRIPT INJECTION
-// Automatically runs our privacy analyzer on every webpage you visit
+// CONTENT SCRIPT INJECTION (REMOVED)
+// Now using static content_scripts in manifest.json for performance and compliance.
 // =============================================================================
-
-/**
- * This listens for when a webpage finishes loading.
- * When that happens, we inject our "content script" which analyzes the page for privacy issues.
- */
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    // Only run when the page is fully loaded ('complete') and it's a normal webpage
-    // We skip chrome:// pages because we can't (and don't need to) inject scripts there
-    if (changeInfo.status === 'complete' && tab.url && !tab.url.startsWith('chrome://')) {
-        try {
-            // Inject our content script into the webpage
-            // This is like putting a privacy inspector on the page
-            await chrome.scripting.executeScript({
-                target: { tabId },
-                files: [contentScriptPath]
-            });
-        } catch (err) {
-            // Sometimes injection fails (e.g., on special browser pages) - that's okay
-            console.error('Failed to inject content script:', err);
-        }
-    }
-});
 
 // =============================================================================
 // MESSAGE HANDLING
@@ -299,11 +343,30 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 
     // -------------------------------------------------------------------------
+    // UNLOCK VAULT: Flushes buffered telemetry to disk
+    // -------------------------------------------------------------------------
+    if (message.type === 'UNLOCK_VAULT') {
+        storage.getSettings().then(settings => {
+            if (settings.autoLockTimeout && settings.autoLockTimeout > 0) {
+                chrome.alarms.create('autoLockTimer', { delayInMinutes: settings.autoLockTimeout });
+            }
+        });
+        flushBufferedTelemetry().then(() => sendResponse({ success: true }));
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
     // SETTINGS CHANGED: User updated their settings in the dashboard
     // We need to apply the new settings right away
     // -------------------------------------------------------------------------
     if (message.type === 'SETTINGS_CHANGED') {
         const newSettings = message.settings;
+
+        if (newSettings.autoLockTimeout > 0) {
+            chrome.alarms.create('autoLockTimer', { delayInMinutes: newSettings.autoLockTimeout });
+        } else {
+            chrome.alarms.clear('autoLockTimer');
+        }
 
         // Update the display mode (popup vs sidebar)
         configureDisplayMode(newSettings.displayMode || 'popup')
@@ -360,9 +423,18 @@ async function handlePageAnalysis(message: any) {
     };
 
     // Step 4: Save this site's data to the cache
-    // We store data for each domain so we can show it later in the dashboard
-    const result = await chrome.storage.local.get('siteCache');
-    const siteCache: Record<string, SiteRiskData> = (result.siteCache || {}) as Record<string, SiteRiskData>;
+    const key = await getCryptoKey();
+    let siteCache: Record<string, SiteRiskData> = {};
+    
+    if (key) {
+        const result = await chrome.storage.local.get('siteCache');
+        siteCache = typeof result.siteCache === 'string' 
+            ? await decryptData(key, result.siteCache) || {} 
+            : result.siteCache || {};
+    } else {
+        const session = await chrome.storage.session.get('bufferedSiteCache');
+        siteCache = session.bufferedSiteCache || {};
+    }
 
     // Keep track of how many times you've visited this site
     const existingSite = siteCache[domain];
@@ -374,7 +446,12 @@ async function handlePageAnalysis(message: any) {
 
     // Save the updated site data
     siteCache[domain] = siteData;
-    await chrome.storage.local.set({ siteCache });
+    
+    if (key) {
+        await chrome.storage.local.set({ siteCache: await encryptData(key, siteCache) });
+    } else {
+        await chrome.storage.session.set({ bufferedSiteCache: siteCache });
+    }
 
     // Step 5: Update the user's privacy state
     const state = await storage.getState();
@@ -404,7 +481,17 @@ async function handlePageAnalysis(message: any) {
     }
 
     // Always add to the score history graph to keep the charts updated
-    const history = ((await chrome.storage.local.get('scoreHistory')).scoreHistory || []) as ScoreHistoryEntry[];
+    let history: ScoreHistoryEntry[] = [];
+    if (key) {
+        const histResult = await chrome.storage.local.get('scoreHistory');
+        history = typeof histResult.scoreHistory === 'string'
+            ? await decryptData(key, histResult.scoreHistory) || []
+            : histResult.scoreHistory || [];
+    } else {
+        const session = await chrome.storage.session.get('bufferedScoreHistory');
+        history = session.bufferedScoreHistory || [];
+    }
+    
     history.push({
         timestamp: Date.now(),
         ups: upsImpact.newUPS,
@@ -414,7 +501,12 @@ async function handlePageAnalysis(message: any) {
 
     // Keep only the last 100 entries to save storage space
     if (history.length > 100) history.splice(0, history.length - 100);
-    await chrome.storage.local.set({ scoreHistory: history });
+    
+    if (key) {
+        await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
+    } else {
+        await chrome.storage.session.set({ bufferedScoreHistory: history });
+    }
 
     // Step 7: Log detailed information from each detector
     // This creates activity logs that show up in the "Activity Logs" page
@@ -571,9 +663,23 @@ async function handlePIIDetection(message: any) {
     const scoreImpact = -penalty;  // Negative because it's a penalty
 
     // Get existing stored data for PII detections and score history
-    const storageData = await chrome.storage.local.get(['piiDetections', 'scoreHistory']);
-    const piiDetections = (storageData.piiDetections || []) as any[];
-    const scoreHistory = (storageData.scoreHistory || []) as any[];
+    const key = await getCryptoKey();
+    let piiDetections: any[] = [];
+    let scoreHistory: any[] = [];
+
+    if (key) {
+        const storageData = await chrome.storage.local.get(['piiDetections', 'scoreHistory']);
+        piiDetections = typeof storageData.piiDetections === 'string'
+            ? await decryptData(key, storageData.piiDetections) || []
+            : storageData.piiDetections || [];
+        scoreHistory = typeof storageData.scoreHistory === 'string'
+            ? await decryptData(key, storageData.scoreHistory) || []
+            : storageData.scoreHistory || [];
+    } else {
+        const session = await chrome.storage.session.get(['bufferedPii', 'bufferedScoreHistory']);
+        piiDetections = session.bufferedPii || [];
+        scoreHistory = session.bufferedScoreHistory || [];
+    }
 
     // Record this PII detection event
     // Note: We only store metadata (field TYPE, site, timestamp) - NOT the actual value you typed!
@@ -599,7 +705,17 @@ async function handlePIIDetection(message: any) {
     if (scoreHistory.length > 100) scoreHistory.splice(0, scoreHistory.length - 100);
 
     // Save the updated data
-    await chrome.storage.local.set({ piiDetections, scoreHistory });
+    if (key) {
+        await chrome.storage.local.set({ 
+            piiDetections: await encryptData(key, piiDetections), 
+            scoreHistory: await encryptData(key, scoreHistory) 
+        });
+    } else {
+        await chrome.storage.session.set({ 
+            bufferedPii: piiDetections, 
+            bufferedScoreHistory: scoreHistory 
+        });
+    }
 
     // Track which sites have received each type of your personal information
     // This enables the "Your email is known to X sites" feature in the dashboard
@@ -651,5 +767,13 @@ async function handlePIIDetection(message: any) {
         });
     }
 }
+
+// Auto-lock timer listener
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name === 'autoLockTimer') {
+        console.log('[Lock] Auto-lock timer expired. Locking vault.');
+        await chrome.storage.session.remove('cryptoKeyHex');
+    }
+});
 
 

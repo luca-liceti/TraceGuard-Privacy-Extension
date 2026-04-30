@@ -65,6 +65,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { SiteRiskData } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { getSafetyLevel, getSafetyConfig, SafetyLevel, SAFETY_CONFIGS } from "@/lib/risk-utils"
+import { useSiteCache } from "@/lib/useStorage"
 
 // Safety configuration with icons for display
 // WSS thresholds: higher = safer
@@ -336,26 +337,7 @@ function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
 export default function WebsiteSafetyPage() {
     const [filterLevel, setFilterLevel] = useState<string>("all")
     const [searchQuery, setSearchQuery] = useState("")
-    const [siteCache, setSiteCache] = useState<Record<string, SiteRiskData>>({})
-
-    // Load siteCache from chrome.storage
-    useEffect(() => {
-        chrome.storage.local.get('siteCache').then(res => {
-            setSiteCache((res.siteCache || {}) as Record<string, SiteRiskData>)
-        })
-
-        // Listen for changes
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-            if (areaName === 'local' && changes.siteCache) {
-                setSiteCache((changes.siteCache.newValue || {}) as Record<string, SiteRiskData>)
-            }
-        }
-
-        chrome.storage.onChanged.addListener(listener)
-        return () => chrome.storage.onChanged.removeListener(listener)
-    }, [])
-
-    const sites = Object.entries(siteCache)
+    const { sites } = useSiteCache()
 
     // Filter sites by safety level and search
     const filteredSites = sites.filter(([domain, data]) => {

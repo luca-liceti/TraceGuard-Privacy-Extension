@@ -234,8 +234,8 @@ export default function OverviewPage() {
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     title="Sites Analyzed"
-                    value={state.sitesAnalyzed}
-                    subtitle={`${todayVisits} today`}
+                    value={sites.length}
+                    subtitle={`${state.sitesAnalyzed} total visits`}
                     icon={Globe}
                     iconColor="text-blue-500"
                     href="/sites"

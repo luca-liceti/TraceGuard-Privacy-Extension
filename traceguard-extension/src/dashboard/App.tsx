@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from "@/components/theme-provider"
 import { Toaster } from 'sonner'
 import Layout from "@/components/traceguard/layout"
 import { useSettings } from "@/lib/useStorage"
+import { AuthProvider } from "@/components/traceguard/auth-provider"
 
 // Import pages
 import OverviewPage from "@/components/traceguard/pages/overview"
@@ -90,7 +91,9 @@ function App() {
             enableSystem={true}
             disableTransitionOnChange
         >
-            <AppContent />
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
         </ThemeProvider>
     )
 }

@@ -2,9 +2,29 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import App from '../sidepanel/App'
+import { AuthProvider } from '@/components/traceguard/auth-provider'
+import { ThemeProvider } from '@/components/theme-provider'
+import { useSettings } from '@/lib/useStorage'
 import '@/styles/globals.css'
 
 console.log('Mounting Popup...');
+
+function Root() {
+    const settings = useSettings();
+    return (
+        <ThemeProvider
+            key={settings?.theme || "system"}
+            attribute="class"
+            defaultTheme={settings?.theme || "system"}
+            enableSystem={true}
+            disableTransitionOnChange
+        >
+            <AuthProvider>
+                <App />
+            </AuthProvider>
+        </ThemeProvider>
+    );
+}
 
 try {
     const rootElement = document.getElementById('root');
@@ -16,7 +36,7 @@ try {
         ReactDOM.createRoot(rootElement).render(
             <React.StrictMode>
                 <ErrorBoundary>
-                    <App />
+                    <Root />
                 </ErrorBoundary>
             </React.StrictMode>,
         )

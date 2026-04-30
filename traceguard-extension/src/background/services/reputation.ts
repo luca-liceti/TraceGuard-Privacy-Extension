@@ -52,10 +52,8 @@ interface Blacklist {
 // A Set is like an array but automatically prevents duplicates and is faster to search
 let staticBlacklist: Set<string> = new Set();
 
-// Cache for URLhaus API results - prevents us from making the same API call repeatedly
-// Key = domain name, Value = {whether it's malicious, when we checked}
-const urlhausCache: Map<string, { isMalicious: boolean; timestamp: number }> = new Map();
-
+// Cache for URLhaus API results now uses chrome.storage.session
+// to survive Service Worker terminations.
 // How long to keep cached results (1 hour in milliseconds)
 // After this time, we'll check the API again to see if anything changed
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
@@ -118,7 +116,10 @@ export async function loadBlacklist() {
  */
 async function checkURLhaus(domain: string): Promise<boolean> {
     // STEP 1: Check if we have a recent cached result for this domain
-    const cached = urlhausCache.get(domain);
+    const session = await chrome.storage.session.get('urlhausCache');
+    const cache = session.urlhausCache || {};
+    const cached = cache[domain];
+    
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         // Cache hit! We checked this domain recently, so use the cached result
         console.log(`[URLhaus] Cache hit for ${domain}: ${cached.isMalicious ? 'malicious' : 'clean'}`);
@@ -149,7 +150,8 @@ async function checkURLhaus(domain: string): Promise<boolean> {
         const isMalicious = data.query_status === 'ok' && data.urls && data.urls.length > 0;
 
         // STEP 4: Cache the result for future lookups
-        urlhausCache.set(domain, { isMalicious, timestamp: Date.now() });
+        cache[domain] = { isMalicious, timestamp: Date.now() };
+        await chrome.storage.session.set({ urlhausCache: cache });
 
         // Log the result for debugging
         if (isMalicious) {

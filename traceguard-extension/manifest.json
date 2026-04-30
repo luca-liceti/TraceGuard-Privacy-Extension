@@ -20,9 +20,7 @@
     },
     "permissions": [
         "storage",
-        "activeTab",
         "sidePanel",
-        "scripting",
         "tabs",
         "notifications",
         "alarms"
@@ -40,5 +38,19 @@
                 "<all_urls>"
             ]
         }
-    ]
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "src/content/index.ts"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://urlhaus-api.abuse.ch https://api.tosdr.org;"
+    }
 }

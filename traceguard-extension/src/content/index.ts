@@ -46,33 +46,83 @@ console.log('TraceGuard Content Script Loaded');
  * It runs the page analysis as soon as this script loads.
  * The 'async' keyword lets us use 'await' for operations that take time.
  */
-(async () => {
+// Utility: Debounce function to prevent running analysis too often
+function debounce(func: Function, wait: number) {
+    let timeout: NodeJS.Timeout;
+    return function executedFunction(...args: any[]) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Function to perform analysis and notify background
+async function runAnalysis() {
     try {
         // STEP 1: Analyze the current page for privacy issues
-        // This runs all 6 detectors: protocol, reputation, tracking, cookies, inputs, policy
         const result = await analyzePage();
 
         // STEP 2: Start monitoring sensitive fields for PII entry
-        // This sets up listeners on password fields, email fields, etc.
-        // When you start typing, it notifies the background (but doesn't read what you type!)
+        // piiDetector.startMonitoring will clear old listeners and attach new ones
         piiDetector.startMonitoring(result.sensitiveFields);
 
         // STEP 3: Send the analysis results to the background service worker
-        // The background will calculate the Website Safety Score and store the data
         await chrome.runtime.sendMessage({
             type: 'PAGE_ANALYSIS_RESULT',
             url: window.location.href,
             scores: result.scores,
             detectionDetails: result.detectionDetails
         }).catch(() => {
-            // If sending fails (e.g., extension reloaded), just ignore it
-            // This is not a critical error
+            // If sending fails, ignore it
         });
     } catch (error) {
-        // If something goes wrong, log it but don't break the webpage
         console.error('TraceGuard analysis failed:', error);
     }
-})();
+}
+
+const debouncedAnalysis = debounce(runAnalysis, 1000);
+
+// Run initial analysis
+runAnalysis();
+
+// Set up MutationObserver for SPAs (React, Vue, etc.)
+const observer = new MutationObserver((mutations) => {
+    let shouldReanalyze = false;
+
+    for (const mutation of mutations) {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const el = node as HTMLElement;
+                    const tag = el.tagName?.toUpperCase();
+                    
+                    // Re-analyze if forms, inputs, scripts, or iframes are added
+                    if (tag === 'INPUT' || tag === 'FORM' || tag === 'SCRIPT' || tag === 'IFRAME') {
+                        shouldReanalyze = true;
+                        break;
+                    }
+                    
+                    // Also check if any children are inputs/scripts
+                    if (el.querySelector && (el.querySelector('input, form, script, iframe'))) {
+                        shouldReanalyze = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (shouldReanalyze) break;
+    }
+
+    if (shouldReanalyze) {
+        debouncedAnalysis();
+    }
+});
+
+// Start observing the document
+observer.observe(document.body, { childList: true, subtree: true });
 
 // =============================================================================
 // CLEANUP - Runs when you leave the page
@@ -86,6 +136,7 @@ console.log('TraceGuard Content Script Loaded');
 window.addEventListener('beforeunload', () => {
     // Stop watching all the input fields on this page
     piiDetector.stopMonitoring();
+    observer.disconnect();
 });
 
 // =============================================================================

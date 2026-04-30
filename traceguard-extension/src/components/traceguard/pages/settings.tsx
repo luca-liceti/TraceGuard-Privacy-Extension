@@ -158,6 +158,7 @@ export default function SettingsPage() {
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
     const [enableTrackerBlocking, setEnableTrackerBlocking] = useState(settings?.enableTrackerBlocking ?? false)
     const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
+    const [autoLockTimeout, setAutoLockTimeout] = useState(settings?.autoLockTimeout ?? -1)
 
     // Fetch manifest version
     useEffect(() => {
@@ -195,6 +196,7 @@ export default function SettingsPage() {
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
             setEnableTrackerBlocking(settings.enableTrackerBlocking ?? false)
             setDisplayMode(settings.displayMode || "popup")
+            setAutoLockTimeout(settings.autoLockTimeout ?? -1)
         }
     }, [settings])
 
@@ -214,6 +216,7 @@ export default function SettingsPage() {
             enablePIIDetection,
             enableTrackerBlocking,
             displayMode,
+            autoLockTimeout,
         }
 
         await chrome.storage.local.set({ settings: updatedSettings })
@@ -240,6 +243,7 @@ export default function SettingsPage() {
             enablePIIDetection: true,
             enableTrackerBlocking: false,
             displayMode: "popup" as const,
+            autoLockTimeout: -1,
         }
 
         // Apply defaults to local state
@@ -251,6 +255,7 @@ export default function SettingsPage() {
         setEnablePIIDetection(defaultPreferences.enablePIIDetection)
         setEnableTrackerBlocking(defaultPreferences.enableTrackerBlocking)
         setDisplayMode(defaultPreferences.displayMode)
+        setAutoLockTimeout(defaultPreferences.autoLockTimeout)
 
         // Merge defaults with existing settings to preserve other data (whitelist, blacklist, etc.)
         const newSettings = {
@@ -484,6 +489,32 @@ export default function SettingsPage() {
                                         handleChange()
                                     }}
                                 />
+                            </SettingItem>
+
+                            <Separator />
+
+                            <SettingItem
+                                label="Vault Auto-Lock"
+                                description="When should your privacy vault automatically lock?"
+                            >
+                                <Select
+                                    value={autoLockTimeout.toString()}
+                                    onValueChange={(value) => {
+                                        setAutoLockTimeout(Number(value))
+                                        handleChange()
+                                    }}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="-1">On Browser Close</SelectItem>
+                                        <SelectItem value="1">After 1 Minute</SelectItem>
+                                        <SelectItem value="5">After 5 Minutes</SelectItem>
+                                        <SelectItem value="15">After 15 Minutes</SelectItem>
+                                        <SelectItem value="0">Never</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </SettingItem>
 
                             <Separator />

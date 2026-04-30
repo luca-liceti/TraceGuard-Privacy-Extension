@@ -36,9 +36,9 @@
  * =============================================================================
  */
 
-import { ThemeProvider } from "@/components/theme-provider"
-import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Flame, Activity, Cookie, FileText, Key, Lock } from "lucide-react"
+import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Flame, Activity, Cookie, FileText, Key, Lock, ShieldAlert } from "lucide-react"
 import { useAppState, useSettings } from "@/lib/useStorage"
+import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { storage } from "@/lib/storage"
@@ -133,6 +133,34 @@ const detectorInfo: Record<string, { icon: React.ComponentType<any>; label: stri
         weight: "5%"
     }
 };
+ 
+ /**
+  * Small helper component for the header lock status
+  */
+ function HeaderAuthStatus() {
+     const { authState, lock } = useAuth();
+ 
+     if (authState === "unlocked") {
+         return (
+             <Button 
+                 variant="ghost" 
+                 size="icon" 
+                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                 onClick={() => lock()}
+                 title="Lock Vault"
+             >
+                 <Lock className="h-4 w-4" />
+             </Button>
+         );
+     }
+ 
+     return (
+         <div className="flex items-center justify-center h-8 w-8 text-destructive animate-pulse" title="Vault Locked">
+             <ShieldAlert className="h-4 w-4" />
+         </div>
+     );
+ }
+ 
 
 function App() {
     const state = useAppState();
@@ -255,18 +283,15 @@ function App() {
     };
 
     return (
-        <ThemeProvider
-            key={settings?.theme || "system"}
-            attribute="class"
-            defaultTheme={settings?.theme || "system"}
-            enableSystem={true}
-            disableTransitionOnChange
-        >
-            <div className="min-h-screen bg-background text-foreground p-4 flex flex-col">
+        <div className="min-h-screen bg-background text-foreground p-4 flex flex-col">
                 {/* Header */}
-                <div className="flex items-center gap-2 mb-4">
-                    <ShieldCheck className="h-7 w-7 text-primary" />
-                    <h1 className="text-lg font-bold">TraceGuard</h1>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-7 w-7 text-primary" />
+                        <h1 className="text-lg font-bold">TraceGuard</h1>
+                    </div>
+                    
+                    <HeaderAuthStatus />
                 </div>
 
                 <div className="space-y-3 flex-1 overflow-y-auto">
@@ -478,7 +503,6 @@ function App() {
                     </Button>
                 </div>
             </div>
-        </ThemeProvider>
     )
 }
 

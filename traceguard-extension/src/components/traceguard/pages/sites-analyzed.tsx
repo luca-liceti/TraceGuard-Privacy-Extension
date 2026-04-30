@@ -50,6 +50,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
 import { SiteRiskData } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { useSiteCache } from "@/lib/useStorage"
 
 // Stat card component
 function StatCard({
@@ -80,25 +81,7 @@ function StatCard({
 
 export default function SitesAnalyzedPage() {
     const [searchQuery, setSearchQuery] = useState("")
-    const [siteCache, setSiteCache] = useState<Record<string, SiteRiskData>>({})
-
-    // Load siteCache from chrome.storage
-    useEffect(() => {
-        chrome.storage.local.get('siteCache').then(res => {
-            setSiteCache((res.siteCache || {}) as Record<string, SiteRiskData>)
-        })
-
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-            if (areaName === 'local' && changes.siteCache) {
-                setSiteCache((changes.siteCache.newValue || {}) as Record<string, SiteRiskData>)
-            }
-        }
-
-        chrome.storage.onChanged.addListener(listener)
-        return () => chrome.storage.onChanged.removeListener(listener)
-    }, [])
-
-    const sites = Object.entries(siteCache)
+    const { sites } = useSiteCache()
 
     // Filter sites by search query
     const filteredSites = sites.filter(([domain]) =>

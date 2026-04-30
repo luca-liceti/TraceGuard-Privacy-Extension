@@ -125,11 +125,7 @@ const KNOWN_TRACKERS = new Set([
     'smartlook.com',
 ]);
 
-// Keywords that suggest a script might be a tracker
-const TRACKING_KEYWORDS = [
-    'ads', 'analytics', 'pixel', 'tracker', 'metric', 'telemetry',
-    'tag', 'beacon', 'track', 'stat', 'collect', 'monitor'
-];
+// TRACKING_KEYWORDS heuristic removed to prevent false positives
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -206,11 +202,7 @@ export function detectTrackingDetailed(): TrackingDetectionResult {
                 }
             }
 
-            // Check for tracking keywords in hostname or path
-            const fullUrl = hostname + url.pathname;
-            if (TRACKING_KEYWORDS.some(keyword => fullUrl.toLowerCase().includes(keyword))) {
-                suspiciousTrackers.add(hostname);
-            }
+            // Keyword heuristic removed to prevent false positives on benign scripts
         } catch {
             // Ignore invalid URLs
         }
@@ -229,8 +221,8 @@ export function detectTrackingDetailed(): TrackingDetectionResult {
         if (img.src) checkUrl(img.src);
     }
 
-    // Weighted count: Known trackers = 5x, Suspicious = 2x (updated weights for v3.0)
-    const weightedCount = (knownTrackers.size * 5) + (suspiciousTrackers.size * 2);
+    // Weighted count: Known trackers = 5x
+    const weightedCount = knownTrackers.size * 5;
 
     // Logarithmic score calculation (v3.0)
     // Formula: max(0, 100 - K × log2(weightedCount + 1))

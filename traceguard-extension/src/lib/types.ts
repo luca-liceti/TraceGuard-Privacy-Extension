@@ -125,6 +125,7 @@ export interface UserSettings {
     enablePIIDetection?: boolean;        // Watch for personal info entry
     enableTrackerBlocking?: boolean;     // Block trackers (future feature)
     displayMode?: 'popup' | 'sidebar';   // How the extension opens
+    autoLockTimeout?: number;            // Vault auto-lock timeout in minutes (0 = never)
 }
 
 // =============================================================================

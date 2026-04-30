@@ -46,8 +46,7 @@ interface TosDRResult {
     serviceName?: string;
 }
 
-// Cache for ToS;DR results (5 minute TTL)
-const tosDRCache = new Map<string, { result: TosDRResult; timestamp: number }>();
+// Cache for ToS;DR results now uses chrome.storage.session
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -121,7 +120,10 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
     console.log(`[ToS;DR] Checking domain: ${domain} (from ${url})`);
 
     // Check cache first
-    const cached = tosDRCache.get(domain);
+    const session = await chrome.storage.session.get('tosDRCache');
+    const cache = session.tosDRCache || {};
+    const cached = cache[domain];
+    
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         console.log('[ToS;DR] Cache hit:', cached.result);
         return cached.result;
@@ -147,7 +149,8 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
         if (!services || services.length === 0) {
             console.log('[ToS;DR] No services found for:', domain);
             const fallback: TosDRResult = { found: false, score: 0, source: 'fallback' };
-            tosDRCache.set(domain, { result: fallback, timestamp: Date.now() });
+            cache[domain] = { result: fallback, timestamp: Date.now() };
+            await chrome.storage.session.set({ tosDRCache: cache });
             return fallback;
         }
 
@@ -177,7 +180,8 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
         };
 
         // Cache the result
-        tosDRCache.set(domain, { result, timestamp: Date.now() });
+        cache[domain] = { result, timestamp: Date.now() };
+        await chrome.storage.session.set({ tosDRCache: cache });
 
         return result;
 
@@ -190,7 +194,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
 /**
  * Clear ToS;DR cache
  */
-export function clearTosDRCache(): void {
-    tosDRCache.clear();
+export async function clearTosDRCache(): Promise<void> {
+    await chrome.storage.session.remove('tosDRCache');
     console.log('[ToS;DR] Cache cleared');
 }

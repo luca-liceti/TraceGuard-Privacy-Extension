@@ -38,9 +38,19 @@ import {
   ListChecks,
   Link as LinkIcon,
   Settings,
-  HelpCircle
+  Settings,
+  HelpCircle,
+  Lock
 } from "lucide-react"
 import { ThemeToggle } from "../theme-toggle"
+import { useAuth } from "./auth-provider"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
 import { Link, useLocation } from "react-router-dom"
 import { NotificationDropdown } from "./notifications"
 import { SearchCommand } from "./search-command"
@@ -71,6 +81,7 @@ const routeConfig: Record<string, { label: string; section?: string; icon: React
 
 export default function TopNav() {
   const location = useLocation()
+  const { lock } = useAuth()
   const currentRoute = routeConfig[location.pathname]
   const currentLabel = currentRoute?.label || 'Overview'
   const CurrentIcon = currentRoute?.icon || LayoutDashboard
@@ -129,8 +140,28 @@ export default function TopNav() {
         <SearchCommand />
       </div>
 
-      {/* Right side - Notifications, Theme */}
-      <div className="flex items-center space-x-2">
+      {/* Right side - Notifications, Theme, Lock */}
+      <div className="flex items-center space-x-1 sm:space-x-2">
+        {/* Manual Vault Lock */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9 text-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                onClick={() => lock()}
+              >
+                <Lock className="h-4 w-4" />
+                <span className="sr-only">Lock Vault</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Lock Cryptographic Vault</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         {/* Notifications */}
         <NotificationDropdown />
 
