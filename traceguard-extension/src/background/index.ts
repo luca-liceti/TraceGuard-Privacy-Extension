@@ -217,7 +217,7 @@ async function syncStateWithCache() {
             
             // Replay the history
             for (const site of sortedSites) {
-                const impact = calculateVisitImpact(currentUps, site.wss, streak);
+                const impact = calculateVisitImpact(currentUps, site.wss, streak, true);
                 currentUps = impact.newUPS;
                 streak = impact.newStreak;
                 
@@ -440,9 +440,22 @@ async function handlePageAnalysis(message: any) {
     const existingSite = siteCache[domain];
     const visitCount = (existingSite?.visitCount || 0) + 1;
 
+    // Determine if this is a unique domain visit today
+    const now = Date.now();
+    let isUniqueDomain = false;
+    if (!existingSite || !existingSite.lastVisit) {
+        isUniqueDomain = true;
+    } else {
+        const lastVisitDate = new Date(existingSite.lastVisit).toDateString();
+        const todayDate = new Date(now).toDateString();
+        if (lastVisitDate !== todayDate) {
+            isUniqueDomain = true;
+        }
+    }
+
     // Add visit tracking to the site data
     siteData.visitCount = visitCount;
-    siteData.lastVisit = Date.now();  // Current time in milliseconds
+    siteData.lastVisit = now;  // Current time in milliseconds
 
     // Save the updated site data
     siteCache[domain] = siteData;
@@ -458,13 +471,13 @@ async function handlePageAnalysis(message: any) {
 
     // Calculate how this visit affects your User Privacy Score (UPS)
     // Safe sites give you a recovery bonus, risky sites apply a penalty
-    const upsImpact = calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0);
+    const upsImpact = calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0, isUniqueDomain);
 
     // Save the updated state
     await storage.updateState({
         ...state,
         currentSite: siteData,                          // The site you're currently on
-        sitesAnalyzed: state.sitesAnalyzed + 1,        // Increment the counter
+        sitesAnalyzed: state.sitesAnalyzed + (isUniqueDomain ? 1 : 0),        // Increment the counter only for unique sites today
         ups: upsImpact.newUPS,                         // Your updated privacy score
         safeVisitStreak: upsImpact.newStreak           // How many safe sites in a row
     });

@@ -94,7 +94,7 @@ export interface NavSection {
 export const navSections: NavSection[] = [
     {
         id: "main",
-        label: "Main",
+        label: "Dashboard",
         items: [
             {
                 id: "overview",
@@ -118,52 +118,10 @@ export const navSections: NavSection[] = [
         items: [
             {
                 id: "website-safety",
-                title: "Website Safety",
-                description: "Site risk analysis",
+                title: "Site Analysis",
+                description: "Site risk and tracker analysis",
                 url: "/website-safety",
                 icon: Globe,
-            },
-            {
-                id: "sites",
-                title: "Sites Analyzed",
-                description: "All visited sites",
-                url: "/sites",
-                icon: BarChart3,
-            },
-            {
-                id: "trackers",
-                title: "Trackers",
-                description: "Tracker detection",
-                url: "/trackers",
-                icon: Eye,
-            },
-            {
-                id: "activity-logs",
-                title: "Activity Logs",
-                description: "Browsing activity",
-                url: "/activity-logs",
-                icon: FileText,
-            },
-        ],
-    },
-    {
-        id: "management",
-        label: "Management",
-        items: [
-            {
-                id: "whitelist-blacklist",
-                title: "Domain Lists",
-                description: "Trusted and blocked sites",
-                url: "/whitelist-blacklist",
-                icon: ListChecks,
-            },
-            {
-                id: "integrations",
-                title: "Integrations",
-                description: "Third-party integrations",
-                url: "/integrations",
-                icon: LinkIcon,
-                isNew: true,
             },
         ],
     },
@@ -172,8 +130,8 @@ export const navSections: NavSection[] = [
 export const footerItems: NavItem[] = [
     {
         id: "settings",
-        title: "Settings",
-        description: "Extension preferences",
+        title: "Settings & Rules",
+        description: "Extension preferences and domain rules",
         url: "/settings",
         icon: Settings,
     },

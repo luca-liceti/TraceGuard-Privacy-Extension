@@ -10,11 +10,6 @@ import { AuthProvider } from "@/components/traceguard/auth-provider"
 import OverviewPage from "@/components/traceguard/pages/overview"
 import PrivacyScorePage from "@/components/traceguard/pages/privacy-score"
 import WebsiteSafetyPage from "@/components/traceguard/pages/website-safety"
-import SitesAnalyzedPage from "@/components/traceguard/pages/sites-analyzed"
-import TrackersPage from "@/components/traceguard/pages/trackers"
-import ActivityLogsPage from "@/components/traceguard/pages/activity-logs"
-import WhitelistBlacklistPage from "@/components/traceguard/pages/whitelist-blacklist"
-import IntegrationsPage from "@/components/traceguard/pages/integrations"
 import SettingsPage from "@/components/traceguard/pages/settings"
 import HelpPage from "@/components/traceguard/pages/help"
 
@@ -65,13 +60,8 @@ function AppContent() {
                     {/* Privacy & Security Pages */}
                     <Route path="/privacy-score" element={<PageWrapper><PrivacyScorePage /></PageWrapper>} />
                     <Route path="/website-safety" element={<PageWrapper><WebsiteSafetyPage /></PageWrapper>} />
-                    <Route path="/sites" element={<PageWrapper><SitesAnalyzedPage /></PageWrapper>} />
-                    <Route path="/trackers" element={<PageWrapper><TrackersPage /></PageWrapper>} />
-                    <Route path="/activity-logs" element={<PageWrapper><ActivityLogsPage /></PageWrapper>} />
 
                     {/* Management Pages */}
-                    <Route path="/whitelist-blacklist" element={<PageWrapper><WhitelistBlacklistPage /></PageWrapper>} />
-                    <Route path="/integrations" element={<PageWrapper><IntegrationsPage /></PageWrapper>} />
                     <Route path="/settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
                     <Route path="/help" element={<PageWrapper><HelpPage /></PageWrapper>} />
                 </Routes>

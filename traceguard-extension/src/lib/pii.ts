@@ -294,7 +294,8 @@ export interface RecoveryResult {
 export function calculateRecovery(
     currentUPS: number,
     siteWSS: number,
-    currentStreak: number
+    currentStreak: number,
+    isUniqueDomain: boolean = false
 ): RecoveryResult {
     const clampedWSS = Math.max(0, Math.min(100, siteWSS));
     let newStreak = currentStreak;
@@ -303,24 +304,26 @@ export function calculateRecovery(
 
     // Only recover from safe sites (WSS >= 70)
     if (clampedWSS >= 70) {
-        // Increment safe streak
-        newStreak = currentStreak + 1;
+        if (isUniqueDomain) {
+            // Increment safe streak
+            newStreak = currentStreak + 1;
 
-        // Calculate base recovery
-        recovery = ((clampedWSS - 70) / 30) * 0.5;
+            // Calculate base recovery (reduced rate)
+            recovery = ((clampedWSS - 70) / 30) * 0.1;
 
-        // Check for streak bonus (every 10 consecutive safe sites)
-        if (newStreak > 0 && newStreak % 10 === 0) {
-            recovery += 2;
-            message = `🎉 Safe streak bonus! +2 UPS (${newStreak} safe sites in a row)`;
-            console.log(`[UPS Recovery] ${message}`);
-        }
+            // Check for streak bonus (every 10 consecutive safe sites)
+            if (newStreak > 0 && newStreak % 10 === 0) {
+                recovery += 0.5;
+                message = `🎉 Safe streak bonus! +0.5 UPS (${newStreak} safe sites in a row)`;
+                console.log(`[UPS Recovery] ${message}`);
+            }
 
-        // Round recovery
-        recovery = Math.round(recovery * 10) / 10;
+            // Round recovery
+            recovery = Math.round(recovery * 100) / 100;
 
-        if (recovery > 0 && !message) {
-            message = `Safe browsing recovery: +${recovery.toFixed(1)} UPS`;
+            if (recovery > 0 && !message) {
+                message = `Safe browsing recovery: +${recovery.toFixed(2)} UPS`;
+            }
         }
     } else {
         // Risky site breaks the streak
@@ -336,7 +339,8 @@ export function calculateRecovery(
 
     console.log(`[UPS Recovery] Calculation:`);
     console.log(`├── Site WSS: ${clampedWSS}`);
-    console.log(`├── Qualifies for recovery: ${clampedWSS >= 70 ? 'Yes' : 'No'}`);
+    console.log(`├── Unique Domain Today: ${isUniqueDomain ? 'Yes' : 'No'}`);
+    console.log(`├── Qualifies for recovery: ${clampedWSS >= 70 && isUniqueDomain ? 'Yes' : 'No'}`);
     console.log(`├── Streak: ${currentStreak} → ${newStreak}`);
     console.log(`├── Recovery: ${recovery.toFixed(2)}`);
     console.log(`└── UPS: ${currentUPS} → ${newUPS}`);
@@ -362,13 +366,14 @@ export interface VisitImpactResult {
 export function calculateVisitImpact(
     currentUPS: number,
     siteWSS: number,
-    currentStreak: number
+    currentStreak: number,
+    isUniqueDomain: boolean = false
 ): VisitImpactResult {
     const clampedWSS = Math.max(0, Math.min(100, siteWSS));
 
     // Safe sites (WSS >= 70): Recovery
     if (clampedWSS >= 70) {
-        const recoveryResult = calculateRecovery(currentUPS, clampedWSS, currentStreak);
+        const recoveryResult = calculateRecovery(currentUPS, clampedWSS, currentStreak, isUniqueDomain);
         return {
             newUPS: recoveryResult.newUPS,
             newStreak: recoveryResult.newStreak,
