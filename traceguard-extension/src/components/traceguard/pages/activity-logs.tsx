@@ -25,7 +25,7 @@
  *    - Domain and timestamp
  *    - Overall WRS (Website Risk Score)
  *    - Individual detector scores in a grid:
- *      Protocol, Reputation, Tracking, Cookies, Inputs, Policy
+ *      Reputation, Tracking, Cookies, Inputs, Policy
  *    - Expandable tracker details when available
  * 
  * 4. EXPORT
@@ -33,8 +33,8 @@
  * 
  * WRS CALCULATION:
  * Weighted average of detector scores:
- *    - Protocol: 25%, Reputation: 25%, Tracking: 20%
- *    - Cookies: 15%, Inputs: 10%, Policy: 5%
+ *    - Reputation: 30%, Tracking: 30%
+ *    - Cookies: 20%, Inputs: 15%, Policy: 5%
  * =============================================================================
  */
 
@@ -108,11 +108,10 @@ export default function ActivityLogsPage() {
 
         // Calculate WRS for each group (weighted average)
         const weights: Record<string, number> = {
-            protocol: 0.25,
-            reputation: 0.25,
-            tracking: 0.20,
-            cookies: 0.15,
-            inputs: 0.10,
+            reputation: 0.30,
+            tracking: 0.30,
+            cookies: 0.20,
+            inputs: 0.15,
             policy: 0.05,
             permissions: 0
         }
@@ -221,10 +220,9 @@ export default function ActivityLogsPage() {
     }
 
     // Define detector order for consistent display
-    const detectorOrder: DetectorType[] = ['protocol', 'reputation', 'tracking', 'cookies', 'inputs', 'policy']
+    const detectorOrder: DetectorType[] = ['reputation', 'tracking', 'cookies', 'inputs', 'policy']
 
     const detectorLabels: Record<DetectorType, string> = {
-        protocol: 'Protocol',
         reputation: 'Reputation',
         tracking: 'Tracking',
         cookies: 'Cookies',

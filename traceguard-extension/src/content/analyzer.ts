@@ -6,7 +6,7 @@
  * WHAT THIS FILE DOES:
  * This is the "coordinator" that runs all privacy detectors on a webpage.
  * Think of it like a building inspector who checks electrical, plumbing, and
- * structure - this analyzer checks protocol, trackers, cookies, inputs, and policy.
+ * structure - this analyzer checks trackers, cookies, inputs, and policy.
  * 
  * HOW IT WORKS:
  * 1. When called, it runs 5 different detectors (reputation is checked separately)
@@ -14,13 +14,12 @@
  * 3. Results are collected and packaged together
  * 4. The data is sent back to be scored and stored
  * 
- * THE 6 DETECTION AREAS:
- * 1. Protocol - Is the connection HTTPS (secure) or HTTP (insecure)?
- * 2. Tracking - Are there third-party trackers following you?
- * 3. Inputs - Are there sensitive form fields (password, credit card)?
- * 4. Cookies - Are there tracking or advertising cookies?
- * 5. Policy  - What does the privacy policy say (ToS;DR rating)?
- * 6. Reputation - Is the domain on any blacklists? (checked by background)
+ * THE 5 DETECTION AREAS:
+ * 1. Tracking - Are there third-party trackers following you?
+ * 2. Inputs - Are there sensitive form fields (password, credit card)?
+ * 3. Cookies - Are there tracking or advertising cookies?
+ * 4. Policy  - What does the privacy policy say (ToS;DR rating)?
+ * 5. Reputation - Is the domain on any blacklists? (checked by background)
  * 
  * Note: Reputation is checked by the background script, not here, because
  * content scripts can't make cross-origin requests to the reputation APIs.
@@ -28,7 +27,6 @@
  */
 
 // Import all the individual detector functions
-import { detectProtocol } from './detectors/protocol';         // Checks HTTPS/HTTP
 import { detectTrackingDetailed } from './detectors/tracking'; // Finds trackers
 import { detectSensitiveInputs } from './detectors/input';     // Finds sensitive fields
 import { detectPrivacyPolicy } from './detectors/policy';      // Checks privacy policy
@@ -54,7 +52,6 @@ export interface PageAnalysisResult {
  */
 export async function analyzePage(): Promise<PageAnalysisResult> {
     // Run all detectors
-    const protocolScore = detectProtocol();
     const trackingResult = detectTrackingDetailed();
     const inputResult = detectSensitiveInputs();
     const cookieResult = detectCookiesDetailed();
@@ -80,7 +77,6 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
 
     return {
         scores: {
-            protocol: protocolScore,
             reputation: reputationScore,
             tracking: trackingResult.score,
             cookies: cookieResult.score,

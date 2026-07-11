@@ -485,7 +485,7 @@ async function handlePageAnalysis(message: any) {
     // Step 6: Log the UPS change if there was one (for debugging and history)
     if (upsImpact.message) {
         await storage.addDetectorLog({
-            detector: 'protocol',  // Using 'protocol' as a catch-all for system messages
+            detector: 'permissions',  // Using 'permissions' as a catch-all for system messages
             domain: domain,
             score: 0,
             details: { upsChange: upsImpact.newUPS - (state.ups || 100), newStreak: upsImpact.newStreak },
@@ -532,7 +532,6 @@ async function handlePageAnalysis(message: any) {
 
     // Create human-readable messages for each detector
     const detectorMessages = {
-        protocol: finalScores.protocol === 100 ? 'HTTPS connection (secure)' : 'HTTP connection (insecure)',
         reputation: reputationScore === 100 ? 'Domain has good reputation' : reputationScore === 0 ? 'Domain blacklisted!' : `Domain reputation score: ${reputationScore}`,
         tracking: trackingMessage,
         cookies: finalScores.cookies >= 80 ? 'No tracking cookies detected' : `Tracking cookies detected (safety: ${finalScores.cookies})`,
@@ -541,15 +540,6 @@ async function handlePageAnalysis(message: any) {
     };
 
     // Log each detector's findings to storage (6 logs total, one for each detector)
-
-    // PROTOCOL: Is the connection secure (HTTPS) or not (HTTP)?
-    await storage.addDetectorLog({
-        detector: 'protocol',
-        domain,
-        score: finalScores.protocol,
-        details: { isHttps: finalScores.protocol === 100 },
-        message: detectorMessages.protocol
-    });
 
     // REPUTATION: Is this domain known to be dangerous?
     await storage.addDetectorLog({

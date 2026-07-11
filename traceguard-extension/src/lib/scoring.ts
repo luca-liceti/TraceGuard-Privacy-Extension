@@ -12,23 +12,21 @@
  * - Each website is analyzed in 6 different ways (called "detectors")
  * - Each detector gives its own score, then we combine them with different weights
  * 
- * THE 6 DETECTORS AND THEIR WEIGHTS:
- * 1. Protocol (25%): Is the connection secure (HTTPS) or not (HTTP)?
- * 2. Reputation (25%): Is this domain on any blacklists or malware databases?
- * 3. Tracking (20%): How many third-party trackers are following you?
- * 4. Cookies (15%): Are there tracking or advertising cookies?
- * 5. Inputs (10%): Are there sensitive fields like password or credit card?
- * 6. Policy (5%): What does the privacy policy say (according to ToS;DR)?
+ * THE 5 DETECTORS AND THEIR WEIGHTS:
+ * 1. Reputation (30%): Is this domain on any blacklists or malware databases?
+ * 2. Tracking (30%): How many third-party trackers are following you?
+ * 3. Cookies (20%): Are there tracking or advertising cookies?
+ * 4. Inputs (15%): Are there sensitive fields like password or credit card?
+ * 5. Policy (5%): What does the privacy policy say (according to ToS;DR)?
  * 
  * EXAMPLE:
  * If a site has:
- * - HTTPS: 100 × 25% = 25
- * - Good reputation: 100 × 25% = 25
- * - Some trackers: 60 × 20% = 12
- * - Few cookies: 80 × 15% = 12
- * - Login form: 65 × 10% = 6.5
+ * - Good reputation: 100 × 30% = 30
+ * - Some trackers: 60 × 30% = 18
+ * - Few cookies: 80 × 20% = 16
+ * - Login form: 65 × 15% = 9.75
  * - No policy rating: excluded
- * Final WSS = 80.5 (pretty safe!)
+ * Final WSS = 73.75 (safe)
  * =============================================================================
  */
 
@@ -77,7 +75,7 @@ export function validateScore(score: number | undefined | null, fallback: number
 /**
  * Calculates the Website Safety Score (WSS) for a website.
  * 
- * This is the main function that takes scores from all 6 detectors and
+ * This is the main function that takes scores from all 5 detectors and
  * combines them into a single overall score. Think of it like calculating
  * a weighted average for a class - some tests count more than others!
  * 
@@ -88,7 +86,6 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
     // STEP 1: Validate all input scores to ensure they're usable
     // This prevents weird bugs from invalid numbers
     const validatedBreakdown = {
-        protocol: validateScore(breakdown.protocol),
         reputation: validateScore(breakdown.reputation),
         tracking: validateScore(breakdown.tracking),
         cookies: validateScore(breakdown.cookies),
@@ -105,11 +102,10 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
     // STEP 3: Define the weights for each detector
     // These add up to 100% (1.0)
     let weights = {
-        protocol: 0.25,    // 25% - HTTPS is very important
-        reputation: 0.25,  // 25% - Blacklist status is critical
-        tracking: 0.20,    // 20% - Tracker count matters a lot
-        cookies: 0.15,     // 15% - Tracking cookies are concerning
-        input: 0.10,       // 10% - Sensitive fields are relevant
+        reputation: 0.30,  // 30% - Blacklist status is critical
+        tracking: 0.30,    // 30% - Tracker count matters a lot
+        cookies: 0.20,     // 20% - Tracking cookies are concerning
+        input: 0.15,       // 15% - Sensitive fields are relevant
         policy: 0.05       // 5% - Privacy policy is nice to know
     };
 
@@ -122,7 +118,6 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
         // Redistribute proportionally to other metrics
         // We divide each weight by (1 - policyWeight) to scale them up
         const otherTotal = 1 - policyWeight;
-        weights.protocol = weights.protocol / otherTotal;
         weights.reputation = weights.reputation / otherTotal;
         weights.tracking = weights.tracking / otherTotal;
         weights.cookies = weights.cookies / otherTotal;
@@ -134,7 +129,6 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
     // STEP 5: Calculate how much each detector contributes to the final score
     // contribution = detector_score × detector_weight
     const contributions = {
-        protocol: validatedBreakdown.protocol * weights.protocol,
         reputation: validatedBreakdown.reputation * weights.reputation,
         tracking: validatedBreakdown.tracking * weights.tracking,
         cookies: validatedBreakdown.cookies * weights.cookies,
@@ -144,7 +138,6 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
 
     // STEP 6: Add up all contributions to get the final score
     const totalWeightedScore =
-        contributions.protocol +
         contributions.reputation +
         contributions.tracking +
         contributions.cookies +
@@ -157,7 +150,6 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
     // STEP 7: Log the calculation details for debugging and transparency
     // This creates a nice "tree" view in the console
     console.log(`[WSS Calculation] Website Safety Score for current page`);
-    console.log(`├── Protocol: ${validatedBreakdown.protocol} × ${(weights.protocol * 100).toFixed(0)}% = ${contributions.protocol.toFixed(2)}`);
     console.log(`├── Reputation: ${validatedBreakdown.reputation} × ${(weights.reputation * 100).toFixed(0)}% = ${contributions.reputation.toFixed(2)}`);
     console.log(`├── Tracking: ${validatedBreakdown.tracking} × ${(weights.tracking * 100).toFixed(0)}% = ${contributions.tracking.toFixed(2)}`);
     console.log(`├── Cookies: ${validatedBreakdown.cookies} × ${(weights.cookies * 100).toFixed(0)}% = ${contributions.cookies.toFixed(2)}`);

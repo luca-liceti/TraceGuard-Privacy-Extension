@@ -179,7 +179,7 @@ describe('PII Penalty System', () => {
 
         it('should recover on safe sites (WSS >= 70)', () => {
             const currentUPS = 80
-            const result = calculateRecovery(currentUPS, 85, 5)
+            const result = calculateRecovery(currentUPS, 85, 5, true)
 
             expect(result.recovery).toBeGreaterThan(0)
             expect(result.newUPS).toBeGreaterThan(80)
@@ -188,8 +188,8 @@ describe('PII Penalty System', () => {
         it('should recover more on very safe sites', () => {
             const currentUPS = 80
 
-            const result70 = calculateRecovery(currentUPS, 70, 5)
-            const result100 = calculateRecovery(currentUPS, 100, 5)
+            const result70 = calculateRecovery(currentUPS, 70, 5, true)
+            const result100 = calculateRecovery(currentUPS, 100, 5, true)
 
             expect(result100.recovery).toBeGreaterThan(result70.recovery)
         })
@@ -199,9 +199,9 @@ describe('PII Penalty System', () => {
             const wss = 85
 
             // Streak of 9 means after this visit streak becomes 10 (milestone!)
-            const streak9 = calculateRecovery(currentUPS, wss, 9)
+            const streak9 = calculateRecovery(currentUPS, wss, 9, true)
             // Streak of 8 means after this visit streak becomes 9 (no milestone)
-            const streak8 = calculateRecovery(currentUPS, wss, 8)
+            const streak8 = calculateRecovery(currentUPS, wss, 8, true)
 
             expect(streak9.recovery).toBeGreaterThan(streak8.recovery)
         })
@@ -215,7 +215,7 @@ describe('PII Penalty System', () => {
 
         it('should return streak bonus message on milestone', () => {
             // Start with streak of 9, reaching milestone of 10
-            const result = calculateRecovery(80, 85, 9)
+            const result = calculateRecovery(80, 85, 9, true)
             expect(result.message.toLowerCase()).toContain('streak')
         })
     })
@@ -223,7 +223,7 @@ describe('PII Penalty System', () => {
     describe('calculateVisitImpact', () => {
         it('should apply recovery for safe sites (WSS >= 70)', () => {
             const currentUPS = 80
-            const result = calculateVisitImpact(currentUPS, 85, 5)
+            const result = calculateVisitImpact(currentUPS, 85, 5, true)
 
             expect(result.newUPS).toBeGreaterThanOrEqual(80)
             expect(result.newStreak).toBe(6) // Streak incremented
@@ -231,20 +231,20 @@ describe('PII Penalty System', () => {
 
         it('should apply penalty for risky sites (WSS < 70)', () => {
             const currentUPS = 80
-            const result = calculateVisitImpact(currentUPS, 50, 5)
+            const result = calculateVisitImpact(currentUPS, 50, 5, true)
 
             expect(result.newUPS).toBeLessThanOrEqual(80)
             expect(result.newStreak).toBe(0) // Streak reset
         })
 
         it('should reset streak on risky site visit', () => {
-            const result = calculateVisitImpact(80, 40, 15)
+            const result = calculateVisitImpact(80, 40, 15, true)
 
             expect(result.newStreak).toBe(0)
         })
 
         it('should increment streak on safe site visit', () => {
-            const result = calculateVisitImpact(80, 90, 5)
+            const result = calculateVisitImpact(80, 90, 5, true)
 
             expect(result.newStreak).toBe(6)
         })
@@ -303,7 +303,7 @@ describe('PII Penalty System', () => {
 
             // Visit 15 safe sites
             for (let i = 0; i < 15; i++) {
-                const result = calculateVisitImpact(ups, 95, streak)
+                const result = calculateVisitImpact(ups, 95, streak, true)
                 ups = result.newUPS
                 streak = result.newStreak
             }

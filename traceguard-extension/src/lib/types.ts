@@ -34,7 +34,6 @@
  * These are combined to calculate the overall Website Safety Score (WSS).
  */
 export interface ScoreBreakdown {
-    protocol: number;    // Is the connection HTTPS (secure) or HTTP (insecure)?
     reputation: number;  // Is the domain on any blacklists?
     tracking: number;    // How many third-party trackers are on the page?
     cookies: number;     // Are there tracking or third-party cookies?
@@ -86,7 +85,7 @@ export interface SiteRiskData {
  * The possible detector categories.
  * Each detector is responsible for analyzing one aspect of privacy.
  */
-export type DetectorType = 'protocol' | 'reputation' | 'tracking' | 'cookies' | 'inputs' | 'policy' | 'permissions';
+export type DetectorType = 'reputation' | 'tracking' | 'cookies' | 'inputs' | 'policy' | 'permissions';
 
 /**
  * A single log entry from a detector.
