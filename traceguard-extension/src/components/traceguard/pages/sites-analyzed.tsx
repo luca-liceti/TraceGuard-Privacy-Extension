@@ -100,11 +100,11 @@ export default function SitesAnalyzedPage() {
 
     // Get safety color based on WSS (higher = safer = green)
     const getSafetyColor = (wss: number) => {
-        if (wss >= 80) return "text-green-500"  // Excellent
-        if (wss >= 60) return "text-blue-500"   // Good
-        if (wss >= 40) return "text-yellow-500" // Fair
-        if (wss >= 20) return "text-orange-500" // Poor
-        return "text-red-500"                    // Critical
+        if (wss >= 80) return "text-primary"  // Excellent
+        if (wss >= 60) return "text-primary"   // Good
+        if (wss >= 40) return "text-primary" // Fair
+        if (wss >= 20) return "text-primary" // Poor
+        return "text-destructive"                    // Critical
     }
 
     return (
@@ -126,7 +126,7 @@ export default function SitesAnalyzedPage() {
                     value={sites.length}
                     subtitle="Unique domains"
                     icon={Globe}
-                    iconColor="text-blue-500"
+                    iconColor="text-primary"
                     valueColor="text-foreground"
                 />
                 <StatCard
@@ -134,15 +134,15 @@ export default function SitesAnalyzedPage() {
                     value={todayCount}
                     subtitle="Sites visited"
                     icon={Calendar}
-                    iconColor="text-green-500"
-                    valueColor="text-green-500"
+                    iconColor="text-primary"
+                    valueColor="text-primary"
                 />
                 <StatCard
                     title="Total Visits"
                     value={totalVisits}
                     subtitle="Across all sites"
                     icon={TrendingUp}
-                    iconColor="text-blue-500"
+                    iconColor="text-primary"
                     valueColor="text-foreground"
                 />
                 <StatCard
@@ -150,7 +150,7 @@ export default function SitesAnalyzedPage() {
                     value={avgVisitsPerSite}
                     subtitle="Per site"
                     icon={BarChart3}
-                    iconColor="text-orange-500"
+                    iconColor="text-primary"
                     valueColor="text-foreground"
                 />
             </div>

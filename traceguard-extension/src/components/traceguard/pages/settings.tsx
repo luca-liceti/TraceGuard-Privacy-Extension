@@ -341,7 +341,7 @@ export default function SettingsPage() {
                     <CardContent className="py-3 px-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm">
-                                <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                 <span className="text-muted-foreground">You have unsaved changes</span>
                             </div>
                             <div className="flex items-center gap-2">

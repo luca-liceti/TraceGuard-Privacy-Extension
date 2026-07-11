@@ -28,8 +28,8 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { AppSidebar } from "./app-sidebar"
-import TopNav from "./top-nav"
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import {
@@ -58,12 +58,14 @@ export default function Layout({ children }: LayoutProps) {
       <div className={`flex min-h-screen w-full ${theme === "dark" ? "dark" : ""}`}>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border">
-            <TopNav />
-          </header>
-          <main className="flex-1 overflow-auto p-3 sm:p-6 bg-background">
-            {children}
-          </main>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col bg-background">
+            <div className="@container/main flex flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                {children}
+              </div>
+            </div>
+          </div>
         </SidebarInset>
       </div>
     </SidebarProvider>

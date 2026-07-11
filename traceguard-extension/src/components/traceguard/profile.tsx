@@ -69,26 +69,26 @@ export default function Profile01({
 
             {/* Profile Info */}
             <div className="flex-1">
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{name}</h2>
-              <p className="text-zinc-600 dark:text-zinc-400">{role}</p>
+              <h2 className="text-xl font-semibold text-foreground dark:text-foreground">{name}</h2>
+              <p className="text-muted-foreground dark:text-muted-foreground">{role}</p>
             </div>
           </div>
-          <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-6" />
+          <div className="h-px bg-muted dark:bg-muted my-6" />
           <div className="space-y-2">
             {menuItems.map((item) => (
               <Link
                 key={item.label}
                 to={item.href}
                 className="flex items-center justify-between p-2 
-                                    hover:bg-zinc-50 dark:hover:bg-zinc-800/50 
+                                    hover:bg-muted dark:hover:bg-muted/50 
                                     rounded-lg transition-colors duration-200"
               >
                 <div className="flex items-center gap-2">
                   {item.icon}
-                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{item.label}</span>
+                  <span className="text-sm font-medium text-foreground dark:text-foreground">{item.label}</span>
                 </div>
                 <div className="flex items-center">
-                  {item.value && <span className="text-sm text-zinc-500 dark:text-zinc-400 mr-2">{item.value}</span>}
+                  {item.value && <span className="text-sm text-muted-foreground dark:text-muted-foreground mr-2">{item.value}</span>}
                   {item.external && <MoveUpRight className="w-4 h-4" />}
                 </div>
               </Link>
@@ -97,12 +97,12 @@ export default function Profile01({
             <button
               type="button"
               className="w-full flex items-center justify-between p-2 
-                                hover:bg-zinc-50 dark:hover:bg-zinc-800/50 
+                                hover:bg-muted dark:hover:bg-muted/50 
                                 rounded-lg transition-colors duration-200"
             >
               <div className="flex items-center gap-2">
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Logout</span>
+                <span className="text-sm font-medium text-foreground dark:text-foreground">Logout</span>
               </div>
             </button>
           </div>

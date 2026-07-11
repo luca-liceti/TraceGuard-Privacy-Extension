@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react"
 import { Lock, Key, ShieldCheck, AlertCircle, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { deriveKeyFromPassword, generateSalt, exportKey } from "@/lib/crypto"
 
 type AuthState = "loading" | "setup" | "locked" | "unlocked"
@@ -169,18 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (authState === "setup") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-6 rounded-xl border border-border bg-card p-6 shadow-lg">
-          <div className="flex flex-col items-center space-y-2 text-center">
-            <div className="rounded-full bg-primary/10 p-3">
-              <ShieldCheck className="h-8 w-8 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">Secure Your Vault</h1>
-            <p className="text-sm text-muted-foreground">
-              Create a Master Password to encrypt your privacy logs.
-            </p>
-          </div>
-          
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 md:p-10">
+        <div className="w-full max-w-sm flex flex-col gap-6">
           <form onSubmit={(e) => {
             e.preventDefault()
             if (password !== confirmPassword) {
@@ -192,35 +183,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               return
             }
             setup(password)
-          }} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                type="password"
-                placeholder="Master Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
-              <Input
-                type="password"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            
-            {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" />
-                <span>{error}</span>
+          }}>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
+                  <ShieldCheck className="size-6 text-primary" />
+                </div>
+                <h1 className="text-xl font-bold">Secure Your Vault</h1>
+                <div className="text-center text-sm text-muted-foreground text-balance">
+                  Create a Master Password to encrypt your privacy logs.
+                </div>
               </div>
-            )}
-            
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Encrypting..." : "Create Vault"}
-            </Button>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="setup-password">Master Password</Label>
+                  <Input
+                    id="setup-password"
+                    type="password"
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="setup-confirm">Confirm Password</Label>
+                  <Input
+                    id="setup-confirm"
+                    type="password"
+                    placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                {error && (
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Encrypting..." : "Create Vault"}
+                </Button>
+              </div>
+            </div>
           </form>
+          <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
+            By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+          </div>
         </div>
       </div>
     )
@@ -228,44 +241,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (authState === "locked") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-6 rounded-xl border border-border bg-card p-6 shadow-lg">
-          <div className="flex flex-col items-center space-y-2 text-center">
-            <div className="rounded-full bg-destructive/10 p-3 animate-pulse">
-              <ShieldAlert className="h-8 w-8 text-destructive" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">Vault Locked</h1>
-            <p className="text-sm text-muted-foreground">
-              Enter your Master Password to access your privacy logs.
-            </p>
-          </div>
-          
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 md:p-10">
+        <div className="w-full max-w-sm flex flex-col gap-6">
           <form onSubmit={(e) => {
             e.preventDefault()
             unlock(password)
-          }} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                type="password"
-                placeholder="Master Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                autoFocus
-              />
-            </div>
-            
-            {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" />
-                <span>{error}</span>
+          }}>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-destructive/10 animate-pulse">
+                  <ShieldAlert className="size-6 text-destructive" />
+                </div>
+                <h1 className="text-xl font-bold">Vault Locked</h1>
+                <div className="text-center text-sm text-muted-foreground text-balance">
+                  Enter your Master Password to access your privacy logs.
+                </div>
               </div>
-            )}
-            
-            <Button type="submit" className="w-full" disabled={loading || !password}>
-              <Key className="mr-2 h-4 w-4" />
-              {loading ? "Unlocking..." : "Unlock Vault"}
-            </Button>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="locked-password">Master Password</Label>
+                  <Input
+                    id="locked-password"
+                    type="password"
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    autoFocus
+                    required
+                  />
+                </div>
+                {error && (
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                <Button type="submit" className="w-full" disabled={loading || !password}>
+                  <Key className="mr-2 h-4 w-4" />
+                  {loading ? "Unlocking..." : "Unlock Vault"}
+                </Button>
+              </div>
+            </div>
           </form>
         </div>
       </div>

@@ -215,24 +215,24 @@ export default function HelpPage() {
                     <div>
                         <h3 className="font-medium text-sm mb-2">Privacy Score (UPS)</h3>
                         <div className="grid grid-cols-5 gap-2 text-center text-xs">
-                            <div className="p-2 rounded bg-green-500/10">
-                                <span className="font-bold text-green-500">90-100</span>
+                            <div className="p-2 rounded bg-secondary">
+                                <span className="font-bold text-primary">90-100</span>
                                 <p className="text-muted-foreground">Excellent</p>
                             </div>
-                            <div className="p-2 rounded bg-blue-500/10">
-                                <span className="font-bold text-blue-500">70-89</span>
+                            <div className="p-2 rounded bg-secondary">
+                                <span className="font-bold text-primary">70-89</span>
                                 <p className="text-muted-foreground">Good</p>
                             </div>
-                            <div className="p-2 rounded bg-yellow-500/10">
-                                <span className="font-bold text-yellow-500">50-69</span>
+                            <div className="p-2 rounded bg-secondary">
+                                <span className="font-bold text-primary">50-69</span>
                                 <p className="text-muted-foreground">Fair</p>
                             </div>
-                            <div className="p-2 rounded bg-orange-500/10">
-                                <span className="font-bold text-orange-500">30-49</span>
+                            <div className="p-2 rounded bg-secondary">
+                                <span className="font-bold text-primary">30-49</span>
                                 <p className="text-muted-foreground">Poor</p>
                             </div>
-                            <div className="p-2 rounded bg-red-500/10">
-                                <span className="font-bold text-red-500">0-29</span>
+                            <div className="p-2 rounded bg-destructive/10">
+                                <span className="font-bold text-destructive">0-29</span>
                                 <p className="text-muted-foreground">Critical</p>
                             </div>
                         </div>
@@ -243,20 +243,20 @@ export default function HelpPage() {
                     <div>
                         <h3 className="font-medium text-sm mb-2">Website Risk Score (WRS)</h3>
                         <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                            <div className="p-2 rounded bg-green-500/10">
-                                <span className="font-bold text-green-500">0-39</span>
+                            <div className="p-2 rounded bg-secondary">
+                                <span className="font-bold text-primary">0-39</span>
                                 <p className="text-muted-foreground">Low Risk</p>
                             </div>
-                            <div className="p-2 rounded bg-yellow-500/10">
-                                <span className="font-bold text-yellow-500">40-59</span>
+                            <div className="p-2 rounded bg-secondary">
+                                <span className="font-bold text-primary">40-59</span>
                                 <p className="text-muted-foreground">Medium</p>
                             </div>
-                            <div className="p-2 rounded bg-orange-500/10">
-                                <span className="font-bold text-orange-500">60-79</span>
+                            <div className="p-2 rounded bg-secondary">
+                                <span className="font-bold text-primary">60-79</span>
                                 <p className="text-muted-foreground">High</p>
                             </div>
-                            <div className="p-2 rounded bg-red-500/10">
-                                <span className="font-bold text-red-500">80-100</span>
+                            <div className="p-2 rounded bg-destructive/10">
+                                <span className="font-bold text-destructive">80-100</span>
                                 <p className="text-muted-foreground">Critical</p>
                             </div>
                         </div>

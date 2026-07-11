@@ -181,19 +181,19 @@ export default function ActivityLogsPage() {
 
     // Get safety info for display
     const getSafetyInfo = (wss: number) => {
-        if (wss >= 80) return { level: "Excellent", color: "text-green-500", border: "border-green-500" }
-        if (wss >= 60) return { level: "Good", color: "text-blue-500", border: "border-blue-500" }
-        if (wss >= 40) return { level: "Fair", color: "text-yellow-500", border: "border-yellow-500" }
-        if (wss >= 20) return { level: "Poor", color: "text-orange-500", border: "border-orange-500" }
-        return { level: "Critical", color: "text-red-500", border: "border-red-500" }
+        if (wss >= 80) return { level: "Excellent", color: "text-primary", border: "border-primary" }
+        if (wss >= 60) return { level: "Good", color: "text-primary", border: "border-primary" }
+        if (wss >= 40) return { level: "Fair", color: "text-primary", border: "border-primary" }
+        if (wss >= 20) return { level: "Poor", color: "text-primary", border: "border-primary" }
+        return { level: "Critical", color: "text-destructive", border: "border-destructive" }
     }
 
     // Color for individual detector scores (all are safety scores, higher = better)
     const getScoreColor = (score: number) => {
-        if (score >= 80) return "text-green-500"
-        if (score >= 60) return "text-blue-500"
-        if (score >= 40) return "text-yellow-500"
-        return "text-red-500"
+        if (score >= 80) return "text-primary"
+        if (score >= 60) return "text-primary"
+        if (score >= 40) return "text-primary"
+        return "text-destructive"
     }
 
     const toggleExpanded = (key: string) => {
@@ -261,27 +261,27 @@ export default function ActivityLogsPage() {
                 <StatCard
                     title="Total"
                     value={totalVisits}
-                    valueColor="text-blue-500"
+                    valueColor="text-primary"
                 />
                 <StatCard
                     title="At Risk"
                     value={atRiskVisits}
-                    valueColor="text-red-500"
+                    valueColor="text-destructive"
                 />
                 <StatCard
                     title="Fair"
                     value={fairSafetyVisits}
-                    valueColor="text-yellow-500"
+                    valueColor="text-primary"
                 />
                 <StatCard
                     title="Safe"
                     value={excellentSafetyVisits + goodSafetyVisits}
-                    valueColor="text-green-500"
+                    valueColor="text-primary"
                 />
                 <StatCard
                     title="Unique Sites"
                     value={uniqueSites}
-                    valueColor="text-purple-500"
+                    valueColor="text-primary"
                 />
             </div>
 

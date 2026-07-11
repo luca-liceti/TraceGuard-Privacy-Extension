@@ -134,44 +134,44 @@ function RiskDistributionBar({
             <div className="flex h-3 rounded-full overflow-hidden bg-muted">
                 {critical > 0 && (
                     <div
-                        className="bg-red-500 transition-all"
+                        className="bg-destructive transition-all"
                         style={{ width: `${criticalPct}%` }}
                     />
                 )}
                 {high > 0 && (
                     <div
-                        className="bg-orange-500 transition-all"
+                        className="bg-primary transition-all"
                         style={{ width: `${highPct}%` }}
                     />
                 )}
                 {medium > 0 && (
                     <div
-                        className="bg-yellow-500 transition-all"
+                        className="bg-primary transition-all"
                         style={{ width: `${mediumPct}%` }}
                     />
                 )}
                 {low > 0 && (
                     <div
-                        className="bg-green-500 transition-all"
+                        className="bg-primary transition-all"
                         style={{ width: `${lowPct}%` }}
                     />
                 )}
             </div>
             <div className="flex justify-between text-xs">
                 <div className="flex items-center gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-destructive" />
                     <span className="text-muted-foreground">Critical ({critical})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full bg-orange-500" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                     <span className="text-muted-foreground">High ({high})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                     <span className="text-muted-foreground">Medium ({medium})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                     <span className="text-muted-foreground">Low ({low})</span>
                 </div>
             </div>
@@ -337,7 +337,7 @@ export default function WebsiteSafetyPage() {
                     value={totalSites}
                     subtitle="Websites analyzed"
                     icon={Globe}
-                    iconColor="text-blue-500"
+                    iconColor="text-primary"
                     valueColor="text-foreground"
                 />
                 <StatCard
@@ -346,16 +346,16 @@ export default function WebsiteSafetyPage() {
                     subtitle={avgWSS >= 80 ? "Excellent" : avgWSS >= 60 ? "Good" : avgWSS >= 40 ? "Fair" : "Needs attention"}
                     icon={Shield}
                     iconColor={
-                        avgWSS >= 80 ? "text-green-500" :
-                            avgWSS >= 60 ? "text-blue-500" :
-                                avgWSS >= 40 ? "text-yellow-500" :
-                                    "text-red-500"
+                        avgWSS >= 80 ? "text-primary" :
+                            avgWSS >= 60 ? "text-primary" :
+                                avgWSS >= 40 ? "text-primary" :
+                                    "text-destructive"
                     }
                     valueColor={
-                        avgWSS >= 80 ? "text-green-500" :
-                            avgWSS >= 60 ? "text-green-500" : // Still good
-                                avgWSS >= 40 ? "text-yellow-500" :
-                                    "text-red-500"
+                        avgWSS >= 80 ? "text-primary" :
+                            avgWSS >= 60 ? "text-primary" : // Still good
+                                avgWSS >= 40 ? "text-primary" :
+                                    "text-destructive"
                     }
                 />
                 <StatCard
@@ -363,16 +363,16 @@ export default function WebsiteSafetyPage() {
                     value={criticalSites + poorSites}
                     subtitle="Critical & poor safety"
                     icon={AlertTriangle}
-                    iconColor="text-red-500"
-                    valueColor={criticalSites + poorSites > 0 ? "text-red-500" : "text-green-500"}
+                    iconColor="text-destructive"
+                    valueColor={criticalSites + poorSites > 0 ? "text-destructive" : "text-primary"}
                 />
                 <StatCard
                     title="Safe Sites"
                     value={excellentSites + goodSites}
                     subtitle="Excellent & good safety"
                     icon={CheckCircle}
-                    iconColor="text-green-500"
-                    valueColor="text-green-500"
+                    iconColor="text-primary"
+                    valueColor="text-primary"
                 />
             </div>
 
@@ -422,25 +422,25 @@ export default function WebsiteSafetyPage() {
                                 <SelectItem value="all">All Sites</SelectItem>
                                 <SelectItem value="critical">
                                     <span className="flex items-center gap-2">
-                                        <div className="h-2 w-2 rounded-full bg-red-500" />
+                                        <div className="h-2 w-2 rounded-full bg-destructive" />
                                         Critical Risk
                                     </span>
                                 </SelectItem>
                                 <SelectItem value="high">
                                     <span className="flex items-center gap-2">
-                                        <div className="h-2 w-2 rounded-full bg-orange-500" />
+                                        <div className="h-2 w-2 rounded-full bg-primary" />
                                         High Risk
                                     </span>
                                 </SelectItem>
                                 <SelectItem value="medium">
                                     <span className="flex items-center gap-2">
-                                        <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                                        <div className="h-2 w-2 rounded-full bg-primary" />
                                         Medium Risk
                                     </span>
                                 </SelectItem>
                                 <SelectItem value="low">
                                     <span className="flex items-center gap-2">
-                                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                                        <div className="h-2 w-2 rounded-full bg-primary" />
                                         Low Risk
                                     </span>
                                 </SelectItem>
