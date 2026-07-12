@@ -65,7 +65,7 @@ const chartConfig = {
   },
   score: {
     label: "Score",
-    color: "#ffffff",
+    color: "var(--primary)",
   },
 } satisfies ChartConfig
 

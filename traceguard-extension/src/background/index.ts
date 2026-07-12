@@ -546,7 +546,7 @@ async function handlePageAnalysis(message: any) {
         detector: 'reputation',
         domain,
         score: reputationScore,
-        details: { isBlacklisted: reputationScore === 0 },
+        details: { isBlacklisted: reputationScore === 0, status: reputationScore === 100 ? 'Clean' : reputationScore === 0 ? 'Blacklisted' : 'Suspicious' },
         message: detectorMessages.reputation
     });
 
@@ -568,7 +568,7 @@ async function handlePageAnalysis(message: any) {
         detector: 'cookies',
         domain,
         score: finalScores.cookies,
-        details: {},
+        details: message.detectionDetails?.cookies || {},
         message: detectorMessages.cookies
     });
 
@@ -577,7 +577,7 @@ async function handlePageAnalysis(message: any) {
         detector: 'inputs',
         domain,
         score: finalScores.input,
-        details: {},
+        details: message.detectionDetails?.input || {},
         message: detectorMessages.inputs
     });
 
@@ -586,7 +586,7 @@ async function handlePageAnalysis(message: any) {
         detector: 'policy',
         domain,
         score: finalScores.policy,
-        details: {},
+        details: message.detectionDetails?.policy || {},
         message: detectorMessages.policy
     });
 

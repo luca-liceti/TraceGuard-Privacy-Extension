@@ -206,7 +206,7 @@ export default function PrivacyScorePage() {
                             config={{
                                 score: {
                                     label: "Privacy Score",
-                                    color: "hsl(var(--primary))",
+                                    color: "var(--primary)",
                                 },
                             }}
                             className="h-[300px]"
@@ -215,8 +215,8 @@ export default function PrivacyScorePage() {
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="var(--color-score)" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="var(--color-score)" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -245,7 +245,7 @@ export default function PrivacyScorePage() {
                                     <Area
                                         type="monotone"
                                         dataKey="score"
-                                        stroke="hsl(var(--primary))"
+                                        stroke="var(--color-score)"
                                         strokeWidth={2}
                                         fill="url(#scoreGradient)"
                                     />

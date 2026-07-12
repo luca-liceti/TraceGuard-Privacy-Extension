@@ -76,10 +76,10 @@ export default function TrackersPage() {
     const avgTrackingScore = sitesAnalyzed > 0 ? Math.round(totalTrackerScore / sitesAnalyzed) : 0
 
     const trackingDistribution = [
-        { name: "Clean", value: noTracking, color: "hsl(142, 76%, 36%)" },
-        { name: "Low", value: lowTracking, color: "hsl(45, 93%, 47%)" },
-        { name: "Medium", value: mediumTracking, color: "hsl(25, 95%, 53%)" },
-        { name: "High", value: highTracking, color: "hsl(0, 84%, 60%)" },
+        { name: "Clean", value: noTracking, fill: "var(--color-clean)" },
+        { name: "Low", value: lowTracking, fill: "var(--color-low)" },
+        { name: "Medium", value: mediumTracking, fill: "var(--color-medium)" },
+        { name: "High", value: highTracking, fill: "var(--color-high)" },
     ].filter(item => item.value > 0)
 
     // Find top tracking sites
@@ -155,10 +155,10 @@ export default function TrackersPage() {
                         <CardContent>
                             <ChartContainer
                                 config={{
-                                    clean: { label: "Clean", color: "hsl(142, 76%, 36%)" },
-                                    low: { label: "Low", color: "hsl(45, 93%, 47%)" },
-                                    medium: { label: "Medium", color: "hsl(25, 95%, 53%)" },
-                                    high: { label: "High", color: "hsl(0, 84%, 60%)" },
+                                    clean: { label: "Clean", color: "var(--chart-2)" },
+                                    low: { label: "Low", color: "var(--chart-4)" },
+                                    medium: { label: "Medium", color: "var(--chart-3)" },
+                                    high: { label: "High", color: "var(--chart-1)" },
                                 }}
                                 className="h-[200px]"
                             >
@@ -174,7 +174,7 @@ export default function TrackersPage() {
                                             dataKey="value"
                                         >
                                             {trackingDistribution.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
                                             ))}
                                         </Pie>
                                         <ChartTooltip
