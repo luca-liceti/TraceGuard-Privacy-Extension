@@ -122,24 +122,21 @@ export function NotificationDropdown() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel className="flex items-center justify-between py-2">
-                    <span>Notifications</span>
+                <div className="flex items-center justify-between pr-2">
+                    <DropdownMenuLabel className="py-2">Notifications</DropdownMenuLabel>
                     {unreadCount > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto py-1 px-2 text-xs"
-                            onClick={(e) => {
+                        <DropdownMenuItem
+                            className="h-auto py-1 px-2 text-xs cursor-pointer"
+                            onSelect={(e) => {
                                 e.preventDefault()
-                                e.stopPropagation()
                                 markAllAsRead()
                             }}
                         >
                             <Check className="h-3 w-3 mr-1" />
                             Mark all read
-                        </Button>
+                        </DropdownMenuItem>
                     )}
-                </DropdownMenuLabel>
+                </div>
                 <DropdownMenuSeparator />
 
                 {recentNotifications.length > 0 ? (
@@ -181,12 +178,14 @@ export function NotificationDropdown() {
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                                     onClick={(e) => {
                                         e.preventDefault()
                                         e.stopPropagation()
                                         removeNotification(notification.id)
                                     }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onPointerUp={(e) => e.stopPropagation()}
                                 >
                                     <X className="h-3.5 w-3.5" />
                                 </Button>

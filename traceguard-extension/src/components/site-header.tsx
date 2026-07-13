@@ -1,8 +1,7 @@
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Button } from "@/components/ui/button"
-import { Bell } from "lucide-react"
+import { NotificationDropdown } from "@/components/traceguard/notifications"
 
 export function SiteHeader() {
   return (
@@ -15,10 +14,7 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium">Documents</h1>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-9 w-9">
-            <Bell className="h-4 w-4" />
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <NotificationDropdown />
           <ThemeToggle />
         </div>
       </div>

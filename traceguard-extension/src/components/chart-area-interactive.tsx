@@ -26,38 +26,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
-const chartData = [
-  { date: "2024-06-01", score: 85 },
-  { date: "2024-06-02", score: 82 },
-  { date: "2024-06-03", score: 88 },
-  { date: "2024-06-04", score: 90 },
-  { date: "2024-06-05", score: 75 },
-  { date: "2024-06-06", score: 70 },
-  { date: "2024-06-07", score: 78 },
-  { date: "2024-06-08", score: 85 },
-  { date: "2024-06-09", score: 88 },
-  { date: "2024-06-10", score: 92 },
-  { date: "2024-06-11", score: 95 },
-  { date: "2024-06-12", score: 91 },
-  { date: "2024-06-13", score: 86 },
-  { date: "2024-06-14", score: 80 },
-  { date: "2024-06-15", score: 72 },
-  { date: "2024-06-16", score: 68 },
-  { date: "2024-06-17", score: 75 },
-  { date: "2024-06-18", score: 82 },
-  { date: "2024-06-19", score: 88 },
-  { date: "2024-06-20", score: 94 },
-  { date: "2024-06-21", score: 96 },
-  { date: "2024-06-22", score: 92 },
-  { date: "2024-06-23", score: 85 },
-  { date: "2024-06-24", score: 79 },
-  { date: "2024-06-25", score: 74 },
-  { date: "2024-06-26", score: 80 },
-  { date: "2024-06-27", score: 86 },
-  { date: "2024-06-28", score: 91 },
-  { date: "2024-06-29", score: 95 },
-  { date: "2024-06-30", score: 98 },
-]
+import { useScoreHistory } from "@/lib/useStorage"
 
 const chartConfig = {
   visitors: {
@@ -69,9 +38,18 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartAreaInteractive() {
+export function ChartAreaInteractive({
+  timeRange: externalTimeRange,
+  onTimeRangeChange,
+}: {
+  timeRange?: string;
+  onTimeRangeChange?: (value: string) => void;
+} = {}) {
   const isMobile = useIsMobile()
-  const [timeRange, setTimeRange] = React.useState("30d")
+  const [internalTimeRange, setInternalTimeRange] = React.useState("30d")
+  
+  const timeRange = externalTimeRange !== undefined ? externalTimeRange : internalTimeRange
+  const setTimeRange = onTimeRangeChange || setInternalTimeRange
 
   React.useEffect(() => {
     if (isMobile) {
@@ -79,21 +57,83 @@ export function ChartAreaInteractive() {
     }
   }, [isMobile])
 
-  const filteredData = chartData.filter((item) => {
-    const date = new Date(item.date)
-    const referenceDate = new Date("2024-06-30")
-    let daysToSubtract = 30
-    if (timeRange === "1d") {
-      daysToSubtract = 0
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7
-    } else if (timeRange === "30d") {
-      daysToSubtract = 30
+  const history = useScoreHistory()
+
+  const { dailyData, todayData } = React.useMemo(() => {
+    if (!history || history.length === 0) return { dailyData: [], todayData: [] };
+    
+    // Group by day
+    const dailyScores = new Map<string, { sum: number; count: number }>();
+    history.forEach(entry => {
+      const date = new Date(entry.timestamp);
+      // Adjust for local time
+      const dateString = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const existing = dailyScores.get(dateString) || { sum: 0, count: 0 };
+      dailyScores.set(dateString, { sum: existing.sum + entry.ups, count: existing.count + 1 });
+    });
+    
+    const dailyData = Array.from(dailyScores.entries()).map(([date, { sum, count }]) => ({
+      date,
+      score: Math.round(sum / count)
+    })).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Today data (Raw history from midnight to now)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    
+    const beforeToday = history.filter(entry => entry.timestamp < startOfToday.getTime());
+    const lastScore = beforeToday.length > 0 ? beforeToday[beforeToday.length - 1].ups : 100; // default to 100 if no previous history
+    
+    const rawToday = history
+      .filter(entry => entry.timestamp >= startOfToday.getTime())
+      .map(entry => ({
+        date: new Date(entry.timestamp).toISOString(),
+        score: entry.ups
+      }));
+      
+    // Create a continuous line from midnight to current time
+    const todayData = [
+      { date: startOfToday.toISOString(), score: lastScore },
+      ...rawToday,
+      { date: new Date().toISOString(), score: rawToday.length > 0 ? rawToday[rawToday.length - 1].score : lastScore }
+    ];
+
+    return { dailyData, todayData };
+  }, [history]);
+
+  const filteredData = React.useMemo(() => {
+    if (timeRange === "1d") return todayData;
+
+    const daysToSubtract = timeRange === "7d" ? 7 : 30;
+    const result = [];
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = daysToSubtract - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      // Format as YYYY-MM-DD in local time
+      const dateString = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      
+      const existing = dailyData.find(item => item.date === dateString);
+      
+      if (existing) {
+        result.push(existing);
+      } else {
+        // Backfill with the most recent score prior to this date
+        const before = dailyData.filter(item => item.date < dateString);
+        const lastScore = before.length > 0 ? before[before.length - 1].score : 100;
+        
+        result.push({
+          date: dateString,
+          score: lastScore
+        });
+      }
     }
-    const startDate = new Date(referenceDate)
-    startDate.setDate(startDate.getDate() - daysToSubtract)
-    return date >= startDate
-  })
+    
+    return result;
+  }, [dailyData, todayData, timeRange]);
 
   return (
     <Card className="@container/card">
@@ -111,7 +151,7 @@ export function ChartAreaInteractive() {
           <ToggleGroup
             type="single"
             value={timeRange}
-            onValueChange={setTimeRange}
+            onValueChange={(val) => val && setTimeRange(val)}
             variant="outline"
             className="@[767px]/card:flex hidden"
           >
@@ -175,6 +215,12 @@ export function ChartAreaInteractive() {
               minTickGap={32}
               tickFormatter={(value) => {
                 const date = new Date(value)
+                if (timeRange === '1d') {
+                  return date.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit"
+                  })
+                }
                 return date.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
@@ -186,7 +232,14 @@ export function ChartAreaInteractive() {
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
+                    const date = new Date(value)
+                    if (timeRange === '1d') {
+                      return date.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit"
+                      })
+                    }
+                    return date.toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                     })
@@ -197,7 +250,7 @@ export function ChartAreaInteractive() {
             />
             <Area
               dataKey="score"
-              type="natural"
+              type="monotone"
               fill="url(#fillScore)"
               stroke="var(--color-score)"
               stackId="a"

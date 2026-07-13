@@ -1,4 +1,4 @@
-import { TrendingUp } from "lucide-react"
+import { TrendingUp, TrendingDown } from "lucide-react"
 import {
   Label,
   PolarGrid,
@@ -16,10 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
-
-const chartData = [
-  { name: "score", visitors: 85, fill: "var(--color-score)" },
-]
+import { useAppState, useScoreHistory } from "@/lib/useStorage"
 
 const chartConfig = {
   visitors: {
@@ -31,7 +28,33 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function RadialChartScore() {
+export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) {
+  const state = useAppState()
+  const history = useScoreHistory()
+  const currentScore = state?.ups ?? 100
+  
+  const chartData = [
+    { name: "score", visitors: currentScore, fill: "var(--color-score)" },
+  ]
+  
+  let days = 30;
+  if (timeRange === "1d") days = 1;
+  else if (timeRange === "7d") days = 7;
+  
+  const targetDate = new Date();
+  targetDate.setHours(0, 0, 0, 0);
+  if (days > 1) {
+    targetDate.setDate(targetDate.getDate() - days);
+  }
+
+  const historyRange = history.filter(h => h.timestamp >= targetDate.getTime())
+  const firstScore = historyRange.length > 0 ? historyRange[0].ups : 100
+  
+  const scoreChange = currentScore - firstScore
+  const isUp = scoreChange >= 0
+  
+  const timeText = timeRange === "1d" ? "today" : timeRange === "7d" ? "this week" : "this month"
+
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
@@ -46,7 +69,7 @@ export function RadialChartScore() {
           <RadialBarChart
             data={chartData}
             startAngle={90}
-            endAngle={90 - (360 * 85) / 100}
+            endAngle={90 - (360 * currentScore) / 100}
             innerRadius={80}
             outerRadius={110}
           >
@@ -74,7 +97,7 @@ export function RadialChartScore() {
                           y={viewBox.cy}
                           className="fill-foreground text-4xl font-bold"
                         >
-                          {chartData[0].visitors}
+                          {chartData[0].visitors.toFixed(1)}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
@@ -93,8 +116,8 @@ export function RadialChartScore() {
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 font-medium leading-none">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+        <div className="flex items-center justify-center gap-2 font-medium leading-none">
+          {scoreChange === 0 ? `Score is stable ${timeText}` : `Trending ${isUp ? 'up' : 'down'} by ${Math.abs(scoreChange).toFixed(1)} pts ${timeText}`} {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
         </div>
         <div className="leading-none text-muted-foreground text-center">
           Showing current privacy score

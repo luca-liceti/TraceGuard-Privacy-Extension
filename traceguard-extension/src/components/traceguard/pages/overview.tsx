@@ -9,6 +9,7 @@ import { DetectorType } from "@/lib/types"
 export default function OverviewPage() {
   const detectorLogs = useDetectorLogs()
   const { siteCache } = useSiteCache()
+  const [timeRange, setTimeRange] = React.useState("30d")
 
   const groupedVisits = useMemo(() => {
     const groups = new Map<string, { domain: string; timestamp: number; wss: number; detectors: Record<string, { score: number, details: any }> }>()
@@ -122,10 +123,10 @@ export default function OverviewPage() {
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 px-4 lg:px-6 lg:gap-6">
         <div className="lg:col-span-1">
-          <RadialChartScore />
+          <RadialChartScore timeRange={timeRange} />
         </div>
         <div className="lg:col-span-2">
-          <ChartAreaInteractive />
+          <ChartAreaInteractive timeRange={timeRange} onTimeRangeChange={setTimeRange} />
         </div>
       </div>
       <SectionCards />

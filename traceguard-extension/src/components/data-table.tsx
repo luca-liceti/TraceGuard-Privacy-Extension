@@ -24,6 +24,7 @@ import {
   PlusIcon,
   ShieldAlertIcon,
   AlertTriangleIcon,
+  DownloadIcon,
 } from "lucide-react"
 import { z } from "zod"
 import { format } from "date-fns"
@@ -211,10 +212,6 @@ const columns: ColumnDef<SiteVisit>[] = [
 ]
 
 export function DataTable({ data }: { data: SiteVisit[] }) {
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
-    reputation: false,
-    policy: false,
-  })
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "timestamp", desc: true }])
   const [pagination, setPagination] = React.useState({
@@ -236,7 +233,6 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
     columns,
     state: {
       sorting,
-      columnVisibility,
       columnFilters,
       pagination,
     },
@@ -245,7 +241,6 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -257,6 +252,28 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
     e.preventDefault()
     setIsAddLogOpen(false)
     toast.success("Log added successfully")
+  }
+
+  const handleExport = async () => {
+    try {
+      const data = await chrome.storage.local.get('detectorLogs')
+      const logs = data.detectorLogs || []
+      
+      const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `traceguard-logs-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      toast.success("Logs exported successfully")
+    } catch (e) {
+      console.error(e)
+      toast.error("Failed to export logs")
+    }
   }
 
   return (
@@ -271,66 +288,101 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
             }
             className="h-8 w-[150px] lg:w-[250px]"
           />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
-                <ColumnsIcon className="mr-2 size-4" />
-                Columns
-                <ChevronDownIcon className="ml-2 size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {table
-                .getAllColumns()
-                .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-        <Dialog open={isAddLogOpen} onOpenChange={setIsAddLogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <PlusIcon />
-              <span className="hidden lg:inline">Add Log</span>
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <DownloadIcon />
+            <span className="hidden lg:inline">Export</span>
+          </Button>
+          <Dialog open={isAddLogOpen} onOpenChange={setIsAddLogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <PlusIcon />
+                <span className="hidden lg:inline">Add Log</span>
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Add Manual Log</DialogTitle>
               <DialogDescription>
-                Manually record a site visit and safety score.
+                Manually record a site visit and safety metrics.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleAddLogSubmit} className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="domain" className="text-right">
-                  Domain
-                </Label>
-                <Input id="domain" placeholder="example.com" className="col-span-3" required />
+            <form onSubmit={handleAddLogSubmit} className="flex flex-col gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="domain">Domain</Label>
+                  <Input id="domain" placeholder="example.com" required />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="wss">Safety Score</Label>
+                  <Input id="wss" type="number" placeholder="85" min="0" max="100" required />
+                </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="wss" className="text-right">
-                  Score
-                </Label>
-                <Input id="wss" type="number" placeholder="85" min="0" max="100" className="col-span-3" required />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="trackers">Trackers Blocked</Label>
+                  <Input id="trackers" type="number" placeholder="0" min="0" required />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="cookies">Cookies Detected</Label>
+                  <Input id="cookies" type="number" placeholder="0" min="0" required />
+                </div>
               </div>
-              <DialogFooter className="sm:justify-start">
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="reputation">Reputation</Label>
+                  <Select required defaultValue="Clean">
+                    <SelectTrigger id="reputation">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Clean">Clean</SelectItem>
+                      <SelectItem value="Suspicious">Suspicious</SelectItem>
+                      <SelectItem value="Blacklisted">Blacklisted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="policy">Policy Grade</Label>
+                  <Select required defaultValue="N/A">
+                    <SelectTrigger id="policy">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="D">D</SelectItem>
+                      <SelectItem value="E">E</SelectItem>
+                      <SelectItem value="N/A">N/A</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="inputs">Sensitive Inputs (PII Risk)</Label>
+                <Select required defaultValue="No">
+                  <SelectTrigger id="inputs">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes (Risk Detected)</SelectItem>
+                    <SelectItem value="No">No (Safe)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <DialogFooter className="sm:justify-start pt-2">
                 <Button type="submit" className="w-full">Save log</Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
+      </div>
       </div>
 
       <div className="rounded-md border">
