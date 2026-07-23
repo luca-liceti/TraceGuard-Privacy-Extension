@@ -21,7 +21,7 @@
  * 
  * 3. FREQUENTLY ASKED QUESTIONS (FAQ)
  *    - What is UPS? (User Privacy Score)
- *    - What is WRS? (Website Risk Score)
+ *    - What is WSS? (Website Safety Score)
  *    - How does TraceGuard protect you?
  *    - What data does it collect?
  *    - What are whitelists and blacklists?
@@ -29,7 +29,7 @@
  * 
  * 4. UNDERSTANDING SCORES
  *    - Color-coded guide to UPS levels (90-100, 70-89, etc.)
- *    - Color-coded guide to WRS levels (0-39, 40-59, etc.)
+ *    - Color-coded guide to WSS levels (0-19, 20-39, etc.)
  * 
  * 5. VERSION INFO
  *    - Current extension version
@@ -65,8 +65,8 @@ const faqs: FAQItem[] = [
         answer: "The UPS is a score from 0-100 that reflects your overall privacy health while browsing. It starts at 100 and decreases when you enter personal information on websites, especially on risky sites."
     },
     {
-        question: "What is the Website Risk Score (WRS)?",
-        answer: "The WRS measures how risky a particular website is. It's calculated based on protocol security, domain reputation, tracking scripts, cookies, input requirements, and privacy policies. Higher scores mean higher risk."
+        question: "What is the Website Safety Score (WSS)?",
+        answer: "The WSS measures how safe a particular website is. It's calculated based on domain reputation, tracking scripts, cookies, input requirements, and privacy policies. Higher scores mean higher safety."
     },
     {
         question: "How does TraceGuard protect my privacy?",
@@ -78,7 +78,7 @@ const faqs: FAQItem[] = [
     },
     {
         question: "What are whitelists and blacklists?",
-        answer: "Whitelisted domains are trusted sites that always receive a WRS of 0 (safe). Blacklisted domains are blocked sites that always receive a WRS of 100 (critical risk)."
+        answer: "Whitelisted domains are trusted sites that always receive a WSS of 100 (safe). Blacklisted domains are blocked sites that always receive a WSS of 0 (critical risk)."
     },
     {
         question: "How do I improve my Privacy Score?",
@@ -241,10 +241,14 @@ export default function HelpPage() {
                     <Separator />
 
                     <div>
-                        <h3 className="font-medium text-sm mb-2">Website Risk Score (WRS)</h3>
-                        <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                        <h3 className="font-medium text-sm mb-2">Website Safety Score (WSS)</h3>
+                        <div className="grid grid-cols-5 gap-2 text-center text-xs">
                             <div className="p-2 rounded bg-secondary">
-                                <span className="font-bold text-primary">0-39</span>
+                                <span className="font-bold text-primary">80-100</span>
+                                <p className="text-muted-foreground">Safe</p>
+                            </div>
+                            <div className="p-2 rounded bg-secondary">
+                                <span className="font-bold text-primary">60-79</span>
                                 <p className="text-muted-foreground">Low Risk</p>
                             </div>
                             <div className="p-2 rounded bg-secondary">
@@ -252,11 +256,11 @@ export default function HelpPage() {
                                 <p className="text-muted-foreground">Medium</p>
                             </div>
                             <div className="p-2 rounded bg-secondary">
-                                <span className="font-bold text-primary">60-79</span>
-                                <p className="text-muted-foreground">High</p>
+                                <span className="font-bold text-primary">20-39</span>
+                                <p className="text-muted-foreground">High Risk</p>
                             </div>
                             <div className="p-2 rounded bg-destructive/10">
-                                <span className="font-bold text-destructive">80-100</span>
+                                <span className="font-bold text-destructive">0-19</span>
                                 <p className="text-muted-foreground">Critical</p>
                             </div>
                         </div>

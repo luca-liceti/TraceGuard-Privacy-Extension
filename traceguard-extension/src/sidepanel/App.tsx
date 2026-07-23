@@ -96,35 +96,29 @@ function getUPSColor(ups: number): string {
 
 // Detector info for display
 const detectorInfo: Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> = {
-    protocol: {
-        icon: Lock,
-        label: "Protocol",
-        description: "HTTPS/HTTP security",
-        weight: "25%"
-    },
     reputation: {
         icon: Shield,
         label: "Reputation",
         description: "Domain trustworthiness",
-        weight: "25%"
+        weight: "30%"
     },
     tracking: {
         icon: Activity,
         label: "Tracking",
         description: "Third-party trackers",
-        weight: "20%"
+        weight: "30%"
     },
     cookies: {
         icon: Cookie,
         label: "Cookies",
         description: "Tracking cookies",
-        weight: "15%"
+        weight: "20%"
     },
     input: {
         icon: Key,
         label: "Input Fields",
         description: "Sensitive form fields",
-        weight: "10%"
+        weight: "15%"
     },
     policy: {
         icon: FileText,
@@ -357,12 +351,7 @@ function App() {
 
                                                     {/* Detector-specific details */}
                                                     <div className="text-muted-foreground bg-muted/30 rounded-sm px-2 py-1.5 space-y-1">
-                                                        {key === 'protocol' && (
-                                                            <div className="flex justify-between">
-                                                                <span>Connection</span>
-                                                                <span className="font-medium">{score === 100 ? 'HTTPS (Secure)' : 'HTTP (Insecure)'}</span>
-                                                            </div>
-                                                        )}
+
                                                         {key === 'reputation' && (
                                                             <>
                                                                 <div className="flex justify-between">

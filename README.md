@@ -76,7 +76,7 @@ This project was built to solve the lack of transparency in modern web browsing.
 
 | Feature | Description |
 |:--- | :--- |
-| **Website Safety Score (WSS)** | Calculates a 0-100 safety rating for every site visited based on 6 weighted factors: Protocol, Reputation, Tracking, Cookies, Input Fields, and Policy strength. |
+| **Website Safety Score (WSS)** | Calculates a 0-100 safety rating for every site visited based on 5 weighted factors: Reputation, Tracking, Cookies, Input Fields, and Policy strength. |
 | **User Privacy Score (UPS)** | A dynamic behavioral score that reflects your personal privacy health. It degrades when visiting risky sites or exposing PII, and recovers as you maintain safe browsing habits. |
 
 </details>
