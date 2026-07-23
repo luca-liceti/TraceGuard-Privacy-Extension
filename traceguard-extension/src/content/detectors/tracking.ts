@@ -253,3 +253,35 @@ function getScoreFormula(trackerCount: number): string {
     return `max(0, 100 - 15×log2(${trackerCount}+1)) = ${score}`;
 }
 
+/**
+ * Extract raw URLs and domains of third-party elements for background enrichment
+ */
+export function detectTrackersRaw(): { url: string; type: string; domain: string }[] {
+    const raw: { url: string; type: string; domain: string }[] = [];
+    const currentHost = window.location.hostname;
+
+    const processElement = (el: HTMLElement & { src?: string }, type: string) => {
+        if (!el.src) return;
+        try {
+            const url = new URL(el.src, window.location.href);
+            const hostname = url.hostname;
+            // Only collect third-party domains
+            if (hostname !== currentHost && hostname !== '' && !hostname.endsWith('.' + currentHost) && !currentHost.endsWith(hostname)) {
+                raw.push({ url: el.src, type, domain: hostname });
+            }
+        } catch {
+            // Ignore invalid URLs
+        }
+    };
+
+    const scripts = document.getElementsByTagName('script');
+    const iframes = document.getElementsByTagName('iframe');
+    const images = document.getElementsByTagName('img');
+
+    for (const script of Array.from(scripts)) processElement(script, 'script');
+    for (const iframe of Array.from(iframes)) processElement(iframe, 'iframe');
+    for (const img of Array.from(images)) processElement(img, 'pixel');
+
+    return raw;
+}
+

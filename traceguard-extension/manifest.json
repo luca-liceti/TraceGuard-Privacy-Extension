@@ -23,7 +23,9 @@
         "sidePanel",
         "tabs",
         "notifications",
-        "alarms"
+        "alarms",
+        "cookies",
+        "webRequest"
     ],
     "host_permissions": [
         "<all_urls>"

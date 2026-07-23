@@ -214,14 +214,15 @@ export function ChartAreaInteractive({
               tickMargin={8}
               minTickGap={32}
               tickFormatter={(value) => {
-                const date = new Date(value)
                 if (timeRange === '1d') {
-                  return date.toLocaleTimeString("en-US", {
+                  return new Date(value).toLocaleTimeString("en-US", {
                     hour: "numeric",
                     minute: "2-digit"
                   })
                 }
-                return date.toLocaleDateString("en-US", {
+                const [y, m, d] = value.split('T')[0].split('-');
+                const localDate = new Date(Number(y), Number(m) - 1, Number(d));
+                return localDate.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                 })
@@ -232,14 +233,15 @@ export function ChartAreaInteractive({
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    const date = new Date(value)
                     if (timeRange === '1d') {
-                      return date.toLocaleTimeString("en-US", {
+                      return new Date(value).toLocaleTimeString("en-US", {
                         hour: "numeric",
                         minute: "2-digit"
                       })
                     }
-                    return date.toLocaleDateString("en-US", {
+                    const [y, m, d] = value.split('T')[0].split('-');
+                    const localDate = new Date(Number(y), Number(m) - 1, Number(d));
+                    return localDate.toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                     })

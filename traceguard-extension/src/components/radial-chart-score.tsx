@@ -97,7 +97,7 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
                           y={viewBox.cy}
                           className="fill-foreground text-4xl font-bold"
                         >
-                          {chartData[0].visitors.toFixed(1)}
+                          {Math.ceil(chartData[0].visitors)}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
@@ -117,7 +117,7 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center justify-center gap-2 font-medium leading-none">
-          {scoreChange === 0 ? `Score is stable ${timeText}` : `Trending ${isUp ? 'up' : 'down'} by ${Math.abs(scoreChange).toFixed(1)} pts ${timeText}`} {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+          {scoreChange === 0 ? `Score is stable ${timeText}` : `Trending ${isUp ? 'up' : 'down'} by ${Math.ceil(Math.abs(scoreChange))} pts ${timeText}`} {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
         </div>
         <div className="leading-none text-muted-foreground text-center">
           Showing current privacy score

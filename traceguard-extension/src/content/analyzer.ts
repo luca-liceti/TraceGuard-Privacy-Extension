@@ -27,10 +27,11 @@
  */
 
 // Import all the individual detector functions
-import { detectTrackingDetailed } from './detectors/tracking'; // Finds trackers
+import { detectTrackingDetailed, detectTrackersRaw } from './detectors/tracking'; // Finds trackers
 import { detectSensitiveInputs } from './detectors/input';     // Finds sensitive fields
 import { detectPrivacyPolicy } from './detectors/policy';      // Checks privacy policy
-import { detectCookiesDetailed } from './detectors/cookie';    // Analyzes cookies
+import { detectCookiesDetailed, detectCookiesRaw } from './detectors/cookie';    // Analyzes cookies
+import { detectFingerprintingAttempts } from './detectors/fingerprinting';
 import { ScoreBreakdown } from '@/lib/types';                  // Type definitions
 
 export interface DetectionDetails {
@@ -44,6 +45,11 @@ export interface PageAnalysisResult {
     scores: ScoreBreakdown;
     sensitiveFields: ReturnType<typeof detectSensitiveInputs>['fields'];
     detectionDetails: DetectionDetails;
+    rawForEnrichment: {
+        cookies: { name: string; value: string }[];
+        trackers: { url: string; type: string; domain: string }[];
+        fingerprinting: { technique: string; scriptUrl: string | null }[];
+    };
 }
 
 /**
@@ -109,6 +115,11 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
                 source: policySource,
                 score: policyScore
             }
+        },
+        rawForEnrichment: {
+            cookies: detectCookiesRaw(),
+            trackers: typeof detectTrackersRaw === 'function' ? detectTrackersRaw() : [],
+            fingerprinting: detectFingerprintingAttempts()
         }
     };
 }

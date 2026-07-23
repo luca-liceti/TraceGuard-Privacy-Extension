@@ -23,6 +23,143 @@
  */
 
 // =============================================================================
+// ENRICHED DETECTION DETAIL TYPES
+// Rich per-item data for cookies, trackers, network requests, headers, fingerprinting
+// =============================================================================
+
+/**
+ * Detailed information about a single cookie detected on a page.
+ * Enriched with organization, purpose, and technical attributes.
+ */
+export interface CookieDetail {
+    name: string;
+    domain: string;
+    value: string;                      // Truncated to 50 chars for display
+    category: 'necessary' | 'functional' | 'analytics' | 'marketing' | 'unclassified';
+    organization: string | null;        // e.g. "Google LLC", "Meta Platforms, Inc."
+    platform: string | null;            // e.g. "Google Analytics", "Facebook Pixel"
+    purpose: string | null;             // Human-readable description
+    retentionPeriod: string | null;     // e.g. "2 years", "Session"
+    privacyUrl: string | null;          // Link to organization's privacy policy
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: string;                   // "Strict" | "Lax" | "None" | "unspecified"
+    expirationDate: number | null;      // Unix timestamp, null = session cookie
+    isThirdParty: boolean;
+    invasivenessWeight: number;         // 0-3 scoring weight
+    status: 'active' | 'blocked';       // Was this cookie's domain blocked by something?
+}
+
+/**
+ * Detailed information about a single tracker detected on a page.
+ * Enriched with organization, category, and blocking status.
+ */
+export interface TrackerDetail {
+    url: string;                         // Full URL of the tracker resource
+    domain: string;                      // Extracted domain
+    organization: string | null;         // Parent company from DDG Tracker Radar
+    category: 'advertising' | 'analytics' | 'social' | 'content' | 'cryptomining' | 'fingerprinting' | 'functional' | 'cdn' | 'unknown';
+    type: 'script' | 'pixel' | 'iframe' | 'xhr' | 'beacon' | 'stylesheet' | 'image' | 'unknown';
+    status: 'active' | 'blocked';        // Blocked by browser/extension?
+    source: 'dom' | 'network' | 'both'; // How we detected it
+    prevalence: number | null;           // How common across the web (DDG data, 0-1)
+    fingerprinting: number | null;       // Fingerprinting risk score (0-3, DDG data)
+}
+
+/**
+ * A single network request logged during page load.
+ * Includes tracking classification and block status.
+ */
+export interface NetworkRequestDetail {
+    url: string;
+    domain: string;
+    resourceType: string;                // "script", "image", "xmlhttprequest", "sub_frame", etc.
+    organization: string | null;         // From DDG Tracker Radar
+    isTracker: boolean;                  // Matched against privacy blocklists
+    isThirdParty: boolean;
+    status: 'completed' | 'blocked' | 'failed';
+    blockedReason: string | null;        // "net::ERR_BLOCKED_BY_CLIENT" etc.
+    timestamp: number;
+}
+
+/**
+ * Analysis of a single HTTP security/privacy response header.
+ */
+export interface HeaderAnalysisDetail {
+    header: string;                      // e.g. "Content-Security-Policy"
+    value: string | null;                // The header value, null if missing
+    present: boolean;
+    rating: 'good' | 'fair' | 'poor' | 'missing';
+    explanation: string;                 // What this header does
+    recommendation: string | null;       // How to improve it (null if already good)
+}
+
+/**
+ * A detected fingerprinting technique attempt.
+ */
+export interface FingerprintingDetail {
+    technique: 'canvas' | 'webgl' | 'audio' | 'font' | 'navigator' | 'screen' | 'battery' | 'webrtc';
+    detected: boolean;
+    scriptDomain: string | null;         // Which script domain attempted it
+    organization: string | null;         // Mapped via DDG Tracker Radar
+    description: string;                 // Human-readable explanation
+    risk: 'high' | 'medium' | 'low';
+}
+
+/**
+ * The complete enriched detection result for a single site visit.
+ * Populated by the background enrichment pipeline and stored in siteCache.
+ * Phase 2 UI reads this to render detailed per-item breakdowns.
+ */
+export interface EnrichedDetectionDetails {
+    cookies: {
+        items: CookieDetail[];
+        summary: {
+            total: number;
+            active: number;
+            blocked: number;
+            byCategory: Record<string, number>;
+        };
+    };
+    trackers: {
+        items: TrackerDetail[];
+        summary: {
+            total: number;
+            active: number;
+            blocked: number;
+            byCategory: Record<string, number>;
+        };
+    };
+    networkRequests: {
+        items: NetworkRequestDetail[];
+        summary: {
+            total: number;
+            thirdParty: number;
+            blocked: number;
+            trackerRequests: number;
+        };
+    };
+    headers: {
+        items: HeaderAnalysisDetail[];
+        summary: {
+            score: number;
+            present: number;
+            missing: number;
+            grade: 'A' | 'B' | 'C' | 'D' | 'F';
+        };
+    };
+    fingerprinting: {
+        items: FingerprintingDetail[];
+        summary: {
+            totalAttempts: number;
+            techniques: string[];
+            riskLevel: 'high' | 'medium' | 'low' | 'none';
+        };
+    };
+    capturedAt: number;                  // Unix timestamp of when analysis was captured
+}
+
+// =============================================================================
 // SCORE BREAKDOWN
 // The individual scores from each detector
 // =============================================================================
@@ -67,13 +204,14 @@ export interface SiteRiskData {
     lastAnalyzed: number | string; // When we analyzed it (timestamp or ISO date string)
     visitCount?: number;         // How many times you've visited (optional)
     lastVisit?: number;          // Timestamp of last visit (optional)
-    detectionDetails?: {         // Detailed findings from each detector (optional)
+    detectionDetails?: {         // Detailed findings from each detector (optional, kept for backward compatibility)
         tracking?: { count: number; known: number; suspicious: number };
         cookies?: { total: number; tracking: number; thirdParty: number };
         input?: { total: number; sensitive: number; types: string[] };
         policy?: { grade?: string; source: string };
         reputation?: { checks: string[]; status: string };
     };
+    enrichedDetails?: EnrichedDetectionDetails;  // Rich per-item enriched analysis (Phase 2 UI reads this)
 }
 
 // =============================================================================

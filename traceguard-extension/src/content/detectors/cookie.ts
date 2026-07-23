@@ -360,10 +360,35 @@ export function detectCookiesDetailed(): {
             score,
             total: cookies.length,
             tracking: crossSiteCount + analyticsCount,
-            thirdParty: thirdPartyCount
+            thirdParty: thirdPartyCount,
+            details: categoryCounts
         };
     } catch (error) {
         console.error('[Cookie Detector] Error:', error);
         return { score: 100, total: 0, tracking: 0, thirdParty: 0 };
+    }
+}
+
+/**
+ * Returns raw cookie name/value pairs for background enrichment
+ */
+export function detectCookiesRaw(): { name: string; value: string }[] {
+    try {
+        const cookieString = document.cookie;
+        if (!cookieString || cookieString.trim() === '') {
+            return [];
+        }
+        
+        return cookieString.split(';').map(pair => {
+            const trimmedPair = pair.trim();
+            const equalIndex = trimmedPair.indexOf('=');
+            if (equalIndex === -1) return null;
+            return {
+                name: trimmedPair.substring(0, equalIndex).trim(),
+                value: trimmedPair.substring(equalIndex + 1).trim()
+            };
+        }).filter(Boolean) as { name: string; value: string }[];
+    } catch (e) {
+        return [];
     }
 }

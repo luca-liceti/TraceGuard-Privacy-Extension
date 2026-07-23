@@ -36,6 +36,11 @@ import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';
 import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
+import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
+import { initNetworkMonitor, getAndClearNetworkData } from './services/network-monitor';
+import { enrichCookies } from './services/cookie-enricher';
+import { enrichTrackers } from './services/tracker-enricher';
+import { analyzeHeaders } from './services/header-analyzer';
 
 async function getCryptoKey(): Promise<CryptoKey | null> {
     const session = await chrome.storage.session.get('cryptoKeyHex');
@@ -83,6 +88,9 @@ async function flushBufferedTelemetry() {
 // This message appears in the browser's developer console to confirm the script is running
 console.log('TraceGuard Background Service Worker Running');
 
+// Initialize the network monitor right away to start observing web requests
+initNetworkMonitor();
+
 // =============================================================================
 // EXTENSION LIFECYCLE EVENTS
 // These functions run when the extension is installed or the browser opens
@@ -98,6 +106,9 @@ chrome.runtime.onInstalled.addListener(async () => {
     // Load user settings from storage (or use defaults if this is a fresh install)
     const settings = await storage.getSettings();
     await storage.updateSettings(settings);
+
+    // Pre-warm local databases for fast enrichment
+    await preWarmDatabases();
 
     // Load the app's current state (privacy score, sites analyzed count, etc.)
     const state = await storage.getState();
@@ -120,6 +131,9 @@ chrome.runtime.onInstalled.addListener(async () => {
 chrome.runtime.onStartup.addListener(async () => {
     // Reload the blacklist in case it was updated
     await loadBlacklist();
+
+    // Pre-warm local databases
+    await preWarmDatabases();
 
     // Make sure the display mode matches user preferences
     const settings = await storage.getSettings();
@@ -325,7 +339,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // -------------------------------------------------------------------------
     if (message.type === 'PAGE_ANALYSIS_RESULT') {
         // Process the analysis in a separate function (it's complex, so we keep it organized)
-        handlePageAnalysis(message).then(() => {
+        handlePageAnalysis(message, _sender).then(() => {
             sendResponse({ success: true });
         });
         return true;  // Keep channel open for async response
@@ -397,8 +411,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
  * 5. Creates notifications if the site is dangerous
  * 
  * @param message - The analysis data from the content script
+ * @param sender - Information about where the message came from
  */
-async function handlePageAnalysis(message: any) {
+async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSender) {
     // Step 1: Check the website's reputation (is it on any blacklists?)
     const reputationScore = await checkReputation(message.url);
 
@@ -412,6 +427,88 @@ async function handlePageAnalysis(message: any) {
     // Extract just the domain name from the full URL
     // For example: "https://www.example.com/page" becomes "www.example.com"
     const domain = new URL(message.url).hostname;
+    
+    // Retrieve network data for this tab
+    const tabId = sender.tab?.id;
+    let networkData = null;
+    if (tabId) {
+        networkData = await getAndClearNetworkData(tabId);
+    }
+
+    // Build enriched data if raw data is provided
+    let enrichedDetails = undefined;
+    if (message.rawForEnrichment) {
+        const cookies = await enrichCookies(message.url, message.rawForEnrichment.cookies, networkData?.setCookies || []);
+        const trackers = await enrichTrackers(message.url, message.rawForEnrichment.trackers, networkData?.requests || {});
+        const headers = analyzeHeaders(networkData?.responseHeaders || []);
+        
+        const fpRaw = message.rawForEnrichment.fingerprinting || [];
+        const fingerprintingItems = await Promise.all(fpRaw.map(async (f: any) => {
+            let org = null;
+            if (f.scriptUrl) {
+                try {
+                    const radar = await lookupTrackerDomain(new URL(f.scriptUrl).hostname);
+                    org = radar?.owner || null;
+                } catch (e) {}
+            }
+            return {
+                technique: f.technique,
+                detected: true,
+                scriptDomain: f.scriptUrl ? new URL(f.scriptUrl).hostname : null,
+                organization: org,
+                description: `Detected ${f.technique} fingerprinting attempt`,
+                risk: 'medium'
+            };
+        }));
+        
+        enrichedDetails = {
+            cookies: {
+                items: cookies,
+                summary: {
+                    total: cookies.length,
+                    active: cookies.filter(c => c.status === 'active').length,
+                    blocked: cookies.filter(c => c.status === 'blocked').length,
+                    byCategory: cookies.reduce((acc, c) => { acc[c.category] = (acc[c.category] || 0) + 1; return acc; }, {} as Record<string, number>)
+                }
+            },
+            trackers: {
+                items: trackers,
+                summary: {
+                    total: trackers.length,
+                    active: trackers.filter(t => t.status === 'active').length,
+                    blocked: trackers.filter(t => t.status === 'blocked').length,
+                    byCategory: trackers.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + 1; return acc; }, {} as Record<string, number>)
+                }
+            },
+            networkRequests: {
+                items: networkData ? Object.values(networkData.requests) : [],
+                summary: {
+                    total: networkData ? Object.keys(networkData.requests).length : 0,
+                    thirdParty: networkData ? Object.values(networkData.requests).filter(r => r.isThirdParty).length : 0,
+                    blocked: networkData ? Object.values(networkData.requests).filter(r => r.status === 'blocked').length : 0,
+                    trackerRequests: networkData ? Object.values(networkData.requests).filter(r => r.isTracker).length : 0
+                }
+            },
+            headers: {
+                items: headers,
+                summary: {
+                    score: 0,
+                    present: headers.filter(h => h.present).length,
+                    missing: headers.filter(h => !h.present).length,
+                    grade: 'C'
+                }
+            },
+            fingerprinting: {
+                items: fingerprintingItems,
+                summary: {
+                    totalAttempts: fpRaw.length,
+                    techniques: fpRaw.map((f: any) => f.technique),
+                    riskLevel: fpRaw.length > 0 ? 'medium' : 'none'
+                }
+            },
+            capturedAt: Date.now()
+        };
+    }
 
     // Step 3: Create a data object with all the site's information
     const siteData: SiteRiskData = {
@@ -419,7 +516,8 @@ async function handlePageAnalysis(message: any) {
         wss,                                       // Website Safety Score (0-100, higher = safer)
         breakdown: finalScores,                    // Individual scores for each detector
         lastAnalyzed: Date.now(),                  // When we analyzed it (timestamp)
-        detectionDetails: message.detectionDetails // Detailed info about what was detected
+        detectionDetails: message.detectionDetails,// Detailed info about what was detected
+        enrichedDetails                            // NEW: Rich per-item analysis
     };
 
     // Step 4: Save this site's data to the cache
