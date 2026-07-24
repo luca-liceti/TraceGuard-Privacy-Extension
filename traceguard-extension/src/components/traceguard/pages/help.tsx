@@ -40,6 +40,7 @@
 "use client"
 
 import React from "react"
+import { useTranslation } from "react-i18next"
 import {
     HelpCircle,
     Shield,
@@ -116,13 +117,14 @@ const features: FeatureItem[] = [
 ]
 
 export default function HelpPage() {
+    const { t } = useTranslation()
     return (
         <div className="space-y-6 w-full max-w-3xl">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-foreground">Help Center</h1>
+                <h1 className="text-3xl font-bold text-foreground">{t("Help Center")}</h1>
                 <p className="text-muted-foreground mt-2">
-                    Learn how to use TraceGuard and protect your privacy
+                    {t("Learn how to use TraceGuard and protect your privacy")}
                 </p>
             </div>
 
@@ -131,18 +133,18 @@ export default function HelpPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                         <Lightbulb className="h-4 w-4 text-primary" />
-                        Quick Start
+                        {t("Quick Start")}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground space-y-3">
                     <p>
-                        <strong className="text-foreground">Welcome to TraceGuard!</strong> This extension helps you browse the web more safely by analyzing websites for privacy risks.
+                        <strong className="text-foreground">{t("Welcome to TraceGuard!")}</strong> {t("This extension helps you browse the web more safely by analyzing websites for privacy risks.")}
                     </p>
                     <ol className="list-decimal list-inside space-y-2">
-                        <li>Browse the web normally - TraceGuard works automatically</li>
-                        <li>Check the <strong>Overview</strong> page to see your privacy score</li>
-                        <li>Review the <strong>Activity Logs</strong> to see detailed analysis</li>
-                        <li>Use the <strong>Domain Lists</strong> to trust or block specific sites</li>
+                        <li>{t("Browse the web normally - TraceGuard works automatically")}</li>
+                        <li>{t("Check the")} <strong>{t("Overview")}</strong> {t("page to see your privacy score")}</li>
+                        <li>{t("Review the")} <strong>{t("Activity Logs")}</strong> {t("to see detailed analysis")}</li>
+                        <li>{t("Use the")} <strong>{t("Domain Lists")}</strong> {t("to trust or block specific sites")}</li>
                     </ol>
                 </CardContent>
             </Card>
@@ -152,10 +154,10 @@ export default function HelpPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                         <BookOpen className="h-4 w-4 text-primary" />
-                        Key Features
+                        {t("Key Features")}
                     </CardTitle>
                     <CardDescription>
-                        What TraceGuard does to protect you
+                        {t("What TraceGuard does to protect you")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -169,9 +171,9 @@ export default function HelpPage() {
                                     <feature.icon className="h-4 w-4 text-primary" />
                                 </div>
                                 <div>
-                                    <h3 className="font-medium text-sm">{feature.title}</h3>
+                                    <h3 className="font-medium text-sm">{t(feature.title)}</h3>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                        {feature.description}
+                                        {t(feature.description)}
                                     </p>
                                 </div>
                             </div>
@@ -185,17 +187,17 @@ export default function HelpPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                         <HelpCircle className="h-4 w-4 text-primary" />
-                        Frequently Asked Questions
+                        {t("Frequently Asked Questions")}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {faqs.map((faq, index) => (
                         <div key={index}>
                             <h3 className="font-medium text-sm text-foreground mb-1">
-                                {faq.question}
+                                {t(faq.question)}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                {faq.answer}
+                                {t(faq.answer)}
                             </p>
                             {index < faqs.length - 1 && <Separator className="mt-4" />}
                         </div>
@@ -208,32 +210,32 @@ export default function HelpPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                         <Info className="h-4 w-4 text-primary" />
-                        Understanding Scores
+                        {t("Understanding Scores")}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
-                        <h3 className="font-medium text-sm mb-2">Privacy Score (UPS)</h3>
+                        <h3 className="font-medium text-sm mb-2">{t("Privacy Score (UPS)")}</h3>
                         <div className="grid grid-cols-5 gap-2 text-center text-xs">
                             <div className="p-2 rounded bg-secondary">
                                 <span className="font-bold text-primary">90-100</span>
-                                <p className="text-muted-foreground">Excellent</p>
+                                <p className="text-muted-foreground">{t("Excellent")}</p>
                             </div>
                             <div className="p-2 rounded bg-secondary">
                                 <span className="font-bold text-primary">70-89</span>
-                                <p className="text-muted-foreground">Good</p>
+                                <p className="text-muted-foreground">{t("Good")}</p>
                             </div>
                             <div className="p-2 rounded bg-secondary">
                                 <span className="font-bold text-primary">50-69</span>
-                                <p className="text-muted-foreground">Fair</p>
+                                <p className="text-muted-foreground">{t("Fair")}</p>
                             </div>
                             <div className="p-2 rounded bg-secondary">
                                 <span className="font-bold text-primary">30-49</span>
-                                <p className="text-muted-foreground">Poor</p>
+                                <p className="text-muted-foreground">{t("Poor")}</p>
                             </div>
                             <div className="p-2 rounded bg-destructive/10">
                                 <span className="font-bold text-destructive">0-29</span>
-                                <p className="text-muted-foreground">Critical</p>
+                                <p className="text-muted-foreground">{t("Critical")}</p>
                             </div>
                         </div>
                     </div>
@@ -241,27 +243,27 @@ export default function HelpPage() {
                     <Separator />
 
                     <div>
-                        <h3 className="font-medium text-sm mb-2">Website Safety Score (WSS)</h3>
+                        <h3 className="font-medium text-sm mb-2">{t("Website Safety Score (WSS)")}</h3>
                         <div className="grid grid-cols-5 gap-2 text-center text-xs">
                             <div className="p-2 rounded bg-secondary">
                                 <span className="font-bold text-primary">80-100</span>
-                                <p className="text-muted-foreground">Safe</p>
+                                <p className="text-muted-foreground">{t("Safe")}</p>
                             </div>
                             <div className="p-2 rounded bg-secondary">
                                 <span className="font-bold text-primary">60-79</span>
-                                <p className="text-muted-foreground">Low Risk</p>
+                                <p className="text-muted-foreground">{t("Low Risk")}</p>
                             </div>
                             <div className="p-2 rounded bg-secondary">
                                 <span className="font-bold text-primary">40-59</span>
-                                <p className="text-muted-foreground">Medium</p>
+                                <p className="text-muted-foreground">{t("Medium")}</p>
                             </div>
                             <div className="p-2 rounded bg-secondary">
                                 <span className="font-bold text-primary">20-39</span>
-                                <p className="text-muted-foreground">High Risk</p>
+                                <p className="text-muted-foreground">{t("High Risk")}</p>
                             </div>
                             <div className="p-2 rounded bg-destructive/10">
                                 <span className="font-bold text-destructive">0-19</span>
-                                <p className="text-muted-foreground">Critical</p>
+                                <p className="text-muted-foreground">{t("Critical")}</p>
                             </div>
                         </div>
                     </div>
@@ -275,13 +277,13 @@ export default function HelpPage() {
                         <div className="flex items-center gap-3">
                             <Shield className="h-5 w-5 text-primary" />
                             <div>
-                                <p className="font-medium text-sm">TraceGuard Privacy Extension</p>
+                                <p className="font-medium text-sm">{t("TraceGuard Privacy Extension")}</p>
                                 <p className="text-xs text-muted-foreground">
-                                    All data stays on your device. Your privacy is our priority.
+                                    {t("All data stays on your device. Your privacy is our priority.")}
                                 </p>
                             </div>
                         </div>
-                        <Badge variant="secondary">Local Only</Badge>
+                        <Badge variant="secondary">{t("Local Only")}</Badge>
                     </div>
                 </CardContent>
             </Card>

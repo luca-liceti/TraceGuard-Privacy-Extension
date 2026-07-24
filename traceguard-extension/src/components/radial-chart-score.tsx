@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import {
   Label,
   PolarGrid,
@@ -29,6 +30,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) {
+  const { t } = useTranslation()
   const state = useAppState()
   const history = useScoreHistory()
   const currentScore = state?.ups ?? 100
@@ -53,13 +55,13 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
   const scoreChange = currentScore - firstScore
   const isUp = scoreChange >= 0
   
-  const timeText = timeRange === "1d" ? "today" : timeRange === "7d" ? "this week" : "this month"
+  const timeText = timeRange === "1d" ? t("today") : timeRange === "7d" ? t("this week") : t("this month")
 
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Privacy Score</CardTitle>
-        <CardDescription>Overall protection</CardDescription>
+        <CardTitle>{t("Privacy Score")}</CardTitle>
+        <CardDescription>{t("Overall protection")}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0 flex items-center justify-center">
         <ChartContainer
@@ -116,11 +118,14 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center justify-center gap-2 font-medium leading-none">
-          {scoreChange === 0 ? `Score is stable ${timeText}` : `Trending ${isUp ? 'up' : 'down'} by ${Math.ceil(Math.abs(scoreChange))} pts ${timeText}`} {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+        <div className="flex items-center justify-center gap-2 font-medium leading-none text-center">
+          {scoreChange === 0 
+            ? `${t("Score is stable")} ${timeText}` 
+            : `${t("Trending")} ${isUp ? t('up') : t('down')} ${t("by")} ${Math.ceil(Math.abs(scoreChange))} ${t("pts")} ${timeText}`} 
+            {isUp ? <TrendingUp className="h-4 w-4 shrink-0" /> : <TrendingDown className="h-4 w-4 shrink-0" />}
         </div>
         <div className="leading-none text-muted-foreground text-center">
-          Showing current privacy score
+          {t("Showing current privacy score")}
         </div>
       </CardFooter>
     </Card>

@@ -6,6 +6,7 @@ import { AuthProvider } from '@/components/traceguard/auth-provider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { useSettings } from '@/lib/useStorage'
 import '@/styles/globals.css'
+import '@/lib/i18n'
 
 console.log('Mounting Sidepanel...');
 

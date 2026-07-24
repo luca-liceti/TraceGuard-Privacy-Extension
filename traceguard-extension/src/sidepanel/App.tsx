@@ -41,6 +41,8 @@ import { useAppState, useSettings } from "@/lib/useStorage"
 import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+import { Toaster } from "@/components/ui/sonner"
 import { storage } from "@/lib/storage"
 import { SiteRiskData, CrossSiteExposure } from "@/lib/types"
 import {
@@ -73,12 +75,12 @@ function getWSSBgColor(wss: number): string {
     return "bg-red-500";
 }
 
-function getWSSLabel(wss: number): string {
-    if (wss >= 80) return "Safe";
-    if (wss >= 60) return "Low Risk";
-    if (wss >= 40) return "Medium";
-    if (wss >= 20) return "High Risk";
-    return "Critical";
+function getWSSLabel(wss: number, t: any): string {
+    if (wss >= 80) return t("Safe");
+    if (wss >= 60) return t("Low Risk");
+    if (wss >= 40) return t("Medium");
+    if (wss >= 20) return t("High Risk");
+    return t("Critical");
 }
 
 function getWSSIcon(wss: number) {
@@ -94,44 +96,43 @@ function getUPSColor(ups: number): string {
     return "text-red-500";
 }
 
-// Detector info for display
-const detectorInfo: Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> = {
+const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> => ({
     reputation: {
         icon: Shield,
-        label: "Reputation",
-        description: "Domain trustworthiness",
+        label: t("Reputation"),
+        description: t("Domain trustworthiness"),
         weight: "30%"
     },
     tracking: {
         icon: Activity,
-        label: "Tracking",
-        description: "Third-party trackers",
+        label: t("Tracking"),
+        description: t("Third-party trackers"),
         weight: "30%"
     },
     cookies: {
         icon: Cookie,
-        label: "Cookies",
-        description: "Tracking cookies",
+        label: t("Cookies"),
+        description: t("Tracking cookies"),
         weight: "20%"
     },
     input: {
         icon: Key,
-        label: "Input Fields",
-        description: "Sensitive form fields",
+        label: t("Input Fields"),
+        description: t("Sensitive form fields"),
         weight: "15%"
     },
     policy: {
         icon: FileText,
-        label: "Privacy Policy",
-        description: "ToS;DR rating",
+        label: t("Privacy Policy"),
+        description: t("ToS;DR rating"),
         weight: "5%"
     }
-};
+});
  
  /**
   * Small helper component for the header lock status
   */
- function HeaderAuthStatus() {
+ function HeaderAuthStatus({ t }: { t: any }) {
      const { authState, lock } = useAuth();
  
      if (authState === "unlocked") {
@@ -141,7 +142,7 @@ const detectorInfo: Record<string, { icon: React.ComponentType<any>; label: stri
                  size="icon" 
                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                  onClick={() => lock()}
-                 title="Lock Vault"
+                 title={t("Lock Vault")}
              >
                  <Lock className="h-4 w-4" />
              </Button>
@@ -149,7 +150,7 @@ const detectorInfo: Record<string, { icon: React.ComponentType<any>; label: stri
      }
  
      return (
-         <div className="flex items-center justify-center h-8 w-8 text-destructive animate-pulse" title="Vault Locked">
+         <div className="flex items-center justify-center h-8 w-8 text-destructive animate-pulse" title={t("Vault Locked")}>
              <ShieldAlert className="h-4 w-4" />
          </div>
      );
@@ -157,6 +158,7 @@ const detectorInfo: Record<string, { icon: React.ComponentType<any>; label: stri
  
 
 function App() {
+    const { t } = useTranslation();
     const state = useAppState();
     const settings = useSettings();
     const [crossSiteExposure, setCrossSiteExposure] = useState<CrossSiteExposure>({});
@@ -265,7 +267,7 @@ function App() {
     }, []);
 
     if (!state) {
-        return <div className="p-4 text-foreground bg-background">Loading TraceGuard...</div>;
+        return <div className="p-4 text-foreground bg-background">{t("Loading TraceGuard...")}</div>;
     }
 
     const currentSiteWSS = state.currentSite?.wss ?? null;
@@ -278,6 +280,7 @@ function App() {
 
     return (
         <div className="min-h-screen bg-background text-foreground p-4 flex flex-col">
+                <Toaster />
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -285,15 +288,15 @@ function App() {
                         <h1 className="text-lg font-bold">TraceGuard</h1>
                     </div>
                     
-                    <HeaderAuthStatus />
+                    <HeaderAuthStatus t={t} />
                 </div>
 
                 <div className="space-y-3 flex-1 overflow-y-auto">
                     {/* User Privacy Score */}
                     <div className="p-3 rounded-lg border bg-card shadow-sm">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-muted-foreground">Privacy Score</span>
-                            <span className="text-sm text-muted-foreground">{state.sitesAnalyzed} sites</span>
+                            <span className="text-sm font-medium text-muted-foreground">{t("Privacy Score")}</span>
+                            <span className="text-sm text-muted-foreground">{state.sitesAnalyzed} {t("sites")}</span>
                         </div>
                         <div className={`text-3xl font-bold ${getUPSColor(state.ups)} mt-1`}>
                             {state.ups}
@@ -307,9 +310,9 @@ function App() {
                             {/* Header */}
                             <div className="p-3 border-b">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-muted-foreground">Website Safety</span>
+                                    <span className="text-sm font-medium text-muted-foreground">{t("Website Safety")}</span>
                                     <span className={`text-xs px-2 py-0.5 rounded-full ${getWSSBgColor(currentSiteWSS)} text-white`}>
-                                        {getWSSLabel(currentSiteWSS)}
+                                        {getWSSLabel(currentSiteWSS, t)}
                                     </span>
                                 </div>
                                 <div className={`text-3xl font-bold ${getWSSColor(currentSiteWSS)} flex items-center gap-2 mt-1`}>
@@ -320,14 +323,12 @@ function App() {
                                     {state.currentSite.domain}
                                 </p>
                             </div>
-
                             {/* Collapsible Detector Breakdown */}
                             <Accordion type="multiple" className="w-full">
                                 {Object.entries(state.currentSite.breakdown).map(([key, score]) => {
-                                    const info = detectorInfo[key];
+                                    const info = getDetectorInfo(t)[key];
                                     if (!info) return null;
                                     const Icon = info.icon;
-
                                     return (
                                         <AccordionItem key={key} value={key} className="border-b last:border-b-0">
                                             <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/50">
@@ -348,34 +349,32 @@ function App() {
                                                     <div className="flex items-center gap-2">
                                                         <Progress value={score} className="h-1.5 flex-1" />
                                                     </div>
-
                                                     {/* Detector-specific details */}
                                                     <div className="text-muted-foreground bg-muted/30 rounded-sm px-2 py-1.5 space-y-1">
-
                                                         {key === 'reputation' && (
                                                             <>
                                                                 <div className="flex justify-between">
-                                                                    <span>Status</span>
-                                                                    <span className="font-medium">{score === 100 ? 'Clean' : score === 0 ? 'Blacklisted' : 'Suspicious'}</span>
+                                                                    <span>{t("Status")}</span>
+                                                                    <span className="font-medium">{score === 100 ? t("Clean") : score === 0 ? t("Blacklisted") : t("Suspicious")}</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span>Checked</span>
-                                                                    <span className="font-medium">Blacklist + URLhaus</span>
+                                                                    <span>{t("Checked")}</span>
+                                                                    <span className="font-medium">{t("Blacklist + URLhaus")}</span>
                                                                 </div>
                                                             </>
                                                         )}
                                                         {key === 'tracking' && (
                                                             <>
                                                                 <div className="flex justify-between">
-                                                                    <span>Trackers found</span>
+                                                                    <span>{t("Trackers found")}</span>
                                                                     <span className="font-medium">{state.currentSite?.detectionDetails?.tracking?.count ?? 0}</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span>Known trackers</span>
+                                                                    <span>{t("Known trackers")}</span>
                                                                     <span className="font-medium">{state.currentSite?.detectionDetails?.tracking?.known ?? 0}</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span>Suspicious</span>
+                                                                    <span>{t("Suspicious")}</span>
                                                                     <span className="font-medium">{state.currentSite?.detectionDetails?.tracking?.suspicious ?? 0}</span>
                                                                 </div>
                                                             </>
@@ -383,15 +382,15 @@ function App() {
                                                         {key === 'cookies' && (
                                                             <>
                                                                 <div className="flex justify-between">
-                                                                    <span>Total cookies</span>
+                                                                    <span>{t("Total cookies")}</span>
                                                                     <span className="font-medium">{state.currentSite?.detectionDetails?.cookies?.total ?? 0}</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span>Tracking</span>
+                                                                    <span>{t("Tracking")}</span>
                                                                     <span className="font-medium">{state.currentSite?.detectionDetails?.cookies?.tracking ?? 0}</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span>Third-party</span>
+                                                                    <span>{t("Third-party")}</span>
                                                                     <span className="font-medium">{state.currentSite?.detectionDetails?.cookies?.thirdParty ?? 0}</span>
                                                                 </div>
                                                             </>
@@ -399,16 +398,16 @@ function App() {
                                                         {key === 'input' && (
                                                             <>
                                                                 <div className="flex justify-between">
-                                                                    <span>Input fields</span>
+                                                                    <span>{t("Input fields")}</span>
                                                                     <span className="font-medium">{state.currentSite?.detectionDetails?.input?.total ?? 0}</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span>Sensitive (HIGH)</span>
+                                                                    <span>{t("Sensitive (HIGH)")}</span>
                                                                     <span className="font-medium">{state.currentSite?.detectionDetails?.input?.sensitive ?? 0}</span>
                                                                 </div>
                                                                 {state.currentSite?.detectionDetails?.input?.types && state.currentSite.detectionDetails.input.types.length > 0 && (
                                                                     <div className="flex justify-between">
-                                                                        <span>Types</span>
+                                                                        <span>{t("Types")}</span>
                                                                         <span className="font-medium text-xs">{state.currentSite.detectionDetails.input.types.join(', ')}</span>
                                                                     </div>
                                                                 )}
@@ -417,15 +416,15 @@ function App() {
                                                         {key === 'policy' && (
                                                             <>
                                                                 <div className="flex justify-between">
-                                                                    <span>ToS;DR Grade</span>
+                                                                    <span>{t("ToS;DR Grade")}</span>
                                                                     <span className="font-medium">
-                                                                        {state.currentSite?.detectionDetails?.policy?.grade || 'Not rated'}
+                                                                        {state.currentSite?.detectionDetails?.policy?.grade || t("Not rated")}
                                                                     </span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span>Source</span>
+                                                                    <span>{t("Source")}</span>
                                                                     <span className="font-medium capitalize">
-                                                                        {state.currentSite?.detectionDetails?.policy?.source === 'tosdr' ? 'ToS;DR API' : 'Local detection'}
+                                                                        {state.currentSite?.detectionDetails?.policy?.source === 'tosdr' ? t("ToS;DR API") : t("Local detection")}
                                                                     </span>
                                                                 </div>
                                                             </>
@@ -442,10 +441,10 @@ function App() {
                         <div className="p-3 rounded-lg border bg-card shadow-sm">
                             <div className="flex items-center gap-2">
                                 <Globe className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">Website Safety</span>
+                                <span className="text-sm font-medium">{t("Website Safety")}</span>
                             </div>
                             <p className="text-sm text-muted-foreground mt-2">
-                                Navigate to a website to see its safety score
+                                {t("Navigate to a website to see its safety score")}
                             </p>
                         </div>
                     )}
@@ -454,41 +453,39 @@ function App() {
                     {exposureCount > 0 && (
                         <div className="p-3 rounded-lg border bg-card shadow-sm">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Data Exposure</span>
-                                <span className="text-xs text-muted-foreground">{exposureCount} PII types</span>
+                                <span className="text-sm font-medium">{t("Data Exposure")}</span>
+                                <span className="text-xs text-muted-foreground">{exposureCount} {t("PII types")}</span>
                             </div>
                             <div className="mt-2 space-y-1">
                                 {Object.entries(crossSiteExposure).slice(0, 3).map(([type, sites]) => (
                                     <div key={type} className="flex items-center justify-between text-xs">
-                                        <span className="capitalize text-muted-foreground">{type}</span>
-                                        <span className="font-medium">{sites.length} sites</span>
+                                        <span className="capitalize text-muted-foreground">{t(type)}</span>
+                                        <span className="font-medium">{sites.length} {t("sites")}</span>
                                     </div>
                                 ))}
                                 {exposureCount > 3 && (
                                     <div className="text-xs text-muted-foreground text-center pt-1">
-                                        +{exposureCount - 3} more...
+                                        +{exposureCount - 3} {t("more...")}
                                     </div>
                                 )}
                             </div>
                         </div>
                     )}
-
                     {/* Safe Streak */}
                     <div className="p-3 rounded-lg border bg-card shadow-sm">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">Safe Streak</span>
+                            <span className="text-sm font-medium">{t("Safe Streak")}</span>
                             <Flame className="h-4 w-4 text-orange-500" />
                         </div>
                         <div className="text-2xl font-bold mt-1">{state.safeVisitStreak}</div>
-                        <p className="text-xs text-muted-foreground">Consecutive safe sites</p>
+                        <p className="text-xs text-muted-foreground">{t("Consecutive safe sites")}</p>
                     </div>
                 </div>
-
                 {/* Dashboard Button */}
                 <div className="mt-4 pt-3 border-t">
                     <Button onClick={openDashboard} className="w-full" variant="outline" size="sm">
                         <LayoutDashboard className="h-4 w-4" />
-                        Open Dashboard
+                        {t("Open Dashboard")}
                     </Button>
                 </div>
             </div>

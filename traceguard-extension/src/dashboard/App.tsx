@@ -1,7 +1,7 @@
 import React from 'react'
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider, useTheme } from "@/components/theme-provider"
-import { Toaster } from 'sonner'
+import { Toaster } from "@/components/ui/sonner"
 import Layout from "@/components/traceguard/layout"
 import { useSettings } from "@/lib/useStorage"
 import { AuthProvider } from "@/components/traceguard/auth-provider"
@@ -27,25 +27,7 @@ function AppContent() {
 
     return (
         <>
-            <Toaster
-                theme={theme as "light" | "dark" | "system"}
-                position="top-right"
-                expand={false}
-                richColors
-                closeButton
-                duration={4000}
-                dir="ltr"
-                toastOptions={{
-                    unstyled: false,
-                    classNames: {
-                        toast: 'group toast',
-                        closeButton: '!right-3 !left-auto !top-3 !absolute',
-                    },
-                    style: {
-                        animation: 'slideInFromRight 0.3s ease-out',
-                    },
-                }}
-            />
+            <Toaster />
             <Router>
                 <Routes>
                     {/* Default route - redirect to Overview */}

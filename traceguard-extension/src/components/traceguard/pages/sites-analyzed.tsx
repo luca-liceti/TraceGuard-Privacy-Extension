@@ -42,6 +42,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { Globe, Calendar, TrendingUp, Search, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -56,6 +57,7 @@ import { StatCard } from "@/components/ui/stat-card"
 // Local StatCard removed in favor of global @/components/ui/stat-card.tsx
 
 export default function SitesAnalyzedPage() {
+    const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = useState("")
     const { sites } = useSiteCache()
 
@@ -112,43 +114,43 @@ export default function SitesAnalyzedPage() {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-foreground">
-                    Sites Analyzed
+                    {t("Sites Analyzed")}
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                    Complete history of all websites analyzed by TraceGuard
+                    {t("Complete history of all websites analyzed by TraceGuard")}
                 </p>
             </div>
 
             {/* Statistics */}
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 <StatCard
-                    title="Total Sites"
+                    title={t("Total Sites")}
                     value={sites.length}
-                    subtitle="Unique domains"
+                    subtitle={t("Unique domains")}
                     icon={Globe}
                     iconColor="text-primary"
                     valueColor="text-foreground"
                 />
                 <StatCard
-                    title="Today"
+                    title={t("Today")}
                     value={todayCount}
-                    subtitle="Sites visited"
+                    subtitle={t("Sites visited")}
                     icon={Calendar}
                     iconColor="text-primary"
                     valueColor="text-primary"
                 />
                 <StatCard
-                    title="Total Visits"
+                    title={t("Total Visits")}
                     value={totalVisits}
-                    subtitle="Across all sites"
+                    subtitle={t("Across all sites")}
                     icon={TrendingUp}
                     iconColor="text-primary"
                     valueColor="text-foreground"
                 />
                 <StatCard
-                    title="Avg Visits"
+                    title={t("Avg Visits")}
                     value={avgVisitsPerSite}
-                    subtitle="Per site"
+                    subtitle={t("Per site")}
                     icon={BarChart3}
                     iconColor="text-primary"
                     valueColor="text-foreground"
@@ -162,17 +164,17 @@ export default function SitesAnalyzedPage() {
                     <CardHeader>
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
                             <BarChart3 className="h-4 w-4 text-primary" />
-                            Most Visited Sites
+                            {t("Most Visited Sites")}
                         </CardTitle>
                         <CardDescription>
-                            Top 10 sites by visit count
+                            {t("Top 10 sites by visit count")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="pb-4">
                         <ChartContainer
                             config={{
                                 visits: {
-                                    label: "Visits",
+                                    label: t("Visits"),
                                     color: "hsl(var(--primary))",
                                 },
                             }}
@@ -206,8 +208,8 @@ export default function SitesAnalyzedPage() {
                                         content={<ChartTooltipContent />}
                                         formatter={(value: any, _name: any, props: any) => (
                                             <div className="flex flex-col gap-1 py-1">
-                                                <div className="font-bold text-foreground">{value} visits</div>
-                                                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">WSS Score: {props.payload.wss}</div>
+                                                <div className="font-bold text-foreground">{value} {t("visits")}</div>
+                                                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t("WSS Score:")} {props.payload.wss}</div>
                                             </div>
                                         )}
                                     />
@@ -230,13 +232,13 @@ export default function SitesAnalyzedPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
                             <Globe className="h-4 w-4 text-primary" />
-                            All Sites
+                            {t("All Sites")}
                         </CardTitle>
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
-                                placeholder="Search sites..."
+                                placeholder={t("Search sites...")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -244,7 +246,7 @@ export default function SitesAnalyzedPage() {
                         </div>
                     </div>
                     <CardDescription>
-                        Showing {filteredSites.length} of {sites.length} sites
+                        {t("Showing")} {filteredSites.length} {t("of")} {sites.length} {t("sites")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -268,7 +270,7 @@ export default function SitesAnalyzedPage() {
                                                 </span>
                                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                     <TrendingUp className="h-3 w-3" />
-                                                    {data.visitCount || 1} visits
+                                                    {data.visitCount || 1} {t("visits")}
                                                 </span>
                                             </div>
                                         </div>
@@ -278,7 +280,7 @@ export default function SitesAnalyzedPage() {
                                             {data.wss}
                                         </div>
                                         <div className="text-xs text-muted-foreground">
-                                            WSS
+                                            {t("WSS")}
                                         </div>
                                     </div>
                                 </div>
@@ -287,7 +289,7 @@ export default function SitesAnalyzedPage() {
                     ) : (
                         <div className="text-center py-12 text-muted-foreground">
                             <Globe className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                            {searchQuery ? "No sites match your search" : "No sites analyzed yet"}
+                            {searchQuery ? t("No sites match your search") : t("No sites analyzed yet")}
                         </div>
                     )}
                 </CardContent>

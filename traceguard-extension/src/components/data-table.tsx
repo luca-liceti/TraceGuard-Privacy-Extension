@@ -29,6 +29,7 @@ import {
 import { z } from "zod"
 import { format } from "date-fns"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -74,6 +75,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { SiteDetailsPanel } from "@/components/traceguard/site-details-panel"
+import { SiteRiskData } from "@/lib/types"
 
 export const schema = z.object({
   id: z.string().optional(),
@@ -123,15 +126,15 @@ const getPolicyColor = (grade: string) => {
   }
 }
 
-const columns: ColumnDef<SiteVisit>[] = [
+const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
   {
     accessorKey: "domain",
-    header: "Domain",
+    header: t("Domain"),
     cell: ({ row }) => <div className="font-medium">{row.getValue("domain")}</div>,
   },
   {
     accessorKey: "timestamp",
-    header: "Visit Time",
+    header: t("Visit Time"),
     cell: ({ row }) => {
       return (
         <div className="text-muted-foreground">
@@ -142,7 +145,7 @@ const columns: ColumnDef<SiteVisit>[] = [
   },
   {
     accessorKey: "safetyLevel",
-    header: "Safety Level",
+    header: t("Safety Level"),
     cell: ({ row }) => {
       const level = row.getValue("safetyLevel") as string
       return (
@@ -154,27 +157,27 @@ const columns: ColumnDef<SiteVisit>[] = [
   },
   {
     accessorKey: "trackers",
-    header: "Trackers",
+    header: t("Trackers"),
     cell: ({ row }) => <div>{row.getValue("trackers")}</div>,
   },
   {
     accessorKey: "cookies",
-    header: "Cookies",
+    header: t("Cookies"),
     cell: ({ row }) => <div>{row.getValue("cookies")}</div>,
   },
   {
     accessorKey: "inputs",
-    header: "PII Risk",
+    header: t("PII Risk"),
     cell: ({ row }) => <div>{row.getValue("inputs")}</div>,
   },
   {
     accessorKey: "reputation",
-    header: "Reputation",
+    header: t("Reputation"),
     cell: ({ row }) => <div>{row.getValue("reputation")}</div>,
   },
   {
     accessorKey: "policy",
-    header: "Policy",
+    header: t("Policy"),
     cell: ({ row }) => {
       const grade = row.getValue("policy") as string
       return <div className={`font-semibold ${getPolicyColor(grade)}`}>{grade}</div>
@@ -192,17 +195,17 @@ const columns: ColumnDef<SiteVisit>[] = [
               size="icon"
             >
               <MoreVerticalIcon className="size-4" />
-              <span className="sr-only">Open menu</span>
+              <span className="sr-only">{t("Open menu")}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-32">
             <DropdownMenuItem onClick={() => (table.options.meta as any)?.onViewDetails(row.original)}>
-              View details
+              {t("View details")}
             </DropdownMenuItem>
-            <DropdownMenuItem>Export</DropdownMenuItem>
+            <DropdownMenuItem>{t("Export")}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive focus:text-destructive">
-              Delete log
+              {t("Delete log")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -211,7 +214,9 @@ const columns: ColumnDef<SiteVisit>[] = [
   },
 ]
 
-export function DataTable({ data }: { data: SiteVisit[] }) {
+export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCache?: Record<string, SiteRiskData> }) {
+  const { t } = useTranslation()
+  const columns = React.useMemo(() => getColumns(t), [t])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "timestamp", desc: true }])
   const [pagination, setPagination] = React.useState({
@@ -251,7 +256,7 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
   const handleAddLogSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsAddLogOpen(false)
-    toast.success("Log added successfully")
+    toast.success(t("Log added successfully"))
   }
 
   const handleExport = async () => {
@@ -269,10 +274,10 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
       
-      toast.success("Logs exported successfully")
+      toast.success(t("Logs exported successfully"))
     } catch (e) {
       console.error(e)
-      toast.error("Failed to export logs")
+      toast.error(t("Failed to export logs"))
     }
   }
 
@@ -281,7 +286,7 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
       <div className="flex items-center justify-between">
         <div className="flex flex-1 items-center space-x-2">
           <Input
-            placeholder="Search domain..."
+            placeholder={t("Search domain...")}
             value={(table.getColumn("domain")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
               table.getColumn("domain")?.setFilterValue(event.target.value)
@@ -292,64 +297,64 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
             <DownloadIcon />
-            <span className="hidden lg:inline">Export</span>
+            <span className="hidden lg:inline">{t("Export")}</span>
           </Button>
           <Dialog open={isAddLogOpen} onOpenChange={setIsAddLogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
                 <PlusIcon />
-                <span className="hidden lg:inline">Add Log</span>
+                <span className="hidden lg:inline">{t("Add Log")}</span>
               </Button>
             </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add Manual Log</DialogTitle>
+              <DialogTitle>{t("Add Manual Log")}</DialogTitle>
               <DialogDescription>
-                Manually record a site visit and safety metrics.
+                {t("Manually record a site visit and safety metrics.")}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddLogSubmit} className="flex flex-col gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="domain">Domain</Label>
+                  <Label htmlFor="domain">{t("Domain")}</Label>
                   <Input id="domain" placeholder="example.com" required />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="wss">Safety Score</Label>
+                  <Label htmlFor="wss">{t("Safety Score")}</Label>
                   <Input id="wss" type="number" placeholder="85" min="0" max="100" required />
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="trackers">Trackers Blocked</Label>
+                  <Label htmlFor="trackers">{t("Trackers Blocked")}</Label>
                   <Input id="trackers" type="number" placeholder="0" min="0" required />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="cookies">Cookies Detected</Label>
+                  <Label htmlFor="cookies">{t("Cookies Detected")}</Label>
                   <Input id="cookies" type="number" placeholder="0" min="0" required />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="reputation">Reputation</Label>
+                  <Label htmlFor="reputation">{t("Reputation")}</Label>
                   <Select required defaultValue="Clean">
                     <SelectTrigger id="reputation">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder={t("Select")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Clean">Clean</SelectItem>
-                      <SelectItem value="Suspicious">Suspicious</SelectItem>
-                      <SelectItem value="Blacklisted">Blacklisted</SelectItem>
+                      <SelectItem value="Clean">{t("Clean")}</SelectItem>
+                      <SelectItem value="Suspicious">{t("Suspicious")}</SelectItem>
+                      <SelectItem value="Blacklisted">{t("Blacklisted")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="policy">Policy Grade</Label>
+                  <Label htmlFor="policy">{t("Policy Grade")}</Label>
                   <Select required defaultValue="N/A">
                     <SelectTrigger id="policy">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder={t("Select")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="A">A</SelectItem>
@@ -364,20 +369,20 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="inputs">Sensitive Inputs (PII Risk)</Label>
+                <Label htmlFor="inputs">{t("Sensitive Inputs (PII Risk)")}</Label>
                 <Select required defaultValue="No">
                   <SelectTrigger id="inputs">
-                    <SelectValue placeholder="Select" />
+                    <SelectValue placeholder={t("Select")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Yes">Yes (Risk Detected)</SelectItem>
-                    <SelectItem value="No">No (Safe)</SelectItem>
+                    <SelectItem value="Yes">{t("Yes (Risk Detected)")}</SelectItem>
+                    <SelectItem value="No">{t("No (Safe)")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <DialogFooter className="sm:justify-start pt-2">
-                <Button type="submit" className="w-full">Save log</Button>
+                <Button type="submit" className="w-full">{t("Save log")}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -425,7 +430,7 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No logs found.
+                  {t("No logs found.")}
                 </TableCell>
               </TableRow>
             )}
@@ -436,12 +441,12 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
-          Showing {table.getRowModel().rows.length} of {table.getFilteredRowModel().rows.length} logs
+          {t("Showing {{length}} of {{total}} logs", { length: table.getRowModel().rows.length, total: table.getFilteredRowModel().rows.length })}
         </div>
         <div className="flex w-full items-center gap-8 lg:w-fit">
           <div className="hidden items-center gap-2 lg:flex">
             <Label htmlFor="rows-per-page" className="text-sm font-medium">
-              Rows per page
+              {t("Rows per page")}
             </Label>
             <Select
               value={`${table.getState().pagination.pageSize}`}
@@ -462,8 +467,7 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
             </Select>
           </div>
           <div className="flex w-fit items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount() || 1}
+            {t("Page {{index}} of {{count}}", { index: table.getState().pagination.pageIndex + 1, count: table.getPageCount() || 1 })}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -472,7 +476,7 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className="sr-only">Go to first page</span>
+              <span className="sr-only">{t("Go to first page")}</span>
               <ChevronsLeftIcon className="size-4" />
             </Button>
             <Button
@@ -481,7 +485,7 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className="sr-only">Go to previous page</span>
+              <span className="sr-only">{t("Go to previous page")}</span>
               <ChevronLeftIcon className="size-4" />
             </Button>
             <Button
@@ -490,7 +494,7 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              <span className="sr-only">Go to next page</span>
+              <span className="sr-only">{t("Go to next page")}</span>
               <ChevronRightIcon className="size-4" />
             </Button>
             <Button
@@ -499,112 +503,23 @@ export function DataTable({ data }: { data: SiteVisit[] }) {
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
-              <span className="sr-only">Go to last page</span>
+              <span className="sr-only">{t("Go to last page")}</span>
               <ChevronsRightIcon className="size-4" />
             </Button>
           </div>
         </div>
       </div>
 
-      <Sheet open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader className="mb-6">
-            <SheetTitle className="text-xl">{selectedVisit?.domain}</SheetTitle>
-            <SheetDescription>
-              {selectedVisit && format(new Date(selectedVisit.timestamp), "MMM d, yyyy HH:mm:ss")}
-            </SheetDescription>
-          </SheetHeader>
-
-          {selectedVisit?.details && (
-            <div className="flex flex-col gap-6">
-              {/* Overall Score */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Overall Safety Score</h3>
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl font-bold">{selectedVisit.wss}</span>
-                  <Badge variant="outline" className={getSafetyColor(selectedVisit.safetyLevel)}>
-                    {selectedVisit.safetyLevel}
-                  </Badge>
-                </div>
-              </div>
-
-              <hr />
-
-              {/* Cookies Section */}
-              {selectedVisit.details.cookies && (
-                <div>
-                  <h3 className="font-semibold text-lg mb-3">Cookies Detected</h3>
-                  
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <h4 className="text-sm font-semibold flex items-center gap-2 mb-1">
-                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        Cross-Site Trackers
-                      </h4>
-                      <p className="text-sm text-muted-foreground mb-2">Highest penalty impact. These follow you across multiple websites.</p>
-                      <div className="text-sm">Found: {selectedVisit.details.cookies.details?.['cross-site-tracker'] || 0}</div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-semibold flex items-center gap-2 mb-1">
-                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                        Analytics & Third-Party Cookies
-                      </h4>
-                      <p className="text-sm text-muted-foreground mb-2">Moderate penalty impact. Standard HTTP tracking cookies.</p>
-                      <div className="text-sm">Found: {(selectedVisit.details.cookies.details?.analytics || 0) + (selectedVisit.details.cookies.details?.['third-party'] || 0)}</div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-semibold flex items-center gap-2 mb-1">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        First-Party Cookies
-                      </h4>
-                      <p className="text-sm text-muted-foreground mb-2">No penalty impact. Essential for modern web functionality.</p>
-                      <div className="text-sm">Found: {selectedVisit.details.cookies.details?.['first-party'] || 0}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <hr />
-
-              {/* Trackers Section */}
-              {selectedVisit.details.tracking && (
-                <div>
-                  <h3 className="font-semibold text-lg mb-3">Third-Party Trackers</h3>
-                  <div className="text-sm mb-2">Total Detected: <span className="font-medium">{selectedVisit.details.tracking.details?.count || 0}</span></div>
-                  {selectedVisit.details.tracking.details?.knownTrackers?.length > 0 && (
-                    <div className="mt-2">
-                      <div className="text-sm font-medium mb-1">Known Trackers:</div>
-                      <div className="text-sm text-muted-foreground break-all">
-                        {selectedVisit.details.tracking.details.knownTrackers.join(', ')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <hr />
-
-              {/* PII Risk Section */}
-              {selectedVisit.details.inputs && (
-                <div>
-                  <h3 className="font-semibold text-lg mb-3">Sensitive Input Fields</h3>
-                  <div className="text-sm mb-2">Total Detected: <span className="font-medium">{selectedVisit.details.inputs.details?.sensitive || 0}</span></div>
-                  {selectedVisit.details.inputs.details?.types?.length > 0 && (
-                    <div className="mt-2">
-                      <div className="text-sm font-medium mb-1">Field Types:</div>
-                      <div className="text-sm text-muted-foreground">
-                        {selectedVisit.details.inputs.details.types.join(', ')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      <SiteDetailsPanel
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+        domain={selectedVisit?.domain ?? ""}
+        timestamp={selectedVisit?.timestamp ?? 0}
+        wss={selectedVisit?.wss ?? 0}
+        safetyLevel={selectedVisit?.safetyLevel ?? ""}
+        siteData={selectedVisit ? (siteCache[selectedVisit.domain] ?? null) : null}
+        legacyDetails={selectedVisit?.details}
+      />
     </div>
   )
 }

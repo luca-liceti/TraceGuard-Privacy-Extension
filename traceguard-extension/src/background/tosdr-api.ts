@@ -44,6 +44,7 @@ interface TosDRResult {
     score: number; // 0-100 (0 = dangerous/no rating, 100 = safe/A-grade)
     source: 'tosdr' | 'fallback';
     serviceName?: string;
+    points?: { title: string; classification: string }[];
 }
 
 // Cache for ToS;DR results now uses chrome.storage.session
@@ -176,8 +177,25 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
             grade: grade,
             score: score,
             source: 'tosdr',
-            serviceName: service.name
+            serviceName: service.name,
+            points: []
         };
+
+        // Fetch detailed points for the service using v2 API
+        try {
+            const detailsUrl = `https://api.tosdr.org/service/v2/?id=${service.id}`;
+            const detailsResponse = await fetch(detailsUrl);
+            if (detailsResponse.ok) {
+                const detailsData = await detailsResponse.json();
+                const points = detailsData.parameters?.points || [];
+                result.points = points.map((p: any) => ({
+                    title: p.title,
+                    classification: p.case?.classification || 'neutral'
+                }));
+            }
+        } catch (e) {
+            console.warn('[ToS;DR] Failed to fetch points:', e);
+        }
 
         // Cache the result
         cache[domain] = { result, timestamp: Date.now() };

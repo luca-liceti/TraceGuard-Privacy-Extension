@@ -44,6 +44,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useSettings } from "@/lib/useStorage"
 import { Shield, Ban, Plus, Trash2, Info, CheckCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -85,6 +86,7 @@ function StatCard({
 }
 
 export default function WhitelistBlacklistPage() {
+    const { t } = useTranslation()
     const settings = useSettings()
     const [whitelistInput, setWhitelistInput] = useState("")
     const [blacklistInput, setBlacklistInput] = useState("")
@@ -112,21 +114,21 @@ export default function WhitelistBlacklistPage() {
         domain = domain.split('/')[0]
 
         if (!domain) {
-            return { valid: false, error: "Please enter a domain", cleanDomain: "" }
+            return { valid: false, error: t("Please enter a domain"), cleanDomain: "" }
         }
 
         if (domain.includes(' ')) {
-            return { valid: false, error: "Domain cannot contain spaces", cleanDomain: "" }
+            return { valid: false, error: t("Domain cannot contain spaces"), cleanDomain: "" }
         }
 
         if (!domain.includes('.')) {
-            return { valid: false, error: "Please enter a valid domain (e.g., example.com)", cleanDomain: "" }
+            return { valid: false, error: t("Please enter a valid domain (e.g., example.com)"), cleanDomain: "" }
         }
 
         // Basic domain character validation (letters, numbers, dots, hyphens)
         const domainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
         if (!domainRegex.test(domain)) {
-            return { valid: false, error: "Invalid domain format", cleanDomain: "" }
+            return { valid: false, error: t("Invalid domain format"), cleanDomain: "" }
         }
 
         return { valid: true, error: "", cleanDomain: domain }
@@ -138,7 +140,7 @@ export default function WhitelistBlacklistPage() {
         const validation = validateDomain(whitelistInput)
         if (!validation.valid) {
             setWhitelistError(validation.error)
-            toast.error("Invalid domain", {
+            toast.error(t("Invalid domain"), {
                 description: validation.error
             })
             return
@@ -146,8 +148,8 @@ export default function WhitelistBlacklistPage() {
 
         const domain = validation.cleanDomain
         if (whitelist.includes(domain)) {
-            toast.error("Already whitelisted", {
-                description: `${domain} is already in your whitelist.`
+            toast.error(t("Already whitelisted"), {
+                description: `${domain} ${t("is already in your whitelist.")}`
             })
             return
         }
@@ -165,8 +167,8 @@ export default function WhitelistBlacklistPage() {
         await chrome.storage.local.set({ settings: updatedSettings })
         setWhitelistInput("")
         setWhitelistError("")
-        toast.success("Added to whitelist", {
-            description: `${domain} is now trusted.`
+        toast.success(t("Added to whitelist"), {
+            description: `${domain} ${t("is now trusted.")}`
         })
     }
 
@@ -177,8 +179,8 @@ export default function WhitelistBlacklistPage() {
             whitelist: updatedWhitelist
         }
         await chrome.storage.local.set({ settings: updatedSettings })
-        toast.info("Removed from whitelist", {
-            description: `${domain} is no longer trusted.`
+        toast.info(t("Removed from whitelist"), {
+            description: `${domain} ${t("is no longer trusted.")}`
         })
     }
 
@@ -188,7 +190,7 @@ export default function WhitelistBlacklistPage() {
         const validation = validateDomain(blacklistInput)
         if (!validation.valid) {
             setBlacklistError(validation.error)
-            toast.error("Invalid domain", {
+            toast.error(t("Invalid domain"), {
                 description: validation.error
             })
             return
@@ -196,8 +198,8 @@ export default function WhitelistBlacklistPage() {
 
         const domain = validation.cleanDomain
         if (blacklist.includes(domain)) {
-            toast.error("Already blacklisted", {
-                description: `${domain} is already in your blacklist.`
+            toast.error(t("Already blacklisted"), {
+                description: `${domain} ${t("is already in your blacklist.")}`
             })
             return
         }
@@ -215,8 +217,8 @@ export default function WhitelistBlacklistPage() {
         await chrome.storage.local.set({ settings: updatedSettings })
         setBlacklistInput("")
         setBlacklistError("")
-        toast.success("Added to blacklist", {
-            description: `${domain} is now blocked.`
+        toast.success(t("Added to blacklist"), {
+            description: `${domain} ${t("is now blocked.")}`
         })
     }
 
@@ -227,8 +229,8 @@ export default function WhitelistBlacklistPage() {
             blacklist: updatedBlacklist
         }
         await chrome.storage.local.set({ settings: updatedSettings })
-        toast.info("Removed from blacklist", {
-            description: `${domain} is no longer blocked.`
+        toast.info(t("Removed from blacklist"), {
+            description: `${domain} ${t("is no longer blocked.")}`
         })
     }
 
@@ -237,23 +239,23 @@ export default function WhitelistBlacklistPage() {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-foreground">
-                    Domain Lists
+                    {t("Domain Lists")}
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                    Manage trusted and blocked domains
+                    {t("Manage trusted and blocked domains")}
                 </p>
             </div>
 
             {/* Statistics */}
             <div className="grid gap-4 grid-cols-2">
                 <StatCard
-                    title="Trusted"
+                    title={t("Trusted")}
                     value={whitelist.length}
                     icon={Shield}
                     iconColor="text-green-500"
                 />
                 <StatCard
-                    title="Blocked"
+                    title={t("Blocked")}
                     value={blacklist.length}
                     icon={Ban}
                     iconColor="text-red-500"
@@ -267,10 +269,10 @@ export default function WhitelistBlacklistPage() {
                         <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-muted-foreground space-y-1">
                             <p>
-                                <strong className="text-foreground">Whitelist:</strong> Trusted domains always receive a safety score of 100 (fully trusted).
+                                <strong className="text-foreground">{t("Whitelist:")}</strong> {t("Trusted domains always receive a safety score of 100 (fully trusted).")}
                             </p>
                             <p>
-                                <strong className="text-foreground">Blacklist:</strong> Blocked domains always receive a safety score of 0 (critical risk).
+                                <strong className="text-foreground">{t("Blacklist:")}</strong> {t("Blocked domains always receive a safety score of 0 (critical risk).")}
                             </p>
                         </div>
                     </div>
@@ -282,10 +284,10 @@ export default function WhitelistBlacklistPage() {
                 <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                         <Shield className="h-4 w-4 text-green-500" />
-                        Whitelist
+                        {t("Whitelist")}
                     </CardTitle>
                     <CardDescription>
-                        Domains you trust completely
+                        {t("Domains you trust completely")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -309,7 +311,7 @@ export default function WhitelistBlacklistPage() {
                                 className="flex items-center gap-2"
                             >
                                 <Plus className="h-4 w-4" />
-                                Add
+                                {t("Add")}
                             </Button>
                         </div>
                         {whitelistError && (
@@ -331,7 +333,7 @@ export default function WhitelistBlacklistPage() {
                                             {domain}
                                         </span>
                                         <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 border-0 text-xs">
-                                            Trusted
+                                            {t("Trusted")}
                                         </Badge>
                                     </div>
                                     <Button
@@ -348,7 +350,7 @@ export default function WhitelistBlacklistPage() {
                     ) : (
                         <div className="text-center py-6 text-muted-foreground">
                             <Shield className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                            <p className="text-sm">No trusted domains yet</p>
+                            <p className="text-sm">{t("No trusted domains yet")}</p>
                         </div>
                     )}
                 </CardContent>
@@ -359,10 +361,10 @@ export default function WhitelistBlacklistPage() {
                 <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                         <Ban className="h-4 w-4 text-red-500" />
-                        Blacklist
+                        {t("Blacklist")}
                     </CardTitle>
                     <CardDescription>
-                        Domains you want to avoid
+                        {t("Domains you want to avoid")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -387,7 +389,7 @@ export default function WhitelistBlacklistPage() {
                                 className="flex items-center gap-2"
                             >
                                 <Plus className="h-4 w-4" />
-                                Add
+                                {t("Add")}
                             </Button>
                         </div>
                         {blacklistError && (
@@ -409,7 +411,7 @@ export default function WhitelistBlacklistPage() {
                                             {domain}
                                         </span>
                                         <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-xs">
-                                            Blocked
+                                            {t("Blocked")}
                                         </Badge>
                                     </div>
                                     <Button
@@ -426,7 +428,7 @@ export default function WhitelistBlacklistPage() {
                     ) : (
                         <div className="text-center py-6 text-muted-foreground">
                             <Ban className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                            <p className="text-sm">No blocked domains yet</p>
+                            <p className="text-sm">{t("No blocked domains yet")}</p>
                         </div>
                     )}
                 </CardContent>

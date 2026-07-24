@@ -39,6 +39,7 @@
 "use client"
 
 import React from "react"
+import { useTranslation } from "react-i18next"
 import {
     Link as LinkIcon,
     Key,
@@ -91,36 +92,38 @@ const integrations: IntegrationItem[] = [
 ]
 
 function StatusBadge({ status }: { status: IntegrationItem['status'] }) {
+    const { t } = useTranslation()
     switch (status) {
         case 'available':
             return (
                 <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 border-0">
-                    Available
+                    {t("Available")}
                 </Badge>
             )
         case 'coming-soon':
             return (
                 <Badge className="bg-blue-500/20 text-blue-600 dark:text-blue-400 border-0">
-                    Coming Soon
+                    {t("Coming Soon")}
                 </Badge>
             )
         case 'planned':
             return (
                 <Badge className="bg-muted text-muted-foreground border-0">
-                    Planned
+                    {t("Planned")}
                 </Badge>
             )
     }
 }
 
 export default function IntegrationsPage() {
+    const { t } = useTranslation()
     return (
         <div className="space-y-6 w-full">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-foreground">Integrations</h1>
+                <h1 className="text-3xl font-bold text-foreground">{t("Integrations")}</h1>
                 <p className="text-muted-foreground mt-2">
-                    Connect TraceGuard with your favorite privacy tools
+                    {t("Connect TraceGuard with your favorite privacy tools")}
                 </p>
             </div>
 
@@ -132,11 +135,10 @@ export default function IntegrationsPage() {
                             <Sparkles className="h-8 w-8 text-primary" />
                         </div>
                         <h2 className="text-2xl font-bold text-foreground mb-2">
-                            Integrations Coming Soon
+                            {t("Integrations Coming Soon")}
                         </h2>
                         <p className="text-muted-foreground max-w-md mx-auto">
-                            We're working on exciting integrations to enhance your privacy protection.
-                            Check back soon for updates!
+                            {t("We're working on exciting integrations to enhance your privacy protection. Check back soon for updates!")}
                         </p>
                     </div>
                 </CardContent>
@@ -147,10 +149,10 @@ export default function IntegrationsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                         <LinkIcon className="h-5 w-5" />
-                        Planned Integrations
+                        {t("Planned Integrations")}
                     </CardTitle>
                     <CardDescription>
-                        Here's what we're working on for future releases
+                        {t("Here's what we're working on for future releases")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -165,7 +167,7 @@ export default function IntegrationsPage() {
                                             </div>
                                             <div>
                                                 <CardTitle className="text-base">
-                                                    {integration.name}
+                                                    {t(integration.name)}
                                                 </CardTitle>
                                             </div>
                                         </div>
@@ -174,7 +176,7 @@ export default function IntegrationsPage() {
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <p className="text-sm text-muted-foreground mb-3">
-                                        {integration.description}
+                                        {t(integration.description)}
                                     </p>
                                     <div className="flex flex-wrap gap-1">
                                         {integration.examples.map((example) => (
@@ -203,11 +205,10 @@ export default function IntegrationsPage() {
                         </div>
                         <div>
                             <h3 className="font-semibold text-foreground">
-                                Have an integration idea?
+                                {t("Have an integration idea?")}
                             </h3>
                             <p className="text-sm text-muted-foreground mt-1">
-                                We'd love to hear your suggestions for new integrations.
-                                Let us know which privacy tools you'd like to see connected to TraceGuard.
+                                {t("We'd love to hear your suggestions for new integrations. Let us know which privacy tools you'd like to see connected to TraceGuard.")}
                             </p>
                         </div>
                     </div>

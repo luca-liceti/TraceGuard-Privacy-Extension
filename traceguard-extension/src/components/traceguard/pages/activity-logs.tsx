@@ -41,6 +41,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { useDetectorLogs } from "@/lib/useStorage"
 import { Download, ChevronDown, ChevronUp, Globe, Search, Calendar } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -71,6 +72,7 @@ interface GroupedSiteVisit {
 
 
 export default function ActivityLogsPage() {
+    const { t } = useTranslation()
     const detectorLogs = useDetectorLogs()
     const [searchQuery, setSearchQuery] = useState("")
     const [filterRisk, setFilterRisk] = useState<string>("all")
@@ -180,11 +182,11 @@ export default function ActivityLogsPage() {
 
     // Get safety info for display
     const getSafetyInfo = (wss: number) => {
-        if (wss >= 80) return { level: "Excellent", color: "text-primary", border: "border-primary" }
-        if (wss >= 60) return { level: "Good", color: "text-primary", border: "border-primary" }
-        if (wss >= 40) return { level: "Fair", color: "text-primary", border: "border-primary" }
-        if (wss >= 20) return { level: "Poor", color: "text-primary", border: "border-primary" }
-        return { level: "Critical", color: "text-destructive", border: "border-destructive" }
+        if (wss >= 80) return { level: t("Excellent"), color: "text-primary", border: "border-primary" }
+        if (wss >= 60) return { level: t("Good"), color: "text-primary", border: "border-primary" }
+        if (wss >= 40) return { level: t("Fair"), color: "text-primary", border: "border-primary" }
+        if (wss >= 20) return { level: t("Poor"), color: "text-primary", border: "border-primary" }
+        return { level: t("Critical"), color: "text-destructive", border: "border-destructive" }
     }
 
     // Color for individual detector scores (all are safety scores, higher = better)
@@ -214,8 +216,8 @@ export default function ActivityLogsPage() {
         link.download = `traceguard-activity-${new Date().toISOString().split('T')[0]}.json`
         link.click()
         URL.revokeObjectURL(url)
-        toast.success("Export Complete", {
-            description: "Activity logs have been downloaded."
+        toast.success(t("Export Complete"), {
+            description: t("Activity logs have been downloaded.")
         })
     }
 
@@ -223,12 +225,12 @@ export default function ActivityLogsPage() {
     const detectorOrder: DetectorType[] = ['reputation', 'tracking', 'cookies', 'inputs', 'policy']
 
     const detectorLabels: Record<DetectorType, string> = {
-        reputation: 'Reputation',
-        tracking: 'Tracking',
-        cookies: 'Cookies',
-        inputs: 'Inputs',
-        policy: 'Policy',
-        permissions: 'Permissions'
+        reputation: t('Reputation'),
+        tracking: t('Tracking'),
+        cookies: t('Cookies'),
+        inputs: t('Inputs'),
+        policy: t('Policy'),
+        permissions: t('Permissions')
     }
 
     return (
@@ -237,10 +239,10 @@ export default function ActivityLogsPage() {
             <div className="flex items-start justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground">
-                        Activity Logs
+                        {t("Activity Logs")}
                     </h1>
                     <p className="text-muted-foreground mt-2">
-                        Site visits grouped by domain with safety assessment
+                        {t("Site visits grouped by domain with safety assessment")}
                     </p>
                 </div>
                 <Button
@@ -250,34 +252,34 @@ export default function ActivityLogsPage() {
                     className="flex items-center gap-2"
                 >
                     <Download className="h-4 w-4" />
-                    Export
+                    {t("Export")}
                 </Button>
             </div>
 
             {/* Statistics */}
             <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
                 <StatCard
-                    title="Total"
+                    title={t("Total")}
                     value={totalVisits}
                     valueColor="text-primary"
                 />
                 <StatCard
-                    title="At Risk"
+                    title={t("At Risk")}
                     value={atRiskVisits}
                     valueColor="text-destructive"
                 />
                 <StatCard
-                    title="Fair"
+                    title={t("Fair")}
                     value={fairSafetyVisits}
                     valueColor="text-primary"
                 />
                 <StatCard
-                    title="Safe"
+                    title={t("Safe")}
                     value={excellentSafetyVisits + goodSafetyVisits}
                     valueColor="text-primary"
                 />
                 <StatCard
-                    title="Unique Sites"
+                    title={t("Unique Sites")}
                     value={uniqueSites}
                     valueColor="text-primary"
                 />
@@ -291,7 +293,7 @@ export default function ActivityLogsPage() {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
-                                placeholder="Search domains..."
+                                placeholder={t("Search domains...")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -300,25 +302,25 @@ export default function ActivityLogsPage() {
 
                         <Select value={filterRisk} onValueChange={setFilterRisk}>
                             <SelectTrigger className="w-full sm:w-[150px]">
-                                <SelectValue placeholder="Risk level" />
+                                <SelectValue placeholder={t("Risk level")} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Risks</SelectItem>
-                                <SelectItem value="high">High Risk</SelectItem>
-                                <SelectItem value="medium">Medium</SelectItem>
-                                <SelectItem value="low">Low Risk</SelectItem>
+                                <SelectItem value="all">{t("All Risks")}</SelectItem>
+                                <SelectItem value="high">{t("High Risk")}</SelectItem>
+                                <SelectItem value="medium">{t("Medium")}</SelectItem>
+                                <SelectItem value="low">{t("Low Risk")}</SelectItem>
                             </SelectContent>
                         </Select>
 
                         <Select value={filterDays} onValueChange={setFilterDays}>
                             <SelectTrigger className="w-full sm:w-[150px]">
-                                <SelectValue placeholder="Time range" />
+                                <SelectValue placeholder={t("Time range")} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Time</SelectItem>
-                                <SelectItem value="1">Last 24h</SelectItem>
-                                <SelectItem value="7">Last 7 days</SelectItem>
-                                <SelectItem value="30">Last 30 days</SelectItem>
+                                <SelectItem value="all">{t("All Time")}</SelectItem>
+                                <SelectItem value="1">{t("Last 24h")}</SelectItem>
+                                <SelectItem value="7">{t("Last 7 days")}</SelectItem>
+                                <SelectItem value="30">{t("Last 30 days")}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -331,7 +333,7 @@ export default function ActivityLogsPage() {
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
                             <Globe className="h-4 w-4 text-primary" />
-                            Site Visits
+                            {t("Site Visits")}
                         </CardTitle>
                         <Badge variant="secondary">
                             {filteredVisits.length} of {totalVisits}
@@ -376,7 +378,7 @@ export default function ActivityLogsPage() {
                                                 <span className={cn("text-xl font-bold", safetyInfo.color)}>
                                                     {visit.wss}
                                                 </span>
-                                                <p className="text-xs text-muted-foreground">WSS</p>
+                                                <p className="text-xs text-muted-foreground">{t("WSS")}</p>
                                             </div>
                                         </div>
 
@@ -413,13 +415,13 @@ export default function ActivityLogsPage() {
                                                     <div className="mt-3 pt-3 border-t text-xs text-muted-foreground space-y-1">
                                                         {visit.detectors.tracking?.details?.knownTrackers?.length > 0 && (
                                                             <div>
-                                                                <span className="font-medium">Known trackers: </span>
+                                                                <span className="font-medium">{t("Known trackers:")} </span>
                                                                 {visit.detectors.tracking?.details?.knownTrackers?.join(', ')}
                                                             </div>
                                                         )}
                                                         {visit.detectors.tracking?.details?.suspiciousTrackers?.length > 0 && (
                                                             <div>
-                                                                <span className="font-medium">Suspicious: </span>
+                                                                <span className="font-medium">{t("Suspicious:")} </span>
                                                                 {visit.detectors.tracking?.details?.suspiciousTrackers?.join(', ')}
                                                             </div>
                                                         )}
@@ -434,12 +436,12 @@ export default function ActivityLogsPage() {
                                                     {isExpanded ? (
                                                         <>
                                                             <ChevronUp className="h-4 w-4 mr-1" />
-                                                            Hide details
+                                                            {t("Hide details")}
                                                         </>
                                                     ) : (
                                                         <>
                                                             <ChevronDown className="h-4 w-4 mr-1" />
-                                                            Show tracker details
+                                                            {t("Show tracker details")}
                                                         </>
                                                     )}
                                                 </Button>
@@ -453,8 +455,8 @@ export default function ActivityLogsPage() {
                         <div className="text-center py-12 text-muted-foreground">
                             <Globe className="h-12 w-12 mx-auto mb-3 opacity-30" />
                             {searchQuery || filterRisk !== "all" || filterDays !== "all"
-                                ? "No visits match the selected filters"
-                                : "No site visits logged yet. Browse some websites to see activity."}
+                                ? t("No visits match the selected filters")
+                                : t("No site visits logged yet. Browse some websites to see activity.")}
                         </div>
                     )}
                 </CardContent>

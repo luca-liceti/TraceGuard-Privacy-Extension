@@ -48,6 +48,7 @@ export interface PolicyDetectionResult {
     grade?: string;           // ToS;DR grade (A-E) if available
     serviceName?: string;     // Name of the service from ToS;DR
     hasLocalPolicy: boolean;  // Was a privacy policy link found on the page?
+    points?: { title: string; classification: string }[]; // Reasons for the grade
 }
 
 /**
@@ -100,7 +101,7 @@ export async function detectPrivacyPolicy(): Promise<number> {
         // Check if we got a valid ToS;DR response with a grade
         if (response && response.found && response.grade) {
             console.log('[Policy] ToS;DR API result:', {
-                service: response.service?.name,
+                service: response.serviceName,
                 grade: response.grade,
                 score: response.score,
                 source: 'tosdr'
@@ -152,8 +153,9 @@ export async function detectPrivacyPolicyDetailed(): Promise<PolicyDetectionResu
                 score: response.score,
                 source: 'tosdr',
                 grade: response.grade,
-                serviceName: response.service?.name,
-                hasLocalPolicy: localResult.found
+                serviceName: response.serviceName,
+                hasLocalPolicy: localResult.found,
+                points: response.points
             };
         }
     } catch (error) {

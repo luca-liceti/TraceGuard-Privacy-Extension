@@ -41,6 +41,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { toast } from 'sonner'
 import {
@@ -140,6 +141,7 @@ function SettingSlider({
 }
 
 export default function SettingsPage() {
+    const { t } = useTranslation()
     const state = useAppState()
     const settings = useSettings()
     const { setTheme: applyTheme } = useTheme()
@@ -200,7 +202,7 @@ export default function SettingsPage() {
         }
     }, [settings])
 
-    if (!state || !settings) return <div className="p-4">Loading...</div>
+    if (!state || !settings) return <div className="p-4">{t("Loading...")}</div>
 
     const handleChange = () => {
         setHasChanges(true)
@@ -228,8 +230,8 @@ export default function SettingsPage() {
         })
 
         setHasChanges(false)
-        toast.success('Settings Saved', {
-            description: 'Your preferences have been updated successfully.',
+        toast.success(t('Settings Saved'), {
+            description: t('Your preferences have been updated successfully.'),
             duration: 3000
         })
     }
@@ -271,28 +273,28 @@ export default function SettingsPage() {
         })
 
         setHasChanges(false)
-        toast.info('Settings Reset', {
-            description: 'Preferences restored to default values.',
+        toast.info(t('Settings Reset'), {
+            description: t('Preferences restored to default values.'),
             duration: 3000
         })
     }
 
     const clearActivityLogs = async () => {
-        if (!confirm("Clear all activity logs? This cannot be undone.")) return
+        if (!confirm(t("Clear all activity logs? This cannot be undone."))) return
 
         await chrome.storage.local.set({
             logs: [],
             piiDetections: [],
             detectorLogs: []
         })
-        toast.success('Activity Logs Cleared', {
-            description: 'All logged events have been removed.',
+        toast.success(t('Activity Logs Cleared'), {
+            description: t('All logged events have been removed.'),
             duration: 3000
         })
     }
 
     const resetPrivacyScore = async () => {
-        if (!confirm("Reset your Privacy Score to 100? This will clear your browsing history data.")) return
+        if (!confirm(t("Reset your Privacy Score to 100? This will clear your browsing history data."))) return
 
         await chrome.storage.local.set({
             state: {
@@ -305,19 +307,19 @@ export default function SettingsPage() {
             scoreHistory: [],
             siteCache: {}
         })
-        toast.success('Privacy Score Reset', {
-            description: 'Your UPS has been reset to 100.',
+        toast.success(t('Privacy Score Reset'), {
+            description: t('Your UPS has been reset to 100.'),
             duration: 3000
         })
     }
 
     const clearAllData = async () => {
-        if (!confirm("⚠️ WARNING: This will delete ALL extension data including settings, logs, and scores. This cannot be undone. Are you sure?")) return
-        if (!confirm("Are you absolutely sure? This will reset TraceGuard to factory defaults.")) return
+        if (!confirm(t("⚠️ WARNING: This will delete ALL extension data including settings, logs, and scores. This cannot be undone. Are you sure?"))) return
+        if (!confirm(t("Are you absolutely sure? This will reset TraceGuard to factory defaults."))) return
 
         await chrome.storage.local.clear()
-        toast.success('All Data Cleared', {
-            description: 'Extension data has been reset. Reloading...',
+        toast.success(t('All Data Cleared'), {
+            description: t('Extension data has been reset. Reloading...'),
             duration: 2000
         })
         setTimeout(() => window.location.reload(), 2000)
@@ -329,9 +331,9 @@ export default function SettingsPage() {
         <div className="space-y-6 w-full max-w-3xl">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+                <h1 className="text-3xl font-bold text-foreground">{t("Settings")}</h1>
                 <p className="text-muted-foreground mt-2">
-                    Configure TraceGuard preferences and manage your data
+                    {t("Configure TraceGuard preferences and manage your data")}
                 </p>
             </div>
 
@@ -342,7 +344,7 @@ export default function SettingsPage() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm">
                                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                <span className="text-muted-foreground">You have unsaved changes</span>
+                                <span className="text-muted-foreground">{t("You have unsaved changes")}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button
@@ -351,14 +353,14 @@ export default function SettingsPage() {
                                     onClick={resetSettings}
                                 >
                                     <RotateCcw className="mr-2 h-4 w-4" />
-                                    Reset
+                                    {t("Reset")}
                                 </Button>
                                 <Button
                                     size="sm"
                                     onClick={saveSettings}
                                 >
                                     <Save className="mr-2 h-4 w-4" />
-                                    Save Changes
+                                    {t("Save Changes")}
                                 </Button>
                             </div>
                         </div>
@@ -374,35 +376,35 @@ export default function SettingsPage() {
                         className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                         <Palette className="h-4 w-4" />
-                        Appearance
+                        {t("Appearance")}
                     </TabsTrigger>
                     <TabsTrigger
                         value="privacy"
                         className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                         <Shield className="h-4 w-4" />
-                        Privacy
+                        {t("Privacy")}
                     </TabsTrigger>
                     <TabsTrigger
                         value="notifications"
                         className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                         <Bell className="h-4 w-4" />
-                        Notifications
+                        {t("Notifications")}
                     </TabsTrigger>
                     <TabsTrigger
                         value="data"
                         className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                         <Database className="h-4 w-4" />
-                        Data
+                        {t("Data")}
                     </TabsTrigger>
                     <TabsTrigger
                         value="about"
                         className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                         <Info className="h-4 w-4" />
-                        About
+                        {t("About")}
                     </TabsTrigger>
                 </TabsList>
 
@@ -411,16 +413,16 @@ export default function SettingsPage() {
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold">
-                                Appearance Settings
+                                {t("Appearance Settings")}
                             </CardTitle>
                             <CardDescription>
-                                Customize how TraceGuard looks and opens
+                                {t("Customize how TraceGuard looks and opens")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-1">
                             <SettingItem
-                                label="Theme"
-                                description="Choose between light, dark, or system theme"
+                                label={t("Theme")}
+                                description={t("Choose between light, dark, or system theme")}
                             >
                                 <Select
                                     value={themeLocal}
@@ -433,9 +435,9 @@ export default function SettingsPage() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="system">System</SelectItem>
-                                        <SelectItem value="light">Light</SelectItem>
-                                        <SelectItem value="dark">Dark</SelectItem>
+                                        <SelectItem value="system">{t("System")}</SelectItem>
+                                        <SelectItem value="light">{t("Light")}</SelectItem>
+                                        <SelectItem value="dark">{t("Dark")}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </SettingItem>
@@ -443,8 +445,8 @@ export default function SettingsPage() {
                             <Separator />
 
                             <SettingItem
-                                label="Display Mode"
-                                description="How TraceGuard opens when you click the extension icon"
+                                label={t("Display Mode")}
+                                description={t("How TraceGuard opens when you click the extension icon")}
                             >
                                 <Select
                                     value={displayMode}
@@ -457,8 +459,8 @@ export default function SettingsPage() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="popup">Popup</SelectItem>
-                                        <SelectItem value="sidebar">Side Panel</SelectItem>
+                                        <SelectItem value="popup">{t("Popup")}</SelectItem>
+                                        <SelectItem value="sidebar">{t("Side Panel")}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </SettingItem>
@@ -471,16 +473,16 @@ export default function SettingsPage() {
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold">
-                                Privacy Protection
+                                {t("Privacy Protection")}
                             </CardTitle>
                             <CardDescription>
-                                Configure privacy detection features and alerts
+                                {t("Configure privacy detection features and alerts")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-1">
                             <SettingItem
-                                label="PII Detection"
-                                description="Monitor when you enter personal information on websites"
+                                label={t("PII Detection")}
+                                description={t("Monitor when you enter personal information on websites")}
                             >
                                 <Switch
                                     checked={enablePIIDetection}
@@ -494,8 +496,8 @@ export default function SettingsPage() {
                             <Separator />
 
                             <SettingItem
-                                label="Vault Auto-Lock"
-                                description="When should your privacy vault automatically lock?"
+                                label={t("Vault Auto-Lock")}
+                                description={t("When should your privacy vault automatically lock?")}
                             >
                                 <Select
                                     value={autoLockTimeout.toString()}
@@ -508,11 +510,11 @@ export default function SettingsPage() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="-1">On Browser Close</SelectItem>
-                                        <SelectItem value="1">After 1 Minute</SelectItem>
-                                        <SelectItem value="5">After 5 Minutes</SelectItem>
-                                        <SelectItem value="15">After 15 Minutes</SelectItem>
-                                        <SelectItem value="0">Never</SelectItem>
+                                        <SelectItem value="-1">{t("On Browser Close")}</SelectItem>
+                                        <SelectItem value="1">{t("After 1 Minute")}</SelectItem>
+                                        <SelectItem value="5">{t("After 5 Minutes")}</SelectItem>
+                                        <SelectItem value="15">{t("After 15 Minutes")}</SelectItem>
+                                        <SelectItem value="0">{t("Never")}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </SettingItem>
@@ -520,12 +522,12 @@ export default function SettingsPage() {
                             <Separator />
 
                             <SettingItem
-                                label="Tracker Blocking"
-                                description="Automatically block known tracking scripts"
+                                label={t("Tracker Blocking")}
+                                description={t("Automatically block known tracking scripts")}
                             >
                                 <div className="flex items-center gap-2">
                                     <Badge variant="outline" className="text-xs">
-                                        Coming Soon
+                                        {t("Coming Soon")}
                                     </Badge>
                                     <Switch
                                         checked={enableTrackerBlocking}
@@ -537,8 +539,8 @@ export default function SettingsPage() {
                             <Separator />
 
                             <SettingSlider
-                                label="Safety Threshold"
-                                description="Get alerts when a site's safety score is below this value"
+                                label={t("Safety Threshold")}
+                                description={t("Get alerts when a site's safety score is below this value")}
                                 value={wssThreshold}
                                 min={0}
                                 max={100}
@@ -558,21 +560,21 @@ export default function SettingsPage() {
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold">
-                                Notification Settings
+                                {t("Notification Settings")}
                             </CardTitle>
                             <CardDescription>
-                                Control when and how you receive security alerts
+                                {t("Control when and how you receive security alerts")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <SettingItem
-                                label="Alert Level"
+                                label={t("Alert Level")}
                                 description={
                                     notificationLevel === "silent"
-                                        ? "You won't receive any notifications"
+                                        ? t("You won't receive any notifications")
                                         : notificationLevel === "balanced"
-                                            ? "Notified for high-risk sites and critical PII events"
-                                            : "Notified for all site changes and tracker detections"
+                                            ? t("Notified for high-risk sites and critical PII events")
+                                            : t("Notified for all site changes and tracker detections")
                                 }
                             >
                                 <Select
@@ -586,9 +588,9 @@ export default function SettingsPage() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="silent">Silent</SelectItem>
-                                        <SelectItem value="balanced">Balanced</SelectItem>
-                                        <SelectItem value="aggressive">Aggressive</SelectItem>
+                                        <SelectItem value="silent">{t("Silent")}</SelectItem>
+                                        <SelectItem value="balanced">{t("Balanced")}</SelectItem>
+                                        <SelectItem value="aggressive">{t("Aggressive")}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </SettingItem>
@@ -601,21 +603,21 @@ export default function SettingsPage() {
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold">
-                                Data Management
+                                {t("Data Management")}
                             </CardTitle>
                             <CardDescription>
-                                Manage how long your data is stored
+                                {t("Manage how long your data is stored")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <SettingSlider
-                                label="Data Retention"
-                                description="Old activity logs will be automatically deleted after this period"
+                                label={t("Data Retention")}
+                                description={t("Old activity logs will be automatically deleted after this period")}
                                 value={dataRetention}
                                 min={7}
                                 max={90}
                                 step={1}
-                                unit="days"
+                                unit={t("days")}
                                 onChange={(value) => {
                                     setDataRetention(value)
                                     handleChange()
@@ -629,7 +631,7 @@ export default function SettingsPage() {
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
                                         <HardDrive className="h-4 w-4 text-muted-foreground" />
-                                        <Label className="text-sm font-medium">Storage Used</Label>
+                                        <Label className="text-sm font-medium">{t("Storage Used")}</Label>
                                     </div>
                                     <span className="text-sm text-muted-foreground">
                                         {(storageInfo.bytesInUse / 1024).toFixed(1)} KB of {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
@@ -644,10 +646,10 @@ export default function SettingsPage() {
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold">
-                                Clear Data
+                                {t("Clear Data")}
                             </CardTitle>
                             <CardDescription>
-                                Remove specific data from the extension
+                                {t("Remove specific data from the extension")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -658,7 +660,7 @@ export default function SettingsPage() {
                                     className="flex-1 justify-start"
                                 >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Clear Activity Logs
+                                    {t("Clear Activity Logs")}
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -666,7 +668,7 @@ export default function SettingsPage() {
                                     className="flex-1 justify-start"
                                 >
                                     <RotateCcw className="mr-2 h-4 w-4" />
-                                    Reset Privacy Score
+                                    {t("Reset Privacy Score")}
                                 </Button>
                             </div>
                         </CardContent>
@@ -677,10 +679,10 @@ export default function SettingsPage() {
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-base font-semibold text-destructive">
                                 <AlertTriangle className="h-4 w-4" />
-                                Danger Zone
+                                {t("Danger Zone")}
                             </CardTitle>
                             <CardDescription>
-                                Irreversible actions that will delete your data
+                                {t("Irreversible actions that will delete your data")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -690,7 +692,7 @@ export default function SettingsPage() {
                                 className="w-full sm:w-auto border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete All Data & Reset Extension
+                                {t("Delete All Data & Reset Extension")}
                             </Button>
                         </CardContent>
                     </Card>
@@ -701,28 +703,27 @@ export default function SettingsPage() {
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold">
-                                About TraceGuard
+                                {t("About TraceGuard")}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-3 gap-4 text-sm">
                                 <div>
-                                    <p className="text-muted-foreground text-xs">Version</p>
+                                    <p className="text-muted-foreground text-xs">{t("Version")}</p>
                                     <p className="font-mono font-medium">{manifestVersion}</p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground text-xs">Schema</p>
+                                    <p className="text-muted-foreground text-xs">{t("Schema")}</p>
                                     <p className="font-mono font-medium">v{schemaVersion}</p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground text-xs">Storage</p>
+                                    <p className="text-muted-foreground text-xs">{t("Storage")}</p>
                                     <p className="font-mono font-medium">{(storageInfo.bytesInUse / 1024).toFixed(1)} KB</p>
                                 </div>
                             </div>
                             <Separator className="my-4" />
                             <p className="text-sm text-muted-foreground">
-                                TraceGuard is a privacy-first extension designed to protect your data while you browse.
-                                It runs entirely on your device and does not send data to external servers.
+                                {t("TraceGuard is a privacy-first extension designed to protect your data while you browse. It runs entirely on your device and does not send data to external servers.")}
                             </p>
                         </CardContent>
                     </Card>

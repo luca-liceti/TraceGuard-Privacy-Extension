@@ -41,6 +41,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { useAppState, useScoreHistory } from "@/lib/useStorage"
 import {
     ShieldCheck,
@@ -65,10 +66,11 @@ import { getStatusConfig } from "@/lib/risk-utils"
 // StatCard moved to @/components/ui/stat-card.tsx
 
 export default function PrivacyScorePage() {
+    const { t } = useTranslation()
     const state = useAppState()
     const scoreHistory = useScoreHistory()
 
-    if (!state) return <div className="p-4">Loading...</div>
+    if (!state) return <div className="p-4">{t("Loading...")}</div>
 
     // Prepare chart data
     const chartData = scoreHistory.length > 0
@@ -101,10 +103,10 @@ export default function PrivacyScorePage() {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-foreground">
-                    Privacy Score
+                    {t("Privacy Score")}
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                    Your User Privacy Score (UPS) reflects how safely you browse the web
+                    {t("Your User Privacy Score (UPS) reflects how safely you browse the web")}
                 </p>
             </div>
 
@@ -131,10 +133,10 @@ export default function PrivacyScorePage() {
                         {/* Score Info */}
                         <div className="flex-1 text-center md:text-left">
                             <Badge className={cn("mb-2", scoreLevel.bgColor, scoreLevel.color, "border-0")}>
-                                {scoreLevel.label}
+                                {t(scoreLevel.label)}
                             </Badge>
                             <p className="text-muted-foreground">
-                                {scoreLevel.description}
+                                {t(scoreLevel.description)}
                             </p>
 
                             {/* Trend */}
@@ -142,17 +144,17 @@ export default function PrivacyScorePage() {
                                 {trend > 0 ? (
                                     <>
                                         <TrendingUp className="h-5 w-5 text-green-500" />
-                                        <span className="text-green-500 font-medium">+{trend} from previous</span>
+                                        <span className="text-green-500 font-medium">+{trend} {t("from previous")}</span>
                                     </>
                                 ) : trend < 0 ? (
                                     <>
                                         <TrendingDown className="h-5 w-5 text-red-500" />
-                                        <span className="text-red-500 font-medium">{trend} from previous</span>
+                                        <span className="text-red-500 font-medium">{trend} {t("from previous")}</span>
                                     </>
                                 ) : (
                                     <>
                                         <Minus className="h-5 w-5 text-muted-foreground" />
-                                        <span className="text-muted-foreground font-medium">No change</span>
+                                        <span className="text-muted-foreground font-medium">{t("No change")}</span>
                                     </>
                                 )}
                             </div>
@@ -164,25 +166,25 @@ export default function PrivacyScorePage() {
             {/* Stats Row */}
             <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
                 <StatCard
-                    title="Current Score"
+                    title={t("Current Score")}
                     value={state.ups}
-                    subtitle="Your privacy rating"
+                    subtitle={t("Your privacy rating")}
                     icon={Target}
                     iconColor="text-blue-500"
                     valueColor={scoreLevel.color}
                 />
                 <StatCard
-                    title="Average Score"
+                    title={t("Average Score")}
                     value={avgScore}
-                    subtitle="All-time average"
+                    subtitle={t("All-time average")}
                     icon={BarChart3}
                     iconColor="text-orange-500"
                     valueColor={getStatusConfig(avgScore).color}
                 />
                 <StatCard
-                    title="Lowest Score"
+                    title={t("Lowest Score")}
                     value={lowestScore}
-                    subtitle="Historical low"
+                    subtitle={t("Historical low")}
                     icon={Calendar}
                     iconColor="text-red-500"
                     valueColor={getStatusConfig(lowestScore).color}
@@ -194,10 +196,10 @@ export default function PrivacyScorePage() {
                 <CardHeader>
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
                         <BarChart3 className="h-4 w-4 text-primary" />
-                        30-Day Privacy Score Trend
+                        {t("30-Day Privacy Score Trend")}
                     </CardTitle>
                     <CardDescription>
-                        Track how your privacy score changes over time
+                        {t("Track how your privacy score changes over time")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -205,7 +207,7 @@ export default function PrivacyScorePage() {
                         <ChartContainer
                             config={{
                                 score: {
-                                    label: "Privacy Score",
+                                    label: t("Privacy Score"),
                                     color: "var(--primary)",
                                 },
                             }}
@@ -236,7 +238,7 @@ export default function PrivacyScorePage() {
                                     />
                                     <ChartTooltip
                                         content={<ChartTooltipContent />}
-                                        formatter={(value: number) => [`${value}`, "Privacy Score"]}
+                                        formatter={(value: number) => [`${value}`, t("Privacy Score")]}
                                         labelFormatter={(label, payload) => {
                                             const data = payload?.[0]?.payload
                                             return data?.fullDate || label
@@ -256,8 +258,8 @@ export default function PrivacyScorePage() {
                         <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                             <div className="text-center">
                                 <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                                <p className="text-sm">No score history available yet</p>
-                                <p className="text-xs mt-1">Browse some websites to start tracking</p>
+                                <p className="text-sm">{t("No score history available yet")}</p>
+                                <p className="text-xs mt-1">{t("Browse some websites to start tracking")}</p>
                             </div>
                         </div>
                     )}
@@ -269,7 +271,7 @@ export default function PrivacyScorePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                         <Info className="h-4 w-4 text-primary" />
-                        How Your Privacy Score is Calculated
+                        {t("How Your Privacy Score is Calculated")}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -279,9 +281,9 @@ export default function PrivacyScorePage() {
                                 1
                             </div>
                             <div>
-                                <h3 className="font-medium text-foreground">Starting Score</h3>
+                                <h3 className="font-medium text-foreground">{t("Starting Score")}</h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Everyone starts with a perfect score of 100. Your score decreases when you enter personal information on websites.
+                                    {t("Everyone starts with a perfect score of 100. Your score decreases when you enter personal information on websites.")}
                                 </p>
                             </div>
                         </div>
@@ -293,14 +295,14 @@ export default function PrivacyScorePage() {
                                 2
                             </div>
                             <div>
-                                <h3 className="font-medium text-foreground">Score Decay</h3>
+                                <h3 className="font-medium text-foreground">{t("Score Decay")}</h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    When you enter sensitive information, your score decreases based on:
+                                    {t("When you enter sensitive information, your score decreases based on:")}
                                 </p>
                                 <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1 ml-2">
-                                    <li><strong>Sensitivity Level:</strong> High (passwords, credit cards) cause more decay</li>
-                                    <li><strong>Website Risk:</strong> Entering data on risky websites causes more decay</li>
-                                    <li><strong>Frequency:</strong> Multiple entries compound the effect</li>
+                                    <li><strong>{t("Sensitivity Level:")}</strong> {t("High (passwords, credit cards) cause more decay")}</li>
+                                    <li><strong>{t("Website Risk:")}</strong> {t("Entering data on risky websites causes more decay")}</li>
+                                    <li><strong>{t("Frequency:")}</strong> {t("Multiple entries compound the effect")}</li>
                                 </ul>
                             </div>
                         </div>
@@ -312,9 +314,9 @@ export default function PrivacyScorePage() {
                                 3
                             </div>
                             <div>
-                                <h3 className="font-medium text-foreground">Score Recovery</h3>
+                                <h3 className="font-medium text-foreground">{t("Score Recovery")}</h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Your score recovers when you visit safe websites (safety score ≥ 70). The safer the site, the more recovery you earn. Building a streak of 10+ safe sites grants bonus recovery.
+                                    {t("Your score recovers when you visit safe websites (safety score ≥ 70). The safer the site, the more recovery you earn. Building a streak of 10+ safe sites grants bonus recovery.")}
                                 </p>
                             </div>
                         </div>

@@ -14,6 +14,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
     Globe,
     AlertTriangle,
@@ -72,10 +73,10 @@ function RiskDistributionBar({
             </div>
             <div className="flex justify-between text-xs">
                 {[
-                    { label: "Critical", count: critical, color: "bg-red-500" },
-                    { label: "High",     count: high,     color: "bg-orange-500" },
-                    { label: "Medium",   count: medium,   color: "bg-yellow-500" },
-                    { label: "Low",      count: low,      color: "bg-green-500" },
+                    { label: t("Critical"), count: critical, color: "bg-red-500" },
+                    { label: t("High"),     count: high,     color: "bg-orange-500" },
+                    { label: t("Medium"),   count: medium,   color: "bg-yellow-500" },
+                    { label: t("Low"),      count: low,      color: "bg-green-500" },
                 ].map(({ label, count, color }) => (
                     <div key={label} className="flex items-center gap-1.5">
                         <div className={cn("h-2.5 w-2.5 rounded-full", color)} />
@@ -91,6 +92,7 @@ function RiskDistributionBar({
 // Site card (Safety Analysis tab)
 // ─────────────────────────────────────────────
 function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
+    const { t } = useTranslation()
     const [isOpen, setIsOpen] = useState(false)
     const safety = getSafetyLevel(data.wss)
     const config = safetyConfig[safety]
@@ -112,11 +114,11 @@ function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
                                     <div className="flex items-center gap-2">
                                         <h3 className="font-medium text-foreground truncate">{domain}</h3>
                                         <Badge variant="outline" className={cn("flex-shrink-0 text-xs", config.color, config.border)}>
-                                            {config.label}
+                                            {t(config.label)}
                                         </Badge>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        Last analyzed: {new Date(data.lastAnalyzed).toLocaleDateString()}
+                                        {t("Last analyzed:")} {new Date(data.lastAnalyzed).toLocaleDateString()}
                                     </p>
                                 </div>
                             </div>
@@ -126,7 +128,7 @@ function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
                                         <Icon className={cn("h-5 w-5", config.color)} />
                                         <span className={cn("text-2xl font-bold", config.color)}>{data.wss}</span>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">Safety Score</p>
+                                    <p className="text-xs text-muted-foreground">{t("Safety Score")}</p>
                                 </div>
                                 {hasBreakdown && (
                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -142,7 +144,7 @@ function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
                         <div className="px-4 pb-4 pt-0">
                             <div className="border-t pt-4">
                                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                                    Risk Breakdown
+                                    {t("Risk Breakdown")}
                                 </p>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                                     {breakdownItems.map(([context, value]) => {
@@ -151,7 +153,7 @@ function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
                                         return (
                                             <div key={context} className={cn("p-3 rounded-lg text-center", itemConfig.bg)}>
                                                 <div className={cn("text-lg font-bold", itemConfig.color)}>{value}</div>
-                                                <div className="text-xs text-muted-foreground capitalize">{context}</div>
+                                                <div className="text-xs text-muted-foreground capitalize">{t(context)}</div>
                                             </div>
                                         )
                                     })}
@@ -169,6 +171,7 @@ function SiteCard({ domain, data }: { domain: string; data: SiteRiskData }) {
 // Main page
 // ─────────────────────────────────────────────
 export default function SitesSafetyPage() {
+    const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = useState("")
     const [filterLevel, setFilterLevel] = useState<string>("all")
     const { sites } = useSiteCache()
@@ -240,50 +243,50 @@ export default function SitesSafetyPage() {
         <div className="space-y-6 w-full">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-foreground">Sites &amp; Safety</h1>
+                <h1 className="text-3xl font-bold text-foreground">{t("Sites & Safety")}</h1>
                 <p className="text-muted-foreground mt-2">
-                    Analyze and monitor every website TraceGuard has scanned
+                    {t("Analyze and monitor every website TraceGuard has scanned")}
                 </p>
             </div>
 
             {/* Unified Stats Row */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
                 <StatCard
-                    title="Total Sites"
+                    title={t("Total Sites")}
                     value={totalSites}
-                    subtitle="Unique domains"
+                    subtitle={t("Unique domains")}
                     icon={Globe}
                     iconColor="text-blue-500"
                     valueColor="text-foreground"
                 />
                 <StatCard
-                    title="Avg Safety"
+                    title={t("Avg Safety")}
                     value={avgWSS}
-                    subtitle={avgWSS >= 80 ? "Excellent" : avgWSS >= 60 ? "Good" : avgWSS >= 40 ? "Fair" : "Needs attention"}
+                    subtitle={avgWSS >= 80 ? t("Excellent") : avgWSS >= 60 ? t("Good") : avgWSS >= 40 ? t("Fair") : t("Needs attention")}
                     icon={Shield}
                     iconColor={avgWSS >= 80 ? "text-green-500" : avgWSS >= 60 ? "text-blue-500" : avgWSS >= 40 ? "text-yellow-500" : "text-red-500"}
                     valueColor={avgWSS >= 60 ? "text-green-500" : avgWSS >= 40 ? "text-yellow-500" : "text-red-500"}
                 />
                 <StatCard
-                    title="At Risk"
+                    title={t("At Risk")}
                     value={criticalSites + poorSites}
-                    subtitle="Critical & poor safety"
+                    subtitle={t("Critical & poor safety")}
                     icon={AlertTriangle}
                     iconColor="text-red-500"
                     valueColor={criticalSites + poorSites > 0 ? "text-red-500" : "text-green-500"}
                 />
                 <StatCard
-                    title="Safe Sites"
+                    title={t("Safe Sites")}
                     value={excellentSites + goodSites}
-                    subtitle="Excellent & good safety"
+                    subtitle={t("Excellent & good safety")}
                     icon={CheckCircle}
                     iconColor="text-green-500"
                     valueColor="text-green-500"
                 />
                 <StatCard
-                    title="Today"
+                    title={t("Today")}
                     value={todayCount}
-                    subtitle="Sites visited"
+                    subtitle={t("Sites visited")}
                     icon={Calendar}
                     iconColor="text-purple-500"
                     valueColor="text-purple-500"
@@ -299,7 +302,7 @@ export default function SitesSafetyPage() {
                             <Input
                                 id="sites-search"
                                 type="text"
-                                placeholder="Search domains…"
+                                placeholder={t("Search domains…")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -308,15 +311,15 @@ export default function SitesSafetyPage() {
                         <Select value={filterLevel} onValueChange={setFilterLevel}>
                             <SelectTrigger className="w-full sm:w-[180px]">
                                 <Filter className="h-4 w-4 mr-2" />
-                                <SelectValue placeholder="Filter by safety" />
+                                <SelectValue placeholder={t("Filter by safety")} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Sites</SelectItem>
-                                <SelectItem value="excellent"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-green-500" />Excellent</span></SelectItem>
-                                <SelectItem value="good"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500" />Good</span></SelectItem>
-                                <SelectItem value="fair"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-yellow-500" />Fair</span></SelectItem>
-                                <SelectItem value="poor"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-orange-500" />Poor</span></SelectItem>
-                                <SelectItem value="critical"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-red-500" />Critical</span></SelectItem>
+                                <SelectItem value="all">{t("All Sites")}</SelectItem>
+                                <SelectItem value="excellent"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-green-500" />{t("Excellent")}</span></SelectItem>
+                                <SelectItem value="good"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500" />{t("Good")}</span></SelectItem>
+                                <SelectItem value="fair"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-yellow-500" />{t("Fair")}</span></SelectItem>
+                                <SelectItem value="poor"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-orange-500" />{t("Poor")}</span></SelectItem>
+                                <SelectItem value="critical"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-red-500" />{t("Critical")}</span></SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -328,11 +331,11 @@ export default function SitesSafetyPage() {
                 <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 rounded-lg">
                     <TabsTrigger value="safety" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                         <Shield className="h-4 w-4" />
-                        Safety Analysis
+                        {t("Safety Analysis")}
                     </TabsTrigger>
                     <TabsTrigger value="history" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                         <TrendingUp className="h-4 w-4" />
-                        Visit History
+                        {t("Visit History")}
                     </TabsTrigger>
                 </TabsList>
 
@@ -342,8 +345,8 @@ export default function SitesSafetyPage() {
                     {totalSites > 0 && (
                         <Card>
                             <CardHeader className="pb-3">
-                                <CardTitle className="text-base font-semibold">Safety Distribution</CardTitle>
-                                <CardDescription>Overview of website safety levels across all analyzed sites</CardDescription>
+                                <CardTitle className="text-base font-semibold">{t("Safety Distribution")}</CardTitle>
+                                <CardDescription>{t("Overview of website safety levels across all analyzed sites")}</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <RiskDistributionBar
@@ -360,8 +363,8 @@ export default function SitesSafetyPage() {
                     {/* Site cards */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">Analyzed Sites</h2>
-                            <Badge variant="secondary">{sortedBySafety.length} of {totalSites} sites</Badge>
+                            <h2 className="text-lg font-semibold">{t("Analyzed Sites")}</h2>
+                            <Badge variant="secondary">{sortedBySafety.length} {t("of")} {totalSites} {t("sites")}</Badge>
                         </div>
                         {sortedBySafety.length > 0 ? (
                             <div className="space-y-3">
@@ -375,10 +378,10 @@ export default function SitesSafetyPage() {
                                     <div className="text-center text-muted-foreground">
                                         <Globe className="h-12 w-12 mx-auto mb-3 opacity-30" />
                                         <p className="font-medium">
-                                            {filterLevel !== "all" || searchQuery ? "No sites match the selected filters" : "No sites analyzed yet"}
+                                            {filterLevel !== "all" || searchQuery ? t("No sites match the selected filters") : t("No sites analyzed yet")}
                                         </p>
                                         <p className="text-sm mt-1">
-                                            {filterLevel !== "all" || searchQuery ? "Try adjusting your search or filter criteria" : "Browse some websites to see safety scores"}
+                                            {filterLevel !== "all" || searchQuery ? t("Try adjusting your search or filter criteria") : t("Browse some websites to see safety scores")}
                                         </p>
                                     </div>
                                 </CardContent>
@@ -396,13 +399,13 @@ export default function SitesSafetyPage() {
                                 <CardHeader>
                                     <CardTitle className="text-base font-semibold flex items-center gap-2">
                                         <BarChart3 className="h-4 w-4 text-primary" />
-                                        Most Visited Sites
+                                        {t("Most Visited Sites")}
                                     </CardTitle>
-                                    <CardDescription>Top 10 sites by visit count</CardDescription>
+                                    <CardDescription>{t("Top 10 sites by visit count")}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="pb-4">
                                     <ChartContainer
-                                        config={{ visits: { label: "Visits", color: "hsl(var(--primary))" } }}
+                                        config={{ visits: { label: t("Visits"), color: "hsl(var(--primary))" } }}
                                         className="h-[300px] w-full aspect-auto"
                                     >
                                         <ResponsiveContainer width="100%" height="100%">
@@ -414,8 +417,8 @@ export default function SitesSafetyPage() {
                                                     content={<ChartTooltipContent />}
                                                     formatter={(value: any, _name: any, props: any) => (
                                                         <div className="flex flex-col gap-1 py-1">
-                                                            <div className="font-bold text-foreground">{value} visits</div>
-                                                            <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">WSS: {props.payload.wss}</div>
+                                                            <div className="font-bold text-foreground">{value} {t("visits")}</div>
+                                                            <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t("WSS:")} {props.payload.wss}</div>
                                                         </div>
                                                     )}
                                                 />
@@ -434,10 +437,10 @@ export default function SitesSafetyPage() {
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                                     <Globe className="h-4 w-4 text-primary" />
-                                    All Sites
+                                    {t("All Sites")}
                                 </CardTitle>
                             </div>
-                            <CardDescription>Showing {historyFiltered.length} of {totalSites} sites</CardDescription>
+                            <CardDescription>{t("Showing")} {historyFiltered.length} {t("of")} {totalSites} {t("sites")}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {sortedByVisit.length > 0 ? (
@@ -458,14 +461,14 @@ export default function SitesSafetyPage() {
                                                         </span>
                                                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                             <TrendingUp className="h-3 w-3" />
-                                                            {data.visitCount || 1} visits
+                                                            {data.visitCount || 1} {t("visits")}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="text-right ml-3">
                                                 <div className={cn("text-lg font-bold", getSafetyColor(data.wss))}>{data.wss}</div>
-                                                <div className="text-xs text-muted-foreground">WSS</div>
+                                                <div className="text-xs text-muted-foreground">{t("WSS")}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -473,7 +476,7 @@ export default function SitesSafetyPage() {
                             ) : (
                                 <div className="text-center py-12 text-muted-foreground">
                                     <Globe className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                                    {searchQuery ? "No sites match your search" : "No sites analyzed yet"}
+                                    {searchQuery ? t("No sites match your search") : t("No sites analyzed yet")}
                                 </div>
                             )}
                         </CardContent>

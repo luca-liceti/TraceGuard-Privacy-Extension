@@ -1,12 +1,17 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
+import { useToast } from "@/components/ui/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 import {
-  BadgeCheck,
-  Bell,
+  Check,
   ChevronsUpDown,
-  CreditCard,
+  ExternalLink,
+  Globe,
+  HelpCircle,
+  Info,
   LogOut,
-  Sparkles,
+  Settings,
 } from "lucide-react"
 
 import {
@@ -20,7 +25,12 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -40,6 +50,15 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { t, i18n } = useTranslation()
+  const { toast } = useToast()
+
+  const languages = [
+    { code: "en", name: "English (United States)" },
+    { code: "fr", name: "Français (France)" },
+    { code: "de", name: "Deutsch (Deutschland)" },
+    { code: "es", name: "Español (España)" },
+  ]
 
   return (
     <SidebarMenu>
@@ -63,7 +82,7 @@ export function NavUser({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? "bottom" : "top"}
             align="end"
             sideOffset={4}
           >
@@ -82,29 +101,92 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
+                <Settings />
+                {t("Settings")}
+                <DropdownMenuShortcut>Ctrl ⇧ ,</DropdownMenuShortcut>
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Globe />
+                  <span>{t("Language")}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    {languages.map((lang) => (
+                      <DropdownMenuItem
+                        key={lang.code}
+                        onClick={() => {
+                          const oldLanguage = i18n.language;
+                          i18n.changeLanguage(lang.code);
+                          toast({
+                            description: t("Language changed successfully."),
+                            action: (
+                              <ToastAction altText={t("Undo")} onClick={() => i18n.changeLanguage(oldLanguage)}>
+                                {t("Undo")}
+                              </ToastAction>
+                            ),
+                          });
+                        }}
+                      >
+                        <span>{lang.name}</span>
+                        {i18n.language === lang.code && (
+                          <Check className="ml-auto text-blue-500" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+              <DropdownMenuItem>
+                <HelpCircle />
+                {t("Get help")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Info />
+                  <span>{t("Learn more")}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem>
+                      <span>{t("About Anthropic")}</span>
+                      <ExternalLink className="ml-auto opacity-50" />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <span>{t("Tutorials")}</span>
+                      <ExternalLink className="ml-auto opacity-50" />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <span>{t("Courses")}</span>
+                      <ExternalLink className="ml-auto opacity-50" />
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <span>{t("Usage policy")}</span>
+                      <ExternalLink className="ml-auto opacity-50" />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <span>{t("Privacy policy")}</span>
+                      <ExternalLink className="ml-auto opacity-50" />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <span>{t("Your privacy choices")}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <span>{t("Keyboard shortcuts")}</span>
+                      <DropdownMenuShortcut>Ctrl /</DropdownMenuShortcut>
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <LogOut />
-              Log out
+              {t("Log out")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

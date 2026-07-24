@@ -42,6 +42,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Eye, Shield, Info, BarChart3, Search, Globe } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -55,6 +56,7 @@ import { useSiteCache } from "@/lib/useStorage"
 
 
 export default function TrackersPage() {
+    const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = useState("")
     const { sites } = useSiteCache()
     const sitesAnalyzed = sites.length
@@ -76,10 +78,10 @@ export default function TrackersPage() {
     const avgTrackingScore = sitesAnalyzed > 0 ? Math.round(totalTrackerScore / sitesAnalyzed) : 0
 
     const trackingDistribution = [
-        { name: "Clean", value: noTracking, fill: "var(--color-clean)" },
-        { name: "Low", value: lowTracking, fill: "var(--color-low)" },
-        { name: "Medium", value: mediumTracking, fill: "var(--color-medium)" },
-        { name: "High", value: highTracking, fill: "var(--color-high)" },
+        { name: t("Clean"), value: noTracking, fill: "var(--color-clean)" },
+        { name: t("Low"), value: lowTracking, fill: "var(--color-low)" },
+        { name: t("Medium"), value: mediumTracking, fill: "var(--color-medium)" },
+        { name: t("High"), value: highTracking, fill: "var(--color-high)" },
     ].filter(item => item.value > 0)
 
     // Find top tracking sites
@@ -95,43 +97,43 @@ export default function TrackersPage() {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-foreground">
-                    Trackers
+                    {t("Trackers")}
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                    Monitor tracking activity across all websites
+                    {t("Monitor tracking activity across all websites")}
                 </p>
             </div>
 
             {/* Statistics */}
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 <StatCard
-                    title="Avg Tracking"
+                    title={t("Avg Tracking")}
                     value={avgTrackingScore}
-                    subtitle="Average score"
+                    subtitle={t("Average score")}
                     icon={BarChart3}
                     iconColor={getTrackingColor(avgTrackingScore)}
                     valueColor={getTrackingColor(avgTrackingScore)}
                 />
                 <StatCard
-                    title="Clean Sites"
+                    title={t("Clean Sites")}
                     value={noTracking}
-                    subtitle="No tracking"
+                    subtitle={t("No tracking")}
                     icon={Shield}
                     iconColor="text-green-500"
                     valueColor="text-green-500"
                 />
                 <StatCard
-                    title="High Tracking"
+                    title={t("High Tracking")}
                     value={highTracking}
-                    subtitle="Heavy trackers"
+                    subtitle={t("Heavy trackers")}
                     icon={Eye}
                     iconColor="text-red-500"
                     valueColor={highTracking > 0 ? "text-red-500" : "text-green-500"}
                 />
                 <StatCard
-                    title="Total Sites"
+                    title={t("Total Sites")}
                     value={sitesAnalyzed}
-                    subtitle="Analyzed"
+                    subtitle={t("Analyzed")}
                     icon={Globe}
                     iconColor="text-blue-500"
                     valueColor="text-foreground"
@@ -146,19 +148,19 @@ export default function TrackersPage() {
                         <CardHeader>
                             <CardTitle className="text-base font-semibold flex items-center gap-2">
                                 <BarChart3 className="h-4 w-4 text-primary" />
-                                Distribution
+                                {t("Distribution")}
                             </CardTitle>
                             <CardDescription>
-                                Sites by tracking intensity
+                                {t("Sites by tracking intensity")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ChartContainer
                                 config={{
-                                    clean: { label: "Clean", color: "var(--chart-2)" },
-                                    low: { label: "Low", color: "var(--chart-4)" },
-                                    medium: { label: "Medium", color: "var(--chart-3)" },
-                                    high: { label: "High", color: "var(--chart-1)" },
+                                    clean: { label: t("Clean"), color: "var(--chart-2)" },
+                                    low: { label: t("Low"), color: "var(--chart-4)" },
+                                    medium: { label: t("Medium"), color: "var(--chart-3)" },
+                                    high: { label: t("High"), color: "var(--chart-1)" },
                                 }}
                                 className="h-[200px]"
                             >
@@ -179,7 +181,7 @@ export default function TrackersPage() {
                                         </Pie>
                                         <ChartTooltip
                                             content={<ChartTooltipContent />}
-                                            formatter={(value: any, name: any) => [`${value} sites`, name]}
+                                            formatter={(value: any, name: any) => [`${value} ${t("sites")}`, name]}
                                         />
                                         <Legend
                                             verticalAlign="bottom"
@@ -202,20 +204,20 @@ export default function TrackersPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                             <Info className="h-4 w-4 text-primary" />
-                            About Tracker Detection
+                            {t("About Tracker Detection")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="text-sm text-muted-foreground space-y-3">
                         <p>
-                            TraceGuard detects third-party tracking scripts and resources on websites you visit.
+                            {t("TraceGuard detects third-party tracking scripts and resources on websites you visit.")}
                         </p>
                         <p>
-                            The tracking score (0-100) indicates how many trackers were found. Higher = more tracking.
+                            {t("The tracking score (0-100) indicates how many trackers were found. Higher = more tracking.")}
                         </p>
                         <div className="flex items-center gap-2 pt-2">
                             <Shield className="h-4 w-4 text-primary" />
                             <span className="text-xs">
-                                Tracker blocking coming in a future update
+                                {t("Tracker blocking coming in a future update")}
                             </span>
                         </div>
                     </CardContent>
@@ -228,13 +230,13 @@ export default function TrackersPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
                             <Eye className="h-4 w-4 text-primary" />
-                            Sites with Most Tracking
+                            {t("Sites with Most Tracking")}
                         </CardTitle>
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
-                                placeholder="Search sites..."
+                                placeholder={t("Search sites...")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -242,7 +244,7 @@ export default function TrackersPage() {
                         </div>
                     </div>
                     <CardDescription>
-                        Top 10 sites by tracking density score
+                        {t("Top 10 sites by tracking density score")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -265,7 +267,7 @@ export default function TrackersPage() {
                                                     {domain}
                                                 </h3>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Safety Score: {data.wss}
+                                                    {t("Safety Score:")} {data.wss}
                                                 </p>
                                             </div>
                                         </div>
@@ -274,7 +276,7 @@ export default function TrackersPage() {
                                                 {trackingScore}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                                Tracking
+                                                {t("Tracking")}
                                             </div>
                                         </div>
                                     </div>
@@ -284,7 +286,7 @@ export default function TrackersPage() {
                     ) : (
                         <div className="text-center py-12 text-muted-foreground">
                             <Eye className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                            {searchQuery ? "No matching sites found" : "No tracking detected on any sites yet"}
+                            {searchQuery ? t("No matching sites found") : t("No tracking detected on any sites yet")}
                         </div>
                     )}
                 </CardContent>

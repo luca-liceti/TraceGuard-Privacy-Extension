@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import {
   AudioWaveform,
   BookOpen,
@@ -159,6 +160,7 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { t } = useTranslation()
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -170,10 +172,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </div>
               <div className="flex flex-1 items-center text-left text-sm leading-tight ml-1">
                 <span className="truncate font-semibold text-lg text-foreground">
-                  TraceGuard
+                  {t("TraceGuard")}
                 </span>
                 <span className="truncate font-semibold text-lg text-muted-foreground ml-1">
-                  Dashboard
+                  {t("Dashboard")}
                 </span>
               </div>
             </SidebarMenuButton>

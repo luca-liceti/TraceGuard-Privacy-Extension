@@ -1,4 +1,5 @@
 import { TrendingUpIcon, TrendingDownIcon, ShieldIcon, ActivityIcon, GlobeIcon, FingerprintIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -11,6 +12,7 @@ import {
 import { useAppState, useDetectorLogs, useActivityLogs } from "@/lib/useStorage"
 
 export function SectionCards() {
+  const { t } = useTranslation()
   const appState = useAppState()
   const detectorLogs = useDetectorLogs()
   const piiLogs = useActivityLogs()
@@ -59,7 +61,7 @@ export function SectionCards() {
     <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6">
       <Card className="@container/card">
         <CardHeader className="relative">
-          <CardDescription>Trackers Blocked</CardDescription>
+          <CardDescription>{t("Trackers Blocked")}</CardDescription>
           <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
             {totalTrackers.toLocaleString()}
           </CardTitle>
@@ -72,17 +74,17 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Activity {trackersPercent >= 0 ? 'up' : 'down'} today {trackersPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
+            {t("Activity")} {trackersPercent >= 0 ? t('up') : t('down')} {t("today")} {trackersPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
           </div>
           <div className="text-muted-foreground">
-            Tracking scripts intercepted
+            {t("Tracking scripts intercepted")}
           </div>
         </CardFooter>
       </Card>
       
       <Card className="@container/card">
         <CardHeader className="relative">
-          <CardDescription>Sites Analyzed</CardDescription>
+          <CardDescription>{t("Sites Analyzed")}</CardDescription>
           <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
             {totalSites.toLocaleString()}
           </CardTitle>
@@ -95,17 +97,17 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Traffic {sitesPercent >= 0 ? 'up' : 'down'} today {sitesPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
+            {t("Traffic")} {sitesPercent >= 0 ? t('up') : t('down')} {t("today")} {sitesPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
           </div>
           <div className="text-muted-foreground">
-            Unique domains scanned
+            {t("Unique domains scanned")}
           </div>
         </CardFooter>
       </Card>
       
       <Card className="@container/card">
         <CardHeader className="relative">
-          <CardDescription>PII Risk Events</CardDescription>
+          <CardDescription>{t("PII Risk Events")}</CardDescription>
           <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
             {totalPii.toLocaleString()}
           </CardTitle>
@@ -118,15 +120,15 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Risk {piiPercent > 0 ? 'up' : (piiPercent < 0 ? 'down' : 'stable')} today {piiPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
+            {t("Risk")} {piiPercent > 0 ? t('up') : (piiPercent < 0 ? t('down') : t('stable'))} {t("today")} {piiPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
           </div>
-          <div className="text-muted-foreground">Sensitive info entries</div>
+          <div className="text-muted-foreground">{t("Sensitive info entries")}</div>
         </CardFooter>
       </Card>
       
       <Card className="@container/card">
         <CardHeader className="relative">
-          <CardDescription>Safe Browsing Streak</CardDescription>
+          <CardDescription>{t("Safe Browsing Streak")}</CardDescription>
           <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
             {streak.toLocaleString()}
           </CardTitle>
@@ -139,9 +141,9 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Performance {streakPercent >= 0 ? 'steady' : 'dropping'} {streakPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
+            {t("Performance")} {streakPercent >= 0 ? t('steady') : t('dropping')} {streakPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
           </div>
-          <div className="text-muted-foreground">Consecutive safe visits</div>
+          <div className="text-muted-foreground">{t("Consecutive safe visits")}</div>
         </CardFooter>
       </Card>
     </div>
