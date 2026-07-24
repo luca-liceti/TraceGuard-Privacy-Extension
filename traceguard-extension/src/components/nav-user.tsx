@@ -39,6 +39,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useSettingsModal } from "@/components/traceguard/settings-context"
 
 export function NavUser({
   user,
@@ -52,6 +53,7 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
+  const { setSettingsOpen } = useSettingsModal()
 
   const languages = [
     { code: "en", name: "English (United States)" },
@@ -100,7 +102,7 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
                 <Settings />
                 {t("Settings")}
                 <DropdownMenuShortcut>Ctrl ⇧ ,</DropdownMenuShortcut>

@@ -55,8 +55,10 @@ import {
     Palette,
     HardDrive,
     Info,
+    Download,
+    List,
+    ShieldAlert
 } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
@@ -66,6 +68,9 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTheme } from "@/components/theme-provider"
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { useSettingsModal } from "./settings-context"
+
 
 // Setting item component for consistent styling
 function SettingItem({
@@ -140,11 +145,12 @@ function SettingSlider({
     )
 }
 
-export default function SettingsPage() {
+export function SettingsModal() {
     const { t } = useTranslation()
     const state = useAppState()
     const settings = useSettings()
     const { setTheme: applyTheme } = useTheme()
+    const { isSettingsOpen, setSettingsOpen } = useSettingsModal()
 
     const [hasChanges, setHasChanges] = useState(false)
     const [storageInfo, setStorageInfo] = useState({ bytesInUse: 0, quota: 0 })
@@ -161,6 +167,7 @@ export default function SettingsPage() {
     const [enableTrackerBlocking, setEnableTrackerBlocking] = useState(settings?.enableTrackerBlocking ?? false)
     const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
     const [autoLockTimeout, setAutoLockTimeout] = useState(settings?.autoLockTimeout ?? -1)
+    const [strictHttpsMode, setStrictHttpsMode] = useState(settings?.strictHttpsMode ?? false)
 
     // Fetch manifest version
     useEffect(() => {
@@ -199,6 +206,7 @@ export default function SettingsPage() {
             setEnableTrackerBlocking(settings.enableTrackerBlocking ?? false)
             setDisplayMode(settings.displayMode || "popup")
             setAutoLockTimeout(settings.autoLockTimeout ?? -1)
+            setStrictHttpsMode(settings.strictHttpsMode ?? false)
         }
     }, [settings])
 
@@ -219,6 +227,7 @@ export default function SettingsPage() {
             enableTrackerBlocking,
             displayMode,
             autoLockTimeout,
+            strictHttpsMode,
         }
 
         await chrome.storage.local.set({ settings: updatedSettings })
@@ -246,6 +255,7 @@ export default function SettingsPage() {
             enableTrackerBlocking: false,
             displayMode: "popup" as const,
             autoLockTimeout: -1,
+            strictHttpsMode: false,
         }
 
         // Apply defaults to local state
@@ -258,6 +268,7 @@ export default function SettingsPage() {
         setEnableTrackerBlocking(defaultPreferences.enableTrackerBlocking)
         setDisplayMode(defaultPreferences.displayMode)
         setAutoLockTimeout(defaultPreferences.autoLockTimeout)
+        setStrictHttpsMode(defaultPreferences.strictHttpsMode)
 
         // Merge defaults with existing settings to preserve other data (whitelist, blacklist, etc.)
         const newSettings = {
@@ -325,101 +336,105 @@ export default function SettingsPage() {
         setTimeout(() => window.location.reload(), 2000)
     }
 
+
+    const exportData = async () => {
+        try {
+            const allData = await chrome.storage.local.get(null);
+            const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `traceguard-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success(t('Data Exported'), {
+                description: t('Your activity logs and settings have been exported.'),
+                duration: 3000
+            });
+        } catch (error) {
+            toast.error(t('Export Failed'), {
+                description: t('Could not export data. Please try again.')
+            });
+        }
+    }
+
     const storagePercentage = (storageInfo.bytesInUse / storageInfo.quota) * 100
 
     return (
-        <div className="space-y-6 w-full max-w-3xl">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-foreground">{t("Settings")}</h1>
-                <p className="text-muted-foreground mt-2">
-                    {t("Configure TraceGuard preferences and manage your data")}
-                </p>
-            </div>
+        <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
+            <DialogContent className="max-w-4xl p-0 overflow-hidden gap-0 bg-background border shadow-2xl sm:rounded-xl h-[600px] flex flex-col">
+                <DialogTitle className="sr-only">{t("Settings")}</DialogTitle>
+                <DialogDescription className="sr-only">{t("Configure TraceGuard preferences")}</DialogDescription>
 
-            {/* Save Changes Bar - At Top */}
-            {hasChanges && (
-                <Card className="border-primary/50 bg-background/95 backdrop-blur shadow-lg">
-                    <CardContent className="py-3 px-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-sm">
-                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                <span className="text-muted-foreground">{t("You have unsaved changes")}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={resetSettings}
-                                >
-                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                    {t("Reset")}
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    onClick={saveSettings}
-                                >
-                                    <Save className="mr-2 h-4 w-4" />
-                                    {t("Save Changes")}
-                                </Button>
-                            </div>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 h-[600px] w-full">
+                    {/* Sidebar Navigation */}
+                    <div className="w-[240px] flex flex-col border-r bg-muted/10 h-full">
+                        <div className="p-4 py-6">
+                            <h2 className="text-xl font-bold tracking-tight">{t("Settings")}</h2>
                         </div>
-                    </CardContent>
-                </Card>
-            )}
+                        <TabsList className="flex flex-col h-full w-full justify-start items-stretch space-y-1 bg-transparent p-3 pt-0">
+                            <TabsTrigger value="appearance" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                <Palette className="h-4 w-4" />
+                                {t("Appearance")}
+                            </TabsTrigger>
+                            <TabsTrigger value="privacy" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                <Shield className="h-4 w-4" />
+                                {t("Privacy")}
+                            </TabsTrigger>
+                            <TabsTrigger value="notifications" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                <Bell className="h-4 w-4" />
+                                {t("Notifications")}
+                            </TabsTrigger>
+                            <TabsTrigger value="data" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                <Database className="h-4 w-4" />
+                                {t("Data")}
+                            </TabsTrigger>
+                            <TabsTrigger value="about" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                <Info className="h-4 w-4" />
+                                {t("About")}
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
-            {/* Horizontal Tab Menu */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 rounded-lg">
-                    <TabsTrigger
-                        value="appearance"
-                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <Palette className="h-4 w-4" />
-                        {t("Appearance")}
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="privacy"
-                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <Shield className="h-4 w-4" />
-                        {t("Privacy")}
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="notifications"
-                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <Bell className="h-4 w-4" />
-                        {t("Notifications")}
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="data"
-                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <Database className="h-4 w-4" />
-                        {t("Data")}
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="about"
-                        className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <Info className="h-4 w-4" />
-                        {t("About")}
-                    </TabsTrigger>
-                </TabsList>
+                    {/* Content Area */}
+                    <div className="flex-1 flex flex-col relative h-full">
+                        <div className="flex-1 overflow-y-auto p-6 scroll-smooth space-y-6">
+                            {/* Save Changes Bar - At Top */}
+                            {hasChanges && (
+                                <div className="border-b border-primary/50 bg-background/95 backdrop-blur sticky top-0 z-10">
+                                    <div className="py-3 px-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                                <span className="text-muted-foreground">{t("You have unsaved changes")}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button variant="ghost" size="sm" onClick={resetSettings}>
+                                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                                    {t("Reset")}
+                                                </Button>
+                                                <Button size="sm" onClick={saveSettings}>
+                                                    <Save className="mr-2 h-4 w-4" />
+                                                    {t("Save Changes")}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                 {/* Appearance Tab */}
-                <TabsContent value="appearance" className="mt-6 space-y-4">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold">
+                <TabsContent value="appearance" className="mt-0 space-y-6 m-0">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-lg font-medium">
                                 {t("Appearance Settings")}
-                            </CardTitle>
-                            <CardDescription>
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
                                 {t("Customize how TraceGuard looks and opens")}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-1">
+                            </p>
+                        </div>
+                        <div className="space-y-1">
                             <SettingItem
                                 label={t("Theme")}
                                 description={t("Choose between light, dark, or system theme")}
@@ -464,22 +479,22 @@ export default function SettingsPage() {
                                     </SelectContent>
                                 </Select>
                             </SettingItem>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </TabsContent>
 
                 {/* Privacy Tab */}
-                <TabsContent value="privacy" className="mt-6 space-y-4">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold">
+                <TabsContent value="privacy" className="mt-0 space-y-6 m-0">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-lg font-medium">
                                 {t("Privacy Protection")}
-                            </CardTitle>
-                            <CardDescription>
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
                                 {t("Configure privacy detection features and alerts")}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-1">
+                            </p>
+                        </div>
+                        <div className="space-y-1">
                             <SettingItem
                                 label={t("PII Detection")}
                                 description={t("Monitor when you enter personal information on websites")}
@@ -551,22 +566,49 @@ export default function SettingsPage() {
                                     handleChange()
                                 }}
                             />
-                        </CardContent>
-                    </Card>
+                        
+                            <Separator />
+
+                            <SettingItem
+                                label={t("Strict HTTPS Mode")}
+                                description={t("Warn when a site is not loaded over a secure HTTPS connection")}
+                            >
+                                <Switch
+                                    checked={strictHttpsMode}
+                                    onCheckedChange={(checked) => {
+                                        setStrictHttpsMode(checked)
+                                        handleChange()
+                                    }}
+                                />
+                            </SettingItem>
+
+                            <Separator />
+
+                            <SettingItem
+                                label={t("Manage Whitelist")}
+                                description={t("View and manage sites you have explicitly trusted")}
+                            >
+                                <Button variant="outline" size="sm">
+                                    <List className="mr-2 h-4 w-4" />
+                                    {t("View Whitelist")}
+                                </Button>
+                            </SettingItem>
+                        </div>
+                    </div>
                 </TabsContent>
 
                 {/* Notifications Tab */}
-                <TabsContent value="notifications" className="mt-6 space-y-4">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold">
+                <TabsContent value="notifications" className="mt-0 space-y-6 m-0">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-lg font-medium">
                                 {t("Notification Settings")}
-                            </CardTitle>
-                            <CardDescription>
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
                                 {t("Control when and how you receive security alerts")}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                            </p>
+                        </div>
+                        <div>
                             <SettingItem
                                 label={t("Alert Level")}
                                 description={
@@ -594,22 +636,22 @@ export default function SettingsPage() {
                                     </SelectContent>
                                 </Select>
                             </SettingItem>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </TabsContent>
 
                 {/* Data Tab */}
-                <TabsContent value="data" className="mt-6 space-y-4">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold">
+                <TabsContent value="data" className="mt-0 space-y-8 m-0">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-lg font-medium">
                                 {t("Data Management")}
-                            </CardTitle>
-                            <CardDescription>
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
                                 {t("Manage how long your data is stored")}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                            </p>
+                        </div>
+                        <div className="space-y-4">
                             <SettingSlider
                                 label={t("Data Retention")}
                                 description={t("Old activity logs will be automatically deleted after this period")}
@@ -639,20 +681,45 @@ export default function SettingsPage() {
                                 </div>
                                 <Progress value={storagePercentage} className="h-2" />
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
+
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-lg font-medium">
+                                {t("Export Data")}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                {t("Download a copy of your activity logs and settings")}
+                            </p>
+                        </div>
+                        <div>
+                            <Button
+                                variant="outline"
+                                onClick={exportData}
+                                className="w-full sm:w-auto"
+                            >
+                                <Download className="mr-2 h-4 w-4" />
+                                {t("Export to JSON")}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <Separator />
 
                     {/* Clear Data Actions */}
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-lg font-medium">
                                 {t("Clear Data")}
-                            </CardTitle>
-                            <CardDescription>
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
                                 {t("Remove specific data from the extension")}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                            </p>
+                        </div>
+                        <div>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Button
                                     variant="outline"
@@ -671,21 +738,23 @@ export default function SettingsPage() {
                                     {t("Reset Privacy Score")}
                                 </Button>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
+
+                    <Separator />
 
                     {/* Danger Zone */}
-                    <Card className="border-destructive/50">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-destructive">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="flex items-center gap-2 text-lg font-medium text-destructive">
                                 <AlertTriangle className="h-4 w-4" />
                                 {t("Danger Zone")}
-                            </CardTitle>
-                            <CardDescription>
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
                                 {t("Irreversible actions that will delete your data")}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                            </p>
+                        </div>
+                        <div>
                             <Button
                                 variant="outline"
                                 onClick={clearAllData}
@@ -694,20 +763,20 @@ export default function SettingsPage() {
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 {t("Delete All Data & Reset Extension")}
                             </Button>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </TabsContent>
 
                 {/* About Tab */}
-                <TabsContent value="about" className="mt-6 space-y-4">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold">
+                <TabsContent value="about" className="mt-0 space-y-6 m-0">
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-lg font-medium">
                                 {t("About TraceGuard")}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
+                            </h3>
+                        </div>
+                        <div>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <p className="text-muted-foreground text-xs">{t("Version")}</p>
                                     <p className="font-mono font-medium">{manifestVersion}</p>
@@ -716,19 +785,19 @@ export default function SettingsPage() {
                                     <p className="text-muted-foreground text-xs">{t("Schema")}</p>
                                     <p className="font-mono font-medium">v{schemaVersion}</p>
                                 </div>
-                                <div>
-                                    <p className="text-muted-foreground text-xs">{t("Storage")}</p>
-                                    <p className="font-mono font-medium">{(storageInfo.bytesInUse / 1024).toFixed(1)} KB</p>
-                                </div>
+
                             </div>
                             <Separator className="my-4" />
                             <p className="text-sm text-muted-foreground">
                                 {t("TraceGuard is a privacy-first extension designed to protect your data while you browse. It runs entirely on your device and does not send data to external servers.")}
                             </p>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </TabsContent>
-            </Tabs>
-        </div>
+                        </div>
+                    </div>
+                </Tabs>
+            </DialogContent>
+        </Dialog>
     )
 }

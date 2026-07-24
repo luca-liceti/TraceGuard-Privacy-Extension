@@ -10,8 +10,8 @@ import { AuthProvider } from "@/components/traceguard/auth-provider"
 import OverviewPage from "@/components/traceguard/pages/overview"
 import PrivacyScorePage from "@/components/traceguard/pages/privacy-score"
 import WebsiteSafetyPage from "@/components/traceguard/pages/website-safety"
-import SettingsPage from "@/components/traceguard/pages/settings"
 import HelpPage from "@/components/traceguard/pages/help"
+import { SettingsProvider } from "@/components/traceguard/settings-context"
 
 // Page Wrapper
 function PageWrapper({ children }: { children: React.ReactNode }) {
@@ -44,7 +44,6 @@ function AppContent() {
                     <Route path="/website-safety" element={<PageWrapper><WebsiteSafetyPage /></PageWrapper>} />
 
                     {/* Management Pages */}
-                    <Route path="/settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
                     <Route path="/help" element={<PageWrapper><HelpPage /></PageWrapper>} />
                 </Routes>
             </Router>
@@ -64,7 +63,9 @@ function App() {
             disableTransitionOnChange
         >
             <AuthProvider>
-                <AppContent />
+                <SettingsProvider>
+                    <AppContent />
+                </SettingsProvider>
             </AuthProvider>
         </ThemeProvider>
     )

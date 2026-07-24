@@ -14,6 +14,8 @@ import {
   Shield,
 } from "lucide-react"
 
+import { useSettingsModal } from "@/components/traceguard/settings-context"
+
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
@@ -120,24 +122,6 @@ const data = {
       title: "Settings",
       url: "#",
       icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
     },
   ],
   projects: [
@@ -161,6 +145,15 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
+  const { setSettingsOpen } = useSettingsModal()
+
+  const navMain = data.navMain.map(item => {
+    if (item.title === "Settings") {
+      return { ...item, onClick: () => setSettingsOpen(true) }
+    }
+    return item
+  })
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -183,7 +176,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
