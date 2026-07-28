@@ -47,6 +47,7 @@ export interface PolicyDetectionResult {
     source: 'tosdr' | 'local' | 'fallback';  // Where the score came from
     grade?: string;           // ToS;DR grade (A-E) if available
     serviceName?: string;     // Name of the service from ToS;DR
+    serviceId?: number;       // ID of the service from ToS;DR
     hasLocalPolicy: boolean;  // Was a privacy policy link found on the page?
     points?: { title: string; classification: string }[]; // Reasons for the grade
 }
@@ -154,6 +155,7 @@ export async function detectPrivacyPolicyDetailed(): Promise<PolicyDetectionResu
                 source: 'tosdr',
                 grade: response.grade,
                 serviceName: response.serviceName,
+                serviceId: response.serviceId,
                 hasLocalPolicy: localResult.found,
                 points: response.points
             };

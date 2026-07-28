@@ -10,7 +10,7 @@ import {
   Globe,
   HelpCircle,
   Info,
-  LogOut,
+  Lock,
   Settings,
 } from "lucide-react"
 
@@ -40,6 +40,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useSettingsModal } from "@/components/traceguard/settings-context"
+import { useAuth } from "@/components/traceguard/auth-provider"
 
 export function NavUser({
   user,
@@ -54,6 +55,7 @@ export function NavUser({
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const { setSettingsOpen } = useSettingsModal()
+  const { lock } = useAuth()
 
   const languages = [
     { code: "en", name: "English (United States)" },
@@ -153,7 +155,7 @@ export function NavUser({
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
                     <DropdownMenuItem>
-                      <span>{t("About Anthropic")}</span>
+                      <span>{t("About TraceGuard")}</span>
                       <ExternalLink className="ml-auto opacity-50" />
                     </DropdownMenuItem>
                     <DropdownMenuItem>
@@ -186,9 +188,9 @@ export function NavUser({
               </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut />
-              {t("Log out")}
+            <DropdownMenuItem onClick={() => lock()}>
+              <Lock />
+              {t("Lock Extension")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

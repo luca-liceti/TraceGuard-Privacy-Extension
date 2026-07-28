@@ -83,11 +83,11 @@ function SettingItem({
     children: React.ReactNode
 }) {
     return (
-        <div className="flex items-center justify-between py-4">
+        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5 flex-1 mr-4">
-                <Label className="text-sm font-medium">{label}</Label>
+                <Label className="text-base font-medium">{label}</Label>
                 {description && (
-                    <p className="text-xs text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground">{description}</p>
                 )}
             </div>
             <div className="flex-shrink-0">
@@ -118,11 +118,11 @@ function SettingSlider({
     onChange: (value: number) => void
 }) {
     return (
-        <div className="py-4">
-            <div className="flex items-center justify-between mb-3">
+        <div className="rounded-lg border p-4">
+            <div className="flex flex-row items-center justify-between mb-4">
                 <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">{label}</Label>
-                    <p className="text-xs text-muted-foreground">{description}</p>
+                    <Label className="text-base font-medium">{label}</Label>
+                    <p className="text-sm text-muted-foreground">{description}</p>
                 </div>
                 <Badge variant="secondary" className="font-mono">
                     {value} {unit}
@@ -137,7 +137,7 @@ function SettingSlider({
                 onChange={(e) => onChange(Number(e.target.value))}
                 className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
             />
-            <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+            <div className="flex justify-between mt-2 text-xs text-muted-foreground">
                 <span>{min} {unit}</span>
                 <span>{max} {unit}</span>
             </div>
@@ -424,374 +424,314 @@ export function SettingsModal() {
                             )}
 
                 {/* Appearance Tab */}
-                <TabsContent value="appearance" className="mt-0 space-y-6 m-0">
+                <TabsContent value="appearance" className="space-y-6 mt-0">
+                    <div>
+                        <h3 className="text-lg font-medium">
+                            {t("Appearance")}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                            {t("Customize how TraceGuard looks and opens")}
+                        </p>
+                    </div>
+                    <Separator />
                     <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-medium">
-                                {t("Appearance Settings")}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {t("Customize how TraceGuard looks and opens")}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <SettingItem
-                                label={t("Theme")}
-                                description={t("Choose between light, dark, or system theme")}
+                        <SettingItem
+                            label={t("Theme")}
+                            description={t("Choose between light, dark, or system theme")}
+                        >
+                            <Select
+                                value={themeLocal}
+                                onValueChange={(value) => {
+                                    setThemeLocal(value as 'light' | 'dark' | 'system')
+                                    handleChange()
+                                }}
                             >
-                                <Select
-                                    value={themeLocal}
-                                    onValueChange={(value) => {
-                                        setThemeLocal(value as 'light' | 'dark' | 'system')
-                                        handleChange()
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[150px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="system">{t("System")}</SelectItem>
-                                        <SelectItem value="light">{t("Light")}</SelectItem>
-                                        <SelectItem value="dark">{t("Dark")}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </SettingItem>
+                                <SelectTrigger className="w-[150px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="system">{t("System")}</SelectItem>
+                                    <SelectItem value="light">{t("Light")}</SelectItem>
+                                    <SelectItem value="dark">{t("Dark")}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </SettingItem>
 
-                            <Separator />
-
-                            <SettingItem
-                                label={t("Display Mode")}
-                                description={t("How TraceGuard opens when you click the extension icon")}
+                        <SettingItem
+                            label={t("Display Mode")}
+                            description={t("How TraceGuard opens when you click the extension icon")}
+                        >
+                            <Select
+                                value={displayMode}
+                                onValueChange={(value) => {
+                                    setDisplayMode(value as 'popup' | 'sidebar')
+                                    handleChange()
+                                }}
                             >
-                                <Select
-                                    value={displayMode}
-                                    onValueChange={(value) => {
-                                        setDisplayMode(value as 'popup' | 'sidebar')
-                                        handleChange()
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[150px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="popup">{t("Popup")}</SelectItem>
-                                        <SelectItem value="sidebar">{t("Side Panel")}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </SettingItem>
-                        </div>
+                                <SelectTrigger className="w-[150px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="popup">{t("Popup")}</SelectItem>
+                                    <SelectItem value="sidebar">{t("Side Panel")}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </SettingItem>
                     </div>
                 </TabsContent>
 
                 {/* Privacy Tab */}
-                <TabsContent value="privacy" className="mt-0 space-y-6 m-0">
+                <TabsContent value="privacy" className="space-y-6 mt-0">
+                    <div>
+                        <h3 className="text-lg font-medium">
+                            {t("Privacy")}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                            {t("Configure privacy detection features and alerts")}
+                        </p>
+                    </div>
+                    <Separator />
                     <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-medium">
-                                {t("Privacy Protection")}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {t("Configure privacy detection features and alerts")}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <SettingItem
-                                label={t("PII Detection")}
-                                description={t("Monitor when you enter personal information on websites")}
-                            >
-                                <Switch
-                                    checked={enablePIIDetection}
-                                    onCheckedChange={(checked) => {
-                                        setEnablePIIDetection(checked)
-                                        handleChange()
-                                    }}
-                                />
-                            </SettingItem>
-
-                            <Separator />
-
-                            <SettingItem
-                                label={t("Vault Auto-Lock")}
-                                description={t("When should your privacy vault automatically lock?")}
-                            >
-                                <Select
-                                    value={autoLockTimeout.toString()}
-                                    onValueChange={(value) => {
-                                        setAutoLockTimeout(Number(value))
-                                        handleChange()
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="-1">{t("On Browser Close")}</SelectItem>
-                                        <SelectItem value="1">{t("After 1 Minute")}</SelectItem>
-                                        <SelectItem value="5">{t("After 5 Minutes")}</SelectItem>
-                                        <SelectItem value="15">{t("After 15 Minutes")}</SelectItem>
-                                        <SelectItem value="0">{t("Never")}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </SettingItem>
-
-                            <Separator />
-
-                            <SettingItem
-                                label={t("Tracker Blocking")}
-                                description={t("Automatically block known tracking scripts")}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-xs">
-                                        {t("Coming Soon")}
-                                    </Badge>
-                                    <Switch
-                                        checked={enableTrackerBlocking}
-                                        disabled={true}
-                                    />
-                                </div>
-                            </SettingItem>
-
-                            <Separator />
-
-                            <SettingSlider
-                                label={t("Safety Threshold")}
-                                description={t("Get alerts when a site's safety score is below this value")}
-                                value={wssThreshold}
-                                min={0}
-                                max={100}
-                                step={5}
-                                unit=""
-                                onChange={(value) => {
-                                    setWssThreshold(value)
+                        <SettingItem
+                            label={t("PII Detection")}
+                            description={t("Monitor when you enter personal information on websites")}
+                        >
+                            <Switch
+                                checked={enablePIIDetection}
+                                onCheckedChange={(checked) => {
+                                    setEnablePIIDetection(checked)
                                     handleChange()
                                 }}
                             />
-                        
-                            <Separator />
+                        </SettingItem>
 
-                            <SettingItem
-                                label={t("Strict HTTPS Mode")}
-                                description={t("Warn when a site is not loaded over a secure HTTPS connection")}
+                        <SettingItem
+                            label={t("Vault Auto-Lock")}
+                            description={t("When should your privacy vault automatically lock?")}
+                        >
+                            <Select
+                                value={autoLockTimeout.toString()}
+                                onValueChange={(value) => {
+                                    setAutoLockTimeout(Number(value))
+                                    handleChange()
+                                }}
                             >
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="-1">{t("On Browser Close")}</SelectItem>
+                                    <SelectItem value="1">{t("After 1 Minute")}</SelectItem>
+                                    <SelectItem value="5">{t("After 5 Minutes")}</SelectItem>
+                                    <SelectItem value="15">{t("After 15 Minutes")}</SelectItem>
+                                    <SelectItem value="0">{t("Never")}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </SettingItem>
+
+                        <SettingItem
+                            label={t("Tracker Blocking")}
+                            description={t("Automatically block known tracking scripts")}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                    {t("Coming Soon")}
+                                </Badge>
                                 <Switch
-                                    checked={strictHttpsMode}
-                                    onCheckedChange={(checked) => {
-                                        setStrictHttpsMode(checked)
-                                        handleChange()
-                                    }}
+                                    checked={enableTrackerBlocking}
+                                    disabled={true}
                                 />
-                            </SettingItem>
+                            </div>
+                        </SettingItem>
 
-                            <Separator />
+                        <SettingSlider
+                            label={t("Safety Threshold")}
+                            description={t("Get alerts when a site's safety score is below this value")}
+                            value={wssThreshold}
+                            min={0}
+                            max={100}
+                            step={5}
+                            unit=""
+                            onChange={(value) => {
+                                setWssThreshold(value)
+                                handleChange()
+                            }}
+                        />
 
-                            <SettingItem
-                                label={t("Manage Whitelist")}
-                                description={t("View and manage sites you have explicitly trusted")}
-                            >
-                                <Button variant="outline" size="sm">
-                                    <List className="mr-2 h-4 w-4" />
-                                    {t("View Whitelist")}
-                                </Button>
-                            </SettingItem>
-                        </div>
+                        <SettingItem
+                            label={t("Strict HTTPS Mode")}
+                            description={t("Warn when a site is not loaded over a secure HTTPS connection")}
+                        >
+                            <Switch
+                                checked={strictHttpsMode}
+                                onCheckedChange={(checked) => {
+                                    setStrictHttpsMode(checked)
+                                    handleChange()
+                                }}
+                            />
+                        </SettingItem>
+
+                        <SettingItem
+                            label={t("Manage Whitelist")}
+                            description={t("View and manage sites you have explicitly trusted")}
+                        >
+                            <Button variant="outline" size="sm">
+                                <List className="mr-2 h-4 w-4" />
+                                {t("View Whitelist")}
+                            </Button>
+                        </SettingItem>
                     </div>
                 </TabsContent>
 
                 {/* Notifications Tab */}
-                <TabsContent value="notifications" className="mt-0 space-y-6 m-0">
+                <TabsContent value="notifications" className="space-y-6 mt-0">
+                    <div>
+                        <h3 className="text-lg font-medium">
+                            {t("Notifications")}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                            {t("Control when and how you receive security alerts")}
+                        </p>
+                    </div>
+                    <Separator />
                     <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-medium">
-                                {t("Notification Settings")}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {t("Control when and how you receive security alerts")}
-                            </p>
-                        </div>
-                        <div>
-                            <SettingItem
-                                label={t("Alert Level")}
-                                description={
-                                    notificationLevel === "silent"
-                                        ? t("You won't receive any notifications")
-                                        : notificationLevel === "balanced"
-                                            ? t("Notified for high-risk sites and critical PII events")
-                                            : t("Notified for all site changes and tracker detections")
-                                }
+                        <SettingItem
+                            label={t("Alert Level")}
+                            description={
+                                notificationLevel === "silent"
+                                    ? t("You won't receive any notifications")
+                                    : notificationLevel === "balanced"
+                                        ? t("Notified for high-risk sites and critical PII events")
+                                        : t("Notified for all site changes and tracker detections")
+                            }
+                        >
+                            <Select
+                                value={notificationLevel}
+                                onValueChange={(value) => {
+                                    setNotificationLevel(value as 'silent' | 'balanced' | 'aggressive')
+                                    handleChange()
+                                }}
                             >
-                                <Select
-                                    value={notificationLevel}
-                                    onValueChange={(value) => {
-                                        setNotificationLevel(value as 'silent' | 'balanced' | 'aggressive')
-                                        handleChange()
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[150px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="silent">{t("Silent")}</SelectItem>
-                                        <SelectItem value="balanced">{t("Balanced")}</SelectItem>
-                                        <SelectItem value="aggressive">{t("Aggressive")}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </SettingItem>
-                        </div>
+                                <SelectTrigger className="w-[150px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="silent">{t("Silent")}</SelectItem>
+                                    <SelectItem value="balanced">{t("Balanced")}</SelectItem>
+                                    <SelectItem value="aggressive">{t("Aggressive")}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </SettingItem>
                     </div>
                 </TabsContent>
 
                 {/* Data Tab */}
-                <TabsContent value="data" className="mt-0 space-y-8 m-0">
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-medium">
-                                {t("Data Management")}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {t("Manage how long your data is stored")}
-                            </p>
-                        </div>
-                        <div className="space-y-4">
-                            <SettingSlider
-                                label={t("Data Retention")}
-                                description={t("Old activity logs will be automatically deleted after this period")}
-                                value={dataRetention}
-                                min={7}
-                                max={90}
-                                step={1}
-                                unit={t("days")}
-                                onChange={(value) => {
-                                    setDataRetention(value)
-                                    handleChange()
-                                }}
-                            />
-
-                            <Separator />
-
-                            {/* Storage Usage */}
-                            <div className="py-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <HardDrive className="h-4 w-4 text-muted-foreground" />
-                                        <Label className="text-sm font-medium">{t("Storage Used")}</Label>
-                                    </div>
-                                    <span className="text-sm text-muted-foreground">
-                                        {(storageInfo.bytesInUse / 1024).toFixed(1)} KB of {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
-                                    </span>
-                                </div>
-                                <Progress value={storagePercentage} className="h-2" />
-                            </div>
-                        </div>
+                <TabsContent value="data" className="space-y-6 mt-0">
+                    <div>
+                        <h3 className="text-lg font-medium">{t("Data")}</h3>
+                        <p className="text-sm text-muted-foreground">{t("Manage your data storage, exports, and deletions")}</p>
                     </div>
-
                     <Separator />
                     
                     <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-medium">
-                                {t("Export Data")}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {t("Download a copy of your activity logs and settings")}
-                            </p>
-                        </div>
-                        <div>
-                            <Button
-                                variant="outline"
-                                onClick={exportData}
-                                className="w-full sm:w-auto"
-                            >
-                                <Download className="mr-2 h-4 w-4" />
-                                {t("Export to JSON")}
-                            </Button>
-                        </div>
-                    </div>
+                        <SettingSlider
+                            label={t("Data Retention")}
+                            description={t("Old activity logs will be automatically deleted after this period")}
+                            value={dataRetention}
+                            min={7}
+                            max={90}
+                            step={1}
+                            unit={t("days")}
+                            onChange={(value) => {
+                                setDataRetention(value)
+                                handleChange()
+                            }}
+                        />
 
-                    <Separator />
-
-                    {/* Clear Data Actions */}
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-medium">
-                                {t("Clear Data")}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {t("Remove specific data from the extension")}
-                            </p>
-                        </div>
-                        <div>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={clearActivityLogs}
-                                    className="flex-1 justify-start"
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    {t("Clear Activity Logs")}
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={resetPrivacyScore}
-                                    className="flex-1 justify-start"
-                                >
-                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                    {t("Reset Privacy Score")}
-                                </Button>
+                        {/* Storage Usage */}
+                        <div className="rounded-lg border p-4">
+                            <div className="flex flex-row items-center justify-between mb-4">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base font-medium flex items-center gap-2">
+                                        <HardDrive className="h-4 w-4 text-muted-foreground" />
+                                        {t("Storage Used")}
+                                    </Label>
+                                </div>
+                                <span className="text-sm text-muted-foreground">
+                                    {(storageInfo.bytesInUse / 1024).toFixed(1)} KB of {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
+                                </span>
                             </div>
+                            <Progress value={storagePercentage} className="h-2" />
                         </div>
                     </div>
-
-                    <Separator />
-
-                    {/* Danger Zone */}
+                    
                     <div className="space-y-4">
-                        <div>
-                            <h3 className="flex items-center gap-2 text-lg font-medium text-destructive">
-                                <AlertTriangle className="h-4 w-4" />
-                                {t("Danger Zone")}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {t("Irreversible actions that will delete your data")}
-                            </p>
+                        <div className="rounded-lg border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                             <div className="space-y-0.5">
+                                 <Label className="text-base font-medium">{t("Export Data")}</Label>
+                                 <p className="text-sm text-muted-foreground">{t("Download a copy of your activity logs and settings")}</p>
+                             </div>
+                             <Button variant="outline" onClick={exportData} className="w-full sm:w-auto">
+                                 <Download className="mr-2 h-4 w-4" />
+                                 {t("Export to JSON")}
+                             </Button>
                         </div>
-                        <div>
-                            <Button
-                                variant="outline"
-                                onClick={clearAllData}
-                                className="w-full sm:w-auto border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                {t("Delete All Data & Reset Extension")}
-                            </Button>
+
+                        <div className="rounded-lg border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                             <div className="space-y-0.5">
+                                 <Label className="text-base font-medium">{t("Clear Data")}</Label>
+                                 <p className="text-sm text-muted-foreground">{t("Remove specific data from the extension")}</p>
+                             </div>
+                             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                 <Button variant="outline" onClick={clearActivityLogs} className="flex-1">
+                                     <Trash2 className="mr-2 h-4 w-4" />
+                                     {t("Clear Activity Logs")}
+                                 </Button>
+                                 <Button variant="outline" onClick={resetPrivacyScore} className="flex-1">
+                                     <RotateCcw className="mr-2 h-4 w-4" />
+                                     {t("Reset Privacy Score")}
+                                 </Button>
+                             </div>
+                        </div>
+
+                        <div className="rounded-lg border border-destructive/50 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                             <div className="space-y-0.5">
+                                 <Label className="text-base font-medium text-destructive flex items-center gap-2">
+                                     <AlertTriangle className="h-4 w-4" />
+                                     {t("Danger Zone")}
+                                 </Label>
+                                 <p className="text-sm text-muted-foreground">{t("Irreversible actions that will delete your data")}</p>
+                             </div>
+                             <Button variant="destructive" onClick={clearAllData} className="w-full sm:w-auto">
+                                 <Trash2 className="mr-2 h-4 w-4" />
+                                 {t("Delete All Data")}
+                             </Button>
                         </div>
                     </div>
                 </TabsContent>
 
                 {/* About Tab */}
-                <TabsContent value="about" className="mt-0 space-y-6 m-0">
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-medium">
-                                {t("About TraceGuard")}
-                            </h3>
-                        </div>
-                        <div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-muted-foreground text-xs">{t("Version")}</p>
-                                    <p className="font-mono font-medium">{manifestVersion}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground text-xs">{t("Schema")}</p>
-                                    <p className="font-mono font-medium">v{schemaVersion}</p>
-                                </div>
-
+                <TabsContent value="about" className="space-y-6 mt-0">
+                    <div>
+                        <h3 className="text-lg font-medium">{t("About TraceGuard")}</h3>
+                        <p className="text-sm text-muted-foreground">{t("Information about TraceGuard Privacy Extension")}</p>
+                    </div>
+                    <Separator />
+                    <div className="rounded-lg border p-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p className="text-muted-foreground text-xs">{t("Version")}</p>
+                                <p className="font-mono font-medium">{manifestVersion}</p>
                             </div>
-                            <Separator className="my-4" />
-                            <p className="text-sm text-muted-foreground">
-                                {t("TraceGuard is a privacy-first extension designed to protect your data while you browse. It runs entirely on your device and does not send data to external servers.")}
-                            </p>
+                            <div>
+                                <p className="text-muted-foreground text-xs">{t("Schema")}</p>
+                                <p className="font-mono font-medium">v{schemaVersion}</p>
+                            </div>
                         </div>
+                        <Separator />
+                        <p className="text-sm text-muted-foreground">
+                            {t("TraceGuard is a privacy-first extension designed to protect your data while you browse. It runs entirely on your device and does not send data to external servers.")}
+                        </p>
                     </div>
                 </TabsContent>
                         </div>

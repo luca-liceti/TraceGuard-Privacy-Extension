@@ -1,63 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-// Bundled translations for top popular languages
-const resources = {
-  es: {
-    translation: {
-      "Settings": "Ajustes",
-      "Language": "Idioma",
-      "Get help": "Ayuda",
-      "Learn more": "Más información",
-      "Log out": "Cerrar sesión",
-      "About Anthropic": "Acerca de Anthropic",
-      "Tutorials": "Tutoriales",
-      "Courses": "Cursos",
-      "Usage policy": "Política de uso",
-      "Privacy policy": "Política de privacidad",
-      "Your privacy choices": "Tus opciones de privacidad",
-      "Keyboard shortcuts": "Atajos de teclado",
-      "Language changed successfully.": "Idioma cambiado correctamente.",
-      "Undo": "Deshacer"
-    }
-  },
-  fr: {
-    translation: {
-      "Settings": "Paramètres",
-      "Language": "Langue",
-      "Get help": "Obtenir de l'aide",
-      "Learn more": "En savoir plus",
-      "Log out": "Déconnexion",
-      "About Anthropic": "À propos d'Anthropic",
-      "Tutorials": "Tutoriels",
-      "Courses": "Cours",
-      "Usage policy": "Politique d'utilisation",
-      "Privacy policy": "Politique de confidentialité",
-      "Your privacy choices": "Vos choix de confidentialité",
-      "Keyboard shortcuts": "Raccourcis clavier",
-      "Language changed successfully.": "Langue changée avec succès.",
-      "Undo": "Annuler"
-    }
-  },
-  de: {
-    translation: {
-      "Settings": "Einstellungen",
-      "Language": "Sprache",
-      "Get help": "Hilfe",
-      "Learn more": "Mehr erfahren",
-      "Log out": "Abmelden",
-      "About Anthropic": "Über Anthropic",
-      "Tutorials": "Tutorials",
-      "Courses": "Kurse",
-      "Usage policy": "Nutzungsbedingungen",
-      "Privacy policy": "Datenschutzrichtlinie",
-      "Your privacy choices": "Ihre Datenschutzeinstellungen",
-      "Keyboard shortcuts": "Tastenkombinationen",
-      "Language changed successfully.": "Sprache erfolgreich geändert.",
-      "Undo": "Rückgängig"
-    }
-  }
-};
+import { resources } from './translations';
 
 // We will use chrome.storage.local to persist the selected language across all extension views,
 // and localStorage as a synchronous fallback during initial load so the UI doesn't flicker.

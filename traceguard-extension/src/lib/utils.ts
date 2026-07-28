@@ -110,3 +110,23 @@ export function formatDateTime(timestamp: number | Date): string {
         hour12: true
     })
 }
+
+/**
+ * Check if a hostname is a local address (e.g., localhost, 127.0.0.1, 192.168.x.x)
+ * 
+ * @param hostname - The hostname to check
+ * @returns true if the hostname is a local address, false otherwise
+ */
+export function isLocalAddress(hostname: string): boolean {
+    if (!hostname) return false;
+    
+    return (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '[::1]' ||
+        hostname.endsWith('.local') ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('10.') ||
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
+    );
+}

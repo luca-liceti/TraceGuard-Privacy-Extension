@@ -33,6 +33,7 @@
 // Import the modules we need
 import { analyzePage } from './analyzer';      // Runs all the privacy detectors
 import { piiDetector } from './pii-detector';  // Monitors sensitive input fields
+import { isLocalAddress } from '../lib/utils'; // Helps identify local network addresses
 
 // Log that we've started (helpful for debugging)
 console.log('TraceGuard Content Script Loaded');
@@ -61,6 +62,11 @@ function debounce(func: Function, wait: number) {
 
 // Function to perform analysis and notify background
 async function runAnalysis() {
+    // Skip analysis on local addresses
+    if (isLocalAddress(window.location.hostname)) {
+        return;
+    }
+
     try {
         // STEP 1: Analyze the current page for privacy issues
         const result = await analyzePage();
@@ -74,7 +80,8 @@ async function runAnalysis() {
             type: 'PAGE_ANALYSIS_RESULT',
             url: window.location.href,
             scores: result.scores,
-            detectionDetails: result.detectionDetails
+            detectionDetails: result.detectionDetails,
+            rawForEnrichment: result.rawForEnrichment
         }).catch(() => {
             // If sending fails, ignore it
         });

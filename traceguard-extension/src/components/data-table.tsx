@@ -89,6 +89,8 @@ export const schema = z.object({
   inputs: z.string(),
   reputation: z.string(),
   policy: z.string(),
+  headersGrade: z.string().optional(),
+  fingerprintingAttempts: z.number().optional(),
   details: z.any().optional(),
 })
 
@@ -181,6 +183,29 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
     cell: ({ row }) => {
       const grade = row.getValue("policy") as string
       return <div className={`font-semibold ${getPolicyColor(grade)}`}>{grade}</div>
+    },
+  },
+  {
+    accessorKey: "headersGrade",
+    header: t("Headers"),
+    cell: ({ row }) => {
+      const grade = row.getValue("headersGrade") as string | undefined
+      if (!grade) return <div className="text-muted-foreground text-xs">—</div>
+      return <div className={`font-semibold ${getPolicyColor(grade)}`}>{grade}</div>
+    },
+  },
+  {
+    accessorKey: "fingerprintingAttempts",
+    header: t("Fingerprinting"),
+    cell: ({ row }) => {
+      const count = row.getValue("fingerprintingAttempts") as number | undefined
+      if (count === undefined || count === null) return <div className="text-muted-foreground text-xs">—</div>
+      if (count === 0) return <div>0</div>
+      return (
+        <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-950/20 dark:text-yellow-400 border-transparent">
+          {count}
+        </Badge>
+      )
     },
   },
   {

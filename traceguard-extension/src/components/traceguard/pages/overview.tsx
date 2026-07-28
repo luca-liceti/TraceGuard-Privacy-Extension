@@ -89,8 +89,10 @@ export default function OverviewPage() {
         ? group.detectors.reputation?.details 
         : { status: group.detectors.reputation?.score === 100 ? t('Clean') : group.detectors.reputation?.score === 0 ? t('Blacklisted') : t('Suspicious') };
 
-      const trackersCount = trackingDetails?.trackerCount ?? trackingDetails?.count ?? 0
-      const cookiesCount = cookiesDetails?.tracking ?? 0
+      const enriched = siteCache[group.domain]?.enrichedDetails
+
+      const trackersCount = enriched?.trackers?.summary?.total ?? trackingDetails?.trackerCount ?? trackingDetails?.count ?? 0
+      const cookiesCount = enriched?.cookies?.summary?.total ?? cookiesDetails?.tracking ?? 0
       const sensitiveInputsCount = inputsDetails?.sensitive ?? 0
       const reputationStatus = reputationDetails?.status ?? t("Unknown")
       const policyGrade = policyDetails?.grade ?? t("N/A")
@@ -103,6 +105,9 @@ export default function OverviewPage() {
          reputation: { details: reputationDetails }
       }
 
+      const headersGrade = enriched?.headers?.summary?.grade ?? undefined
+      const fingerprintingAttempts = enriched?.fingerprinting?.summary?.totalAttempts ?? undefined
+
       visits.push({
         id: `${group.domain}-${group.timestamp}`,
         domain: group.domain,
@@ -114,6 +119,8 @@ export default function OverviewPage() {
         inputs: sensitiveInputsCount > 0 ? t("Yes") : t("No"),
         reputation: reputationStatus,
         policy: policyGrade,
+        headersGrade,
+        fingerprintingAttempts,
         details: finalDetails
       })
     }

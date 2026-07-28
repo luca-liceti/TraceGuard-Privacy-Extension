@@ -29,7 +29,7 @@
 // Import all the individual detector functions
 import { detectTrackingDetailed, detectTrackersRaw } from './detectors/tracking'; // Finds trackers
 import { detectSensitiveInputs } from './detectors/input';     // Finds sensitive fields
-import { detectPrivacyPolicy } from './detectors/policy';      // Checks privacy policy
+import { detectPrivacyPolicyDetailed } from './detectors/policy';      // Checks privacy policy
 import { detectCookiesDetailed, detectCookiesRaw } from './detectors/cookie';    // Analyzes cookies
 import { detectFingerprintingAttempts } from './detectors/fingerprinting';
 import { ScoreBreakdown } from '@/lib/types';                  // Type definitions
@@ -38,7 +38,13 @@ export interface DetectionDetails {
     tracking: { count: number; known: number; suspicious: number };
     cookies: { total: number; tracking: number; thirdParty: number };
     input: { total: number; sensitive: number; types: string[] };
-    policy: { grade?: string; source: string; score: number };
+    policy: { 
+        grade?: string; 
+        source: string; 
+        score: number;
+        serviceId?: number;
+        points?: { title: string; classification: string }[];
+    };
 }
 
 export interface PageAnalysisResult {
@@ -67,19 +73,7 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
     const reputationScore = 100;
 
     // Privacy policy check with ToS;DR API (async)
-    const policyScore = await detectPrivacyPolicy();
-
-    // Determine policy source and grade from score
-    let policyGrade: string | undefined;
-    let policySource = 'fallback';
-
-    // ToS;DR scores: 20 (E), 40 (D), 60 (C), 80 (B), 100 (A)
-    if (policyScore === 100) { policyGrade = 'A'; policySource = 'tosdr'; }
-    else if (policyScore === 80) { policyGrade = 'B'; policySource = 'tosdr'; }
-    else if (policyScore === 60) { policyGrade = 'C'; policySource = 'tosdr'; }
-    else if (policyScore === 40) { policyGrade = 'D'; policySource = 'tosdr'; }
-    else if (policyScore === 20) { policyGrade = 'E'; policySource = 'tosdr'; }
-    // Fallback scores: 50 (has link), 25 (no link)
+    const policyResult = await detectPrivacyPolicyDetailed();
 
     return {
         scores: {
@@ -87,7 +81,7 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
             tracking: trackingResult.score,
             cookies: cookieResult.score,
             input: inputResult.score,
-            policy: policyScore
+            policy: policyResult.score
         },
         sensitiveFields: inputResult.fields,
         detectionDetails: {
@@ -111,9 +105,11 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
                 ].filter((v, i, a) => a.indexOf(v) === i) // unique
             },
             policy: {
-                grade: policyGrade,
-                source: policySource,
-                score: policyScore
+                grade: policyResult.grade,
+                source: policyResult.source,
+                score: policyResult.score,
+                serviceId: policyResult.serviceId,
+                points: policyResult.points
             }
         },
         rawForEnrichment: {

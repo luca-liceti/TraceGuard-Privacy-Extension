@@ -13,6 +13,7 @@
  */
 
 import { NetworkRequestDetail } from '../../lib/types';
+import { isLocalAddress } from '../../lib/utils';
 import { isTrackerDomain, lookupTrackerDomain } from './database-loader';
 
 interface TabNetworkData {
@@ -36,6 +37,14 @@ export function initNetworkMonitor() {
             
             // Initialize tab data on main_frame navigation
             if (details.type === 'main_frame') {
+                try {
+                    const mainUrl = new URL(details.url);
+                    if (isLocalAddress(mainUrl.hostname)) {
+                        tabData.delete(details.tabId);
+                        return; // Ignore local sites completely
+                    }
+                } catch (e) {}
+
                 tabData.set(details.tabId, {
                     url: details.url,
                     requests: {},
@@ -50,6 +59,8 @@ export function initNetworkMonitor() {
 
             try {
                 const reqUrl = new URL(details.url);
+                if (isLocalAddress(reqUrl.hostname)) return;
+
                 const mainUrl = new URL(data.url);
                 const isThirdParty = reqUrl.hostname !== mainUrl.hostname && !reqUrl.hostname.endsWith('.' + mainUrl.hostname);
 

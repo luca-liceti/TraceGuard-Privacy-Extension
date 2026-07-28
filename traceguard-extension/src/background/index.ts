@@ -40,7 +40,7 @@ import { preWarmDatabases, lookupTrackerDomain } from './services/database-loade
 import { initNetworkMonitor, getAndClearNetworkData } from './services/network-monitor';
 import { enrichCookies } from './services/cookie-enricher';
 import { enrichTrackers } from './services/tracker-enricher';
-import { analyzeHeaders } from './services/header-analyzer';
+import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
 
 async function getCryptoKey(): Promise<CryptoKey | null> {
     const session = await chrome.storage.session.get('cryptoKeyHex');
@@ -491,12 +491,15 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             },
             headers: {
                 items: headers,
-                summary: {
-                    score: 0,
-                    present: headers.filter(h => h.present).length,
-                    missing: headers.filter(h => !h.present).length,
-                    grade: 'C'
-                }
+                summary: (() => {
+                    const { score, grade } = computeHeaderGrade(headers);
+                    return {
+                        score,
+                        present: headers.filter(h => h.present).length,
+                        missing: headers.filter(h => !h.present).length,
+                        grade
+                    };
+                })()
             },
             fingerprinting: {
                 items: fingerprintingItems,

@@ -89,3 +89,25 @@ export function analyzeHeaders(headers: { name: string; value: string }[]): Head
     
     return results;
 }
+
+/**
+ * Computes a summary score (0-100) and letter grade (A-F) from header analysis results.
+ * Weights: good=2, fair=1, poor=0.5, missing=0
+ */
+export function computeHeaderGrade(items: HeaderAnalysisDetail[]): { score: number; grade: 'A' | 'B' | 'C' | 'D' | 'F' } {
+    if (items.length === 0) return { score: 0, grade: 'F' };
+
+    const ratingWeights: Record<string, number> = { good: 2, fair: 1, poor: 0.5, missing: 0 };
+    const maxPoints = items.length * 2; // max if all 'good'
+    const earned = items.reduce((sum, h) => sum + (ratingWeights[h.rating] ?? 0), 0);
+    const score = Math.round((earned / maxPoints) * 100);
+
+    let grade: 'A' | 'B' | 'C' | 'D' | 'F';
+    if (score >= 90) grade = 'A';
+    else if (score >= 70) grade = 'B';
+    else if (score >= 50) grade = 'C';
+    else if (score >= 30) grade = 'D';
+    else grade = 'F';
+
+    return { score, grade };
+}

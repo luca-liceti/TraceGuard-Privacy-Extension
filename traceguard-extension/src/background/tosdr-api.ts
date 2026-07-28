@@ -44,6 +44,7 @@ interface TosDRResult {
     score: number; // 0-100 (0 = dangerous/no rating, 100 = safe/A-grade)
     source: 'tosdr' | 'fallback';
     serviceName?: string;
+    serviceId?: number;
     points?: { title: string; classification: string }[];
 }
 
@@ -178,6 +179,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
             score: score,
             source: 'tosdr',
             serviceName: service.name,
+            serviceId: service.id,
             points: []
         };
 

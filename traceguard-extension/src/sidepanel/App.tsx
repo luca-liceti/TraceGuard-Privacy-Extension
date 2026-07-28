@@ -36,7 +36,7 @@
  * =============================================================================
  */
 
-import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Flame, Activity, Cookie, FileText, Key, Lock, ShieldAlert } from "lucide-react"
+import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Flame, Activity, Cookie, FileText, Key, Lock, ShieldAlert, XCircle, ThumbsDown, Info, ExternalLink, Network, Fingerprint } from "lucide-react"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -52,6 +52,7 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Progress } from "@/components/ui/progress"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -94,6 +95,17 @@ function getUPSColor(ups: number): string {
     if (ups >= 60) return "text-blue-500";
     if (ups >= 40) return "text-yellow-500";
     return "text-red-500";
+}
+
+function getGradeColor(grade: string): string {
+    switch (grade?.toUpperCase()) {
+        case "A": return "text-green-500 font-bold";
+        case "B": return "text-blue-500 font-bold";
+        case "C": return "text-yellow-500 font-bold";
+        case "D": return "text-orange-500 font-bold";
+        case "E": return "text-red-500 font-bold";
+        default: return "text-muted-foreground";
+    }
 }
 
 const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> => ({
@@ -415,18 +427,61 @@ function App() {
                                                         )}
                                                         {key === 'policy' && (
                                                             <>
-                                                                <div className="flex justify-between">
+                                                                <div className="flex justify-between items-center">
                                                                     <span>{t("ToS;DR Grade")}</span>
-                                                                    <span className="font-medium">
-                                                                        {state.currentSite?.detectionDetails?.policy?.grade || t("Not rated")}
-                                                                    </span>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className={`font-medium ${getGradeColor(state.currentSite?.detectionDetails?.policy?.grade || '')}`}>
+                                                                            {state.currentSite?.detectionDetails?.policy?.grade || t("Not rated")}
+                                                                        </span>
+                                                                        {state.currentSite?.detectionDetails?.policy?.serviceId && (
+                                                                            <Button 
+                                                                                variant="outline" 
+                                                                                size="sm" 
+                                                                                className="h-6 text-xs px-2 py-0"
+                                                                                onClick={() => {
+                                                                                    chrome.tabs.create({ url: `https://tosdr.org/en/service/${state.currentSite!.detectionDetails!.policy!.serviceId}` });
+                                                                                }}
+                                                                            >
+                                                                                <Globe className="h-3 w-3 mr-1" />
+                                                                                {t("ToS;DR")}
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex justify-between">
+                                                                <div className="flex justify-between items-center">
                                                                     <span>{t("Source")}</span>
                                                                     <span className="font-medium capitalize">
                                                                         {state.currentSite?.detectionDetails?.policy?.source === 'tosdr' ? t("ToS;DR API") : t("Local detection")}
                                                                     </span>
                                                                 </div>
+                                                                {state.currentSite?.detectionDetails?.policy?.points && state.currentSite.detectionDetails.policy.points.length > 0 && (
+                                                                    <ScrollArea className="h-[200px] mt-2 border-t pt-2 border-muted-foreground/20">
+                                                                        {[...state.currentSite.detectionDetails.policy.points].sort((a: any, b: any) => {
+                                                                            const order: Record<string, number> = { blocker: 1, bad: 2, neutral: 3, good: 4 };
+                                                                            return (order[a.classification] || 5) - (order[b.classification] || 5);
+                                                                        }).map((p: any, idx: number) => {
+                                                                            let Icon = Info;
+                                                                            let iconClass = "text-muted-foreground";
+                                                                            if (p.classification === 'blocker') {
+                                                                                Icon = XCircle;
+                                                                                iconClass = "text-red-600 dark:text-red-400";
+                                                                            } else if (p.classification === 'bad') {
+                                                                                Icon = ThumbsDown;
+                                                                                iconClass = "text-orange-500 dark:text-orange-400";
+                                                                            } else if (p.classification === 'good') {
+                                                                                Icon = CheckCircle;
+                                                                                iconClass = "text-green-600 dark:text-green-400";
+                                                                            }
+                                                                            return (
+                                                                                <div key={idx} className="flex gap-2 items-start py-1">
+                                                                                    <Icon className={`h-4 w-4 shrink-0 mt-0.5 ${iconClass}`} />
+                                                                                    <span className="text-xs">{p.title}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </ScrollArea>
+                                                                )}
+
                                                             </>
                                                         )}
                                                     </div>
@@ -436,6 +491,66 @@ function App() {
                                     );
                                 })}
                             </Accordion>
+
+                                {/* ── Enriched data compact rows ── */}
+                                {(() => {
+                                    const enriched = state.currentSite?.enrichedDetails
+                                    if (!enriched) return null
+                                    return (
+                                        <div className="border-t divide-y">
+                                            {/* Network Requests */}
+                                            {enriched.networkRequests && enriched.networkRequests.summary.total > 0 && (
+                                                <div className="px-3 py-2 flex items-center gap-2">
+                                                    <Network className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-xs font-medium">{t("Network Requests")}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {enriched.networkRequests.summary.thirdParty} {t("third-party")} · {enriched.networkRequests.summary.trackerRequests} {t("trackers")} · {enriched.networkRequests.summary.blocked} {t("blocked")}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* Fingerprinting */}
+                                            {enriched.fingerprinting && enriched.fingerprinting.summary.totalAttempts > 0 && (
+                                                <div className="px-3 py-2 flex items-center gap-2">
+                                                    <Fingerprint className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-xs font-medium">{t("Fingerprinting")}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {enriched.fingerprinting.summary.totalAttempts} {t("attempts")} · {enriched.fingerprinting.summary.techniques.join(', ')}
+                                                        </div>
+                                                    </div>
+                                                    <span className={`text-xs font-semibold shrink-0 ${
+                                                        enriched.fingerprinting.summary.riskLevel === 'high' ? 'text-red-500' :
+                                                        enriched.fingerprinting.summary.riskLevel === 'medium' ? 'text-yellow-500' : 'text-muted-foreground'
+                                                    }`}>
+                                                        {enriched.fingerprinting.summary.riskLevel}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {/* Security Headers */}
+                                            {enriched.headers && enriched.headers.items.length > 0 && (
+                                                <div className="px-3 py-2 flex items-center gap-2">
+                                                    <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-xs font-medium">{t("Security Headers")}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {enriched.headers.summary.present}/{enriched.headers.summary.present + enriched.headers.summary.missing} {t("present")}
+                                                        </div>
+                                                    </div>
+                                                    <span className={`text-sm font-bold shrink-0 ${
+                                                        enriched.headers.summary.grade === 'A' ? 'text-green-500' :
+                                                        enriched.headers.summary.grade === 'B' ? 'text-blue-500' :
+                                                        enriched.headers.summary.grade === 'C' ? 'text-yellow-500' :
+                                                        enriched.headers.summary.grade === 'D' ? 'text-orange-500' : 'text-red-500'
+                                                    }`}>
+                                                        {enriched.headers.summary.grade}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })()}
                         </div>
                     ) : (
                         <div className="p-3 rounded-lg border bg-card shadow-sm">
