@@ -1,23 +1,16 @@
 import * as React from "react"
 import { useTranslation } from "react-i18next"
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
+  LayoutDashboard,
+  BarChart,
+  ShieldAlert,
+  SlidersHorizontal,
   Shield,
 } from "lucide-react"
 
 import { useSettingsModal } from "@/components/traceguard/settings-context"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
@@ -31,125 +24,66 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 
-// This is sample data.
+// This is the dashboard data
 const data = {
   user: {
     name: "shadcn",
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
+      title: "Overview",
+      url: "#/overview",
+      icon: LayoutDashboard,
+      isActive: false,
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
+      title: "Rankings & Stats",
+      url: "#/rankings",
+      icon: BarChart,
+      isActive: false,
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
+      title: "Website Safety",
+      url: "#/website-safety",
+      icon: ShieldAlert,
+      isActive: false,
     },
     {
       title: "Settings",
       url: "#",
-      icon: Settings2,
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      icon: SlidersHorizontal,
+      isActive: true,
+      items: [
+        { title: "Appearance", url: "#appearance" },
+        { title: "Privacy", url: "#privacy" },
+        { title: "Notifications", url: "#notifications" },
+        { title: "Allow/Block Sites", url: "#domain-lists" },
+        { title: "Data", url: "#data" },
+        { title: "About", url: "#about" },
+      ],
     },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
-  const { setSettingsOpen } = useSettingsModal()
+  const { setSettingsOpen, setActiveTab } = useSettingsModal()
 
   const navMain = data.navMain.map(item => {
     if (item.title === "Settings") {
-      return { ...item, onClick: () => setSettingsOpen(true) }
+      return { 
+        ...item, 
+        onClick: () => setSettingsOpen(true),
+        items: item.items?.map(subItem => ({
+          ...subItem,
+          onClick: () => {
+            setActiveTab(subItem.url.replace("#", ""))
+            setSettingsOpen(true)
+          }
+        }))
+      }
     }
     return item
   })
@@ -177,7 +111,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

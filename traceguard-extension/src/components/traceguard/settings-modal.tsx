@@ -168,6 +168,8 @@ export function SettingsModal() {
     const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
     const [autoLockTimeout, setAutoLockTimeout] = useState(settings?.autoLockTimeout ?? -1)
     const [strictHttpsMode, setStrictHttpsMode] = useState(settings?.strictHttpsMode ?? false)
+    const [whitelist, setWhitelist] = useState<string[]>(settings?.whitelist || [])
+    const [blacklist, setBlacklist] = useState<string[]>(settings?.blacklist || [])
 
     // Fetch manifest version
     useEffect(() => {
@@ -207,6 +209,8 @@ export function SettingsModal() {
             setDisplayMode(settings.displayMode || "popup")
             setAutoLockTimeout(settings.autoLockTimeout ?? -1)
             setStrictHttpsMode(settings.strictHttpsMode ?? false)
+            setWhitelist(settings.whitelist || [])
+            setBlacklist(settings.blacklist || [])
         }
     }, [settings])
 
@@ -228,6 +232,8 @@ export function SettingsModal() {
             displayMode,
             autoLockTimeout,
             strictHttpsMode,
+            whitelist,
+            blacklist,
         }
 
         await chrome.storage.local.set({ settings: updatedSettings })
@@ -384,6 +390,10 @@ export function SettingsModal() {
                             <TabsTrigger value="notifications" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
                                 <Bell className="h-4 w-4" />
                                 {t("Notifications")}
+                            </TabsTrigger>
+                            <TabsTrigger value="domain-lists" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                <ShieldAlert className="h-4 w-4" />
+                                {t("Allow/Block")}
                             </TabsTrigger>
                             <TabsTrigger value="data" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
                                 <Database className="h-4 w-4" />
@@ -570,16 +580,6 @@ export function SettingsModal() {
                                 }}
                             />
                         </SettingItem>
-
-                        <SettingItem
-                            label={t("Manage Whitelist")}
-                            description={t("View and manage sites you have explicitly trusted")}
-                        >
-                            <Button variant="outline" size="sm">
-                                <List className="mr-2 h-4 w-4" />
-                                {t("View Whitelist")}
-                            </Button>
-                        </SettingItem>
                     </div>
                 </TabsContent>
 
@@ -622,6 +622,119 @@ export function SettingsModal() {
                                 </SelectContent>
                             </Select>
                         </SettingItem>
+                    </div>
+                </TabsContent>
+
+                {/* Domain Lists Tab */}
+                <TabsContent value="domain-lists" className="space-y-6 mt-0">
+                    <div>
+                        <h3 className="text-lg font-medium">{t("Allow/Block Sites")}</h3>
+                        <p className="text-sm text-muted-foreground">{t("Manage explicit exceptions for website tracking and safety")}</p>
+                    </div>
+                    <Separator />
+                    
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h4 className="text-sm font-medium flex items-center gap-2"><Shield className="h-4 w-4 text-green-500" /> {t("Allowed Sites (Whitelist)")}</h4>
+                            <p className="text-sm text-muted-foreground">{t("These sites will never trigger privacy alerts or be blocked.")}</p>
+                            <div className="flex gap-2">
+                                <input 
+                                    id="add-whitelist" 
+                                    placeholder="e.g. example.com" 
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            const val = e.currentTarget.value.trim();
+                                            if (val && !whitelist.includes(val)) {
+                                                setWhitelist([...whitelist, val]);
+                                                handleChange();
+                                            }
+                                            e.currentTarget.value = '';
+                                        }
+                                    }}
+                                />
+                                <Button size="sm" onClick={() => {
+                                    const input = document.getElementById('add-whitelist') as HTMLInputElement;
+                                    const val = input.value.trim();
+                                    if (val && !whitelist.includes(val)) {
+                                        setWhitelist([...whitelist, val]);
+                                        handleChange();
+                                    }
+                                    input.value = '';
+                                }}>{t("Add")}</Button>
+                            </div>
+                            <div className="rounded-md border max-h-[150px] overflow-y-auto">
+                                {whitelist.length === 0 ? (
+                                    <div className="p-4 text-center text-sm text-muted-foreground">{t("No allowed sites")}</div>
+                                ) : (
+                                    <ul className="divide-y">
+                                        {whitelist.map(domain => (
+                                            <li key={domain} className="flex items-center justify-between p-2 px-3 text-sm">
+                                                <span>{domain}</span>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => {
+                                                    setWhitelist(whitelist.filter(d => d !== domain));
+                                                    handleChange();
+                                                }}>
+                                                    <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-4">
+                            <h4 className="text-sm font-medium flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-destructive" /> {t("Blocked Sites (Blacklist)")}</h4>
+                            <p className="text-sm text-muted-foreground">{t("These sites will always trigger high-risk alerts.")}</p>
+                            <div className="flex gap-2">
+                                <input 
+                                    id="add-blacklist" 
+                                    placeholder="e.g. badsite.com" 
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            const val = e.currentTarget.value.trim();
+                                            if (val && !blacklist.includes(val)) {
+                                                setBlacklist([...blacklist, val]);
+                                                handleChange();
+                                            }
+                                            e.currentTarget.value = '';
+                                        }
+                                    }}
+                                />
+                                <Button size="sm" onClick={() => {
+                                    const input = document.getElementById('add-blacklist') as HTMLInputElement;
+                                    const val = input.value.trim();
+                                    if (val && !blacklist.includes(val)) {
+                                        setBlacklist([...blacklist, val]);
+                                        handleChange();
+                                    }
+                                    input.value = '';
+                                }}>{t("Add")}</Button>
+                            </div>
+                            <div className="rounded-md border max-h-[150px] overflow-y-auto">
+                                {blacklist.length === 0 ? (
+                                    <div className="p-4 text-center text-sm text-muted-foreground">{t("No blocked sites")}</div>
+                                ) : (
+                                    <ul className="divide-y">
+                                        {blacklist.map(domain => (
+                                            <li key={domain} className="flex items-center justify-between p-2 px-3 text-sm">
+                                                <span>{domain}</span>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => {
+                                                    setBlacklist(blacklist.filter(d => d !== domain));
+                                                    handleChange();
+                                                }}>
+                                                    <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </TabsContent>
 
