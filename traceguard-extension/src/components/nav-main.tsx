@@ -56,7 +56,7 @@ export function NavMain({
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild onClick={subItem.onClick}>
+                      <SidebarMenuSubButton asChild>
                         <a href={subItem.url} onClick={(e) => {
                           if (subItem.onClick) {
                             e.preventDefault()

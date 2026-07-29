@@ -150,13 +150,12 @@ export function SettingsModal() {
     const state = useAppState()
     const settings = useSettings()
     const { setTheme: applyTheme } = useTheme()
-    const { isSettingsOpen, setSettingsOpen } = useSettingsModal()
+    const { isSettingsOpen, setSettingsOpen, activeTab, setActiveTab } = useSettingsModal()
 
     const [hasChanges, setHasChanges] = useState(false)
     const [storageInfo, setStorageInfo] = useState({ bytesInUse: 0, quota: 0 })
     const [manifestVersion, setManifestVersion] = useState("1.0.0")
     const [schemaVersion, setSchemaVersion] = useState(1)
-    const [activeTab, setActiveTab] = useState("appearance")
 
     // Local state for settings
     const [themeLocal, setThemeLocal] = useState(settings?.theme || "system")
