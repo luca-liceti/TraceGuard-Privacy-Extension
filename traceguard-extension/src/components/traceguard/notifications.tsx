@@ -64,24 +64,24 @@ function formatTimeAgo(timestamp: number): string {
 function getSeverityIcon(severity: NotificationEvent['severity']) {
     switch (severity) {
         case 'critical':
-            return <AlertTriangle className="h-4 w-4 text-red-500" />
+            return <AlertTriangle className="h-4 w-4 text-destructive" />
         case 'warning':
-            return <AlertCircle className="h-4 w-4 text-yellow-500" />
+            return <AlertCircle className="h-4 w-4 text-warning" />
         case 'info':
         default:
-            return <Info className="h-4 w-4 text-blue-500" />
+            return <Info className="h-4 w-4 text-primary" />
     }
 }
 
 function getSeverityDot(severity: NotificationEvent['severity']) {
     switch (severity) {
         case 'critical':
-            return 'bg-red-500'
+            return 'bg-destructive'
         case 'warning':
-            return 'bg-yellow-500'
+            return 'bg-warning'
         case 'info':
         default:
-            return 'bg-blue-500'
+            return 'bg-primary'
     }
 }
 
@@ -114,7 +114,7 @@ export function NotificationDropdown() {
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
                         <Badge
-                            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500 text-white border-0"
+                            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive text-destructive-foreground border-0"
                         >
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </Badge>

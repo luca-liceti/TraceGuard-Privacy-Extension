@@ -143,13 +143,13 @@ export default function PrivacyScorePage() {
                             <div className="flex items-center justify-center md:justify-start gap-2 mt-4">
                                 {trend > 0 ? (
                                     <>
-                                        <TrendingUp className="h-5 w-5 text-green-500" />
-                                        <span className="text-green-500 font-medium">+{trend} {t("from previous")}</span>
+                                        <TrendingUp className="h-5 w-5 text-success" />
+                                        <span className="text-success font-medium">+{trend} {t("from previous")}</span>
                                     </>
                                 ) : trend < 0 ? (
                                     <>
-                                        <TrendingDown className="h-5 w-5 text-red-500" />
-                                        <span className="text-red-500 font-medium">{trend} {t("from previous")}</span>
+                                        <TrendingDown className="h-5 w-5 text-destructive" />
+                                        <span className="text-destructive font-medium">{trend} {t("from previous")}</span>
                                     </>
                                 ) : (
                                     <>
@@ -170,7 +170,7 @@ export default function PrivacyScorePage() {
                     value={state.ups}
                     subtitle={t("Your privacy rating")}
                     icon={Target}
-                    iconColor="text-blue-500"
+                    iconColor="text-primary"
                     valueColor={scoreLevel.color}
                 />
                 <StatCard
@@ -178,7 +178,7 @@ export default function PrivacyScorePage() {
                     value={avgScore}
                     subtitle={t("All-time average")}
                     icon={BarChart3}
-                    iconColor="text-orange-500"
+                    iconColor="text-warning"
                     valueColor={getStatusConfig(avgScore).color}
                 />
                 <StatCard
@@ -186,7 +186,7 @@ export default function PrivacyScorePage() {
                     value={lowestScore}
                     subtitle={t("Historical low")}
                     icon={Calendar}
-                    iconColor="text-red-500"
+                    iconColor="text-destructive"
                     valueColor={getStatusConfig(lowestScore).color}
                 />
             </div>

@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { getSafetyTextColor, getSafetyBgColor, getSafetyBorderColor } from "@/lib/theme-utils"
 
 interface OverviewTileProps {
     title: string
@@ -21,16 +22,16 @@ interface OverviewTileProps {
 }
 
 const statusColors = {
-    success: 'border-l-green-500',
-    warning: 'border-l-yellow-500',
-    danger: 'border-l-red-500',
+    success: 'border-l-success',
+    warning: 'border-l-warning',
+    danger: 'border-l-destructive',
     neutral: 'border-l-primary'
 }
 
 const statusTextColors = {
-    success: 'text-green-500',
-    warning: 'text-yellow-500',
-    danger: 'text-red-500',
+    success: 'text-success',
+    warning: 'text-warning',
+    danger: 'text-destructive',
     neutral: 'text-foreground'
 }
 
@@ -70,10 +71,10 @@ export function OverviewTile({
                         {trend && (
                             <div className="flex items-center gap-1">
                                 {trend.direction === 'up' && (
-                                    <TrendingUp className="h-3 w-3 text-green-500" />
+                                    <TrendingUp className="h-3 w-3 text-success" />
                                 )}
                                 {trend.direction === 'down' && (
-                                    <TrendingDown className="h-3 w-3 text-red-500" />
+                                    <TrendingDown className="h-3 w-3 text-destructive" />
                                 )}
                                 {trend.direction === 'stable' && (
                                     <Minus className="h-3 w-3 text-muted-foreground" />
@@ -108,11 +109,11 @@ interface HeroTileProps {
 }
 
 const heroStatusConfig = {
-    excellent: { color: 'text-green-500', bg: 'bg-green-500/10', label: 'EXCELLENT' },
-    good: { color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'GOOD' },
-    fair: { color: 'text-yellow-500', bg: 'bg-yellow-500/10', label: 'FAIR' },
-    poor: { color: 'text-orange-500', bg: 'bg-orange-500/10', label: 'POOR' },
-    critical: { color: 'text-red-500', bg: 'bg-red-500/10', label: 'CRITICAL' }
+    excellent: { label: 'EXCELLENT' },
+    good: { label: 'GOOD' },
+    fair: { label: 'FAIR' },
+    poor: { label: 'POOR' },
+    critical: { label: 'CRITICAL' }
 }
 
 export function HeroTile({ score, trend, status, href }: HeroTileProps) {
@@ -121,11 +122,9 @@ export function HeroTile({ score, trend, status, href }: HeroTileProps) {
     return (
         <Link to={href} className="block group">
             <Card className={cn(
-                "border-l-4 transition-all duration-200 cursor-pointer",
+                "relative overflow-hidden transition-all duration-200 border-l-4",
                 "hover:bg-accent hover:shadow-md",
-                status === 'excellent' || status === 'good' ? 'border-l-green-500' :
-                    status === 'fair' ? 'border-l-yellow-500' :
-                        status === 'poor' ? 'border-l-orange-500' : 'border-l-red-500'
+                getSafetyBorderColor(status)
             )}>
                 <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -145,20 +144,20 @@ export function HeroTile({ score, trend, status, href }: HeroTileProps) {
 
                             {/* Status & Trend */}
                             <div>
-                                <div className={cn(
-                                    "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium",
-                                    config.bg,
-                                    config.color
+                                <Badge variant="secondary" className={cn(
+                                    "text-xs font-semibold px-2.5 py-0.5 border-transparent",
+                                    getSafetyTextColor(status),
+                                    getSafetyBgColor(status)
                                 )}>
                                     {config.label}
-                                </div>
+                                </Badge>
                                 {trend && (
                                     <div className="flex items-center gap-1 mt-2">
                                         {trend.direction === 'up' && (
-                                            <TrendingUp className="h-4 w-4 text-green-500" />
+                                            <TrendingUp className="h-4 w-4 text-success" />
                                         )}
                                         {trend.direction === 'down' && (
-                                            <TrendingDown className="h-4 w-4 text-red-500" />
+                                            <TrendingDown className="h-4 w-4 text-destructive" />
                                         )}
                                         {trend.direction === 'stable' && (
                                             <Minus className="h-4 w-4 text-muted-foreground" />

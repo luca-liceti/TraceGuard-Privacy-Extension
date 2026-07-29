@@ -44,6 +44,8 @@
 import React, { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Globe, Calendar, TrendingUp, Search, BarChart3 } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { getSafetyColorFromScore } from "@/lib/theme-utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -101,14 +103,8 @@ export default function SitesAnalyzedPage() {
     ).length
 
     // Get safety color based on WSS (higher = safer = green)
-    const getSafetyColor = (wss: number) => {
-        if (wss >= 80) return "text-primary"  // Excellent
-        if (wss >= 60) return "text-primary"   // Good
-        if (wss >= 40) return "text-primary" // Fair
-        if (wss >= 20) return "text-primary" // Poor
-        return "text-destructive"                    // Critical
-    }
-
+    // Removed local getSafetyColor                // Critical
+    
     return (
         <div className="space-y-6 w-full">
             {/* Header */}
@@ -276,7 +272,7 @@ export default function SitesAnalyzedPage() {
                                         </div>
                                     </div>
                                     <div className="text-right ml-3">
-                                        <div className={cn("text-lg font-bold", getSafetyColor(data.wss))}>
+                                        <div className={cn("text-lg font-bold", getSafetyColorFromScore(data.wss))}>
                                             {data.wss}
                                         </div>
                                         <div className="text-xs text-muted-foreground">

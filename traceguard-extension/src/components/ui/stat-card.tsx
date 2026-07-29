@@ -24,7 +24,7 @@
  *     title="High Risk" 
  *     value={5} 
  *     icon={AlertTriangle} 
- *     valueColor="text-red-500"
+ *     valueColor="text-destructive"
  * />
  * 
  * With subtitle and link:
@@ -80,7 +80,7 @@ export interface StatCardProps {
     subtitle?: string;
     /** Optional icon component to display */
     icon?: React.ComponentType<{ className?: string }>;
-    /** Color class for the icon (e.g., "text-blue-500") */
+    /** Color class for the icon (e.g., "text-primary") */
     iconColor?: string;
     /** Color class for the value text */
     valueColor?: string;
@@ -149,12 +149,12 @@ export function StatCard({
                                         // Determine color based on direction and isPositive
                                         trend.isPositive !== undefined
                                             ? trend.isPositive
-                                                ? "text-green-500"
-                                                : "text-red-500"
+                                                ? "text-success"
+                                                : "text-destructive"
                                             : trend.direction === 'up'
-                                                ? "text-red-500" // Default: up is bad (increasing risk)
+                                                ? "text-destructive" // Default: up is bad (increasing risk)
                                                 : trend.direction === 'down'
-                                                    ? "text-green-500" // Default: down is good
+                                                    ? "text-success" // Default: down is good
                                                     : "text-muted-foreground"
                                     )}
                                 >

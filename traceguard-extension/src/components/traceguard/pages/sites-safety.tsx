@@ -33,6 +33,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { StatCard } from "@/components/ui/stat-card"
+import { SiteSafetyList } from "./site-safety-list"
+import { getSafetyColorFromScore } from "@/lib/theme-utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -66,17 +68,17 @@ function RiskDistributionBar({
     return (
         <div className="space-y-3">
             <div className="flex h-3 rounded-full overflow-hidden bg-muted">
-                {critical > 0 && <div className="bg-red-500 transition-all"    style={{ width: `${pct(critical)}%` }} />}
-                {high     > 0 && <div className="bg-orange-500 transition-all" style={{ width: `${pct(high)}%` }} />}
-                {medium   > 0 && <div className="bg-yellow-500 transition-all" style={{ width: `${pct(medium)}%` }} />}
-                {low      > 0 && <div className="bg-green-500 transition-all"  style={{ width: `${pct(low)}%` }} />}
+                {critical > 0 && <div className="bg-destructive transition-all"    style={{ width: `${pct(critical)}%` }} />}
+                {high     > 0 && <div className="bg-warning transition-all" style={{ width: `${pct(high)}%` }} />}
+                {medium   > 0 && <div className="bg-warning transition-all" style={{ width: `${pct(medium)}%` }} />}
+                {low      > 0 && <div className="bg-success transition-all"  style={{ width: `${pct(low)}%` }} />}
             </div>
             <div className="flex justify-between text-xs">
                 {[
-                    { label: t("Critical"), count: critical, color: "bg-red-500" },
-                    { label: t("High"),     count: high,     color: "bg-orange-500" },
-                    { label: t("Medium"),   count: medium,   color: "bg-yellow-500" },
-                    { label: t("Low"),      count: low,      color: "bg-green-500" },
+                    { label: t("Critical"), count: critical, color: "bg-destructive" },
+                    { label: t("High"),     count: high,     color: "bg-warning" },
+                    { label: t("Medium"),   count: medium,   color: "bg-warning" },
+                    { label: t("Low"),      count: low,      color: "bg-success" },
                 ].map(({ label, count, color }) => (
                     <div key={label} className="flex items-center gap-1.5">
                         <div className={cn("h-2.5 w-2.5 rounded-full", color)} />
@@ -230,15 +232,7 @@ export default function SitesSafetyPage() {
     const tickMax   = Math.ceil(maxVisits / 5) * 5
     const xAxisTicks = Array.from({ length: (tickMax / 5) + 1 }, (_, i) => i * 5)
 
-    // Safety color for history list
-    const getSafetyColor = (wss: number) => {
-        if (wss >= 80) return "text-green-500"
-        if (wss >= 60) return "text-blue-500"
-        if (wss >= 40) return "text-yellow-500"
-        if (wss >= 20) return "text-orange-500"
-        return "text-red-500"
-    }
-
+    // Removed local getSafetyColor
     return (
         <div className="space-y-6 w-full">
             {/* Header */}
@@ -256,7 +250,7 @@ export default function SitesSafetyPage() {
                     value={totalSites}
                     subtitle={t("Unique domains")}
                     icon={Globe}
-                    iconColor="text-blue-500"
+                    iconColor="text-primary"
                     valueColor="text-foreground"
                 />
                 <StatCard
@@ -264,32 +258,32 @@ export default function SitesSafetyPage() {
                     value={avgWSS}
                     subtitle={avgWSS >= 80 ? t("Excellent") : avgWSS >= 60 ? t("Good") : avgWSS >= 40 ? t("Fair") : t("Needs attention")}
                     icon={Shield}
-                    iconColor={avgWSS >= 80 ? "text-green-500" : avgWSS >= 60 ? "text-blue-500" : avgWSS >= 40 ? "text-yellow-500" : "text-red-500"}
-                    valueColor={avgWSS >= 60 ? "text-green-500" : avgWSS >= 40 ? "text-yellow-500" : "text-red-500"}
+                    iconColor={getSafetyColorFromScore(avgWSS)}
+                    valueColor={getSafetyColorFromScore(avgWSS)}
                 />
                 <StatCard
                     title={t("At Risk")}
                     value={criticalSites + poorSites}
                     subtitle={t("Critical & poor safety")}
                     icon={AlertTriangle}
-                    iconColor="text-red-500"
-                    valueColor={criticalSites + poorSites > 0 ? "text-red-500" : "text-green-500"}
+                    iconColor="text-destructive"
+                    valueColor={criticalSites + poorSites > 0 ? "text-red-500 dark:text-red-400" : "text-emerald-500 dark:text-emerald-400"}
                 />
                 <StatCard
                     title={t("Safe Sites")}
                     value={excellentSites + goodSites}
                     subtitle={t("Excellent & good safety")}
                     icon={CheckCircle}
-                    iconColor="text-green-500"
-                    valueColor="text-green-500"
+                    iconColor="text-emerald-500 dark:text-emerald-400"
+                    valueColor="text-emerald-500 dark:text-emerald-400"
                 />
                 <StatCard
                     title={t("Today")}
                     value={todayCount}
                     subtitle={t("Sites visited")}
                     icon={Calendar}
-                    iconColor="text-purple-500"
-                    valueColor="text-purple-500"
+                    iconColor="text-primary"
+                    valueColor="text-primary"
                 />
             </div>
 
@@ -315,11 +309,11 @@ export default function SitesSafetyPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">{t("All Sites")}</SelectItem>
-                                <SelectItem value="excellent"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-green-500" />{t("Excellent")}</span></SelectItem>
-                                <SelectItem value="good"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500" />{t("Good")}</span></SelectItem>
-                                <SelectItem value="fair"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-yellow-500" />{t("Fair")}</span></SelectItem>
-                                <SelectItem value="poor"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-orange-500" />{t("Poor")}</span></SelectItem>
-                                <SelectItem value="critical"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-red-500" />{t("Critical")}</span></SelectItem>
+                                <SelectItem value="excellent"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-success" />{t("Excellent")}</span></SelectItem>
+                                <SelectItem value="good"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary" />{t("Good")}</span></SelectItem>
+                                <SelectItem value="fair"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-warning" />{t("Fair")}</span></SelectItem>
+                                <SelectItem value="poor"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-warning" />{t("Poor")}</span></SelectItem>
+                                <SelectItem value="critical"><span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-destructive" />{t("Critical")}</span></SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -467,7 +461,7 @@ export default function SitesSafetyPage() {
                                                 </div>
                                             </div>
                                             <div className="text-right ml-3">
-                                                <div className={cn("text-lg font-bold", getSafetyColor(data.wss))}>{data.wss}</div>
+                                                <div className={cn("text-lg font-bold", getSafetyColorFromScore(data.wss))}>{data.wss}</div>
                                                 <div className="text-xs text-muted-foreground">{t("WSS")}</div>
                                             </div>
                                         </div>

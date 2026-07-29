@@ -252,13 +252,13 @@ export default function WhitelistBlacklistPage() {
                     title={t("Trusted")}
                     value={whitelist.length}
                     icon={Shield}
-                    iconColor="text-green-500"
+                    iconColor="text-success"
                 />
                 <StatCard
                     title={t("Blocked")}
                     value={blacklist.length}
                     icon={Ban}
-                    iconColor="text-red-500"
+                    iconColor="text-destructive"
                 />
             </div>
 
@@ -283,7 +283,7 @@ export default function WhitelistBlacklistPage() {
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                        <Shield className="h-4 w-4 text-green-500" />
+                        <Shield className="h-4 w-4 text-success" />
                         {t("Whitelist")}
                     </CardTitle>
                     <CardDescription>
@@ -303,7 +303,7 @@ export default function WhitelistBlacklistPage() {
                                     setWhitelistError("")
                                 }}
                                 onKeyPress={(e) => e.key === 'Enter' && addToWhitelist()}
-                                className={cn("flex-1", whitelistError && "border-red-500")}
+                                className={cn("flex-1", whitelistError && "border-destructive")}
                             />
                             <Button
                                 onClick={addToWhitelist}
@@ -315,7 +315,7 @@ export default function WhitelistBlacklistPage() {
                             </Button>
                         </div>
                         {whitelistError && (
-                            <p className="text-sm text-red-500">{whitelistError}</p>
+                            <p className="text-sm text-destructive">{whitelistError}</p>
                         )}
                     </div>
 
@@ -325,14 +325,14 @@ export default function WhitelistBlacklistPage() {
                             {whitelist.map((domain) => (
                                 <div
                                     key={domain}
-                                    className="flex items-center justify-between p-3 rounded-lg border border-green-500/20 bg-green-500/5"
+                                    className="flex items-center justify-between p-3 rounded-lg border border-success/20 bg-success/5"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                        <CheckCircle className="h-4 w-4 text-success" />
                                         <span className="font-medium text-sm">
                                             {domain}
                                         </span>
-                                        <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 border-0 text-xs">
+                                        <Badge className="bg-success/20 text-success border-0 text-xs">
                                             {t("Trusted")}
                                         </Badge>
                                     </div>
@@ -340,7 +340,7 @@ export default function WhitelistBlacklistPage() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => removeFromWhitelist(domain)}
-                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
+                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
@@ -360,7 +360,7 @@ export default function WhitelistBlacklistPage() {
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                        <Ban className="h-4 w-4 text-red-500" />
+                        <Ban className="h-4 w-4 text-destructive" />
                         {t("Blacklist")}
                     </CardTitle>
                     <CardDescription>
@@ -380,7 +380,7 @@ export default function WhitelistBlacklistPage() {
                                     setBlacklistError("")
                                 }}
                                 onKeyPress={(e) => e.key === 'Enter' && addToBlacklist()}
-                                className={cn("flex-1", blacklistError && "border-red-500")}
+                                className={cn("flex-1", blacklistError && "border-destructive")}
                             />
                             <Button
                                 onClick={addToBlacklist}
@@ -393,7 +393,7 @@ export default function WhitelistBlacklistPage() {
                             </Button>
                         </div>
                         {blacklistError && (
-                            <p className="text-sm text-red-500">{blacklistError}</p>
+                            <p className="text-sm text-destructive">{blacklistError}</p>
                         )}
                     </div>
 
@@ -403,14 +403,14 @@ export default function WhitelistBlacklistPage() {
                             {blacklist.map((domain) => (
                                 <div
                                     key={domain}
-                                    className="flex items-center justify-between p-3 rounded-lg border border-red-500/20 bg-red-500/5"
+                                    className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <Ban className="h-4 w-4 text-red-500" />
+                                        <Ban className="h-4 w-4 text-destructive" />
                                         <span className="font-medium text-sm">
                                             {domain}
                                         </span>
-                                        <Badge className="bg-red-500/20 text-red-600 dark:text-red-400 border-0 text-xs">
+                                        <Badge className="bg-destructive/20 text-destructive border-0 text-xs">
                                             {t("Blocked")}
                                         </Badge>
                                     </div>
@@ -418,7 +418,7 @@ export default function WhitelistBlacklistPage() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => removeFromBlacklist(domain)}
-                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
+                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>

@@ -119,23 +119,23 @@ export default function TrackersPage() {
                     value={noTracking}
                     subtitle={t("No tracking")}
                     icon={Shield}
-                    iconColor="text-green-500"
-                    valueColor="text-green-500"
+                    iconColor="text-success"
+                    valueColor="text-success"
                 />
                 <StatCard
                     title={t("High Tracking")}
                     value={highTracking}
                     subtitle={t("Heavy trackers")}
                     icon={Eye}
-                    iconColor="text-red-500"
-                    valueColor={highTracking > 0 ? "text-red-500" : "text-green-500"}
+                    iconColor="text-destructive"
+                    valueColor={highTracking > 0 ? "text-destructive" : "text-success"}
                 />
                 <StatCard
                     title={t("Total Sites")}
                     value={sitesAnalyzed}
                     subtitle={t("Analyzed")}
                     icon={Globe}
-                    iconColor="text-blue-500"
+                    iconColor="text-primary"
                     valueColor="text-foreground"
                 />
             </div>

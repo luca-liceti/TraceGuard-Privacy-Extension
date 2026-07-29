@@ -35,6 +35,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { getGradeTextColor, getSafetyBgColor, getSafetyTextColor } from "@/lib/theme-utils"
+
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -96,38 +98,6 @@ export const schema = z.object({
 
 export type SiteVisit = z.infer<typeof schema>
 
-const getSafetyColor = (level: string) => {
-  switch (level.toLowerCase()) {
-    case "excellent":
-    case "good":
-      return "text-green-600 bg-green-50 dark:bg-green-950/20 dark:text-green-400 border-transparent"
-    case "fair":
-      return "text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20 dark:text-yellow-400 border-transparent"
-    case "poor":
-    case "critical":
-      return "text-red-600 bg-red-50 dark:bg-red-950/20 dark:text-red-400 border-transparent"
-    default:
-      return "text-muted-foreground border-transparent bg-muted/20"
-  }
-}
-
-const getPolicyColor = (grade: string) => {
-  switch (grade.toUpperCase()) {
-    case "A":
-      return "text-green-600 dark:text-green-400"
-    case "B":
-      return "text-blue-600 dark:text-blue-400"
-    case "C":
-      return "text-yellow-600 dark:text-yellow-400"
-    case "D":
-      return "text-orange-500 dark:text-orange-400"
-    case "E":
-      return "text-red-600 dark:text-red-400"
-    default:
-      return "text-muted-foreground"
-  }
-}
-
 const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
   {
     accessorKey: "domain",
@@ -151,7 +121,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
     cell: ({ row }) => {
       const level = row.getValue("safetyLevel") as string
       return (
-        <Badge variant="secondary" className={`px-2.5 py-0.5 ${getSafetyColor(level)}`}>
+        <Badge variant="secondary" className={`px-2.5 py-0.5 ${getSafetyBgColor(level)} ${getSafetyTextColor(level)}`}>
           {level}
         </Badge>
       )
@@ -182,7 +152,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
     header: t("Policy"),
     cell: ({ row }) => {
       const grade = row.getValue("policy") as string
-      return <div className={`font-semibold ${getPolicyColor(grade)}`}>{grade}</div>
+      return <div className={`font-semibold ${getGradeTextColor(grade)}`}>{grade}</div>
     },
   },
   {
@@ -191,7 +161,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
     cell: ({ row }) => {
       const grade = row.getValue("headersGrade") as string | undefined
       if (!grade) return <div className="text-muted-foreground text-xs">—</div>
-      return <div className={`font-semibold ${getPolicyColor(grade)}`}>{grade}</div>
+      return <div className={`font-semibold ${getGradeTextColor(grade)}`}>{grade}</div>
     },
   },
   {
@@ -202,7 +172,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
       if (count === undefined || count === null) return <div className="text-muted-foreground text-xs">—</div>
       if (count === 0) return <div>0</div>
       return (
-        <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-950/20 dark:text-yellow-400 border-transparent">
+        <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border-transparent">
           {count}
         </Badge>
       )

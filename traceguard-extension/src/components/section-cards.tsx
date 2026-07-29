@@ -4,8 +4,7 @@ import { useTranslation } from "react-i18next"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
-  CardDescription,
-  CardFooter,
+  CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -121,139 +120,159 @@ export function SectionCards() {
   return (
     <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-3 grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6">
       <Card className="@container/card">
-        <CardHeader className="relative">
-          <CardDescription>{t("Trackers Blocked")}</CardDescription>
-          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            {t("Trackers Blocked")}
+          </CardTitle>
+          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+            {trackersPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            {trackersPercent >= 0 ? `+${trackersPercent}%` : `${trackersPercent}%`}
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold tabular-nums">
             {totalTrackers.toLocaleString()}
-          </CardTitle>
-          <div className="absolute right-4 top-4">
-            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
-              {trackersPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-              {trackersPercent >= 0 ? `+${trackersPercent}%` : `${trackersPercent}%`}
-            </Badge>
           </div>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {t("Activity")} {trackersPercent >= 0 ? t('up') : t('down')} {t("today")} {trackersPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
+          <div className="flex flex-col gap-0.5 mt-1">
+            <div className="text-xs font-medium flex items-center gap-1">
+              {t("Activity")} {trackersPercent >= 0 ? t('up') : t('down')} {t("today")} {trackersPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {t("Tracking scripts intercepted")}
+            </div>
           </div>
-          <div className="text-muted-foreground">
-            {t("Tracking scripts intercepted")}
-          </div>
-        </CardFooter>
+        </CardContent>
       </Card>
       
       <Card className="@container/card">
-        <CardHeader className="relative">
-          <CardDescription>{t("Sites Analyzed")}</CardDescription>
-          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            {t("Sites Analyzed")}
+          </CardTitle>
+          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+            {sitesPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            {sitesPercent >= 0 ? `+${sitesPercent}%` : `${sitesPercent}%`}
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold tabular-nums">
             {totalSites.toLocaleString()}
-          </CardTitle>
-          <div className="absolute right-4 top-4">
-            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
-              {sitesPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-              {sitesPercent >= 0 ? `+${sitesPercent}%` : `${sitesPercent}%`}
-            </Badge>
           </div>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {t("Traffic")} {sitesPercent >= 0 ? t('up') : t('down')} {t("today")} {sitesPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
+          <div className="flex flex-col gap-0.5 mt-1">
+            <div className="text-xs font-medium flex items-center gap-1">
+              {t("Traffic")} {sitesPercent >= 0 ? t('up') : t('down')} {t("today")} {sitesPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {t("Unique domains scanned")}
+            </div>
           </div>
-          <div className="text-muted-foreground">
-            {t("Unique domains scanned")}
-          </div>
-        </CardFooter>
+        </CardContent>
       </Card>
       
       <Card className="@container/card">
-        <CardHeader className="relative">
-          <CardDescription>{t("PII Risk Events")}</CardDescription>
-          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            {t("PII Risk Events")}
+          </CardTitle>
+          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+            {piiPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            {piiPercent >= 0 ? `+${piiPercent}%` : `${piiPercent}%`}
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold tabular-nums">
             {totalPii.toLocaleString()}
-          </CardTitle>
-          <div className="absolute right-4 top-4">
-            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
-              {piiPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-              {piiPercent >= 0 ? `+${piiPercent}%` : `${piiPercent}%`}
-            </Badge>
           </div>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {t("Risk")} {piiPercent > 0 ? t('up') : (piiPercent < 0 ? t('down') : t('stable'))} {t("today")} {piiPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
+          <div className="flex flex-col gap-0.5 mt-1">
+            <div className="text-xs font-medium flex items-center gap-1">
+              {t("Risk")} {piiPercent > 0 ? t('up') : (piiPercent < 0 ? t('down') : t('stable'))} {t("today")} {piiPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {t("Sensitive info entries")}
+            </div>
           </div>
-          <div className="text-muted-foreground">{t("Sensitive info entries")}</div>
-        </CardFooter>
+        </CardContent>
       </Card>
       
       <Card className="@container/card">
-        <CardHeader className="relative">
-          <CardDescription>{t("Safe Browsing Streak")}</CardDescription>
-          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-            {streak.toLocaleString()}
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            {t("Safe Browsing Streak")}
           </CardTitle>
-          <div className="absolute right-4 top-4">
-            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
-              {streakPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-              {streakPercent >= 0 ? `+${streakPercent}%` : `${streakPercent}%`}
-            </Badge>
-          </div>
+          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+            {streakPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            {streakPercent >= 0 ? `+${streakPercent}%` : `${streakPercent}%`}
+          </Badge>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {t("Performance")} {streakPercent >= 0 ? t('steady') : t('dropping')} {streakPercent >= 0 ? <TrendingUpIcon className="size-4" /> : <TrendingDownIcon className="size-4" />}
+        <CardContent>
+          <div className="text-2xl font-bold tabular-nums">
+            {streak.toLocaleString()}
           </div>
-          <div className="text-muted-foreground">{t("Consecutive safe visits")}</div>
-        </CardFooter>
+          <div className="flex flex-col gap-0.5 mt-1">
+            <div className="text-xs font-medium flex items-center gap-1">
+              {t("Performance")} {streakPercent >= 0 ? t('steady') : t('dropping')} {streakPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {t("Consecutive safe visits")}
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Network Requests card — tracker-flagged requests aggregated from enriched data */}
       <Card className="@container/card">
-        <CardHeader className="relative">
-          <CardDescription>{t("Cross-site Network Requests")}</CardDescription>
-          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-            {totalNetRequests.toLocaleString()}
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            {t("Cross-site Network Requests")}
           </CardTitle>
-          <div className="absolute right-4 top-4">
-            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
-              {netPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-              {netPercent >= 0 ? `+${netPercent}%` : `${netPercent}%`}
-            </Badge>
-          </div>
+          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+            {netPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            {netPercent >= 0 ? `+${netPercent}%` : `${netPercent}%`}
+          </Badge>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {netToday.thirdParty > 0
-              ? `${netToday.thirdParty} ${t("third-party")} · ${netToday.blocked} ${t("blocked")} ${t("today")}`
-              : t("No data yet today")}
+        <CardContent>
+          <div className="text-2xl font-bold tabular-nums">
+            {totalNetRequests.toLocaleString()}
           </div>
-          <div className="text-muted-foreground">{t("Cross-site network calls detected")}</div>
-        </CardFooter>
+          <div className="flex flex-col gap-0.5 mt-1">
+            <div className="text-xs font-medium flex items-center gap-1">
+              {netToday.thirdParty > 0
+                ? `${netToday.thirdParty} ${t("third-party")} · ${netToday.blocked} ${t("blocked")} ${t("today")}`
+                : t("No data yet today")}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {t("Cross-site network calls detected")}
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Fingerprinting card — fingerprinting attempts aggregated from enriched data */}
       <Card className="@container/card">
-        <CardHeader className="relative">
-          <CardDescription>{t("Fingerprinting Attempts")}</CardDescription>
-          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
-            {totalFp.toLocaleString()}
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            {t("Fingerprinting Attempts")}
           </CardTitle>
-          <div className="absolute right-4 top-4">
-            <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
-              {fpPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-              {fpPercent >= 0 ? `+${fpPercent}%` : `${fpPercent}%`}
-            </Badge>
-          </div>
+          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+            {fpPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+            {fpPercent >= 0 ? `+${fpPercent}%` : `${fpPercent}%`}
+          </Badge>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {fpToday > 0
-              ? `${fpToday} ${t("attempts")} ${t("today")} ${fpPercent >= 0 ? '' : '↓'}`
-              : t("None detected today")}
+        <CardContent>
+          <div className="text-2xl font-bold tabular-nums">
+            {totalFp.toLocaleString()}
           </div>
-          <div className="text-muted-foreground">{t("Canvas, WebGL, audio & more")}</div>
-        </CardFooter>
+          <div className="flex flex-col gap-0.5 mt-1">
+            <div className="text-xs font-medium flex items-center gap-1">
+              {fpToday > 0
+                ? `${fpToday} ${t("attempts")} ${t("today")} ${fpPercent >= 0 ? '' : '↓'}`
+                : t("None detected today")}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {t("Canvas, WebGL, audio & more")}
+            </div>
+          </div>
+        </CardContent>
       </Card>
     </div>
   )
