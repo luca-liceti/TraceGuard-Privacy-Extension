@@ -197,9 +197,14 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
             <DropdownMenuItem onClick={() => (table.options.meta as any)?.onViewDetails(row.original)}>
               {t("View details")}
             </DropdownMenuItem>
-            <DropdownMenuItem>{t("Export")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => (table.options.meta as any)?.onExportLog(row.original)}>
+              {t("Export")}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
+            <DropdownMenuItem 
+              className="text-destructive focus:text-destructive"
+              onClick={() => (table.options.meta as any)?.onDeleteLog(row.original)}
+            >
               {t("Delete log")}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -228,26 +233,6 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
     setIsDetailsOpen(true)
   }
 
-  const table = useReactTable({
-    data,
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-      pagination,
-    },
-    meta: {
-      onViewDetails: handleViewDetails,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  })
-
   const handleAddLogSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsAddLogOpen(false)
@@ -275,6 +260,69 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
       toast.error(t("Failed to export logs"))
     }
   }
+
+  const handleExportSingleLog = (visit: SiteVisit) => {
+    try {
+      const blob = new Blob([JSON.stringify(visit, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `traceguard-log-${visit.domain}-${visit.timestamp}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      toast.success(t("Log exported successfully"))
+    } catch (e) {
+      console.error(e)
+      toast.error(t("Failed to export log"))
+    }
+  }
+
+  const handleDeleteLog = async (visit: SiteVisit) => {
+    try {
+      const data = await chrome.storage.local.get('detectorLogs')
+      const logs = data.detectorLogs || []
+      
+      const timeWindow = Math.floor(visit.timestamp / 5000) * 5000
+      
+      const filteredLogs = logs.filter((log: any) => {
+        const logTimeWindow = Math.floor(log.timestamp / 5000) * 5000
+        return !(log.domain === visit.domain && logTimeWindow === timeWindow)
+      })
+      
+      await chrome.storage.local.set({ detectorLogs: filteredLogs })
+      toast.success(t("Log deleted successfully"))
+    } catch (e) {
+      console.error(e)
+      toast.error(t("Failed to delete log"))
+    }
+  }
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: {
+      sorting,
+      columnFilters,
+      pagination,
+    },
+    meta: {
+      onViewDetails: handleViewDetails,
+      onExportLog: handleExportSingleLog,
+      onDeleteLog: handleDeleteLog,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  })
+
+
 
   return (
     <div className="flex w-full flex-col gap-4 px-4 lg:px-6">
@@ -308,31 +356,31 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
                 {t("Manually record a site visit and safety metrics.")}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleAddLogSubmit} className="flex flex-col gap-4 py-4">
+            <form onSubmit={handleAddLogSubmit} className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
+                <div className="grid gap-2">
                   <Label htmlFor="domain">{t("Domain")}</Label>
                   <Input id="domain" placeholder="example.com" required />
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="grid gap-2">
                   <Label htmlFor="wss">{t("Safety Score")}</Label>
                   <Input id="wss" type="number" placeholder="85" min="0" max="100" required />
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
+                <div className="grid gap-2">
                   <Label htmlFor="trackers">{t("Trackers Blocked")}</Label>
                   <Input id="trackers" type="number" placeholder="0" min="0" required />
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="grid gap-2">
                   <Label htmlFor="cookies">{t("Cookies Detected")}</Label>
                   <Input id="cookies" type="number" placeholder="0" min="0" required />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
+                <div className="grid gap-2">
                   <Label htmlFor="reputation">{t("Reputation")}</Label>
                   <Select required defaultValue="Clean">
                     <SelectTrigger id="reputation">
@@ -345,7 +393,7 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="grid gap-2">
                   <Label htmlFor="policy">{t("Policy Grade")}</Label>
                   <Select required defaultValue="N/A">
                     <SelectTrigger id="policy">
@@ -363,7 +411,7 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="grid gap-2">
                 <Label htmlFor="inputs">{t("Sensitive Inputs (PII Risk)")}</Label>
                 <Select required defaultValue="No">
                   <SelectTrigger id="inputs">
@@ -376,8 +424,8 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
                 </Select>
               </div>
 
-              <DialogFooter className="sm:justify-start pt-2">
-                <Button type="submit" className="w-full">{t("Save log")}</Button>
+              <DialogFooter>
+                <Button type="submit">{t("Save log")}</Button>
               </DialogFooter>
             </form>
           </DialogContent>

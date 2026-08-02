@@ -27,10 +27,10 @@ export function SectionCards() {
   const totalTrackers = appState?.trackersDetected || 0
   const trackersToday = detectorLogs
     .filter(log => log.detector === 'tracking' && log.timestamp >= startOfToday)
-    .reduce((sum, log) => sum + (log.details?.count || 0), 0)
+    .reduce((sum, log) => sum + (log.details?.trackerCount || 0), 0)
   const trackersYesterday = detectorLogs
     .filter(log => log.detector === 'tracking' && log.timestamp >= startOfYesterday && log.timestamp < startOfToday)
-    .reduce((sum, log) => sum + (log.details?.count || 0), 0)
+    .reduce((sum, log) => sum + (log.details?.trackerCount || 0), 0)
   const trackersPercent = trackersYesterday === 0 ? (trackersToday > 0 ? 100 : 0) : Math.round(((trackersToday - trackersYesterday) / trackersYesterday) * 100)
 
   // 2. Sites Analyzed

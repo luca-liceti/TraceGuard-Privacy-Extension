@@ -40,6 +40,8 @@ import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Toaster } from "@/components/ui/sonner"
@@ -54,56 +56,24 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+import { getStatusConfig, getSafetyConfig, scoreToGrade, SAFETY_CONFIGS } from "@/lib/risk-utils"
+
 // =============================================================================
 // HELPER FUNCTIONS
-// These functions determine colors and labels based on scores
 // =============================================================================
-
-// WSS Color based on score (higher = safer)
-function getWSSColor(wss: number): string {
-    if (wss >= 80) return "text-green-500";
-    if (wss >= 60) return "text-blue-500";
-    if (wss >= 40) return "text-yellow-500";
-    if (wss >= 20) return "text-orange-500";
-    return "text-red-500";
-}
-
-function getWSSBgColor(wss: number): string {
-    if (wss >= 80) return "bg-green-500";
-    if (wss >= 60) return "bg-blue-500";
-    if (wss >= 40) return "bg-yellow-500";
-    if (wss >= 20) return "bg-orange-500";
-    return "bg-red-500";
-}
-
-function getWSSLabel(wss: number, t: any): string {
-    if (wss >= 80) return t("Safe");
-    if (wss >= 60) return t("Low Risk");
-    if (wss >= 40) return t("Medium");
-    if (wss >= 20) return t("High Risk");
-    return t("Critical");
-}
 
 function getWSSIcon(wss: number) {
     if (wss >= 60) return <CheckCircle className="h-5 w-5" />;
     return <AlertTriangle className="h-5 w-5" />;
 }
 
-// UPS color (same logic)
-function getUPSColor(ups: number): string {
-    if (ups >= 80) return "text-green-500";
-    if (ups >= 60) return "text-blue-500";
-    if (ups >= 40) return "text-yellow-500";
-    return "text-red-500";
-}
-
 function getGradeColor(grade: string): string {
     switch (grade?.toUpperCase()) {
-        case "A": return "text-green-500 font-bold";
-        case "B": return "text-blue-500 font-bold";
-        case "C": return "text-yellow-500 font-bold";
-        case "D": return "text-orange-500 font-bold";
-        case "E": return "text-red-500 font-bold";
+        case "A": return `${SAFETY_CONFIGS.excellent.color} font-bold`;
+        case "B": return `${SAFETY_CONFIGS.good.color} font-bold`;
+        case "C": return `${SAFETY_CONFIGS.fair.color} font-bold`;
+        case "D": return `${SAFETY_CONFIGS.poor.color} font-bold`;
+        case "E": return `${SAFETY_CONFIGS.critical.color} font-bold`;
         default: return "text-muted-foreground";
     }
 }
@@ -296,8 +266,10 @@ function App() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-7 w-7 text-primary" />
-                        <h1 className="text-lg font-bold">TraceGuard</h1>
+                        <div className="flex aspect-square size-8 items-center justify-center">
+                            <Shield className="size-6 text-foreground" />
+                        </div>
+                        <h1 className="text-lg font-bold text-foreground">TraceGuard</h1>
                     </div>
                     
                     <HeaderAuthStatus t={t} />
@@ -305,39 +277,46 @@ function App() {
 
                 <div className="space-y-3 flex-1 overflow-y-auto">
                     {/* User Privacy Score */}
-                    <div className="p-3 rounded-lg border bg-card shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-muted-foreground">{t("Privacy Score")}</span>
-                            <span className="text-sm text-muted-foreground">{state.sitesAnalyzed} {t("sites")}</span>
-                        </div>
-                        <div className={`text-3xl font-bold ${getUPSColor(state.ups)} mt-1`}>
-                            {state.ups}
-                        </div>
-                        <Progress value={state.ups} className="h-1.5 mt-2" />
-                    </div>
+                    <Card>
+                        <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">{t("Privacy Score")}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <div className={`text-3xl font-bold ${getStatusConfig(state.ups).color}`}>
+                                {state.ups}
+                            </div>
+                            <Progress value={state.ups} className="h-1.5 mt-2" />
+                        </CardContent>
+                    </Card>
 
                     {/* Website Safety Score with Collapsible Breakdown */}
                     {currentSiteWSS !== null && state.currentSite ? (
-                        <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+                        <Card className="overflow-hidden">
                             {/* Header */}
-                            <div className="p-3 border-b">
+                            <CardHeader className="p-4 pb-4 border-b">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-muted-foreground">{t("Website Safety")}</span>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${getWSSBgColor(currentSiteWSS)} text-white`}>
-                                        {getWSSLabel(currentSiteWSS, t)}
-                                    </span>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">{t("Website Safety")}</CardTitle>
+                                    <Badge className={`${getSafetyConfig(currentSiteWSS).bgColor} ${getSafetyConfig(currentSiteWSS).color} hover:${getSafetyConfig(currentSiteWSS).bgColor} border-transparent shadow-none font-medium`}>
+                                        {t(getSafetyConfig(currentSiteWSS).label)}
+                                    </Badge>
                                 </div>
-                                <div className={`text-3xl font-bold ${getWSSColor(currentSiteWSS)} flex items-center gap-2 mt-1`}>
+                                <div className={`text-3xl font-bold ${getSafetyConfig(currentSiteWSS).color} flex items-center gap-2 mt-1`}>
                                     {getWSSIcon(currentSiteWSS)}
                                     {currentSiteWSS}
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1 truncate">
+                                <CardDescription className="text-xs mt-1 truncate">
                                     {state.currentSite.domain}
-                                </p>
-                            </div>
-                            {/* Collapsible Detector Breakdown */}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                {/* Collapsible Detector Breakdown */}
                             <Accordion type="multiple" className="w-full">
-                                {Object.entries(state.currentSite.breakdown).map(([key, score]) => {
+                                {Object.entries(state.currentSite.breakdown)
+                                    .sort((a, b) => {
+                                        const order = ['tracking', 'cookies', 'input', 'reputation', 'policy'];
+                                        return order.indexOf(a[0]) - order.indexOf(b[0]);
+                                    })
+                                    .map(([key, score]) => {
                                     const info = getDetectorInfo(t)[key];
                                     if (!info) return null;
                                     const Icon = info.icon;
@@ -350,17 +329,19 @@ function App() {
                                                     <span className="text-xs text-muted-foreground ml-auto mr-2">
                                                         ({info.weight})
                                                     </span>
-                                                    <span className={`text-sm font-semibold ${getWSSColor(score)}`}>
-                                                        {score}
-                                                    </span>
+                                                    {key === 'policy' ? (
+                                                        <span className={`text-sm font-bold ${getGradeColor(state.currentSite?.detectionDetails?.policy?.grade || '')}`}>
+                                                            {state.currentSite?.detectionDetails?.policy?.grade || '—'}
+                                                        </span>
+                                                    ) : (
+                                                        <span className={`text-sm font-bold ${getSafetyConfig(score).color}`}>
+                                                            {scoreToGrade(score)}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-3 pb-3">
                                                 <div className="space-y-2 text-sm">
-                                                    {/* Progress bar */}
-                                                    <div className="flex items-center gap-2">
-                                                        <Progress value={score} className="h-1.5 flex-1" />
-                                                    </div>
                                                     {/* Detector-specific details */}
                                                     <div className="text-muted-foreground bg-muted/30 rounded-sm px-2 py-1.5 space-y-1">
                                                         {key === 'reputation' && (
@@ -427,33 +408,23 @@ function App() {
                                                         )}
                                                         {key === 'policy' && (
                                                             <>
-                                                                <div className="flex justify-between items-center">
-                                                                    <span>{t("ToS;DR Grade")}</span>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <span className={`font-medium ${getGradeColor(state.currentSite?.detectionDetails?.policy?.grade || '')}`}>
-                                                                            {state.currentSite?.detectionDetails?.policy?.grade || t("Not rated")}
-                                                                        </span>
-                                                                        {state.currentSite?.detectionDetails?.policy?.serviceId && (
-                                                                            <Button 
-                                                                                variant="outline" 
-                                                                                size="sm" 
-                                                                                className="h-6 text-xs px-2 py-0"
-                                                                                onClick={() => {
-                                                                                    chrome.tabs.create({ url: `https://tosdr.org/en/service/${state.currentSite!.detectionDetails!.policy!.serviceId}` });
-                                                                                }}
-                                                                            >
-                                                                                <Globe className="h-3 w-3 mr-1" />
-                                                                                {t("ToS;DR")}
-                                                                            </Button>
-                                                                        )}
+                                                                {/* ToS;DR link */}
+                                                                {state.currentSite?.detectionDetails?.policy?.serviceId && (
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span>{t("View full report")}</span>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="h-6 text-xs px-2 py-0"
+                                                                            onClick={() => {
+                                                                                chrome.tabs.create({ url: `https://tosdr.org/en/service/${state.currentSite!.detectionDetails!.policy!.serviceId}` });
+                                                                            }}
+                                                                        >
+                                                                            <Globe className="h-3 w-3 mr-1" />
+                                                                            {t("ToS;DR")}
+                                                                        </Button>
                                                                     </div>
-                                                                </div>
-                                                                <div className="flex justify-between items-center">
-                                                                    <span>{t("Source")}</span>
-                                                                    <span className="font-medium capitalize">
-                                                                        {state.currentSite?.detectionDetails?.policy?.source === 'tosdr' ? t("ToS;DR API") : t("Local detection")}
-                                                                    </span>
-                                                                </div>
+                                                                )}
                                                                 {state.currentSite?.detectionDetails?.policy?.points && state.currentSite.detectionDetails.policy.points.length > 0 && (
                                                                     <ScrollArea className="h-[200px] mt-2 border-t pt-2 border-muted-foreground/20">
                                                                         {[...state.currentSite.detectionDetails.policy.points].sort((a: any, b: any) => {
@@ -464,13 +435,13 @@ function App() {
                                                                             let iconClass = "text-muted-foreground";
                                                                             if (p.classification === 'blocker') {
                                                                                 Icon = XCircle;
-                                                                                iconClass = "text-red-600 dark:text-red-400";
+                                                                                iconClass = SAFETY_CONFIGS.critical.color;
                                                                             } else if (p.classification === 'bad') {
                                                                                 Icon = ThumbsDown;
-                                                                                iconClass = "text-orange-500 dark:text-orange-400";
+                                                                                iconClass = SAFETY_CONFIGS.poor.color;
                                                                             } else if (p.classification === 'good') {
                                                                                 Icon = CheckCircle;
-                                                                                iconClass = "text-green-600 dark:text-green-400";
+                                                                                iconClass = SAFETY_CONFIGS.excellent.color;
                                                                             }
                                                                             return (
                                                                                 <div key={idx} className="flex gap-2 items-start py-1">
@@ -481,7 +452,6 @@ function App() {
                                                                         })}
                                                                     </ScrollArea>
                                                                 )}
-
                                                             </>
                                                         )}
                                                     </div>
@@ -498,16 +468,19 @@ function App() {
                                     if (!enriched) return null
                                     return (
                                         <div className="border-t divide-y">
-                                            {/* Network Requests */}
-                                            {enriched.networkRequests && enriched.networkRequests.summary.total > 0 && (
+                                            {/* Security Headers */}
+                                            {enriched.headers && enriched.headers.items.length > 0 && (
                                                 <div className="px-3 py-2 flex items-center gap-2">
-                                                    <Network className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                    <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0" />
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-xs font-medium">{t("Network Requests")}</div>
+                                                        <div className="text-xs font-medium">{t("Security Headers")}</div>
                                                         <div className="text-xs text-muted-foreground">
-                                                            {enriched.networkRequests.summary.thirdParty} {t("third-party")} · {enriched.networkRequests.summary.trackerRequests} {t("trackers")} · {enriched.networkRequests.summary.blocked} {t("blocked")}
+                                                            {enriched.headers.summary.present}/{enriched.headers.summary.present + enriched.headers.summary.missing} {t("present")}
                                                         </div>
                                                     </div>
+                                                    <span className={`text-sm shrink-0 ${getGradeColor(enriched.headers.summary.grade)}`}>
+                                                        {enriched.headers.summary.grade}
+                                                    </span>
                                                 </div>
                                             )}
                                             {/* Fingerprinting */}
@@ -521,80 +494,79 @@ function App() {
                                                         </div>
                                                     </div>
                                                     <span className={`text-xs font-semibold shrink-0 ${
-                                                        enriched.fingerprinting.summary.riskLevel === 'high' ? 'text-red-500' :
-                                                        enriched.fingerprinting.summary.riskLevel === 'medium' ? 'text-yellow-500' : 'text-muted-foreground'
+                                                        enriched.fingerprinting.summary.riskLevel === 'high' ? SAFETY_CONFIGS.critical.color :
+                                                        enriched.fingerprinting.summary.riskLevel === 'medium' ? SAFETY_CONFIGS.fair.color : 'text-muted-foreground'
                                                     }`}>
                                                         {enriched.fingerprinting.summary.riskLevel}
                                                     </span>
                                                 </div>
                                             )}
-                                            {/* Security Headers */}
-                                            {enriched.headers && enriched.headers.items.length > 0 && (
+                                            {/* Network Requests */}
+                                            {enriched.networkRequests && enriched.networkRequests.summary.total > 0 && (
                                                 <div className="px-3 py-2 flex items-center gap-2">
-                                                    <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                    <Network className="h-4 w-4 text-muted-foreground shrink-0" />
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-xs font-medium">{t("Security Headers")}</div>
+                                                        <div className="text-xs font-medium">{t("Network Requests")}</div>
                                                         <div className="text-xs text-muted-foreground">
-                                                            {enriched.headers.summary.present}/{enriched.headers.summary.present + enriched.headers.summary.missing} {t("present")}
+                                                            {enriched.networkRequests.summary.thirdParty} {t("third-party")} · {enriched.networkRequests.summary.trackerRequests} {t("trackers")} · {enriched.networkRequests.summary.blocked} {t("blocked")}
                                                         </div>
                                                     </div>
-                                                    <span className={`text-sm font-bold shrink-0 ${
-                                                        enriched.headers.summary.grade === 'A' ? 'text-green-500' :
-                                                        enriched.headers.summary.grade === 'B' ? 'text-blue-500' :
-                                                        enriched.headers.summary.grade === 'C' ? 'text-yellow-500' :
-                                                        enriched.headers.summary.grade === 'D' ? 'text-orange-500' : 'text-red-500'
-                                                    }`}>
-                                                        {enriched.headers.summary.grade}
-                                                    </span>
                                                 </div>
                                             )}
                                         </div>
                                     )
                                 })()}
-                        </div>
+                            </CardContent>
+                        </Card>
                     ) : (
-                        <div className="p-3 rounded-lg border bg-card shadow-sm">
-                            <div className="flex items-center gap-2">
+                        <Card>
+                            <CardHeader className="p-4 flex flex-row items-center gap-2 space-y-0">
                                 <Globe className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">{t("Website Safety")}</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-2">
-                                {t("Navigate to a website to see its safety score")}
-                            </p>
-                        </div>
+                                <CardTitle className="text-sm font-medium">{t("Website Safety")}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <CardDescription>
+                                    {t("Navigate to a website to see its safety score")}
+                                </CardDescription>
+                            </CardContent>
+                        </Card>
                     )}
 
                     {/* Data Exposure Summary */}
                     {exposureCount > 0 && (
-                        <div className="p-3 rounded-lg border bg-card shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">{t("Data Exposure")}</span>
+                        <Card>
+                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-medium">{t("Data Exposure")}</CardTitle>
                                 <span className="text-xs text-muted-foreground">{exposureCount} {t("PII types")}</span>
-                            </div>
-                            <div className="mt-2 space-y-1">
-                                {Object.entries(crossSiteExposure).slice(0, 3).map(([type, sites]) => (
-                                    <div key={type} className="flex items-center justify-between text-xs">
-                                        <span className="capitalize text-muted-foreground">{t(type)}</span>
-                                        <span className="font-medium">{sites.length} {t("sites")}</span>
-                                    </div>
-                                ))}
-                                {exposureCount > 3 && (
-                                    <div className="text-xs text-muted-foreground text-center pt-1">
-                                        +{exposureCount - 3} {t("more...")}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <div className="space-y-1">
+                                    {Object.entries(crossSiteExposure).slice(0, 3).map(([type, sites]) => (
+                                        <div key={type} className="flex items-center justify-between text-xs">
+                                            <span className="capitalize text-muted-foreground">{t(type)}</span>
+                                            <span className="font-medium">{sites.length} {t("sites")}</span>
+                                        </div>
+                                    ))}
+                                    {exposureCount > 3 && (
+                                        <div className="text-xs text-muted-foreground text-center pt-1">
+                                            +{exposureCount - 3} {t("more...")}
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
                     )}
                     {/* Safe Streak */}
-                    <div className="p-3 rounded-lg border bg-card shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{t("Safe Streak")}</span>
-                            <Flame className="h-4 w-4 text-orange-500" />
-                        </div>
-                        <div className="text-2xl font-bold mt-1">{state.safeVisitStreak}</div>
-                        <p className="text-xs text-muted-foreground">{t("Consecutive safe sites")}</p>
-                    </div>
+                    <Card>
+                        <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-sm font-medium">{t("Safe Streak")}</CardTitle>
+                            <Flame className={`h-4 w-4 ${SAFETY_CONFIGS.poor.color}`} />
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{state.safeVisitStreak}</div>
+                            <CardDescription className="text-xs">{t("Consecutive safe sites")}</CardDescription>
+                        </CardContent>
+                    </Card>
                 </div>
                 {/* Dashboard Button */}
                 <div className="mt-4 pt-3 border-t">

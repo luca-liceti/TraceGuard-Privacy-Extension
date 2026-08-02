@@ -1,10 +1,11 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from "react"
-import { Lock, Key, ShieldCheck, AlertCircle, ShieldAlert } from "lucide-react"
+import { Lock, Key, ShieldCheck, AlertCircle, ShieldAlert, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { deriveKeyFromPassword, generateSalt, exportKey } from "@/lib/crypto"
 
 type AuthState = "loading" | "setup" | "locked" | "unlocked"
@@ -165,36 +166,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (authState === "loading") {
-    return <div className="flex h-screen items-center justify-center bg-background"><ShieldCheck className="h-8 w-8 animate-pulse text-primary" /></div>
+    return <div className="flex h-screen items-center justify-center bg-background"><Shield className="h-8 w-8 animate-pulse text-foreground" /></div>
   }
 
   if (authState === "setup") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6 md:p-10">
-        <div className="w-full max-w-sm flex flex-col gap-6">
-          <form onSubmit={(e) => {
-            e.preventDefault()
-            if (password !== confirmPassword) {
-              setError("Passwords do not match")
-              return
-            }
-            if (password.length < 8) {
-              setError("Password must be at least 8 characters")
-              return
-            }
-            setup(password)
-          }}>
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
-                  <ShieldCheck className="size-6 text-primary" />
-                </div>
-                <h1 className="text-xl font-bold">Secure Your Vault</h1>
-                <div className="text-center text-sm text-muted-foreground text-balance">
-                  Create a Master Password to encrypt your privacy logs.
-                </div>
-              </div>
-              <div className="flex flex-col gap-6">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <div className="flex aspect-square size-8 items-center justify-center mx-auto mb-2">
+              <Shield className="size-6 text-foreground" />
+            </div>
+            <CardTitle className="text-xl">Secure Your Vault</CardTitle>
+            <CardDescription>
+              Create a Master Password to encrypt your privacy logs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              if (password !== confirmPassword) {
+                setError("Passwords do not match")
+                return
+              }
+              if (password.length < 8) {
+                setError("Password must be at least 8 characters")
+                return
+              }
+              setup(password)
+            }}>
+              <div className="grid gap-6">
                 <div className="grid gap-2">
                   <Label htmlFor="setup-password">Master Password</Label>
                   <Input
@@ -229,12 +230,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   {loading ? "Encrypting..." : "Create Vault"}
                 </Button>
               </div>
+            </form>
+            <div className="mt-4 text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
+              By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
             </div>
-          </form>
-          <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-            By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -242,22 +243,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   if (authState === "locked") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6 md:p-10">
-        <div className="w-full max-w-sm flex flex-col gap-6">
-          <form onSubmit={(e) => {
-            e.preventDefault()
-            unlock(password)
-          }}>
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-destructive/10 animate-pulse">
-                  <ShieldAlert className="size-6 text-destructive" />
-                </div>
-                <h1 className="text-xl font-bold">Vault Locked</h1>
-                <div className="text-center text-sm text-muted-foreground text-balance">
-                  Enter your Master Password to access your privacy logs.
-                </div>
-              </div>
-              <div className="flex flex-col gap-6">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <div className="flex aspect-square size-8 items-center justify-center mx-auto mb-2">
+              <Shield className="size-6 text-foreground" />
+            </div>
+            <CardTitle className="text-xl">Vault Locked</CardTitle>
+            <CardDescription>
+              Enter your Master Password to access your privacy logs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              unlock(password)
+            }}>
+              <div className="grid gap-6">
                 <div className="grid gap-2">
                   <Label htmlFor="locked-password">Master Password</Label>
                   <Input
@@ -282,9 +283,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   {loading ? "Unlocking..." : "Unlock Vault"}
                 </Button>
               </div>
-            </div>
-          </form>
-        </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     )
   }

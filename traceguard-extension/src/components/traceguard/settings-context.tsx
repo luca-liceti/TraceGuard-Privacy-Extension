@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react"
-import { SettingsModal } from "./settings-modal"
+
 
 interface SettingsContextType {
     isSettingsOpen: boolean
@@ -22,7 +22,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return (
         <SettingsContext.Provider value={{ isSettingsOpen, setSettingsOpen, activeTab, setActiveTab }}>
             {children}
-            <SettingsModal />
         </SettingsContext.Provider>
     )
 }

@@ -575,12 +575,15 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     const upsImpact = calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0, isUniqueDomain);
 
     // Save the updated state
+    // Count enriched trackers detected on this visit (both active and blocked)
+    const newTrackersCount = enrichedDetails ? enrichedDetails.trackers.items.length : 0;
     await storage.updateState({
         ...state,
-        currentSite: siteData,                          // The site you're currently on
-        sitesAnalyzed: state.sitesAnalyzed + (isUniqueDomain ? 1 : 0),        // Increment the counter only for unique sites today
-        ups: upsImpact.newUPS,                         // Your updated privacy score
-        safeVisitStreak: upsImpact.newStreak           // How many safe sites in a row
+        currentSite: siteData,                                                   // The site you're currently on
+        sitesAnalyzed: state.sitesAnalyzed + (isUniqueDomain ? 1 : 0),           // Increment the counter only for unique sites today
+        trackersDetected: (state.trackersDetected || 0) + newTrackersCount,      // Bug fix: accumulate enriched tracker count
+        ups: upsImpact.newUPS,                                                   // Your updated privacy score
+        safeVisitStreak: upsImpact.newStreak                                     // How many safe sites in a row
     });
 
     // Step 6: Log the UPS change if there was one (for debugging and history)
@@ -625,8 +628,19 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Step 7: Log detailed information from each detector
     // This creates activity logs that show up in the "Activity Logs" page
 
-    // Get tracking details (or use empty defaults if not available)
-    const trackingDetails = message.trackingDetails || { trackerCount: 0, knownTrackers: [], suspiciousTrackers: [] };
+    // Bug fix: message.trackingDetails was never sent by the content script.
+    // The correct data lives at message.detectionDetails.tracking (count/known/suspicious).
+    const trackingDetails = message.detectionDetails?.tracking
+        ? {
+            trackerCount: message.detectionDetails.tracking.count || 0,
+            knownTrackers: Array.isArray(message.detectionDetails.tracking.known)
+                ? message.detectionDetails.tracking.known
+                : new Array(message.detectionDetails.tracking.known || 0).fill('unknown'),
+            suspiciousTrackers: Array.isArray(message.detectionDetails.tracking.suspicious)
+                ? message.detectionDetails.tracking.suspicious
+                : new Array(message.detectionDetails.tracking.suspicious || 0).fill('unknown')
+          }
+        : { trackerCount: 0, knownTrackers: [], suspiciousTrackers: [] };
     const trackingMessage = trackingDetails.trackerCount === 0
         ? 'No third-party trackers detected'
         : `${trackingDetails.trackerCount} weighted trackers detected (${trackingDetails.knownTrackers.length} known, ${trackingDetails.suspiciousTrackers.length} suspicious)`;

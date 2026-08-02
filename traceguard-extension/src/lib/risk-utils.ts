@@ -87,17 +87,17 @@ export const SAFETY_CONFIGS: Record<SafetyLevel, SafetyConfig> = {
         level: 'excellent',
         label: 'Excellent',
         description: 'Very safe and trustworthy site',
-        color: 'text-green-500',
-        bgColor: 'bg-green-500/10',
-        borderColor: 'border-green-500/30',
+        color: 'text-emerald-500',
+        bgColor: 'bg-emerald-500/10',
+        borderColor: 'border-emerald-500/30',
     },
     good: {
         level: 'good',
         label: 'Good',
         description: 'Generally safe browsing',
-        color: 'text-blue-500',
-        bgColor: 'bg-blue-500/10',
-        borderColor: 'border-blue-500/30',
+        color: 'text-emerald-400',
+        bgColor: 'bg-emerald-400/10',
+        borderColor: 'border-emerald-400/30',
     },
     fair: {
         level: 'fair',
@@ -140,15 +140,15 @@ export const STATUS_CONFIGS: Record<ScoreStatus, StatusConfig> = {
         status: 'excellent',
         label: 'Excellent',
         description: 'Your browsing habits are excellent!',
-        color: 'text-green-500',
-        bgColor: 'bg-green-500/10',
+        color: 'text-emerald-500',
+        bgColor: 'bg-emerald-500/10',
     },
     good: {
         status: 'good',
         label: 'Good',
         description: 'Good privacy practices, keep it up!',
-        color: 'text-blue-500',
-        bgColor: 'bg-blue-500/10',
+        color: 'text-emerald-400',
+        bgColor: 'bg-emerald-400/10',
     },
     fair: {
         status: 'fair',
@@ -268,8 +268,23 @@ export function getStatusConfig(ups: number): StatusConfig {
 }
 
 /**
+ * Convert a 0-100 score to a letter grade (A–F).
+ * Uses the same WSS/UPS thresholds as getSafetyLevel / getScoreStatus.
+ *
+ * @param score - Any 0-100 score
+ * @returns Letter grade string
+ */
+export function scoreToGrade(score: number): string {
+    if (score >= 80) return 'A';
+    if (score >= 60) return 'B';
+    if (score >= 40) return 'C';
+    if (score >= 20) return 'D';
+    return 'F';
+}
+
+/**
  * Get just the color class for a UPS score.
- * 
+ *
  * @param ups - User Privacy Score (0-100)
  * @returns Tailwind text color class
  */

@@ -47,7 +47,6 @@ import { toast } from 'sonner'
 import {
     Bell,
     Database,
-    Shield,
     Save,
     RotateCcw,
     Trash2,
@@ -57,12 +56,14 @@ import {
     Info,
     Download,
     List,
+    Shield,
     ShieldAlert
 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -163,10 +164,8 @@ export function SettingsModal() {
     const [dataRetention, setDataRetention] = useState(settings?.dataRetention || 30)
     const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 50)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
-    const [enableTrackerBlocking, setEnableTrackerBlocking] = useState(settings?.enableTrackerBlocking ?? false)
     const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
     const [autoLockTimeout, setAutoLockTimeout] = useState(settings?.autoLockTimeout ?? -1)
-    const [strictHttpsMode, setStrictHttpsMode] = useState(settings?.strictHttpsMode ?? false)
     const [whitelist, setWhitelist] = useState<string[]>(settings?.whitelist || [])
     const [blacklist, setBlacklist] = useState<string[]>(settings?.blacklist || [])
 
@@ -204,10 +203,8 @@ export function SettingsModal() {
             setDataRetention(settings.dataRetention || 30)
             setWssThreshold(settings.wssThreshold || 50)
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
-            setEnableTrackerBlocking(settings.enableTrackerBlocking ?? false)
             setDisplayMode(settings.displayMode || "popup")
             setAutoLockTimeout(settings.autoLockTimeout ?? -1)
-            setStrictHttpsMode(settings.strictHttpsMode ?? false)
             setWhitelist(settings.whitelist || [])
             setBlacklist(settings.blacklist || [])
         }
@@ -227,10 +224,8 @@ export function SettingsModal() {
             dataRetention,
             wssThreshold,
             enablePIIDetection,
-            enableTrackerBlocking,
             displayMode,
             autoLockTimeout,
-            strictHttpsMode,
             whitelist,
             blacklist,
         }
@@ -257,10 +252,8 @@ export function SettingsModal() {
             dataRetention: 30,
             wssThreshold: 50,
             enablePIIDetection: true,
-            enableTrackerBlocking: false,
             displayMode: "popup" as const,
             autoLockTimeout: -1,
-            strictHttpsMode: false,
         }
 
         // Apply defaults to local state
@@ -270,10 +263,8 @@ export function SettingsModal() {
         setDataRetention(defaultPreferences.dataRetention)
         setWssThreshold(defaultPreferences.wssThreshold)
         setEnablePIIDetection(defaultPreferences.enablePIIDetection)
-        setEnableTrackerBlocking(defaultPreferences.enableTrackerBlocking)
         setDisplayMode(defaultPreferences.displayMode)
         setAutoLockTimeout(defaultPreferences.autoLockTimeout)
-        setStrictHttpsMode(defaultPreferences.strictHttpsMode)
 
         // Merge defaults with existing settings to preserve other data (whitelist, blacklist, etc.)
         const newSettings = {
@@ -538,21 +529,6 @@ export function SettingsModal() {
                             </Select>
                         </SettingItem>
 
-                        <SettingItem
-                            label={t("Tracker Blocking")}
-                            description={t("Automatically block known tracking scripts")}
-                        >
-                            <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">
-                                    {t("Coming Soon")}
-                                </Badge>
-                                <Switch
-                                    checked={enableTrackerBlocking}
-                                    disabled={true}
-                                />
-                            </div>
-                        </SettingItem>
-
                         <SettingSlider
                             label={t("Safety Threshold")}
                             description={t("Get alerts when a site's safety score is below this value")}
@@ -566,19 +542,6 @@ export function SettingsModal() {
                                 handleChange()
                             }}
                         />
-
-                        <SettingItem
-                            label={t("Strict HTTPS Mode")}
-                            description={t("Warn when a site is not loaded over a secure HTTPS connection")}
-                        >
-                            <Switch
-                                checked={strictHttpsMode}
-                                onCheckedChange={(checked) => {
-                                    setStrictHttpsMode(checked)
-                                    handleChange()
-                                }}
-                            />
-                        </SettingItem>
                     </div>
                 </TabsContent>
 
@@ -634,13 +597,12 @@ export function SettingsModal() {
                     
                     <div className="space-y-6">
                         <div className="space-y-4">
-                            <h4 className="text-sm font-medium flex items-center gap-2"><Shield className="h-4 w-4 text-green-500" /> {t("Allowed Sites (Whitelist)")}</h4>
+                            <h4 className="text-sm font-medium">{t("Allowed Sites (Whitelist)")}</h4>
                             <p className="text-sm text-muted-foreground">{t("These sites will never trigger privacy alerts or be blocked.")}</p>
-                            <div className="flex gap-2">
-                                <input 
+                            <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                                <Input 
                                     id="add-whitelist" 
                                     placeholder="e.g. example.com" 
-                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             const val = e.currentTarget.value.trim();
@@ -686,13 +648,12 @@ export function SettingsModal() {
                         <Separator />
 
                         <div className="space-y-4">
-                            <h4 className="text-sm font-medium flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-destructive" /> {t("Blocked Sites (Blacklist)")}</h4>
+                            <h4 className="text-sm font-medium">{t("Blocked Sites (Blacklist)")}</h4>
                             <p className="text-sm text-muted-foreground">{t("These sites will always trigger high-risk alerts.")}</p>
-                            <div className="flex gap-2">
-                                <input 
+                            <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                                <Input 
                                     id="add-blacklist" 
                                     placeholder="e.g. badsite.com" 
-                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             const val = e.currentTarget.value.trim();
@@ -778,46 +739,50 @@ export function SettingsModal() {
                     </div>
                     
                     <div className="space-y-4">
-                        <div className="rounded-lg border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                             <div className="space-y-0.5">
+                        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                             <div className="space-y-0.5 flex-1 mr-4">
                                  <Label className="text-base font-medium">{t("Export Data")}</Label>
                                  <p className="text-sm text-muted-foreground">{t("Download a copy of your activity logs and settings")}</p>
                              </div>
-                             <Button variant="outline" onClick={exportData} className="w-full sm:w-auto">
-                                 <Download className="mr-2 h-4 w-4" />
-                                 {t("Export to JSON")}
-                             </Button>
+                             <div className="flex-shrink-0">
+                                 <Button variant="outline" onClick={exportData}>
+                                     <Download className="mr-2 h-4 w-4" />
+                                     {t("Export to JSON")}
+                                 </Button>
+                             </div>
                         </div>
 
-                        <div className="rounded-lg border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                             <div className="space-y-0.5">
+                        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                             <div className="space-y-0.5 flex-1 mr-4">
                                  <Label className="text-base font-medium">{t("Clear Data")}</Label>
                                  <p className="text-sm text-muted-foreground">{t("Remove specific data from the extension")}</p>
                              </div>
-                             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                                 <Button variant="outline" onClick={clearActivityLogs} className="flex-1">
+                             <div className="flex-shrink-0 flex gap-2">
+                                 <Button variant="outline" onClick={clearActivityLogs}>
                                      <Trash2 className="mr-2 h-4 w-4" />
                                      {t("Clear Activity Logs")}
                                  </Button>
-                                 <Button variant="outline" onClick={resetPrivacyScore} className="flex-1">
+                                 <Button variant="outline" onClick={resetPrivacyScore}>
                                      <RotateCcw className="mr-2 h-4 w-4" />
                                      {t("Reset Privacy Score")}
                                  </Button>
                              </div>
                         </div>
 
-                        <div className="rounded-lg border border-destructive/50 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                             <div className="space-y-0.5">
+                        <div className="flex flex-row items-center justify-between rounded-lg border border-destructive/50 p-4">
+                             <div className="space-y-0.5 flex-1 mr-4">
                                  <Label className="text-base font-medium text-destructive flex items-center gap-2">
                                      <AlertTriangle className="h-4 w-4" />
                                      {t("Danger Zone")}
                                  </Label>
                                  <p className="text-sm text-muted-foreground">{t("Irreversible actions that will delete your data")}</p>
                              </div>
-                             <Button variant="destructive" onClick={clearAllData} className="w-full sm:w-auto">
-                                 <Trash2 className="mr-2 h-4 w-4" />
-                                 {t("Delete All Data")}
-                             </Button>
+                             <div className="flex-shrink-0">
+                                 <Button variant="destructive" onClick={clearAllData}>
+                                     <Trash2 className="mr-2 h-4 w-4" />
+                                     {t("Delete All Data")}
+                                 </Button>
+                             </div>
                         </div>
                     </div>
                 </TabsContent>

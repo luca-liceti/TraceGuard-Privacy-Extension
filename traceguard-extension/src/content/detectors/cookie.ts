@@ -307,9 +307,7 @@ export function detectCookies(): number {
         // 0 weighted → 100
         // 4 weighted (2 analytics) → 100 - 12×log2(5) ≈ 72
         // 10 weighted → 100 - 12×log2(11) ≈ 58
-        // 20 weighted → 100 - 12×log2(21) ≈ 47
-
-        const K = 12;
+        // 20 weighted �        const K = 12;
         const score = totalWeightedScore === 0
             ? 100
             : Math.max(0, Math.round(100 - (K * Math.log2(totalWeightedScore + 1))));
@@ -333,6 +331,7 @@ export function detectCookiesDetailed(): {
     total: number;
     tracking: number;
     thirdParty: number;
+    details?: Record<string, number>;
 } {
     try {
         const cookies = parseCookies();
@@ -361,7 +360,11 @@ export function detectCookiesDetailed(): {
             total: cookies.length,
             tracking: crossSiteCount + analyticsCount,
             thirdParty: thirdPartyCount,
-            details: categoryCounts
+            details: {
+                'cross-site-tracker': crossSiteCount,
+                'analytics': analyticsCount,
+                'third-party': thirdPartyCount,
+            }
         };
     } catch (error) {
         console.error('[Cookie Detector] Error:', error);
