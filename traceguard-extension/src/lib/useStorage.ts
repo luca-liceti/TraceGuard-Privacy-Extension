@@ -132,8 +132,28 @@ export function useSettings() {
     return settings;
 }
 
+export function useUserName() {
+    const [userName, setUserName] = useState<string | null>(null);
+
+    useEffect(() => {
+        chrome.storage.local.get('userName').then(res => {
+            setUserName(res.userName || null);
+        });
+
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+            if (areaName === 'local' && changes.userName) {
+                setUserName(changes.userName.newValue || null);
+            }
+        };
+        chrome.storage.onChanged.addListener(listener);
+        return () => chrome.storage.onChanged.removeListener(listener);
+    }, []);
+
+    return userName;
+}
+
 export function useScoreHistory() {
-    const [history, setHistory] = useState<import('./types').ScoreHistoryEntry[]>([]);
+    const [history, setHistory] = useState<import('./types').ScoreHistoryEntry[] | null>(null);
 
     useEffect(() => {
         chrome.storage.local.get('scoreHistory').then(async res => {

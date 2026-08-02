@@ -13,7 +13,7 @@ type AuthState = "loading" | "setup" | "locked" | "unlocked"
 interface AuthContextType {
   authState: AuthState
   unlock: (password: string) => Promise<boolean>
-  setup: (password: string) => Promise<boolean>
+  setup: (password: string, name: string) => Promise<boolean>
   lock: () => Promise<void>
 }
 
@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>("loading")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [userName, setUserName] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const setup = async (pwd: string) => {
+  const setup = async (pwd: string, name: string) => {
     setLoading(true)
     setError("")
     try {
@@ -96,7 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Save salt and validator to disk
       await chrome.storage.local.set({ 
         cryptoSalt: saltArray,
-        validator: validatorBase64
+        validator: validatorBase64,
+        userName: name
       })
 
       // Save key to memory
@@ -193,9 +195,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setError("Password must be at least 8 characters")
                 return
               }
-              setup(password)
+              if (userName.trim().length === 0) {
+                setError("Name is required")
+                return
+              }
+              setup(password, userName.trim())
             }}>
               <div className="grid gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="setup-name">What should we call you?</Label>
+                  <Input
+                    id="setup-name"
+                    type="text"
+                    placeholder="Your name"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
                 <div className="grid gap-2">
                   <Label htmlFor="setup-password">Master Password</Label>
                   <Input

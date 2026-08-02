@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -60,11 +60,13 @@ export function ChartAreaInteractive({
   const history = useScoreHistory()
 
   const { dailyData, todayData } = React.useMemo(() => {
-    if (!history || history.length === 0) return { dailyData: [], todayData: [] };
+    const isLoading = history === null;
+    const actualHistory = history || [];
+    if (!isLoading && actualHistory.length === 0) return { dailyData: [], todayData: [] };
     
     // Group by day
     const dailyScores = new Map<string, { sum: number; count: number }>();
-    history.forEach(entry => {
+    actualHistory.forEach(entry => {
       const date = new Date(entry.timestamp);
       // Adjust for local time
       const dateString = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -81,10 +83,10 @@ export function ChartAreaInteractive({
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     
-    const beforeToday = history.filter(entry => entry.timestamp < startOfToday.getTime());
-    const lastScore = beforeToday.length > 0 ? beforeToday[beforeToday.length - 1].ups : 100; // default to 100 if no previous history
+    const beforeToday = actualHistory.filter(entry => entry.timestamp < startOfToday.getTime());
+    const lastScore = isLoading ? 0 : (beforeToday.length > 0 ? beforeToday[beforeToday.length - 1].ups : 100); 
     
-    const rawToday = history
+    const rawToday = actualHistory
       .filter(entry => entry.timestamp >= startOfToday.getTime())
       .map(entry => ({
         date: new Date(entry.timestamp).toISOString(),
@@ -123,7 +125,8 @@ export function ChartAreaInteractive({
       } else {
         // Backfill with the most recent score prior to this date
         const before = dailyData.filter(item => item.date < dateString);
-        const lastScore = before.length > 0 ? before[before.length - 1].score : 100;
+        const isLoading = history === null;
+        const lastScore = isLoading ? 0 : (before.length > 0 ? before[before.length - 1].score : 100);
         
         result.push({
           date: dateString,
@@ -133,7 +136,7 @@ export function ChartAreaInteractive({
     }
     
     return result;
-  }, [dailyData, todayData, timeRange]);
+  }, [dailyData, todayData, timeRange, history]);
 
   return (
     <Card className="@container/card">
@@ -191,22 +194,22 @@ export function ChartAreaInteractive({
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <AreaChart data={filteredData}>
+          <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="fillScore" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
                   stopColor="var(--color-score)"
-                  stopOpacity={1.0}
+                  stopOpacity={0.5}
                 />
                 <stop
                   offset="95%"
                   stopColor="var(--color-score)"
-                  stopOpacity={0.1}
+                  stopOpacity={0.02}
                 />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke="var(--border)" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -227,6 +230,13 @@ export function ChartAreaInteractive({
                   day: "numeric",
                 })
               }}
+            />
+            <YAxis 
+              domain={[0, 100]} 
+              tickLine={false} 
+              axisLine={false} 
+              tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} 
+              tickMargin={8} 
             />
             <ChartTooltip
               cursor={false}
@@ -255,6 +265,7 @@ export function ChartAreaInteractive({
               type="monotone"
               fill="url(#fillScore)"
               stroke="var(--color-score)"
+              strokeWidth={2}
               stackId="a"
             />
           </AreaChart>

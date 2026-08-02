@@ -9,22 +9,15 @@ import {
   ExternalLink,
   Globe,
   HelpCircle,
-  Info,
   Lock,
   Settings,
 } from "lucide-react"
 
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
@@ -34,6 +27,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -42,15 +40,7 @@ import {
 import { useSettingsModal } from "@/components/traceguard/settings-context"
 import { useAuth } from "@/components/traceguard/auth-provider"
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
+export function NavFooter({ user }: { user: { name: string, email: string } }) {
   const { isMobile } = useSidebar()
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
@@ -74,12 +64,14 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarImage src="" alt={user.name} />
+                <AvatarFallback className="rounded-lg bg-muted text-foreground">
+                  {user.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-left text-sm leading-tight ml-2">
                 <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -90,28 +82,15 @@ export function NavUser({
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
-                <Settings />
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                <Settings className="mr-2 size-4" />
                 {t("Settings")}
                 <DropdownMenuShortcut>Ctrl ⇧ ,</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
-                  <Globe />
+                  <Globe className="mr-2 size-4" />
                   <span>{t("Language")}</span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
@@ -134,7 +113,7 @@ export function NavUser({
                       >
                         <span>{lang.name}</span>
                         {i18n.language === lang.code && (
-                          <Check className="ml-auto text-blue-500" />
+                          <Check className="ml-auto size-4 text-blue-500" />
                         )}
                       </DropdownMenuItem>
                     ))}
@@ -142,54 +121,17 @@ export function NavUser({
                 </DropdownMenuPortal>
               </DropdownMenuSub>
               <DropdownMenuItem>
-                <HelpCircle />
+                <HelpCircle className="mr-2 size-4" />
                 {t("Get help")}
               </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuGroup>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Info />
-                  <span>{t("Learn more")}</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem>
-                      <span>{t("About TraceGuard")}</span>
-                      <ExternalLink className="ml-auto opacity-50" />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>{t("Tutorials")}</span>
-                      <ExternalLink className="ml-auto opacity-50" />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>{t("Courses")}</span>
-                      <ExternalLink className="ml-auto opacity-50" />
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <span>{t("Usage policy")}</span>
-                      <ExternalLink className="ml-auto opacity-50" />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>{t("Privacy policy")}</span>
-                      <ExternalLink className="ml-auto opacity-50" />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>{t("Your privacy choices")}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <span>{t("Keyboard shortcuts")}</span>
-                      <DropdownMenuShortcut>Ctrl /</DropdownMenuShortcut>
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
+              <DropdownMenuItem>
+                <ExternalLink className="mr-2 size-4" />
+                {t("Privacy policy")}
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => lock()}>
-              <Lock />
+              <Lock className="mr-2 size-4" />
               {t("Lock Extension")}
             </DropdownMenuItem>
           </DropdownMenuContent>

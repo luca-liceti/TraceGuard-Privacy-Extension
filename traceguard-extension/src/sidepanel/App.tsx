@@ -248,6 +248,15 @@ function App() {
         };
     }, []);
 
+    const [progressUps, setProgressUps] = useState(0);
+
+    useEffect(() => {
+        if (state?.ups) {
+            const timer = setTimeout(() => setProgressUps(state.ups), 100);
+            return () => clearTimeout(timer);
+        }
+    }, [state?.ups]);
+
     if (!state) {
         return <div className="p-4 text-foreground bg-background">{t("Loading TraceGuard...")}</div>;
     }
@@ -285,7 +294,7 @@ function App() {
                             <div className={`text-3xl font-bold ${getStatusConfig(state.ups).color}`}>
                                 {state.ups}
                             </div>
-                            <Progress value={state.ups} className="h-1.5 mt-2" />
+                            <Progress value={progressUps} className="h-1.5 mt-2" />
                         </CardContent>
                     </Card>
 

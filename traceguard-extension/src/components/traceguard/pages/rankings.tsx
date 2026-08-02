@@ -1,18 +1,17 @@
 import React, { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { 
-  Bar, 
-  BarChart, 
-  CartesianGrid, 
-  XAxis, 
-  YAxis,
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  LabelList,
   Pie,
   PieChart,
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
+  XAxis,
+  YAxis,
 } from "recharts"
 
 import {
@@ -27,197 +26,270 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent
 } from "@/components/ui/chart"
-import { useDetectorLogs, useActivityLogs, useSiteCache } from "@/lib/useStorage"
+import { Badge } from "@/components/ui/badge"
+import { useDetectorLogs, useActivityLogs, useSiteCache, useAppState } from "@/lib/useStorage"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { StatCard } from "@/components/ui/stat-card"
+import {
+  ShieldCheck,
+  ShieldAlert,
+  Shield,
+  Target,
+  Cookie,
+  Eye,
+  FileText,
+  Lock,
+  Key,
+  Activity,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
 
-// Configuration for Tracker Categories Pie Chart (Monotone)
-const pieChartConfig = {
-  tracking: { label: "Tracking", color: "var(--primary)" },
-  cookies: { label: "Cookies", color: "var(--muted-foreground)" },
-  inputs: { label: "Inputs", color: "var(--secondary)" },
-  reputation: { label: "Reputation", color: "var(--accent)" },
-  policy: { label: "Policy", color: "var(--border)" },
-  permissions: { label: "Permissions", color: "var(--foreground)" }
-} satisfies ChartConfig
+// ─── Semantic color palette (detector-aware) ───────────────────────────────
+// Using standard shadcn theme colors
+const DETECTOR_COLORS: Record<string, string> = {
+  tracking:    "var(--primary)",
+  cookies:     "var(--primary)",
+  inputs:      "var(--primary)",
+  reputation:  "var(--primary)",
+  policy:      "var(--primary)",
+}
 
-// Configuration for Activity Chart
+const DETECTOR_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  tracking:    Activity,
+  cookies:     Cookie,
+  inputs:      Key,
+  reputation:  Shield,
+  policy:      FileText,
+}
+
+const DETECTOR_LABELS: Record<string, string> = {
+  tracking:    "Tracking",
+  cookies:     "Cookies",
+  inputs:      "Input Fields",
+  reputation:  "Reputation",
+  policy:      "Privacy Policy",
+}
+
+// WSS bucket color palette
+const WSS_COLORS: Record<string, string> = {
+  Critical:  "var(--primary)",
+  Poor:      "var(--primary)",
+  Fair:      "var(--primary)",
+  Good:      "var(--primary)",
+  Excellent: "var(--primary)",
+}
+
+// PII sensitivity colors
+const PII_COLORS: Record<string, string> = {
+  HIGH:   "var(--primary)",
+  MEDIUM: "var(--primary)",
+  LOW:    "var(--primary)",
+}
+
+// Chart configs
 const activityConfig = {
   events: { label: "Events Blocked", color: "var(--primary)" }
 } satisfies ChartConfig
 
-// Configuration for Leaderboard
 const leaderboardConfig = {
-  count: { label: "Trackers Blocked", color: "var(--primary)" }
+  count: { label: "Threats Blocked", color: "var(--primary)" }
 } satisfies ChartConfig
 
-// Configuration for PII Chart
-const piiConfig = {
-  count: { label: "Interceptions", color: "var(--primary)" }
+const pieChartConfig = {
+  tracking:    { label: "Tracking",    color: DETECTOR_COLORS.tracking },
+  cookies:     { label: "Cookies",     color: DETECTOR_COLORS.cookies },
+  inputs:      { label: "Inputs",      color: DETECTOR_COLORS.inputs },
+  reputation:  { label: "Reputation",  color: DETECTOR_COLORS.reputation },
+  policy:      { label: "Policy",      color: DETECTOR_COLORS.policy },
 } satisfies ChartConfig
 
-// Configuration for WSS Chart
 const wssConfig = {
   count: { label: "Sites", color: "var(--primary)" }
 } satisfies ChartConfig
 
+// ─── Small helper components ────────────────────────────────────────────────
+
+function EmptyState({ icon: Icon, title, description }: { icon: React.ComponentType<{ className?: string }>; title: string; description: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+      <div className="p-3 rounded-full bg-muted/50">
+        <Icon className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground/70 mt-0.5">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+
 export default function RankingsPage() {
   const { t } = useTranslation()
-  const logs = useDetectorLogs()
+  const rawLogs = useDetectorLogs()
+  const logs = useMemo(() => rawLogs.filter(l => l.detector !== 'permissions'), [rawLogs])
   const piiLogs = useActivityLogs()
   const { sites } = useSiteCache()
-  
+
   const [timeRange, setTimeRange] = useState("1d")
 
-  // 1. Prepare data for Tracker Categories (Pie Chart)
-  const categoryData = useMemo(() => {
-    const counts: Record<string, number> = {
-      tracking: 0, cookies: 0, inputs: 0, reputation: 0, policy: 0, permissions: 0
-    }
-    logs.forEach(log => {
-      if (counts[log.detector] !== undefined) {
-        counts[log.detector]++
-      }
-    })
-    
-    return Object.entries(counts)
-      .filter(([_, count]) => count > 0)
-      .map(([name, value]) => ({
-        name,
-        value,
-        fill: `var(--color-${name})`
-      }))
-  }, [logs])
+  // ── 1. Hero KPIs ────────────────────────────────────────────────────────
+  const heroStats = useMemo(() => {
+    const totalThreats = logs.length
 
-  // 2. Prepare data for Top Offenders (Bar Chart horizontal)
-  const leaderboardData = useMemo(() => {
+    // Top offender: domain with most log entries
     const domainCounts: Record<string, number> = {}
-    logs.forEach(log => {
-      if (log.detector === 'tracking' || log.detector === 'cookies') {
-        domainCounts[log.domain] = (domainCounts[log.domain] || 0) + 1
-      }
-    })
-    
-    return Object.entries(domainCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5) // Top 5
-      .map(([domain, count]) => ({ 
-        domain, 
-        count,
-        fill: `var(--primary)` 
-      }))
-  }, [logs])
+    logs.forEach(log => { domainCounts[log.domain] = (domainCounts[log.domain] || 0) + 1 })
+    const topOffender = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 
-  // 3. Prepare data for Threat Vector (Radar Chart - Threat Level)
-  const radarData = useMemo(() => {
-    const totals: Record<string, { sum: number, count: number }> = {
-      tracking: { sum: 0, count: 0 },
-      cookies: { sum: 0, count: 0 },
-      inputs: { sum: 0, count: 0 },
-      reputation: { sum: 0, count: 0 },
-      policy: { sum: 0, count: 0 }
-    }
-    
-    logs.forEach(log => {
-      if (totals[log.detector]) {
-        totals[log.detector].sum += log.score
-        totals[log.detector].count++
-      }
-    })
+    const totalPii = piiLogs.length
 
-    return Object.entries(totals).map(([detector, data]) => {
-      const averageSafety = data.count > 0 ? Math.round(data.sum / data.count) : 100
-      const threatLevel = 100 - averageSafety // 0 is safe, 100 is max threat
-      
-      return {
-        subject: detector.charAt(0).toUpperCase() + detector.slice(1),
-        threat: threatLevel, 
-        fullMark: 100
-      }
-    })
-  }, [logs])
+    const avgWSS = sites.length > 0
+      ? Math.round(sites.reduce((sum, [_, d]) => sum + d.wss, 0) / sites.length)
+      : null
 
-  // 4. Prepare Activity Data (Bar Chart dynamic time range)
+    // Today vs yesterday for threats
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    const startOfYesterday = startOfToday - 86400000
+    const todayThreats = logs.filter(l => l.timestamp >= startOfToday).length
+    const yesterdayThreats = logs.filter(l => l.timestamp >= startOfYesterday && l.timestamp < startOfToday).length
+    const threatTrend = yesterdayThreats === 0
+      ? (todayThreats > 0 ? "+100%" : "—")
+      : `${todayThreats >= yesterdayThreats ? "+" : ""}${Math.round(((todayThreats - yesterdayThreats) / yesterdayThreats) * 100)}%`
+    const threatDirection = todayThreats >= yesterdayThreats ? "up" : "down"
+
+    return { totalThreats, topOffender, totalPii, avgWSS, threatTrend, threatDirection }
+  }, [logs, piiLogs, sites])
+
+  // ── 2. Activity Chart (AreaChart) ─────────────────────────────────────
   const activityData = useMemo(() => {
-    const days: Record<string, number> = {}
-    
-    const daysToSubtract = timeRange === '1d' ? 1 : timeRange === '7d' ? 7 : 30;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const daysToSubtract = timeRange === "1d" ? 1 : timeRange === "7d" ? 7 : 30
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-    for (let i = daysToSubtract - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-      days[dateStr] = 0
-    }
-
-    logs.forEach(log => {
-      const d = new Date(log.timestamp)
-      // Only include if within time range
-      if (d.getTime() >= (today.getTime() - ((daysToSubtract - 1) * 24 * 60 * 60 * 1000))) {
-        const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-        if (days[dateStr] !== undefined) {
-          days[dateStr]++
-        }
-      }
-    })
-
-    if (timeRange === '1d') {
-      const formatHour = (h: number) => `${h % 12 || 12}:00 ${h >= 12 ? 'PM' : 'AM'}`
+    if (timeRange === "1d") {
+      const formatHour = (h: number) => `${h % 12 || 12}:00 ${h >= 12 ? "PM" : "AM"}`
       const hours: Record<string, number> = {}
-      for (let i = 0; i < 24; i++) {
-        hours[formatHour(i)] = 0
-      }
-      
+      for (let i = 0; i < 24; i++) hours[formatHour(i)] = 0
       logs.forEach(log => {
         const d = new Date(log.timestamp)
         if (d.getTime() >= today.getTime()) {
           const hourStr = formatHour(d.getHours())
-          if (hours[hourStr] !== undefined) {
-            hours[hourStr]++
-          }
+          if (hours[hourStr] !== undefined) hours[hourStr]++
         }
       })
-      
-      return Object.entries(hours).map(([time, events]) => ({
-        date: time,
-        events
-      }))
+      return Object.entries(hours).map(([date, events]) => ({ date, events }))
     }
 
-    return Object.entries(days).map(([date, events]) => ({
-      date,
-      events
-    }))
+    const days: Record<string, number> = {}
+    for (let i = daysToSubtract - 1; i >= 0; i--) {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      days[d.toLocaleDateString(undefined, { month: "short", day: "numeric" })] = 0
+    }
+    const cutoff = today.getTime() - (daysToSubtract - 1) * 86400000
+    logs.forEach(log => {
+      const d = new Date(log.timestamp)
+      if (d.getTime() >= cutoff) {
+        const key = d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+        if (days[key] !== undefined) days[key]++
+      }
+    })
+    return Object.entries(days).map(([date, events]) => ({ date, events }))
   }, [logs, timeRange])
 
-  // 5. Prepare PII Data (Horizontal Bar Chart)
+  // ── 3. Top Offenders ─────────────────────────────────────────────────
+  const leaderboardData = useMemo(() => {
+    const domainCounts: Record<string, number> = {}
+    logs.forEach(log => {
+      domainCounts[log.domain] = (domainCounts[log.domain] || 0) + 1
+    })
+    const sorted = Object.entries(domainCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+    const total = sorted.reduce((s, [_, c]) => s + c, 0)
+    return sorted.map(([domain, count]) => ({
+      domain,
+      count,
+      pct: total > 0 ? Math.round((count / total) * 100) : 0,
+      fill: "var(--primary)",
+    }))
+  }, [logs])
+
+  // ── 4. Threat Categories (Pie) ────────────────────────────────────────
+  const categoryData = useMemo(() => {
+    const counts: Record<string, number> = {
+      tracking: 0, cookies: 0, inputs: 0, reputation: 0, policy: 0
+    }
+    logs.forEach(log => { if (counts[log.detector] !== undefined) counts[log.detector]++ })
+    return Object.entries(counts)
+      .filter(([_, count]) => count > 0)
+      .map(([name, value]) => ({ name, value, fill: DETECTOR_COLORS[name] }))
+  }, [logs])
+
+  const totalCategoryEvents = categoryData.reduce((s, d) => s + d.value, 0)
+
+  // ── 5. Risk Breakdown Table ───────────────────────────────────────────
+  const riskBreakdown = useMemo(() => {
+    const stats: Record<string, { sum: number; count: number; events: number }> = {
+      tracking:    { sum: 0, count: 0, events: 0 },
+      cookies:     { sum: 0, count: 0, events: 0 },
+      inputs:      { sum: 0, count: 0, events: 0 },
+      reputation:  { sum: 0, count: 0, events: 0 },
+      policy:      { sum: 0, count: 0, events: 0 },
+    }
+    logs.forEach(log => {
+      if (stats[log.detector]) {
+        stats[log.detector].sum += log.score
+        stats[log.detector].count++
+        stats[log.detector].events++
+      }
+    })
+    return Object.entries(stats).map(([detector, data]) => {
+      const avgSafety = data.count > 0 ? Math.round(data.sum / data.count) : 100
+      const riskLevel =
+        avgSafety >= 80 ? "Low" :
+        avgSafety >= 50 ? "Medium" :
+        avgSafety >= 20 ? "High" : "Critical"
+      return { detector, avgSafety, events: data.events, riskLevel }
+    }).sort((a, b) => {
+      const order = ['tracking', 'cookies', 'inputs', 'reputation', 'policy']
+      const indexA = order.indexOf(a.detector)
+      const indexB = order.indexOf(b.detector)
+      // If not in order list, push to end
+      const posA = indexA === -1 ? 999 : indexA
+      const posB = indexB === -1 ? 999 : indexB
+      return posA - posB
+    })
+  }, [logs])
+
+  // ── 6. PII / Sensitive Data ───────────────────────────────────────────
   const piiData = useMemo(() => {
-    const counts: Record<string, number> = {}
+    const counts: Record<string, { count: number; sensitivity: string; sites: Set<string> }> = {}
     piiLogs.forEach(log => {
       const label = log.fieldType.charAt(0).toUpperCase() + log.fieldType.slice(1)
-      counts[label] = (counts[label] || 0) + 1
+      if (!counts[label]) counts[label] = { count: 0, sensitivity: log.sensitivity, sites: new Set() }
+      counts[label].count++
+      counts[label].sites.add(log.site)
     })
-    
     return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1]) // Sort descending
-      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([type, data]) => ({
+        type,
+        count: data.count,
+        sensitivity: data.sensitivity,
+        siteCount: data.sites.size,
+        fill: PII_COLORS[data.sensitivity] ?? PII_COLORS.LOW,
+      }))
   }, [piiLogs])
 
-  // 6. Prepare Web Safety Score Data (Vertical Histogram)
+  // ── 7. WSS Distribution ───────────────────────────────────────────────
   const wssData = useMemo(() => {
-    const bins = {
-      Critical: 0,
-      Poor: 0,
-      Fair: 0,
-      Good: 0,
-      Excellent: 0
-    }
-    
+    const bins = { Critical: 0, Poor: 0, Fair: 0, Good: 0, Excellent: 0 }
     sites.forEach(([_, data]) => {
       const score = data.wss
       if (score < 20) bins.Critical++
@@ -226,18 +298,21 @@ export default function RankingsPage() {
       else if (score < 80) bins.Good++
       else bins.Excellent++
     })
-    
-    return [
-      { category: "Critical", count: bins.Critical },
-      { category: "Poor", count: bins.Poor },
-      { category: "Fair", count: bins.Fair },
-      { category: "Good", count: bins.Good },
-      { category: "Excellent", count: bins.Excellent }
-    ]
+    const total = Object.values(bins).reduce((s, v) => s + v, 0)
+    return Object.entries(bins).map(([category, count]) => ({
+      category,
+      count,
+      pct: total > 0 ? Math.round((count / total) * 100) : 0,
+      fill: WSS_COLORS[category],
+    }))
   }, [sites])
+
+  const wssTotalSites = sites.length
 
   return (
     <div className="flex flex-col gap-4 px-4 py-4 md:gap-6 lg:px-6 lg:py-6 @container/main">
+
+      {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t("Rankings & Stats")}</h1>
         <p className="text-muted-foreground mt-2">
@@ -245,186 +320,372 @@ export default function RankingsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 lg:gap-6 mt-4">
-        
-        {/* 1. Daily Activity (Full Width) */}
-        <Card className="col-span-1 md:col-span-2 lg:col-span-2 @container/card">
+      {/* ── Hero KPI Row ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <StatCard
+          title={t("Total Threats Blocked")}
+          value={heroStats.totalThreats.toLocaleString()}
+          subtitle={t("All detector events logged")}
+          icon={ShieldCheck}
+          iconColor="text-primary"
+          trend={{
+            direction: heroStats.threatDirection as "up" | "down",
+            value: heroStats.threatTrend,
+            isPositive: heroStats.threatDirection === "down",
+          }}
+        />
+        <StatCard
+          title={t("Top Offender")}
+          value={heroStats.topOffender ? heroStats.topOffender.replace(/^www\./, "") : "—"}
+          subtitle={heroStats.topOffender ? t("Most threats from one domain") : t("No data yet")}
+          icon={Target}
+          iconColor="text-primary"
+        />
+        <StatCard
+          title={t("PII Exposures")}
+          value={heroStats.totalPii.toLocaleString()}
+          subtitle={t("Sensitive field entries detected")}
+          icon={Lock}
+          iconColor="text-primary"
+        />
+        <StatCard
+          title={t("Avg. Site Safety")}
+          value={heroStats.avgWSS !== null ? `${heroStats.avgWSS}/100` : "—"}
+          subtitle={
+            heroStats.avgWSS !== null
+              ? heroStats.avgWSS >= 80 ? t("Excellent — keep it up!")
+              : heroStats.avgWSS >= 60 ? t("Good — room to improve")
+              : heroStats.avgWSS >= 40 ? t("Fair — some risky sites")
+              : t("Poor — avoid sensitive actions")
+              : t("Visit some websites first")
+          }
+          icon={ShieldAlert}
+          iconColor={heroStats.avgWSS === null ? "text-muted-foreground" : "text-primary"}
+        />
+      </div>
+
+      {/* ── Main 2-col grid ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+
+        {/* 1. Activity Volume — full width, AreaChart */}
+        <Card className="col-span-1 md:col-span-2 @container/card">
           <CardHeader className="relative">
             <CardTitle>{t("Activity Volume")}</CardTitle>
             <CardDescription>
               <span className="@[540px]/card:block hidden">
-                {t("Volume of privacy events blocked")} {timeRange === '1d' ? t('today') : timeRange === '7d' ? t('over the last 7 days') : t('over the last 30 days')}
+                {t("Volume of privacy events blocked")}{" "}
+                {timeRange === "1d" ? t("today") : timeRange === "7d" ? t("over the last 7 days") : t("over the last 30 days")}
               </span>
               <span className="@[540px]/card:hidden">
-                {timeRange === '1d' ? t('Today') : timeRange === '7d' ? t('Last 7 days') : t('Last 30 days')}
+                {timeRange === "1d" ? t("Today") : timeRange === "7d" ? t("Last 7 days") : t("Last 30 days")}
               </span>
             </CardDescription>
             <div className="absolute right-4 top-4">
               <ToggleGroup
                 type="single"
                 value={timeRange}
-                onValueChange={(val) => val && setTimeRange(val)}
+                onValueChange={val => val && setTimeRange(val)}
                 variant="outline"
                 className="@[767px]/card:flex hidden"
               >
-                <ToggleGroupItem value="1d" className="h-8 px-2.5">
-                  {t("Today")}
-                </ToggleGroupItem>
-                <ToggleGroupItem value="7d" className="h-8 px-2.5">
-                  {t("Last 7 days")}
-                </ToggleGroupItem>
-                <ToggleGroupItem value="30d" className="h-8 px-2.5">
-                  {t("Last 30 days")}
-                </ToggleGroupItem>
+                <ToggleGroupItem value="1d" className="h-8 px-2.5">{t("Today")}</ToggleGroupItem>
+                <ToggleGroupItem value="7d" className="h-8 px-2.5">{t("Last 7 days")}</ToggleGroupItem>
+                <ToggleGroupItem value="30d" className="h-8 px-2.5">{t("Last 30 days")}</ToggleGroupItem>
               </ToggleGroup>
               <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger
-                  className="@[767px]/card:hidden flex w-40"
-                  aria-label="Select a time range"
-                >
+                <SelectTrigger className="@[767px]/card:hidden flex w-40" aria-label="Select a time range">
                   <SelectValue placeholder="Last 7 days" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="1d" className="rounded-lg">
-                    {t("Today")}
-                  </SelectItem>
-                  <SelectItem value="7d" className="rounded-lg">
-                    {t("Last 7 days")}
-                  </SelectItem>
-                  <SelectItem value="30d" className="rounded-lg">
-                    {t("Last 30 days")}
-                  </SelectItem>
+                  <SelectItem value="1d" className="rounded-lg">{t("Today")}</SelectItem>
+                  <SelectItem value="7d" className="rounded-lg">{t("Last 7 days")}</SelectItem>
+                  <SelectItem value="30d" className="rounded-lg">{t("Last 30 days")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={activityConfig} className="h-[250px] w-full">
-              <BarChart data={activityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickMargin={8} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickMargin={8} />
-                <ChartTooltip cursor={{fill: 'var(--muted)'}} content={<ChartTooltipContent />} />
-                <Bar dataKey="events" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
+            {activityData.every(d => d.events === 0) ? (
+              <EmptyState icon={Activity} title={t("No activity yet")} description={t("Threats will appear here as you browse the web.")} />
+            ) : (
+              <ChartContainer config={activityConfig} className="h-[220px] w-full">
+                <AreaChart data={activityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="fillEvents" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} minTickGap={30} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} allowDecimals={false} />
+                  <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                  <Area dataKey="events" type="monotone" fill="url(#fillEvents)" stroke="var(--primary)" strokeWidth={2} />
+                </AreaChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
-        {/* 2. Top Offenders Leaderboard (Full Width) */}
-        <Card className="col-span-1 md:col-span-2 lg:col-span-2">
+        {/* 2. Top Offenders Leaderboard — full width */}
+        <Card className="col-span-1 md:col-span-2">
           <CardHeader>
             <CardTitle>{t("Top Offenders Leaderboard")}</CardTitle>
-            <CardDescription>{t("Domains with the highest volume of blocked trackers and cookies")}</CardDescription>
+            <CardDescription>{t("Domains responsible for the most privacy threats across all categories")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={leaderboardConfig} className="h-[250px] w-full">
-              <BarChart
-                data={leaderboardData}
-                layout="vertical"
-                margin={{ top: 0, right: 0, left: 20, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                <XAxis type="number" hide />
-                <YAxis dataKey="domain" type="category" tickLine={false} axisLine={false} width={150} tick={{ fill: "var(--foreground)", fontSize: 12 }} tickMargin={8} />
-                <ChartTooltip cursor={{fill: 'var(--muted)'}} content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="var(--primary)" radius={[0, 4, 4, 0]} barSize={30} />
-              </BarChart>
-            </ChartContainer>
+            {leaderboardData.length === 0 ? (
+              <EmptyState icon={Target} title={t("No threats recorded yet")} description={t("Leaderboard will populate as you visit websites.")} />
+            ) : (
+              <div className="space-y-3">
+                {leaderboardData.map((entry, i) => {
+                  return (
+                    <div key={entry.domain} className="flex items-center gap-3">
+                      {/* Rank */}
+                      <span className="text-sm w-4 text-center text-muted-foreground flex-shrink-0 font-medium">
+                        {i + 1}.
+                      </span>
+                      {/* Domain */}
+                      <div className="flex items-center gap-2 w-40 flex-shrink-0">
+                        <span className="text-sm font-medium truncate" title={entry.domain}>
+                          {entry.domain.replace(/^www\./, "")}
+                        </span>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="flex-1 relative">
+                        <div
+                          className="h-7 rounded-md transition-all duration-500 bg-primary"
+                          style={{
+                            width: `${Math.max(entry.pct, 4)}%`,
+                            opacity: 1 - i * 0.15,
+                          }}
+                        />
+                      </div>
+                      {/* Stats */}
+                      <div className="flex items-center gap-3 flex-shrink-0 text-right">
+                        <span className="text-sm font-bold tabular-nums">{entry.count}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums w-8">
+                          {entry.pct}%
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* 3. Threat Categories (Half Width) */}
+        {/* 3. Threat Categories — half width, color-coded pie */}
         <Card>
           <CardHeader>
             <CardTitle>{t("Threat Categories")}</CardTitle>
-            <CardDescription>{t("Distribution of threats by type")}</CardDescription>
+            <CardDescription>{t("Distribution of threats by detector type")}</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center items-center pb-0">
-            <ChartContainer config={pieChartConfig} className="h-[250px] w-full">
-              <PieChart>
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Pie
-                  data={categoryData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  stroke="var(--background)"
-                  strokeWidth={2}
-                />
-                <ChartLegend content={<ChartLegendContent />} className="-translate-y-2 flex-wrap gap-2" />
-              </PieChart>
-            </ChartContainer>
+            {categoryData.length === 0 ? (
+              <EmptyState icon={ShieldCheck} title={t("No threats detected yet")} description={t("Category breakdown will appear after browsing.")} />
+            ) : (
+              <ChartContainer config={pieChartConfig} className="h-[280px] w-full">
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Pie
+                    data={categoryData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={65}
+                    outerRadius={95}
+                    stroke="var(--background)"
+                    strokeWidth={2}
+                    paddingAngle={2}
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill="var(--primary)" fillOpacity={1 - index * 0.15} />
+                    ))}
+                  </Pie>
+                  {/* Center label */}
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
+                    <tspan x="50%" dy="-0.25em" className="fill-foreground" style={{ fontSize: 24, fontWeight: 700 }}>
+                      {totalCategoryEvents}
+                    </tspan>
+                    <tspan x="50%" dy="1.4em" className="fill-muted-foreground" style={{ fontSize: 11 }}>
+                      {t("total events")}
+                    </tspan>
+                  </text>
+                </PieChart>
+              </ChartContainer>
+            )}
+            {/* Legend */}
+            {categoryData.length > 0 && (
+              <div className="sr-only">
+                {categoryData.map(d => `${d.name}: ${d.value}`).join(", ")}
+              </div>
+            )}
           </CardContent>
+          {categoryData.length > 0 && (
+            <div className="px-6 pb-4 flex flex-wrap gap-x-4 gap-y-1.5 justify-center">
+              {categoryData.map((d, index) => (
+                <div key={d.name} className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-primary" style={{ opacity: 1 - index * 0.15 }} />
+                  <span className="text-xs text-muted-foreground">{DETECTOR_LABELS[d.name] || d.name}</span>
+                  <span className="text-xs font-semibold tabular-nums">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
 
-        {/* 4. Threat Vector Radar (Half Width) */}
+        {/* 4. Risk Breakdown Table */}
         <Card>
           <CardHeader>
-            <CardTitle>{t("Threat Vector Analysis")}</CardTitle>
-            <CardDescription>{t("Severity of threats across different vectors (Higher is more risky)")}</CardDescription>
+            <CardTitle>{t("Risk Breakdown by Category")}</CardTitle>
+            <CardDescription>{t("Avg. safety score and event count per threat detector")}</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center items-center">
-            <ChartContainer config={pieChartConfig} className="h-[250px] w-full">
-              <RadarChart data={radarData} outerRadius={80}>
-                <PolarGrid stroke="var(--border)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--foreground)", fontSize: 12 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar
-                  name="Threat Level"
-                  dataKey="threat"
-                  stroke="var(--primary)"
-                  fill="var(--primary)"
-                  fillOpacity={0.4}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-              </RadarChart>
-            </ChartContainer>
+          <CardContent>
+            {riskBreakdown.every(r => r.events === 0) ? (
+              <EmptyState icon={ShieldCheck} title={t("All clear")} description={t("Risk breakdown will appear after browsing.")} />
+            ) : (
+              <div className="space-y-3">
+                {riskBreakdown.map(row => {
+                  const Icon = DETECTOR_ICONS[row.detector] ?? Activity
+                  return (
+                    <div key={row.detector} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                          <span className="text-sm font-medium">{DETECTOR_LABELS[row.detector] || row.detector}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            {row.events > 0 ? `${row.events} ${t("events")}` : t("No data")}
+                          </span>
+                          <Badge
+                            variant="secondary"
+                            className="text-xs px-1.5 py-0"
+                          >
+                            {t(row.riskLevel)}
+                          </Badge>
+                        </div>
+                      </div>
+                      {/* Safety score bar */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500 bg-primary"
+                            style={{
+                              width: `${row.events > 0 ? row.avgSafety : 100}%`,
+                              opacity: row.events > 0 ? 0.8 : 0.2,
+                            }}
+                          />
+                        </div>
+                        <span className={cn("text-xs font-semibold tabular-nums w-12 text-right", row.events > 0 ? "text-foreground" : "text-muted-foreground")}>
+                          {row.events > 0 ? `${row.avgSafety}/100` : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* 5. Sensitive Data Targeted (PII) (Half Width) */}
+        {/* 5. Sensitive Data Targeted — half width */}
         <Card>
           <CardHeader>
             <CardTitle>{t("Sensitive Data Targeted")}</CardTitle>
-            <CardDescription>{t("Types of personal info most frequently intercepted by sites")}</CardDescription>
+            <CardDescription>{t("Types of personal info most frequently entered on tracked sites")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={piiConfig} className="h-[250px] w-full">
-              <BarChart
-                data={piiData}
-                layout="vertical"
-                margin={{ top: 0, right: 0, left: 10, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                <XAxis type="number" hide />
-                <YAxis dataKey="type" type="category" tickLine={false} axisLine={false} width={100} tick={{ fill: "var(--foreground)", fontSize: 12 }} tickMargin={8} />
-                <ChartTooltip cursor={{fill: 'var(--muted)'}} content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="var(--primary)" radius={[0, 4, 4, 0]} barSize={30} />
-              </BarChart>
-            </ChartContainer>
+            {piiData.length === 0 ? (
+              <EmptyState
+                icon={Lock}
+                title={t("No PII detections recorded")}
+                description={t("Enable PII detection in settings to track sensitive form entries.")}
+              />
+            ) : (
+              <div className="space-y-3">
+                {piiData.map((entry, index) => (
+                  <div key={entry.type} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0 bg-primary"
+                          style={{ opacity: 1 - index * 0.2 }}
+                        />
+                        <span className="text-sm font-medium">{entry.type}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {entry.siteCount} {entry.siteCount === 1 ? t("site") : t("sites")}
+                        </span>
+                        <span className="text-xs text-muted-foreground tabular-nums ml-2">
+                          {entry.count}×
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500 bg-primary"
+                        style={{
+                          width: `${Math.max((entry.count / (piiData[0]?.count || 1)) * 100, 4)}%`,
+                          opacity: 1 - index * 0.2,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* 6. Web Safety Score Distribution (Half Width) */}
+        {/* 6. WSS Distribution — half width, color-coded bins */}
         <Card>
           <CardHeader>
-            <CardTitle>{t("Web Safety Score Distribution")}</CardTitle>
-            <CardDescription>{t("Overall safety ratings of the sites you visit")}</CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>{t("Web Safety Score Distribution")}</CardTitle>
+                <CardDescription>{t("Safety ratings across all sites you've visited")}</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={wssConfig} className="h-[250px] w-full">
-              <BarChart data={wssData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="category" tickLine={false} axisLine={false} tick={{ fill: "var(--foreground)", fontSize: 12 }} tickMargin={8} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickMargin={8} />
-                <ChartTooltip cursor={{fill: 'var(--muted)'}} content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
+            {wssTotalSites === 0 ? (
+              <EmptyState icon={ShieldCheck} title={t("No sites analyzed yet")} description={t("Visit some websites and TraceGuard will score them here.")} />
+            ) : (
+              <ChartContainer config={wssConfig} className="h-[220px] w-full">
+                <BarChart data={wssData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="category" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} allowDecimals={false} />
+                  <ChartTooltip
+                    cursor={{ fill: "var(--muted)" }}
+                    content={<ChartTooltipContent
+                      hideIndicator
+                      className="min-w-[100px] w-[100px]"
+                      formatter={(value) => [
+                        `${value} ${value === 1 ? t("site") : t("sites")}`,
+                        ""
+                      ]}
+                    />}
+                  />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {wssData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill="var(--primary)" fillOpacity={1 - Math.abs(2 - index) * 0.25} />
+                    ))}
+                    <LabelList
+                      dataKey="count"
+                      position="top"
+                      formatter={(val: number) => val > 0 ? `${val} ${val === 1 ? t("site") : t("sites")}` : ""}
+                      style={{ fill: "var(--muted-foreground)", fontSize: 11, fontWeight: 500 }}
+                    />
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 

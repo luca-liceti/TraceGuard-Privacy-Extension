@@ -1,9 +1,11 @@
+import * as React from "react"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import {
   Label,
   PolarGrid,
   PolarRadiusAxis,
+  PolarAngleAxis,
   RadialBar,
   RadialBarChart,
 } from "recharts"
@@ -33,7 +35,14 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
   const { t } = useTranslation()
   const state = useAppState()
   const history = useScoreHistory()
-  const currentScore = state?.ups ?? 100
+  const targetScore = state === null ? 0 : (state.ups ?? 100)
+  
+  const [currentScore, setCurrentScore] = React.useState(0)
+  
+  React.useEffect(() => {
+    const timer = setTimeout(() => setCurrentScore(targetScore), 100)
+    return () => clearTimeout(timer)
+  }, [targetScore])
   
   const chartData = [
     { name: "score", visitors: currentScore, fill: "var(--color-score)" },
@@ -49,7 +58,7 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
     targetDate.setDate(targetDate.getDate() - days);
   }
 
-  const historyRange = history.filter(h => h.timestamp >= targetDate.getTime())
+  const historyRange = (history || []).filter(h => h.timestamp >= targetDate.getTime())
   const firstScore = historyRange.length > 0 ? historyRange[0].ups : 100
   
   const scoreChange = currentScore - firstScore
@@ -71,10 +80,11 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
           <RadialBarChart
             data={chartData}
             startAngle={90}
-            endAngle={90 - (360 * currentScore) / 100}
+            endAngle={-270}
             innerRadius={80}
             outerRadius={110}
           >
+            <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
             <PolarGrid
               gridType="circle"
               radialLines={false}
@@ -82,7 +92,14 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
               className="first:fill-muted last:fill-background"
               polarRadius={[86, 74]}
             />
-            <RadialBar dataKey="visitors" background cornerRadius={10} />
+            <RadialBar 
+              dataKey="visitors" 
+              background 
+              cornerRadius={10} 
+              isAnimationActive={true}
+              animationDuration={1500}
+              animationEasing="ease-out"
+            />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }) => {

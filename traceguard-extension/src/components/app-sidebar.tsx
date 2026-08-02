@@ -8,10 +8,9 @@ import {
   Shield,
 } from "lucide-react"
 
-import { useSettingsModal } from "@/components/traceguard/settings-context"
-
 import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { NavFooter } from "@/components/nav-footer"
+import { useUserName } from "@/lib/useStorage"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
@@ -26,11 +25,6 @@ import {
 
 // This is the dashboard data
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Overview",
@@ -50,43 +44,24 @@ const data = {
       icon: ShieldAlert,
       isActive: false,
     },
-    {
-      title: "Settings",
-      url: "#",
-      icon: SlidersHorizontal,
-      isActive: true,
-      items: [
-        { title: "Appearance", url: "#appearance" },
-        { title: "Privacy", url: "#privacy" },
-        { title: "Notifications", url: "#notifications" },
-        { title: "Allow/Block Sites", url: "#domain-lists" },
-        { title: "Data", url: "#data" },
-        { title: "About", url: "#about" },
-      ],
-    },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
-  const { setSettingsOpen, setActiveTab } = useSettingsModal()
-
-  const navMain = data.navMain.map(item => {
-    if (item.title === "Settings") {
-      return { 
-        ...item, 
-        onClick: () => setSettingsOpen(true),
-        items: item.items?.map(subItem => ({
-          ...subItem,
-          onClick: () => {
-            setActiveTab(subItem.url.replace("#", ""))
-            setSettingsOpen(true)
-          }
-        }))
-      }
+  const userName = useUserName()
+  const [greeting, setGreeting] = React.useState("")
+  
+  React.useEffect(() => {
+    if (userName) {
+      const g = [
+        `Welcome back, ${userName} 👋`,
+        `Ready to browse safely, ${userName}?`,
+        `Good to see you, ${userName}`
+      ]
+      setGreeting(g[Math.floor(Math.random() * g.length)])
     }
-    return item
-  })
+  }, [userName])
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -110,10 +85,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {greeting && (
+          <div className="px-4 py-2 text-xs text-muted-foreground font-medium animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {greeting}
+          </div>
+        )}
+        <NavFooter user={{ name: userName || "User", email: "TraceGuard Vault" }} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
