@@ -30,6 +30,7 @@ import { z } from "zod"
 import { format } from "date-fns"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+import { useSearchParams } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -227,6 +228,20 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
   const [isAddLogOpen, setIsAddLogOpen] = React.useState(false)
   const [selectedVisit, setSelectedVisit] = React.useState<SiteVisit | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  React.useEffect(() => {
+    const domainToView = searchParams.get('viewSite')
+    if (domainToView && data.length > 0) {
+      const visit = data.find(v => v.domain === domainToView)
+      if (visit) {
+        setSelectedVisit(visit)
+        setIsDetailsOpen(true)
+        searchParams.delete('viewSite')
+        setSearchParams(searchParams, { replace: true })
+      }
+    }
+  }, [searchParams, data, setSearchParams])
 
   const handleViewDetails = (visit: SiteVisit) => {
     setSelectedVisit(visit)

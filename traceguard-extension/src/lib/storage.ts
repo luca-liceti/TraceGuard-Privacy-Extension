@@ -231,7 +231,7 @@ export const storage = {
     /**
      * Add a new notification event
      */
-    addNotification: async (notification: Omit<import('./types').NotificationEvent, 'id' | 'timestamp' | 'read'>): Promise<void> => {
+    addNotification: async (notification: Omit<import('./types').NotificationEvent, 'id' | 'timestamp' | 'read'>): Promise<string> => {
         const result = await chrome.storage.local.get('notifications');
         const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
 
@@ -249,7 +249,7 @@ export const storage = {
         const trimmedNotifications = notifications.slice(0, 100);
 
         await chrome.storage.local.set({ notifications: trimmedNotifications });
-        console.log(`[Notification] Added: ${notification.title}`);
+        return newNotification.id;
     },
 
     /**

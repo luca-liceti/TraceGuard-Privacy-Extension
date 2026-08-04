@@ -122,11 +122,47 @@ export function isLocalAddress(hostname: string): boolean {
     
     return (
         hostname === 'localhost' ||
+        hostname.endsWith('.localhost') ||
         hostname === '127.0.0.1' ||
         hostname === '[::1]' ||
         hostname.endsWith('.local') ||
+        hostname.endsWith('.test') ||
+        hostname.endsWith('.example') ||
+        hostname.endsWith('.invalid') ||
         hostname.startsWith('192.168.') ||
         hostname.startsWith('10.') ||
         /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
     );
+}
+
+/**
+ * Check if a full URL should be considered local/internal and excluded from scanning.
+ * 
+ * @param urlString - The full URL to check
+ * @returns true if the URL is local or internal, false otherwise
+ */
+export function isLocalUrl(urlString: string): boolean {
+    if (!urlString) return false;
+    
+    try {
+        const url = new URL(urlString);
+        
+        // Check protocols that are internal/local
+        if (
+            url.protocol === 'chrome:' || 
+            url.protocol === 'chrome-extension:' || 
+            url.protocol === 'about:' || 
+            url.protocol === 'file:' ||
+            url.protocol === 'moz-extension:' ||
+            url.protocol === 'edge:'
+        ) {
+            return true;
+        }
+        
+        // Check hostname for local network/development addresses
+        return isLocalAddress(url.hostname);
+    } catch (e) {
+        // If it's an invalid URL, we can't reliably scan it anyway
+        return true; 
+    }
 }

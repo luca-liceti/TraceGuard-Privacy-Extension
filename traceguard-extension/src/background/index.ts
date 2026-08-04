@@ -41,6 +41,7 @@ import { initNetworkMonitor, getAndClearNetworkData } from './services/network-m
 import { enrichCookies } from './services/cookie-enricher';
 import { enrichTrackers } from './services/tracker-enricher';
 import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
+import { isLocalUrl } from '../lib/utils';
 
 // Serializes read-modify-write workflows. MV3 can handle messages concurrently;
 // without this queue, two visits can overwrite each other's encrypted cache/history.
@@ -57,7 +58,7 @@ async function createNotification(notification: Parameters<typeof storage.addNot
     if (!settings.notifications || settings.notificationLevel === 'silent') return;
     if (settings.notificationLevel === 'balanced' && notification.severity === 'info') return;
     try {
-        await chrome.notifications.create(`traceguard-${Date.now()}`, {
+        await chrome.notifications.create(id, {
             type: 'basic', iconUrl: 'src/assets/icons/icon-128.png', title: notification.title,
             message: notification.message, priority: notification.severity === 'critical' ? 2 : 1,
         });
@@ -66,6 +67,18 @@ async function createNotification(notification: Parameters<typeof storage.addNot
         console.warn('[Notifications] Unable to create OS notification:', error);
     }
 }
+
+chrome.notifications.onClicked.addListener(async (notificationId) => {
+    const result = await chrome.storage.local.get('notifications');
+    const notifications = result.notifications || [];
+    const notification = notifications.find((n: any) => n.id === notificationId);
+    
+    if (notification && notification.actionUrl) {
+        chrome.tabs.create({ url: chrome.runtime.getURL(`src/dashboard/index.html#${notification.actionUrl}`) });
+    } else {
+        chrome.tabs.create({ url: chrome.runtime.getURL('src/dashboard/index.html') });
+    }
+});
 
 const DATABASE_REFRESH_ALARM = 'databaseRefresh';
 const DATABASE_REFRESH_OPTIONS = new Set([1, 3, 7, 14, 30]);
@@ -335,13 +348,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     // -------------------------------------------------------------------------
     // REPUTATION CHECK: Is this website known to be dangerous?
+
+    // -------------------------------------------------------------------------
+    // REPUTATION CHECK: Is this website known to be dangerous?
     // -------------------------------------------------------------------------
     if (message.type === 'CHECK_REPUTATION') {
         // Get the URL to check (supports both formats for backward compatibility)
         const url = message.url || (message.domain ? `https://${message.domain}` : undefined);
 
-        if (!url) {
-            console.warn('[Reputation] No URL or domain provided');
+        if (!url || isLocalUrl(url)) {
+            console.warn('[Reputation] No URL or domain provided, or is local URL');
             sendResponse({ isBlacklisted: false, score: 100 });  // Assume safe if no URL given
             return true;
         }
@@ -467,6 +483,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
  * @param sender - Information about where the message came from
  */
 async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSender) {
+    if (!message.url || isLocalUrl(message.url)) {
+        console.warn('[handlePageAnalysis] URL missing or is local URL:', message.url);
+        return;
+    }
+
     // Step 1: Check the website's reputation (is it on any blacklists?)
     const reputationScore = await checkReputation(message.url);
 
@@ -770,6 +791,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
 
     // Check if this site is dangerous enough to warn the user
     // WSS is a safety score: lower = more dangerous
+
     if (wss <= 20) {
         // CRITICAL RISK: Score is 20 or below - this site is very dangerous!
         await createNotification({
@@ -777,7 +799,8 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             title: 'Critical Risk Site!',
             message: `${domain} has been flagged as a critical risk with a safety score of ${wss}`,
             domain,
-            severity: 'critical'
+            severity: 'critical',
+            actionUrl: `/overview?viewSite=${encodeURIComponent(domain)}`
         });
     } else if (wss < threshold) {
         // WARNING: Site falls below the user's personal safety threshold
@@ -786,7 +809,8 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             title: 'High Risk Site Detected',
             message: `${domain} falls below your safety threshold (Score: ${wss})`,
             domain,
-            severity: 'warning'
+            severity: 'warning',
+            actionUrl: `/overview?viewSite=${encodeURIComponent(domain)}`
         });
     }
 
@@ -917,7 +941,7 @@ async function handlePIIDetection(message: any) {
         message: `${event.fieldType} entered on ${event.site}${scoreImpact !== 0 ? ` (${scoreImpact} pts)` : ''}`,
         domain: event.site,
         severity: notificationSeverity,
-        actionUrl: '/privacy-score'
+        actionUrl: `/overview?viewSite=${encodeURIComponent(event.site)}`
     });
 
     // Send a toast notification to the webpage (the little popup message in the corner)
