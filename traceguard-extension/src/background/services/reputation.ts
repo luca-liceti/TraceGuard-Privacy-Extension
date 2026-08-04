@@ -13,8 +13,7 @@
  * Layer 1: User Whitelist - Sites you personally trust (always safe = 100)
  * Layer 2: User Blacklist - Sites you personally blocked (always dangerous = 0)
  * Layer 3: Static Blacklist - A built-in list of known bad sites (dangerous = 0)
- * Layer 4: URLhaus API - A live database of malware-hosting sites (dangerous = 0)
- * Layer 5: Default - If nothing bad found, the site is considered safe (= 100)
+ * Layer 4: Default - If nothing bad found, the site is considered safe (= 100)
  * 
  * SCORING:
  * - 100 = Safe (passed all checks)
@@ -23,8 +22,8 @@
  * KEY TERMS:
  * - Blacklist: A list of known dangerous websites to avoid
  * - Whitelist: A list of websites you trust (overrides other checks)
- * - URLhaus: A free online database of websites that host malware
- * - Cache: Temporary storage so we don't have to check the same site repeatedly
+ * This is deliberately local-only: URLhaus now requires a per-user Auth-Key,
+ * which must not be embedded in a consumer extension.
  * =============================================================================
  */
 
@@ -52,11 +51,6 @@ interface Blacklist {
 // A Set is like an array but automatically prevents duplicates and is faster to search
 let staticBlacklist: Set<string> = new Set();
 
-// Cache for URLhaus API results now uses chrome.storage.session
-// to survive Service Worker terminations.
-// How long to keep cached results (1 hour in milliseconds)
-// After this time, we'll check the API again to see if anything changed
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 // =============================================================================
 // BLACKLIST LOADING
@@ -93,82 +87,6 @@ export async function loadBlacklist() {
     }
 }
 
-// =============================================================================
-// URLHAUS API CHECK
-// Checks a domain against a live malware database
-// =============================================================================
-
-/**
- * Checks if a domain is in the URLhaus malware database.
- * 
- * URLhaus is a free, community-driven project that tracks websites hosting malware.
- * By checking against this database, we can detect newly-discovered dangerous sites
- * that aren't in our static blacklist yet.
- * 
- * HOW IT WORKS:
- * 1. First, check if we recently looked up this domain (use cached result)
- * 2. If not cached, send a request to the URLhaus API
- * 3. The API tells us if this domain has been reported for hosting malware
- * 4. We cache the result so we don't have to ask again for an hour
- * 
- * @param domain - The domain name to check (e.g., "example.com")
- * @returns true if the domain is known to be malicious, false otherwise
- */
-async function checkURLhaus(domain: string): Promise<boolean> {
-    // STEP 1: Check if we have a recent cached result for this domain
-    const session = await chrome.storage.session.get('urlhausCache');
-    const cache = session.urlhausCache || {};
-    const cached = cache[domain];
-    
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        // Cache hit! We checked this domain recently, so use the cached result
-        console.log(`[URLhaus] Cache hit for ${domain}: ${cached.isMalicious ? 'malicious' : 'clean'}`);
-        return cached.isMalicious;
-    }
-
-    // STEP 2: No cache or cache expired - make an API request
-    try {
-        // URLhaus provides a free API to check domains
-        // Documentation: https://urlhaus-api.abuse.ch/
-        const response = await fetch('https://urlhaus-api.abuse.ch/v1/host/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `host=${encodeURIComponent(domain)}`  // URL-encode the domain for safety
-        });
-
-        // Check if the request succeeded
-        if (!response.ok) {
-            console.warn(`[URLhaus] API returned ${response.status}`);
-            return false;  // If API is down, assume safe (fail-open)
-        }
-
-        // Parse the response
-        const data = await response.json();
-
-        // STEP 3: Interpret the response
-        // URLhaus returns "ok" if the domain is in their database (meaning it's malicious)
-        const isMalicious = data.query_status === 'ok' && data.urls && data.urls.length > 0;
-
-        // STEP 4: Cache the result for future lookups
-        cache[domain] = { isMalicious, timestamp: Date.now() };
-        await chrome.storage.session.set({ urlhausCache: cache });
-
-        // Log the result for debugging
-        if (isMalicious) {
-            console.log(`[URLhaus] ⚠️ MALICIOUS: ${domain} has ${data.url_count} known malware URLs`);
-        } else {
-            console.log(`[URLhaus] ✓ Clean: ${domain} not found in malware database`);
-        }
-
-        return isMalicious;
-    } catch (error) {
-        // If something goes wrong (network error, etc.), assume safe
-        // This is called "fail-open" - we don't want API issues to block browsing
-        console.warn(`[URLhaus] API check failed for ${domain}:`, error);
-        return false;
-    }
-}
-
 /**
  * Check domain reputation with multi-layer system
  * 
@@ -176,8 +94,7 @@ async function checkURLhaus(domain: string): Promise<boolean> {
  * 1. User Whitelist - Force safe (100)
  * 2. User Blacklist - Force critical (0)
  * 3. Static Blacklist - Known bad domains (0)
- * 4. URLhaus API - Malware database (0)
- * 5. Default - Safe (100)
+ * 4. Default - Safe (100)
  * 
  * @param url - The URL to check
  * @returns Reputation score (0 = high risk, 100 = safe)
@@ -212,18 +129,7 @@ export async function checkReputation(url: string): Promise<number> {
             return 0;
         }
 
-        // LAYER 4: URLhaus API check (malware database)
-        try {
-            const isMalicious = await checkURLhaus(domain);
-            if (isMalicious) {
-                console.log(`[Reputation] Layer 4: ${domain} found in URLHAUS → 0 (critical)`);
-                return 0;
-            }
-        } catch (error) {
-            console.warn(`[Reputation] URLhaus check failed, continuing...`);
-        }
-
-        // LAYER 5: Default - safe
+        // LAYER 4: Default - safe
         console.log(`[Reputation] All checks passed for ${domain} → 100 (safe)`);
         return 100;
 
@@ -236,7 +142,7 @@ export async function checkReputation(url: string): Promise<number> {
 /**
  * Synchronous version for backward compatibility
  * Note: This should be phased out in favor of the async version
- * Does NOT include URLhaus check (async only)
+ * Mirrors the local-only async reputation check.
  */
 export function checkReputationSync(url: string): number {
     try {

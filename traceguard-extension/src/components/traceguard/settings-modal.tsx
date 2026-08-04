@@ -162,6 +162,7 @@ export function SettingsModal() {
     const [themeLocal, setThemeLocal] = useState(settings?.theme || "system")
     const [notificationLevel, setNotificationLevel] = useState(settings?.notificationLevel || "balanced")
     const [dataRetention, setDataRetention] = useState(settings?.dataRetention || 30)
+    const [databaseRefreshDays, setDatabaseRefreshDays] = useState(settings?.databaseRefreshDays || 7)
     const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 50)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
     const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
@@ -201,6 +202,7 @@ export function SettingsModal() {
             setThemeLocal(settings.theme || "system")
             setNotificationLevel(settings.notificationLevel || "balanced")
             setDataRetention(settings.dataRetention || 30)
+            setDatabaseRefreshDays(settings.databaseRefreshDays || 7)
             setWssThreshold(settings.wssThreshold || 50)
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
             setDisplayMode(settings.displayMode || "popup")
@@ -222,6 +224,7 @@ export function SettingsModal() {
             theme: themeLocal,
             notificationLevel,
             dataRetention,
+            databaseRefreshDays: databaseRefreshDays as 1 | 3 | 7 | 14 | 30,
             wssThreshold,
             enablePIIDetection,
             displayMode,
@@ -250,6 +253,7 @@ export function SettingsModal() {
             theme: "system" as const,
             notificationLevel: "balanced" as const,
             dataRetention: 30,
+            databaseRefreshDays: 7 as const,
             wssThreshold: 50,
             enablePIIDetection: true,
             displayMode: "popup" as const,
@@ -261,6 +265,7 @@ export function SettingsModal() {
         applyTheme(defaultPreferences.theme)
         setNotificationLevel(defaultPreferences.notificationLevel)
         setDataRetention(defaultPreferences.dataRetention)
+        setDatabaseRefreshDays(defaultPreferences.databaseRefreshDays)
         setWssThreshold(defaultPreferences.wssThreshold)
         setEnablePIIDetection(defaultPreferences.enablePIIDetection)
         setDisplayMode(defaultPreferences.displayMode)
@@ -542,6 +547,7 @@ export function SettingsModal() {
                                 handleChange()
                             }}
                         />
+
                     </div>
                 </TabsContent>
 
@@ -720,6 +726,25 @@ export function SettingsModal() {
                                 handleChange()
                             }}
                         />
+
+                        <SettingItem
+                            label={t("Database Refresh")}
+                            description={t("Check for tracker database updates on this schedule")}
+                        >
+                            <Select value={String(databaseRefreshDays)} onValueChange={(value) => {
+                                setDatabaseRefreshDays(Number(value) as 1 | 3 | 7 | 14 | 30)
+                                handleChange()
+                            }}>
+                                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">1 day</SelectItem>
+                                    <SelectItem value="3">3 days</SelectItem>
+                                    <SelectItem value="7">7 days</SelectItem>
+                                    <SelectItem value="14">14 days</SelectItem>
+                                    <SelectItem value="30">30 days</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </SettingItem>
 
                         {/* Storage Usage */}
                         <div className="rounded-lg border p-4">

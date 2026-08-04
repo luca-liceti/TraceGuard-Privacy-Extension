@@ -542,7 +542,7 @@ export function SiteDetailsPanel({
                                         <SummaryStat label="Points" value={policyLegacy.points?.length || 0} />
                                     </div>
                                     <div className="flex justify-between items-center h-8">
-                                        {policyLegacy.serviceId ? (
+                                        {Number.isInteger(policyLegacy.serviceId) && policyLegacy.serviceId > 0 ? (
                                             <Button
                                                 variant="outline"
                                                 size="sm"

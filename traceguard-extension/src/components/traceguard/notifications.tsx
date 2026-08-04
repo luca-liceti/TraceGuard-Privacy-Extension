@@ -207,9 +207,9 @@ export function NotificationDropdown() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                             className="justify-center text-primary cursor-pointer"
-                            onClick={() => navigate('/activity-logs')}
+                            onClick={() => navigate('/privacy-score')}
                         >
-                            View all activity
+                            View privacy score
                         </DropdownMenuItem>
                     </>
                 )}

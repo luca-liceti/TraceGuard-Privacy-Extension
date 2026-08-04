@@ -201,6 +201,16 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
 
         // Cache the result
         cache[domain] = { result, timestamp: Date.now() };
+        
+        // Cap cache to 200 items
+        const cacheEntries = Object.entries(cache);
+        if (cacheEntries.length > 200) {
+            cacheEntries.sort((a: any, b: any) => a[1].timestamp - b[1].timestamp);
+            for (const [key] of cacheEntries.slice(0, cacheEntries.length - 200)) {
+                delete cache[key];
+            }
+        }
+        
         await chrome.storage.session.set({ tosDRCache: cache });
 
         return result;

@@ -83,31 +83,37 @@ const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any
         icon: Shield,
         label: t("Reputation"),
         description: t("Domain trustworthiness"),
-        weight: "30%"
+        weight: "25%"
     },
     tracking: {
         icon: Activity,
         label: t("Tracking"),
         description: t("Third-party trackers"),
-        weight: "30%"
+        weight: "25%"
     },
     cookies: {
         icon: Cookie,
         label: t("Cookies"),
         description: t("Tracking cookies"),
-        weight: "20%"
+        weight: "15%"
+    },
+    fingerprinting: {
+        icon: Fingerprint,
+        label: t("Fingerprinting"),
+        description: t("Device identification attempts"),
+        weight: "15%"
     },
     input: {
         icon: Key,
         label: t("Input Fields"),
         description: t("Sensitive form fields"),
-        weight: "15%"
+        weight: "10%"
     },
     policy: {
         icon: FileText,
         label: t("Privacy Policy"),
         description: t("ToS;DR rating"),
-        weight: "5%"
+        weight: "10%"
     }
 });
  
@@ -361,7 +367,7 @@ function App() {
                                                                 </div>
                                                                 <div className="flex justify-between">
                                                                     <span>{t("Checked")}</span>
-                                                                    <span className="font-medium">{t("Blacklist + URLhaus")}</span>
+                                                                    <span className="font-medium">{t("Local blacklist")}</span>
                                                                 </div>
                                                             </>
                                                         )}

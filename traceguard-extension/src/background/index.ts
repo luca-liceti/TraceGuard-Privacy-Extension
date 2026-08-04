@@ -36,11 +36,54 @@ import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';
 import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
-import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
+import { preWarmDatabases, lookupTrackerDomain, refreshDatabases } from './services/database-loader';
 import { initNetworkMonitor, getAndClearNetworkData } from './services/network-monitor';
 import { enrichCookies } from './services/cookie-enricher';
 import { enrichTrackers } from './services/tracker-enricher';
 import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
+
+// Serializes read-modify-write workflows. MV3 can handle messages concurrently;
+// without this queue, two visits can overwrite each other's encrypted cache/history.
+let telemetryWriteQueue: Promise<void> = Promise.resolve();
+function queueTelemetryWrite(task: () => Promise<void>): Promise<void> {
+    const next = telemetryWriteQueue.then(task, task);
+    telemetryWriteQueue = next.catch(error => console.error('[Storage] Queued write failed:', error));
+    return next;
+}
+
+async function createNotification(notification: Parameters<typeof storage.addNotification>[0]) {
+    await storage.addNotification(notification);
+    const settings = await storage.getSettings();
+    if (!settings.notifications || settings.notificationLevel === 'silent') return;
+    if (settings.notificationLevel === 'balanced' && notification.severity === 'info') return;
+    try {
+        await chrome.notifications.create(`traceguard-${Date.now()}`, {
+            type: 'basic', iconUrl: 'src/assets/icons/icon-128.png', title: notification.title,
+            message: notification.message, priority: notification.severity === 'critical' ? 2 : 1,
+        });
+    } catch (error) {
+        // An OS notification must never prevent the local event from being saved.
+        console.warn('[Notifications] Unable to create OS notification:', error);
+    }
+}
+
+const DATABASE_REFRESH_ALARM = 'databaseRefresh';
+const DATABASE_REFRESH_OPTIONS = new Set([1, 3, 7, 14, 30]);
+
+async function configureDatabaseRefresh(days: number | undefined) {
+    const refreshDays = DATABASE_REFRESH_OPTIONS.has(days ?? 7) ? days ?? 7 : 7;
+    await chrome.alarms.create(DATABASE_REFRESH_ALARM, { periodInMinutes: refreshDays * 24 * 60 });
+}
+
+async function refreshPrivacyDatabases() {
+    try {
+        await refreshDatabases();
+        await preWarmDatabases();
+    } catch (error) {
+        // Bundled/last-known snapshots remain available when an update is offline.
+        console.warn('[DatabaseLoader] Scheduled refresh failed; keeping current data:', error);
+    }
+}
 
 async function getCryptoKey(): Promise<CryptoKey | null> {
     const session = await chrome.storage.session.get('cryptoKeyHex');
@@ -108,6 +151,8 @@ chrome.runtime.onInstalled.addListener(async () => {
     await storage.updateSettings(settings);
 
     // Pre-warm local databases for fast enrichment
+    await configureDatabaseRefresh(settings.databaseRefreshDays);
+    await refreshPrivacyDatabases();
     await preWarmDatabases();
 
     // Load the app's current state (privacy score, sites analyzed count, etc.)
@@ -137,6 +182,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
     // Make sure the display mode matches user preferences
     const settings = await storage.getSettings();
+    await configureDatabaseRefresh(settings.databaseRefreshDays);
     await configureDisplayMode(settings.displayMode || 'popup');
 
     // Sync corrupted/missing state from cache
@@ -282,6 +328,10 @@ async function syncStateWithCache() {
  * Think of it like a receptionist who directs calls to the right department.
  */
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (_sender.id !== chrome.runtime.id) {
+        console.warn('[Security] Rejected message from unknown sender:', _sender.id);
+        return;
+    }
 
     // -------------------------------------------------------------------------
     // REPUTATION CHECK: Is this website known to be dangerous?
@@ -339,9 +389,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // -------------------------------------------------------------------------
     if (message.type === 'PAGE_ANALYSIS_RESULT') {
         // Process the analysis in a separate function (it's complex, so we keep it organized)
-        handlePageAnalysis(message, _sender).then(() => {
+        queueTelemetryWrite(() => handlePageAnalysis(message, _sender)).then(() => {
             sendResponse({ success: true });
-        });
+        }).catch(error => sendResponse({ success: false, error: String(error) }));
         return true;  // Keep channel open for async response
     }
 
@@ -350,9 +400,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // This helps us track potential privacy exposure
     // -------------------------------------------------------------------------
     if (message.type === 'PII_DETECTED') {
-        handlePIIDetection(message).then(() => {
+        queueTelemetryWrite(() => handlePIIDetection(message)).then(() => {
             sendResponse({ success: true });
-        });
+        }).catch(error => sendResponse({ success: false, error: String(error) }));
         return true;  // Keep channel open for async response
     }
 
@@ -382,8 +432,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             chrome.alarms.clear('autoLockTimer');
         }
 
-        // Update the display mode (popup vs sidebar)
-        configureDisplayMode(newSettings.displayMode || 'popup')
+        // Update the display mode and refresh schedule immediately.
+        Promise.all([
+            configureDisplayMode(newSettings.displayMode || 'popup'),
+            configureDatabaseRefresh(newSettings.databaseRefreshDays),
+        ])
             .then(() => sendResponse({ success: true }))
             .catch((error) => {
                 console.error('Failed to update display mode:', error);
@@ -560,6 +613,12 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
 
     // Save the updated site data
     siteCache[domain] = siteData;
+    // LRU-style cap: retain the most recently analyzed 500 domains.
+    const cacheEntries = Object.entries(siteCache);
+    if (cacheEntries.length > 500) {
+        cacheEntries.sort(([, a], [, b]) => Number(a.lastAnalyzed) - Number(b.lastAnalyzed));
+        for (const [expiredDomain] of cacheEntries.slice(0, cacheEntries.length - 500)) delete siteCache[expiredDomain];
+    }
     
     if (key) {
         await chrome.storage.local.set({ siteCache: await encryptData(key, siteCache) });
@@ -713,7 +772,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // WSS is a safety score: lower = more dangerous
     if (wss <= 20) {
         // CRITICAL RISK: Score is 20 or below - this site is very dangerous!
-        await storage.addNotification({
+        await createNotification({
             type: 'high_risk_site',
             title: 'Critical Risk Site!',
             message: `${domain} has been flagged as a critical risk with a safety score of ${wss}`,
@@ -722,7 +781,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         });
     } else if (wss < threshold) {
         // WARNING: Site falls below the user's personal safety threshold
-        await storage.addNotification({
+        await createNotification({
             type: 'high_risk_site',
             title: 'High Risk Site Detected',
             message: `${domain} falls below your safety threshold (Score: ${wss})`,
@@ -852,13 +911,13 @@ async function handlePIIDetection(message: any) {
         : event.sensitivity === 'MEDIUM' ? 'warning'
             : 'info';
 
-    await storage.addNotification({
+    await createNotification({
         type: 'pii_detected',
         title: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
         message: `${event.fieldType} entered on ${event.site}${scoreImpact !== 0 ? ` (${scoreImpact} pts)` : ''}`,
         domain: event.site,
         severity: notificationSeverity,
-        actionUrl: '/activity-logs'  // Where to go for more details
+        actionUrl: '/privacy-score'
     });
 
     // Send a toast notification to the webpage (the little popup message in the corner)
@@ -889,6 +948,8 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'autoLockTimer') {
         console.log('[Lock] Auto-lock timer expired. Locking vault.');
         await chrome.storage.session.remove('cryptoKeyHex');
+    } else if (alarm.name === DATABASE_REFRESH_ALARM) {
+        await refreshPrivacyDatabases();
     }
 });
 

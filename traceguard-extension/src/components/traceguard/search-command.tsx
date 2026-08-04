@@ -14,6 +14,7 @@ import {
     CommandSeparator,
 } from "@/components/ui/command"
 import { DialogTitle } from "@/components/ui/dialog"
+import { useSiteCache } from "@/lib/useStorage"
 
 // Import navigation from shared source - pages automatically stay in sync!
 import { getAllSearchablePages, settingsSearchItems, type SettingsSearchItem } from "@/lib/navigation"
@@ -21,7 +22,7 @@ import { getAllSearchablePages, settingsSearchItems, type SettingsSearchItem } f
 export function SearchCommand() {
     const [open, setOpen] = useState(false)
     const [query, setQuery] = useState("")
-    const [siteCache, setSiteCache] = useState<Record<string, any>>({})
+    const { siteCache } = useSiteCache()
     const navigate = useNavigate()
 
     // Get pages from shared navigation config - automatically updated!
@@ -45,22 +46,6 @@ export function SearchCommand() {
         return () => document.removeEventListener("keydown", down)
     }, [])
 
-    // Load site cache for searching sites
-    useEffect(() => {
-        chrome.storage.local.get('siteCache').then(res => {
-            setSiteCache(res.siteCache || {})
-        })
-
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-            if (areaName === 'local' && changes.siteCache) {
-                setSiteCache(changes.siteCache.newValue || {})
-            }
-        }
-
-        chrome.storage.onChanged.addListener(listener)
-        return () => chrome.storage.onChanged.removeListener(listener)
-    }, [])
-
     // Filter results based on query
     const filteredPages = useMemo(() => {
         if (!query) return pages
@@ -82,7 +67,7 @@ export function SearchCommand() {
                 label: domain,
                 description: `WSS: ${siteCache[domain]?.wss || 'N/A'}`,
                 icon: Globe,
-                href: '/sites',
+                href: '/overview',
                 category: 'sites' as const
             }))
     }, [query, siteCache])

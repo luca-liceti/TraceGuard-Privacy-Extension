@@ -12,25 +12,49 @@
  * - Each website is analyzed in 6 different ways (called "detectors")
  * - Each detector gives its own score, then we combine them with different weights
  * 
- * THE 5 DETECTORS AND THEIR WEIGHTS:
- * 1. Reputation (30%): Is this domain on any blacklists or malware databases?
- * 2. Tracking (30%): How many third-party trackers are following you?
- * 3. Cookies (20%): Are there tracking or advertising cookies?
- * 4. Inputs (15%): Are there sensitive fields like password or credit card?
- * 5. Policy (5%): What does the privacy policy say (according to ToS;DR)?
+ * THE 6 DETECTORS AND THEIR WEIGHTS:
+ * 1. Reputation (25%): Is this domain on a local blacklist?
+ * 2. Tracking (25%): How many third-party trackers are following you?
+ * 3. Cookies (15%): Are there tracking or advertising cookies?
+ * 4. Fingerprinting (15%): Are scripts attempting to identify the device?
+ * 5. Inputs (10%): Are there sensitive fields like password or credit card?
+ * 6. Policy (10%): What does the privacy policy say (according to ToS;DR)?
  * 
  * EXAMPLE:
  * If a site has:
- * - Good reputation: 100 × 30% = 30
- * - Some trackers: 60 × 30% = 18
- * - Few cookies: 80 × 20% = 16
- * - Login form: 65 × 15% = 9.75
+ * - Good reputation: 100 × 25% = 25
+ * - Some trackers: 60 × 25% = 15
+ * - Few cookies: 80 × 15% = 12
+ * - A canvas fingerprinting attempt: 70 × 15% = 10.5
+ * - Login form: 65 × 10% = 6.5
  * - No policy rating: excluded
- * Final WSS = 73.75 (safe)
+ * Final WSS = 69 (generally safe)
  * =============================================================================
  */
 
 import { ScoreBreakdown } from './types';
+
+export const WSS_WEIGHTS = {
+    reputation: 0.25,
+    tracking: 0.25,
+    cookies: 0.15,
+    fingerprinting: 0.15,
+    input: 0.10,
+    policy: 0.10,
+} as const;
+
+const FINGERPRINTING_WEIGHTS: Record<string, number> = {
+    canvas: 5, webgl: 4, audio: 3, font: 2, navigator: 1,
+    webrtc: 3, screen: 1, battery: 1,
+};
+
+/** Converts observed fingerprinting techniques into a 0–100 safety score. */
+export function calculateFingerprintingScore(techniques: readonly string[]): number {
+    const weightedTechniques = [...new Set(techniques)].reduce(
+        (total, technique) => total + (FINGERPRINTING_WEIGHTS[technique] ?? 1), 0,
+    );
+    return validateScore(100 - 12 * Math.log2(weightedTechniques + 1));
+}
 
 // =============================================================================
 // SCORE VALIDATION
@@ -75,7 +99,7 @@ export function validateScore(score: number | undefined | null, fallback: number
 /**
  * Calculates the Website Safety Score (WSS) for a website.
  * 
- * This is the main function that takes scores from all 5 detectors and
+ * This is the main function that takes scores from all 6 detectors and
  * combines them into a single overall score. Think of it like calculating
  * a weighted average for a class - some tests count more than others!
  * 
@@ -89,6 +113,8 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
         reputation: validateScore(breakdown.reputation),
         tracking: validateScore(breakdown.tracking),
         cookies: validateScore(breakdown.cookies),
+        // Cached analyses from before fingerprinting was scored are neutral.
+        fingerprinting: validateScore(breakdown.fingerprinting, 100),
         input: validateScore(breakdown.input),
         policy: validateScore(breakdown.policy)
     };
@@ -102,11 +128,7 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
     // STEP 3: Define the weights for each detector
     // These add up to 100% (1.0)
     let weights = {
-        reputation: 0.30,  // 30% - Blacklist status is critical
-        tracking: 0.30,    // 30% - Tracker count matters a lot
-        cookies: 0.20,     // 20% - Tracking cookies are concerning
-        input: 0.15,       // 15% - Sensitive fields are relevant
-        policy: 0.05       // 5% - Privacy policy is nice to know
+        ...WSS_WEIGHTS
     };
 
     // STEP 4: If policy is a fallback, redistribute its weight to other detectors
@@ -121,6 +143,7 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
         weights.reputation = weights.reputation / otherTotal;
         weights.tracking = weights.tracking / otherTotal;
         weights.cookies = weights.cookies / otherTotal;
+        weights.fingerprinting = weights.fingerprinting / otherTotal;
         weights.input = weights.input / otherTotal;
 
         console.log(`[WSS] Policy excluded (fallback score ${validatedBreakdown.policy}) - weight redistributed`);
@@ -132,6 +155,7 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
         reputation: validatedBreakdown.reputation * weights.reputation,
         tracking: validatedBreakdown.tracking * weights.tracking,
         cookies: validatedBreakdown.cookies * weights.cookies,
+        fingerprinting: validatedBreakdown.fingerprinting * weights.fingerprinting,
         input: validatedBreakdown.input * weights.input,
         policy: validatedBreakdown.policy * weights.policy
     };
@@ -141,6 +165,7 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
         contributions.reputation +
         contributions.tracking +
         contributions.cookies +
+        contributions.fingerprinting +
         contributions.input +
         contributions.policy;
 
@@ -153,6 +178,7 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
     console.log(`├── Reputation: ${validatedBreakdown.reputation} × ${(weights.reputation * 100).toFixed(0)}% = ${contributions.reputation.toFixed(2)}`);
     console.log(`├── Tracking: ${validatedBreakdown.tracking} × ${(weights.tracking * 100).toFixed(0)}% = ${contributions.tracking.toFixed(2)}`);
     console.log(`├── Cookies: ${validatedBreakdown.cookies} × ${(weights.cookies * 100).toFixed(0)}% = ${contributions.cookies.toFixed(2)}`);
+    console.log(`├── Fingerprinting: ${validatedBreakdown.fingerprinting} × ${(weights.fingerprinting * 100).toFixed(0)}% = ${contributions.fingerprinting.toFixed(2)}`);
     console.log(`├── Input: ${validatedBreakdown.input} × ${(weights.input * 100).toFixed(0)}% = ${contributions.input.toFixed(2)}`);
     if (!isPolicyFallback) {
         console.log(`├── Policy: ${validatedBreakdown.policy} × ${(weights.policy * 100).toFixed(0)}% = ${contributions.policy.toFixed(2)}`);
@@ -165,20 +191,4 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
     console.log(`└── Final WSS: ${finalScore} (${finalScore >= 80 ? '✅ Safe' : finalScore >= 60 ? '🔵 Low Risk' : finalScore >= 40 ? '🟡 Medium' : finalScore >= 20 ? '🟠 High Risk' : '🔴 Critical'})`);
 
     return finalScore;
-}
-
-// =============================================================================
-// LEGACY FUNCTION
-// Kept for backward compatibility with older code that might use the old name
-// =============================================================================
-
-/**
- * @deprecated This function is deprecated (outdated). Use calculateWSS instead.
- * 
- * This was the old name for the scoring function. It's kept here so old code
- * doesn't break, but new code should use calculateWSS.
- */
-export function calculateWRS(breakdown: ScoreBreakdown): number {
-    console.warn('[Deprecation] calculateWRS is deprecated, use calculateWSS instead');
-    return calculateWSS(breakdown);
 }

@@ -33,6 +33,7 @@ import { detectPrivacyPolicyDetailed } from './detectors/policy';      // Checks
 import { detectCookiesDetailed, detectCookiesRaw } from './detectors/cookie';    // Analyzes cookies
 import { detectFingerprintingAttempts } from './detectors/fingerprinting';
 import { ScoreBreakdown } from '@/lib/types';                  // Type definitions
+import { calculateFingerprintingScore } from '@/lib/scoring';
 
 export interface DetectionDetails {
     tracking: { count: number; known: number; suspicious: number };
@@ -67,8 +68,9 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
     const trackingResult = detectTrackingDetailed();
     const inputResult = detectSensitiveInputs();
     const cookieResult = detectCookiesDetailed();
+    const fingerprintingAttempts = detectFingerprintingAttempts();
 
-    // Reputation check is handled by background service (includes blacklist + URLhaus)
+    // Reputation check is handled by the background service (user and local blacklists).
     // We pass a placeholder here; background will overwrite with actual score
     const reputationScore = 100;
 
@@ -81,7 +83,8 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
             tracking: trackingResult.score,
             cookies: cookieResult.score,
             input: inputResult.score,
-            policy: policyResult.score
+            policy: policyResult.score,
+            fingerprinting: calculateFingerprintingScore(fingerprintingAttempts.map(attempt => attempt.technique))
         },
         sensitiveFields: inputResult.fields,
         detectionDetails: {
@@ -115,7 +118,7 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
         rawForEnrichment: {
             cookies: detectCookiesRaw(),
             trackers: typeof detectTrackersRaw === 'function' ? detectTrackersRaw() : [],
-            fingerprinting: detectFingerprintingAttempts()
+            fingerprinting: fingerprintingAttempts
         }
     };
 }

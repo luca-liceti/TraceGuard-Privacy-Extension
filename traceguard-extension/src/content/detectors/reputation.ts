@@ -18,9 +18,9 @@
  *   - Built-in list of known dangerous domains
  *   - Common phishing and malware sites
  * 
- * Layer 3: URLhaus Malware Database
- *   - Real-time online database of malware distributing sites
- *   - Updated regularly by security researchers
+ * Layer 3: Local Blacklist
+ *   - A bundled list of known malicious domains, periodically refreshed
+ *   - Checks remain local and do not reveal browsing domains to a reputation API
  * 
  * SCORING:
  * - 0 = DANGER - Site is blacklisted or known malware
@@ -28,8 +28,7 @@
  * - 100 = SAFE - Site is whitelisted or verified clean
  * 
  * WHY BACKGROUND SERVICE?
- * Content scripts can't make cross-origin requests to URLhaus API.
- * The background service handles the network request securely.
+ * The background service owns the blacklist and applies user overrides.
  * 
  * PRIVACY NOTE:
  * We only check the domain name, not the full URL or page content.

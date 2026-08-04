@@ -44,3 +44,14 @@ export function sanitizeHTML(html: string): string {
         ALLOWED_ATTR: ['href', 'target', 'class']  // Only these attributes are safe
     });
 }
+
+/** Returns a safe http(s) URL or null. Never pass page-provided URLs through raw. */
+export function sanitizeURL(url: string | null | undefined): string | null {
+    if (!url) return null;
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : null;
+    } catch {
+        return null;
+    }
+}

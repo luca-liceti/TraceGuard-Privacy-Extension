@@ -316,28 +316,25 @@ export function wrsToWss(wrs: number): number {
 
 // =============================================================================
 // TRACKING SCORE UTILITIES
-// Tracking scores use an inverted scale (higher tracking score = more trackers = worse)
-// We invert it when displaying to align with WSS (higher = better)
+// Tracking detector scores follow WSS semantics: higher means fewer trackers
+// and therefore a safer result.
 // =============================================================================
 
 /**
  * Get safety level for tracking.
- * Note: Tracking score internally is 0-100 where higher = more trackers (worse).
- * This function inverts it to align with WSS semantics.
+ * Tracking score is 0-100 where higher = fewer trackers (safer).
  * 
- * @param trackingScore - Tracking score (0-100, higher = more trackers)
+ * @param trackingScore - Tracking score (0-100, higher = fewer trackers)
  * @returns Safety level (aligned with WSS - excellent = few/no trackers)
  */
 export function getTrackingLevel(trackingScore: number): SafetyLevel {
-    // Invert: high tracking score = low safety
-    const safetyfied = 100 - trackingScore;
-    return getSafetyLevel(safetyfied);
+    return getSafetyLevel(trackingScore);
 }
 
 /**
  * Get color for tracking score display.
  * 
- * @param trackingScore - Tracking score (0-100, higher = more trackers)
+ * @param trackingScore - Tracking score (0-100, higher = fewer trackers)
  * @returns Tailwind text color class
  */
 export function getTrackingColor(trackingScore: number): string {

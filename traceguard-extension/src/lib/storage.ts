@@ -47,7 +47,8 @@ const DEFAULT_SETTINGS: UserSettings = {
     whitelist: [],                // Sites you've marked as always safe
     blacklist: [],                // Sites you've marked as always dangerous
     lowPowerMode: false,          // Reduce CPU usage (skip some checks)
-    logRetentionDays: 0           // 0 = keep forever, until storage is full
+    logRetentionDays: 0,          // 0 = keep forever, until storage is full
+    databaseRefreshDays: 7
 };
 
 /**
@@ -88,10 +89,31 @@ export const storage = {
         return { ...DEFAULT_STATE, ...(result.state || {}) };
     },
 
-    updateState: async (state: Partial<AppState>): Promise<void> => {
-        const current = await storage.getState();
-        await chrome.storage.local.set({ state: { ...current, ...state } });
-    },
+    updateState: (function() {
+        let timeout: ReturnType<typeof setTimeout> | null = null;
+        let pendingState: Partial<AppState> | null = null;
+        
+        return async (state: Partial<AppState>): Promise<void> => {
+            pendingState = { ...(pendingState || {}), ...state };
+            
+            if (timeout) clearTimeout(timeout);
+            
+            return new Promise<void>((resolve) => {
+                timeout = setTimeout(async () => {
+                    if (!pendingState) {
+                        resolve();
+                        return;
+                    }
+                    const stateToSave = pendingState;
+                    pendingState = null;
+                    
+                    const current = await storage.getState();
+                    await chrome.storage.local.set({ state: { ...current, ...stateToSave } });
+                    resolve();
+                }, 200);
+            });
+        };
+    })(),
 
     // Add a detector log entry
     addDetectorLog: async (log: Omit<import('./types').DetectorLogEntry, 'id' | 'timestamp'>): Promise<void> => {
@@ -293,4 +315,3 @@ export const storage = {
         await chrome.storage.local.set({ notifications: filteredNotifications });
     }
 };
-

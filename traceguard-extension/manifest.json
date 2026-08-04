@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "TraceGuard Privacy Extension",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "description": "Real-time privacy scoring and protection.",
     "icons": {
         "16": "src/assets/icons/icon-16.png",
@@ -53,6 +53,6 @@
         }
     ],
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://urlhaus-api.abuse.ch https://api.tosdr.org;"
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.tosdr.org https://raw.githubusercontent.com https://easylist.to;"
     }
 }

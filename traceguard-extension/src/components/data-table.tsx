@@ -370,7 +370,7 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="trackers">{t("Trackers Blocked")}</Label>
+                  <Label htmlFor="trackers">{t("Trackers Detected")}</Label>
                   <Input id="trackers" type="number" placeholder="0" min="0" required />
                 </div>
                 <div className="grid gap-2">

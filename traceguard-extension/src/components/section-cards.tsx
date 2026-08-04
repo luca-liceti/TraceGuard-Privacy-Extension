@@ -23,7 +23,7 @@ export function SectionCards() {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
   const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000
 
-  // 1. Trackers Blocked
+  // 1. Trackers Detected
   const totalTrackers = appState?.trackersDetected || 0
   const trackersToday = detectorLogs
     .filter(log => log.detector === 'tracking' && log.timestamp >= startOfToday)
@@ -122,7 +122,7 @@ export function SectionCards() {
       <Card className="@container/card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
-            {t("Trackers Blocked")}
+            {t("Trackers Detected")}
           </CardTitle>
           <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
             {trackersPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
@@ -138,7 +138,7 @@ export function SectionCards() {
               {t("Activity")} {trackersPercent >= 0 ? t('up') : t('down')} {t("today")} {trackersPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
             </div>
             <div className="text-xs text-muted-foreground">
-              {t("Tracking scripts intercepted")}
+              {t("Tracking scripts detected")}
             </div>
           </div>
         </CardContent>
