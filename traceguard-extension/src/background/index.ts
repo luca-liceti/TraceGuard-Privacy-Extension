@@ -88,6 +88,57 @@ async function configureDatabaseRefresh(days: number | undefined) {
     await chrome.alarms.create(DATABASE_REFRESH_ALARM, { periodInMinutes: refreshDays * 24 * 60 });
 }
 
+// =============================================================================
+// TAB TRACKING
+// Keeps the global state in sync with the active tab for the UI (Sidebar/Popup)
+// =============================================================================
+async function syncActiveTabSiteData(tabUrl: string | undefined) {
+    if (!tabUrl || tabUrl.startsWith('chrome://') || tabUrl.startsWith('chrome-extension://') || tabUrl.startsWith('edge://') || tabUrl.startsWith('about:')) return;
+    try {
+        const domain = new URL(tabUrl).hostname;
+        const key = await getCryptoKey();
+        let siteCache: Record<string, import('../lib/types').SiteRiskData> = {};
+        
+        if (key) {
+            const result = await chrome.storage.local.get('siteCache');
+            siteCache = typeof result.siteCache === 'string' 
+                ? await decryptData(key, result.siteCache) || {} 
+                : result.siteCache || {};
+        } else {
+            const session = await chrome.storage.session.get('bufferedSiteCache');
+            siteCache = session.bufferedSiteCache || {};
+        }
+
+        const siteData = siteCache[domain];
+        const currentState = await storage.getState();
+        
+        // Only update if it actually changed to avoid unnecessary re-renders
+        if (currentState.currentSite?.domain !== siteData?.domain || currentState.currentSite?.lastAnalyzed !== siteData?.lastAnalyzed) {
+            await storage.updateState({
+                ...currentState,
+                currentSite: siteData || undefined
+            });
+        }
+    } catch (error) {
+        console.error('[TabTracking] Error syncing site data:', error);
+    }
+}
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    try {
+        const tab = await chrome.tabs.get(activeInfo.tabId);
+        await syncActiveTabSiteData(tab.url);
+    } catch (error) {
+        console.error('[TabTracking] Error getting activated tab:', error);
+    }
+});
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete' && tab.active) {
+        await syncActiveTabSiteData(tab.url);
+    }
+});
+
 async function refreshPrivacyDatabases() {
     try {
         await refreshDatabases();
