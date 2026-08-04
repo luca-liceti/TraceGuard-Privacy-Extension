@@ -69,10 +69,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="pointer-events-none">
-              <div className="flex aspect-square size-8 items-center justify-center">
+              <div className="flex aspect-square size-8 items-center justify-center group-data-[state=expanded]:-ml-2 group-data-[state=expanded]:-mr-2">
                 <Shield className="size-6 text-foreground" />
               </div>
-              <div className="flex flex-1 items-center text-left text-sm leading-tight ml-1">
+              <div className="flex flex-1 items-center text-left text-sm leading-tight">
                 <span className="truncate font-semibold text-lg text-foreground">
                   {t("TraceGuard")}
                 </span>

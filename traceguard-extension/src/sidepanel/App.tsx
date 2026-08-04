@@ -274,11 +274,11 @@ function App() {
                 <Toaster />
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        <div className="flex aspect-square size-8 items-center justify-center">
-                            <Shield className="size-6 text-foreground" />
-                        </div>
-                        <h1 className="text-lg font-bold text-foreground">TraceGuard</h1>
+                    <div className="flex items-center gap-1">
+                        <Shield className="size-6 text-foreground shrink-0" />
+                        <span className="truncate font-semibold text-lg text-foreground">
+                            TraceGuard
+                        </span>
                     </div>
                     
                     <HeaderAuthStatus t={t} />
