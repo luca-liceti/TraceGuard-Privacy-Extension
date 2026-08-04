@@ -423,6 +423,16 @@ function App() {
                                                         )}
                                                         {key === 'policy' && (
                                                             <>
+                                                                {state.currentSite?.detectionDetails?.policy?.source !== 'tosdr' && (
+                                                                    <div className="flex items-center gap-1.5 text-muted-foreground bg-muted/50 px-2 py-1.5 rounded-sm mb-2">
+                                                                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                                                                        <span className="text-xs leading-tight">
+                                                                            {state.currentSite?.detectionDetails?.policy?.source === 'local'
+                                                                                ? t("Privacy policy found, but no ToS;DR rating available.")
+                                                                                : t("No privacy policy found and no ToS;DR rating available.")}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                                 {/* ToS;DR link */}
                                                                 {state.currentSite?.detectionDetails?.policy?.serviceId && (
                                                                     <div className="flex justify-between items-center">
