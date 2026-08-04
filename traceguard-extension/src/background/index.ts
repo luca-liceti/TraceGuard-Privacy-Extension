@@ -718,8 +718,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             title: 'Critical Risk Site!',
             message: `${domain} has been flagged as a critical risk with a safety score of ${wss}`,
             domain,
-            severity: 'critical',
-            actionUrl: '/website-safety'  // Link to more details
+            severity: 'critical'
         });
     } else if (wss < threshold) {
         // WARNING: Site falls below the user's personal safety threshold
@@ -728,8 +727,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             title: 'High Risk Site Detected',
             message: `${domain} falls below your safety threshold (Score: ${wss})`,
             domain,
-            severity: 'warning',
-            actionUrl: '/website-safety'
+            severity: 'warning'
         });
     }
 

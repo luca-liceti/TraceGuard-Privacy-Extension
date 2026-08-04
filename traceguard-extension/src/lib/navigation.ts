@@ -112,19 +112,7 @@ export const navSections: NavSection[] = [
             },
         ],
     },
-    {
-        id: "analysis",
-        label: "Analysis",
-        items: [
-            {
-                id: "website-safety",
-                title: "Site Analysis",
-                description: "Site risk and tracker analysis",
-                url: "/website-safety",
-                icon: Globe,
-            },
-        ],
-    },
+
 ]
 
 export const footerItems: NavItem[] = [
@@ -165,7 +153,7 @@ export const settingsSearchItems: SettingsSearchItem[] = [
     { id: 's-retention', label: 'Data Retention', description: 'Manage log storage duration', icon: Database, href: '/settings?tab=data' },
     { id: 's-clear', label: 'Clear Data', description: 'Clear logs, reset score, or factory reset', icon: Database, href: '/settings?tab=data' },
     { id: 'p-breakdown', label: 'Score Breakdown', description: 'See how your Privacy Score is calculated', icon: ShieldCheck, href: '/privacy-score' },
-    { id: 'p-risks', label: 'Risk Analysis', description: 'View detailed site risk factors', icon: Globe, href: '/website-safety' },
+
 ]
 
 /**

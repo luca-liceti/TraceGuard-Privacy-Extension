@@ -38,12 +38,6 @@ const data = {
       icon: BarChart,
       isActive: false,
     },
-    {
-      title: "Website Safety",
-      url: "#/website-safety",
-      icon: ShieldAlert,
-      isActive: false,
-    },
   ],
 }
 

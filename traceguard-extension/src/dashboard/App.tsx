@@ -9,7 +9,7 @@ import { AuthProvider } from "@/components/traceguard/auth-provider"
 // Import pages
 import OverviewPage from "@/components/traceguard/pages/overview"
 import PrivacyScorePage from "@/components/traceguard/pages/privacy-score"
-import WebsiteSafetyPage from "@/components/traceguard/pages/website-safety"
+
 import HelpPage from "@/components/traceguard/pages/help"
 import RankingsPage from "@/components/traceguard/pages/rankings"
 import { SettingsProvider } from "@/components/traceguard/settings-context"
@@ -43,7 +43,7 @@ function AppContent() {
 
                     {/* Privacy & Security Pages */}
                     <Route path="/privacy-score" element={<PageWrapper><PrivacyScorePage /></PageWrapper>} />
-                    <Route path="/website-safety" element={<PageWrapper><WebsiteSafetyPage /></PageWrapper>} />
+
 
                     {/* Management Pages */}
                     <Route path="/rankings" element={<PageWrapper><RankingsPage /></PageWrapper>} />
