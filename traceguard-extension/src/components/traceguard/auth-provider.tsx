@@ -104,6 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Save key to memory
       await chrome.storage.session.set({ cryptoKeyHex: keyHex })
       
+      setPassword("")
+      setConfirmPassword("")
       setAuthState("unlocked")
       return true
     } catch (err: any) {
@@ -152,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Notify background to flush buffers
       chrome.runtime.sendMessage({ type: "UNLOCK_VAULT" })
       
+      setPassword("")
       setAuthState("unlocked")
       return true
     } catch (err: any) {
@@ -164,6 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const lock = async () => {
     await chrome.storage.session.remove("cryptoKeyHex")
+    setPassword("")
     setAuthState("locked")
   }
 

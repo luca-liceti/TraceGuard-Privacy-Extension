@@ -1,7 +1,6 @@
 import { TrendingUpIcon, TrendingDownIcon, ShieldIcon, ActivityIcon, GlobeIcon, NetworkIcon, FingerprintIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -124,10 +123,10 @@ export function SectionCards() {
           <CardTitle className="text-sm font-medium">
             {t("Trackers Detected")}
           </CardTitle>
-          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+          <div className={`flex items-center gap-1 text-xs font-medium ${trackersPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
             {trackersPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
             {trackersPercent >= 0 ? `+${trackersPercent}%` : `${trackersPercent}%`}
-          </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tabular-nums">
@@ -149,10 +148,10 @@ export function SectionCards() {
           <CardTitle className="text-sm font-medium">
             {t("Sites Analyzed")}
           </CardTitle>
-          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+          <div className={`flex items-center gap-1 text-xs font-medium ${sitesPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
             {sitesPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
             {sitesPercent >= 0 ? `+${sitesPercent}%` : `${sitesPercent}%`}
-          </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tabular-nums">
@@ -174,10 +173,10 @@ export function SectionCards() {
           <CardTitle className="text-sm font-medium">
             {t("PII Risk Events")}
           </CardTitle>
-          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+          <div className={`flex items-center gap-1 text-xs font-medium ${piiPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
             {piiPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
             {piiPercent >= 0 ? `+${piiPercent}%` : `${piiPercent}%`}
-          </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tabular-nums">
@@ -199,10 +198,10 @@ export function SectionCards() {
           <CardTitle className="text-sm font-medium">
             {t("Safe Browsing Streak")}
           </CardTitle>
-          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+          <div className={`flex items-center gap-1 text-xs font-medium ${streakPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
             {streakPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
             {streakPercent >= 0 ? `+${streakPercent}%` : `${streakPercent}%`}
-          </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tabular-nums">
@@ -225,10 +224,10 @@ export function SectionCards() {
           <CardTitle className="text-sm font-medium">
             {t("Cross-site Network Requests")}
           </CardTitle>
-          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+          <div className={`flex items-center gap-1 text-xs font-medium ${netPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
             {netPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
             {netPercent >= 0 ? `+${netPercent}%` : `${netPercent}%`}
-          </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tabular-nums">
@@ -253,10 +252,10 @@ export function SectionCards() {
           <CardTitle className="text-sm font-medium">
             {t("Fingerprinting Attempts")}
           </CardTitle>
-          <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
+          <div className={`flex items-center gap-1 text-xs font-medium ${fpPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
             {fpPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
             {fpPercent >= 0 ? `+${fpPercent}%` : `${fpPercent}%`}
-          </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold tabular-nums">

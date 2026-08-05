@@ -497,19 +497,27 @@ function App() {
                                 <span className="text-xs text-muted-foreground">{exposureCount} {t("PII types")}</span>
                             </CardHeader>
                             <CardContent className="p-4 pt-0">
-                                <div className="space-y-1">
-                                    {Object.entries(crossSiteExposure).slice(0, 3).map(([type, sites]) => (
-                                        <div key={type} className="flex items-center justify-between text-xs">
-                                            <span className="capitalize text-muted-foreground">{t(type)}</span>
-                                            <span className="font-medium">{sites.length} {t("sites")}</span>
-                                        </div>
+                                <Accordion type="single" collapsible className="w-full">
+                                    {Object.entries(crossSiteExposure).slice(0, 5).map(([type, sites]) => (
+                                        <AccordionItem key={type} value={type} className="border-b-0 border-t mt-1 pt-1 first:border-t-0 first:mt-0 first:pt-0">
+                                            <AccordionTrigger className="hover:no-underline py-1">
+                                                <div className="flex items-center justify-between w-full pr-2">
+                                                    <span className="capitalize text-xs text-muted-foreground">{t(type)}</span>
+                                                    <span className="text-xs font-medium">{sites.length} {t("sites")}</span>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent>
+                                                <div className="space-y-1 pl-2 border-l border-border/50 ml-1 mt-1 max-h-[100px] overflow-y-auto">
+                                                    {sites.map(site => (
+                                                        <div key={site} className="text-[10px] text-muted-foreground truncate" title={site}>
+                                                            {site}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
                                     ))}
-                                    {exposureCount > 3 && (
-                                        <div className="text-xs text-muted-foreground text-center pt-1">
-                                            +{exposureCount - 3} {t("more...")}
-                                        </div>
-                                    )}
-                                </div>
+                                </Accordion>
                             </CardContent>
                         </Card>
                     )}

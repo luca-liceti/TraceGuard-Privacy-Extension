@@ -46,6 +46,7 @@ interface TosDRResult {
     serviceName?: string;
     serviceId?: number;
     points?: { title: string; classification: string }[];
+    documents?: { name: string; url: string }[];
 }
 
 // Cache for ToS;DR results now uses chrome.storage.session
@@ -180,7 +181,8 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
             source: 'tosdr',
             serviceName: service.name,
             serviceId: service.id,
-            points: []
+            points: [],
+            documents: []
         };
 
         // Fetch detailed points for the service using v2 API
@@ -193,6 +195,11 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
                 result.points = points.map((p: any) => ({
                     title: p.title,
                     classification: p.case?.classification || 'neutral'
+                }));
+                const documents = detailsData.parameters?.documents || [];
+                result.documents = documents.map((d: any) => ({
+                    name: d.name,
+                    url: d.url
                 }));
             }
         } catch (e) {

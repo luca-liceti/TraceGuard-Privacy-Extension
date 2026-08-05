@@ -50,6 +50,7 @@ export interface PolicyDetectionResult {
     serviceId?: number;       // ID of the service from ToS;DR
     hasLocalPolicy: boolean;  // Was a privacy policy link found on the page?
     points?: { title: string; classification: string }[]; // Reasons for the grade
+    documents?: { name: string; url: string }[]; // Reference documents
 }
 
 /**
@@ -157,7 +158,8 @@ export async function detectPrivacyPolicyDetailed(): Promise<PolicyDetectionResu
                 serviceName: response.serviceName,
                 serviceId: response.serviceId,
                 hasLocalPolicy: localResult.found,
-                points: response.points
+                points: response.points,
+                documents: response.documents
             };
         }
     } catch (error) {

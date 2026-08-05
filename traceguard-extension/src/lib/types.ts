@@ -210,7 +210,14 @@ export interface SiteRiskData {
         tracking?: { count: number; known: number; suspicious: number };
         cookies?: { total: number; tracking: number; thirdParty: number };
         input?: { total: number; sensitive: number; types: string[] };
-        policy?: { grade?: string; source: string };
+        policy?: { 
+            grade?: string; 
+            source: string;
+            score?: number;
+            serviceId?: number;
+            points?: { title: string; classification: string }[];
+            documents?: { name: string; url: string }[];
+        };
         reputation?: { checks: string[]; status: string };
     };
     enrichedDetails?: EnrichedDetectionDetails;  // Rich per-item enriched analysis (Phase 2 UI reads this)

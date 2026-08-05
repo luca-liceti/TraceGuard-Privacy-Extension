@@ -352,10 +352,10 @@ export function SiteDetailsPanel({
                                                             <TableCell>
                                                                 {(() => {
                                                                     const extra = r.isTracker
-                                                                        ? "border-destructive/40 bg-destructive/10 ${getIndicatorTextColor('error')}"
+                                                                        ? `border-destructive/40 bg-destructive/10 ${getIndicatorTextColor('error')}`
                                                                         : r.isThirdParty
                                                                         ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
-                                                                        : "border-success/40 bg-success/10 ${getIndicatorTextColor('success')}"
+                                                                        : `border-success/40 bg-success/10 ${getIndicatorTextColor('success')}`
                                                                     return (
                                                                         <Badge variant="outline" className={`text-xs capitalize ${extra}`}>
                                                                             {r.resourceType}{r.isTracker ? ' · Tracker' : r.isThirdParty ? ' · 3rd Party' : ''}
@@ -536,26 +536,28 @@ export function SiteDetailsPanel({
                             <SectionDescription>How this site says it handles your data, graded by community reviewers.</SectionDescription>
                             {policyLegacy ? (
                                 <div className="space-y-3">
-                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                                        <SummaryStat label="Grade" value={policyLegacy.grade || 'N/A'} highlight />
-                                        <SummaryStat label="Source" value={policyLegacy.source === 'tosdr' ? 'ToS;DR database' : 'Local detection'} />
-                                        <SummaryStat label="Points" value={policyLegacy.points?.length || 0} />
-                                    </div>
-                                    <div className="flex justify-between items-center h-8">
-                                        {Number.isInteger(policyLegacy.serviceId) && policyLegacy.serviceId > 0 ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-8 gap-1.5 text-xs"
-                                                onClick={() => {
-                                                    window.open(`https://tosdr.org/en/service/${policyLegacy.serviceId}`, '_blank');
-                                                }}
-                                            >
-                                                <Globe className="h-3.5 w-3.5" />
-                                                Open on ToS;DR
-                                            </Button>
-                                        ) : <div />}
-
+                                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm">
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                            <span>
+                                                <span className="text-muted-foreground">Grade: </span>
+                                                <span className={getGradeTextColor(policyLegacy.grade)}>{policyLegacy.grade || 'N/A'}</span>
+                                            </span>
+                                            <SummaryStat label="Source" value={policyLegacy.source === 'tosdr' ? 'ToS;DR database' : 'Local detection'} />
+                                            <SummaryStat label="Points" value={policyLegacy.points?.length || 0} />
+                                            {policyLegacy.serviceId ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-6 text-xs px-2 py-0"
+                                                    onClick={() => {
+                                                        window.open(`https://tosdr.org/en/service/${policyLegacy.serviceId}`, '_blank');
+                                                    }}
+                                                >
+                                                    <Globe className="h-3 w-3 mr-1" />
+                                                    ToS;DR
+                                                </Button>
+                                            ) : null}
+                                        </div>
                                         {policyLegacy.points && policyLegacy.points.length > 0 && (
                                             <Select value={policyFilter} onValueChange={setPolicyFilter}>
                                                 <SelectTrigger className="h-8 w-[140px] text-xs">
@@ -590,9 +592,9 @@ export function SiteDetailsPanel({
                                                     }).map((p: any, idx: number) => {
                                                         let Icon = Info;
                                                         let iconClass = "text-muted-foreground";
-                                                        if (p.classification === 'blocker') { Icon = XCircle; iconClass = "${getIndicatorTextColor('error')}"; }
-                                                        else if (p.classification === 'bad') { Icon = ThumbsDown; iconClass = "${getIndicatorTextColor('warning')}"; }
-                                                        else if (p.classification === 'good') { Icon = CheckCircle; iconClass = "${getIndicatorTextColor('success')}"; }
+                                                        if (p.classification === 'blocker') { Icon = XCircle; iconClass = getSafetyTextColor('critical'); }
+                                                        else if (p.classification === 'bad') { Icon = ThumbsDown; iconClass = getSafetyTextColor('poor'); }
+                                                        else if (p.classification === 'good') { Icon = CheckCircle; iconClass = getSafetyTextColor('excellent'); }
                                                         return (
                                                             <TableRow key={idx}>
                                                                 <TableCell className="w-10 pl-4 pr-2">
@@ -604,6 +606,21 @@ export function SiteDetailsPanel({
                                                     })}
                                                 </TableBody>
                                             </Table>
+                                        </div>
+                                    )}
+
+                                    {policyLegacy.documents && policyLegacy.documents.length > 0 && (
+                                        <div className="mt-2 space-y-2">
+                                            <h4 className="text-sm font-semibold">Documents</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {policyLegacy.documents.map((doc: any, idx: number) => (
+                                                    <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer">
+                                                        <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer text-xs font-normal">
+                                                            {doc.name}
+                                                        </Badge>
+                                                    </a>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>

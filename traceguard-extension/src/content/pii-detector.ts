@@ -73,21 +73,21 @@ class PIIDetector {
     startMonitoring(sensitiveFields: { high: SensitiveField[]; medium: SensitiveField[]; low: SensitiveField[] }) {
         // Monitor HIGH sensitivity fields
         sensitiveFields.high.forEach(field => {
-            this.attachListener(field.element, 'HIGH');
+            this.attachListener(field.element, 'HIGH', field.type);
         });
 
         // Monitor MEDIUM sensitivity fields
         sensitiveFields.medium.forEach(field => {
-            this.attachListener(field.element, 'MEDIUM');
+            this.attachListener(field.element, 'MEDIUM', field.type);
         });
 
         // Monitor LOW sensitivity fields
         sensitiveFields.low.forEach(field => {
-            this.attachListener(field.element, 'LOW');
+            this.attachListener(field.element, 'LOW', field.type);
         });
     }
 
-    private attachListener(element: HTMLInputElement | HTMLTextAreaElement, sensitivity: 'HIGH' | 'MEDIUM' | 'LOW') {
+    private attachListener(element: HTMLInputElement | HTMLTextAreaElement, sensitivity: 'HIGH' | 'MEDIUM' | 'LOW', semanticType: string) {
         // Don't read actual input values - just detect interaction
         const fieldId = this.generateFieldId(element);
 
@@ -99,7 +99,7 @@ class PIIDetector {
             // Only trigger on actual input (not just focus)
             const fieldData = this.monitoredFields.get(fieldId);
             if (target.value.length > 0 && fieldData && !fieldData.triggered) {
-                this.onPIIDetected(element, sensitivity);
+                this.onPIIDetected(element, sensitivity, semanticType);
                 fieldData.triggered = true;
             }
         };
@@ -118,9 +118,9 @@ class PIIDetector {
         return `${element.tagName}_${element.name || element.id || 'unnamed'}_${element.type}`;
     }
 
-    private async onPIIDetected(element: HTMLInputElement | HTMLTextAreaElement, sensitivity: 'HIGH' | 'MEDIUM' | 'LOW') {
+    private async onPIIDetected(element: HTMLInputElement | HTMLTextAreaElement, sensitivity: 'HIGH' | 'MEDIUM' | 'LOW', semanticType: string) {
         const domain = window.location.hostname;
-        const fieldType = element.type || element.tagName.toLowerCase();
+        const fieldType = semanticType;
         const fieldName = element.name || element.id || 'unknown';
 
         console.warn(`[TraceGuard] PII detected: ${sensitivity} sensitivity field on ${domain}`);

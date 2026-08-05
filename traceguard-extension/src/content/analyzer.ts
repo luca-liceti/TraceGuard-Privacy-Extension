@@ -20,6 +20,7 @@
  * 3. Cookies - Are there tracking or advertising cookies?
  * 4. Policy  - What does the privacy policy say (ToS;DR rating)?
  * 5. Reputation - Is the domain on any blacklists? (checked by background)
+
  * 
  * Note: Reputation is checked by the background script, not here, because
  * content scripts can't make cross-origin requests to the reputation APIs.
@@ -45,6 +46,7 @@ export interface DetectionDetails {
         score: number;
         serviceId?: number;
         points?: { title: string; classification: string }[];
+        documents?: { name: string; url: string }[];
     };
 }
 
@@ -112,7 +114,8 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
                 source: policyResult.source,
                 score: policyResult.score,
                 serviceId: policyResult.serviceId,
-                points: policyResult.points
+                points: policyResult.points,
+                documents: policyResult.documents
             }
         },
         rawForEnrichment: {
