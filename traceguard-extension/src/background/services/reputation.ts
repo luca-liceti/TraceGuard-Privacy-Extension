@@ -81,10 +81,16 @@ export async function loadBlacklist() {
         // (Checking if something is in a Set is much faster than searching an array)
         staticBlacklist = new Set(data.domains);
 
+
         console.log(`[Reputation] Loaded ${staticBlacklist.size} domains into static blacklist`);
     } catch (error) {
         console.error('[Reputation] Failed to load static blacklist:', error);
     }
+}
+
+export interface ReputationResult {
+    score: number;
+    checks: string[];
 }
 
 /**
@@ -97,9 +103,9 @@ export async function loadBlacklist() {
  * 4. Default - Safe (100)
  * 
  * @param url - The URL to check
- * @returns Reputation score (0 = high risk, 100 = safe)
+ * @returns Reputation score (0 = high risk, 100 = safe) and checks
  */
-export async function checkReputation(url: string): Promise<number> {
+export async function checkReputation(url: string): Promise<ReputationResult> {
     try {
         const domain = new URL(url).hostname;
 
@@ -114,28 +120,28 @@ export async function checkReputation(url: string): Promise<number> {
         // LAYER 1: Whitelist takes absolute priority (force safe)
         if (userWhitelist.some(w => domain.includes(w) || w.includes(domain))) {
             console.log(`[Reputation] Layer 1: ${domain} is WHITELISTED → 100 (safe)`);
-            return 100;
+            return { score: 100, checks: ['Whitelisted by user'] };
         }
 
         // LAYER 2: User blacklist (force critical)
         if (userBlacklist.some(b => domain.includes(b) || b.includes(domain))) {
             console.log(`[Reputation] Layer 2: ${domain} is USER BLACKLISTED → 0 (critical)`);
-            return 0;
+            return { score: 0, checks: ['Found in user blacklist'] };
         }
 
         // LAYER 3: Static blacklist (known malicious domains)
         if (staticBlacklist.has(domain)) {
             console.log(`[Reputation] Layer 3: ${domain} in STATIC BLACKLIST → 0 (critical)`);
-            return 0;
+            return { score: 0, checks: ['Found in static blacklist of known malicious domains'] };
         }
 
         // LAYER 4: Default - safe
         console.log(`[Reputation] All checks passed for ${domain} → 100 (safe)`);
-        return 100;
+        return { score: 100, checks: [] };
 
     } catch (error) {
         console.error('[Reputation] Error checking reputation:', error);
-        return 100; // Default to safe if invalid URL
+        return { score: 100, checks: [] }; // Default to safe if invalid URL
     }
 }
 
@@ -144,14 +150,14 @@ export async function checkReputation(url: string): Promise<number> {
  * Note: This should be phased out in favor of the async version
  * Mirrors the local-only async reputation check.
  */
-export function checkReputationSync(url: string): number {
+export function checkReputationSync(url: string): ReputationResult {
     try {
         const domain = new URL(url).hostname;
         if (staticBlacklist.has(domain)) {
-            return 0;
+            return { score: 0, checks: ['Found in static blacklist of known malicious domains'] };
         }
-        return 100;
+        return { score: 100, checks: [] };
     } catch {
-        return 100;
+        return { score: 100, checks: [] };
     }
 }

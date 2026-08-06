@@ -58,7 +58,7 @@ async function createNotification(notification: Parameters<typeof storage.addNot
     if (!settings.notifications || settings.notificationLevel === 'silent') return;
     if (settings.notificationLevel === 'balanced' && notification.severity === 'info') return;
     try {
-        await chrome.notifications.create(id, {
+        await chrome.notifications.create(notification.id || `notif-${Date.now()}`, {
             type: 'basic', iconUrl: 'src/assets/icons/icon-128.png', title: notification.title,
             message: notification.message, priority: notification.severity === 'critical' ? 2 : 1,
         });
@@ -423,10 +423,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
 
         // Check the website's reputation asynchronously
-        checkReputation(url).then(reputationScore => {
+        checkReputation(url).then(reputationResult => {
+            const score = typeof reputationResult === 'number' ? reputationResult : reputationResult.score;
+            const checks = typeof reputationResult === 'number' ? [] : reputationResult.checks;
             // A score of 0 means the site is blacklisted (dangerous)
-            const isBlacklisted = reputationScore === 0;
-            sendResponse({ isBlacklisted, score: reputationScore });
+            const isBlacklisted = score === 0;
+            sendResponse({ isBlacklisted, score, checks });
         }).catch(error => {
             console.warn('Reputation check failed:', error);
             sendResponse({ isBlacklisted: false, score: 100 });  // Fail-safe: assume safe
@@ -549,10 +551,20 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     }
 
     // Step 1: Check the website's reputation (is it on any blacklists?)
-    const reputationScore = await checkReputation(message.url);
+    const reputationResult = await checkReputation(message.url);
+    const reputationScore = typeof reputationResult === 'number' ? reputationResult : reputationResult.score;
+    const reputationChecks = typeof reputationResult === 'number' ? [] : reputationResult.checks;
 
     // Combine all the individual detector scores into one object
     const finalScores = { ...message.scores, reputation: reputationScore };
+
+    if (!message.detectionDetails) {
+        message.detectionDetails = {};
+    }
+    message.detectionDetails.reputation = {
+        status: reputationScore === 100 ? 'Clean' : 'Suspicious',
+        checks: reputationChecks
+    };
 
     // Step 2: Calculate the Website Safety Score (WSS)
     // This combines all 6 detector scores with different weights
@@ -561,7 +573,6 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Extract just the domain name from the full URL
     // For example: "https://www.example.com/page" becomes "www.example.com"
     const domain = new URL(message.url).hostname;
-    
     // Retrieve network data for this tab
     const tabId = sender.tab?.id;
     let networkData = null;

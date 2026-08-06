@@ -36,6 +36,11 @@ module.exports = {
 	],
 	theme: {
     	extend: {
+    		fontFamily: {
+    			sans: ['Inter', 'sans-serif'],
+    			serif: ['Inter', 'sans-serif'],
+    			mono: ['Inter', 'monospace'],
+    		},
     		borderRadius: {
     			lg: 'var(--radius)',
     			md: 'calc(var(--radius) - 2px)',
