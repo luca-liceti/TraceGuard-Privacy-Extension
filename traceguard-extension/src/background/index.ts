@@ -93,7 +93,16 @@ async function configureDatabaseRefresh(days: number | undefined) {
 // Keeps the global state in sync with the active tab for the UI (Sidebar/Popup)
 // =============================================================================
 async function syncActiveTabSiteData(tabUrl: string | undefined) {
-    if (!tabUrl || tabUrl.startsWith('chrome://') || tabUrl.startsWith('chrome-extension://') || tabUrl.startsWith('edge://') || tabUrl.startsWith('about:')) return;
+    if (!tabUrl || tabUrl.startsWith('chrome://') || tabUrl.startsWith('chrome-extension://') || tabUrl.startsWith('edge://') || tabUrl.startsWith('about:')) {
+        const currentState = await storage.getState();
+        if (currentState.currentSite) {
+            await storage.updateState({
+                ...currentState,
+                currentSite: undefined
+            });
+        }
+        return;
+    }
     try {
         const domain = new URL(tabUrl).hostname;
         const key = await getCryptoKey();
@@ -685,11 +694,11 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
 
     // Save the updated site data
     siteCache[domain] = siteData;
-    // LRU-style cap: retain the most recently analyzed 500 domains.
+    // LRU-style cap: retain the most recently analyzed 5000 domains.
     const cacheEntries = Object.entries(siteCache);
-    if (cacheEntries.length > 500) {
+    if (cacheEntries.length > 5000) {
         cacheEntries.sort(([, a], [, b]) => Number(a.lastAnalyzed) - Number(b.lastAnalyzed));
-        for (const [expiredDomain] of cacheEntries.slice(0, cacheEntries.length - 500)) delete siteCache[expiredDomain];
+        for (const [expiredDomain] of cacheEntries.slice(0, cacheEntries.length - 5000)) delete siteCache[expiredDomain];
     }
     
     if (key) {
@@ -701,6 +710,18 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Step 5: Update the user's privacy state
     const state = await storage.getState();
 
+    // Check if the tab that sent this analysis is the currently active tab
+    let isActiveTab = true;
+    if (sender.tab?.id) {
+        try {
+            const currentTab = await chrome.tabs.get(sender.tab.id);
+            isActiveTab = currentTab.active;
+        } catch (e) {
+            // Tab might be closed
+            isActiveTab = false;
+        }
+    }
+
     // Calculate how this visit affects your User Privacy Score (UPS)
     // Safe sites give you a recovery bonus, risky sites apply a penalty
     const upsImpact = calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0, isUniqueDomain);
@@ -708,9 +729,13 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Save the updated state
     // Count enriched trackers detected on this visit (both active and blocked)
     const newTrackersCount = enrichedDetails ? enrichedDetails.trackers.items.length : 0;
+    
+    // Only update currentSite if the analysis is from the active tab
+    const newCurrentSite = isActiveTab ? siteData : state.currentSite;
+    
     await storage.updateState({
         ...state,
-        currentSite: siteData,                                                   // The site you're currently on
+        currentSite: newCurrentSite,                                             // The site you're currently on (if active tab)
         sitesAnalyzed: state.sitesAnalyzed + (isUniqueDomain ? 1 : 0),           // Increment the counter only for unique sites today
         trackersDetected: (state.trackersDetected || 0) + newTrackersCount,      // Bug fix: accumulate enriched tracker count
         ups: upsImpact.newUPS,                                                   // Your updated privacy score

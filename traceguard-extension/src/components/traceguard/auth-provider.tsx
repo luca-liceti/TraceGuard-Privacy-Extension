@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from "react"
-import { Lock, Key, ShieldCheck, AlertCircle, ShieldAlert, Shield } from "lucide-react"
+import { Lock, Key, ShieldUser, AlertCircle, OctagonAlert, ShieldUser } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -172,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (authState === "loading") {
-    return <div className="flex h-screen items-center justify-center bg-background"><Shield className="h-8 w-8 animate-pulse text-foreground" /></div>
+    return <div className="flex h-screen items-center justify-center bg-background"><ShieldUser className="h-8 w-8 animate-pulse text-foreground" /></div>
   }
 
   if (authState === "setup") {
@@ -181,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <div className="flex aspect-square size-8 items-center justify-center mx-auto mb-2">
-              <Shield className="size-6 text-foreground" />
+              <ShieldUser className="size-6 text-foreground" />
             </div>
             <CardTitle className="text-xl">Secure Your Vault</CardTitle>
             <CardDescription>
@@ -268,7 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <div className="flex aspect-square size-8 items-center justify-center mx-auto mb-2">
-              <Shield className="size-6 text-foreground" />
+              <ShieldUser className="size-6 text-foreground" />
             </div>
             <CardTitle className="text-xl">Vault Locked</CardTitle>
             <CardDescription>

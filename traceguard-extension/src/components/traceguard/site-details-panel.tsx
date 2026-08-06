@@ -34,7 +34,7 @@ import {
     NetworkRequestDetail,
 } from "@/lib/types"
 import { format } from "date-fns"
-import { CheckCircle, XCircle, AlertTriangle, ThumbsDown, Info, Globe, ShieldCheck, ShieldAlert, Network, Activity, Cookie, Key, FileText, Fingerprint } from "lucide-react"
+import { CircleCheck, XCircle, AlertTriangle, ThumbsDown, Info, Globe, ShieldUser, OctagonAlert, Network, Activity, Cookie, Key, FileText, Fingerprint } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { getSafetyTextColor, getSafetyBgColor, getCategoryBadge, getHeaderRatingBadge, getGradeTextColor, getRiskLevelBadge, getNetworkStatusTextColor, getIndicatorTextColor } from "@/lib/theme-utils"
@@ -237,8 +237,8 @@ export function SiteDetailsPanel({
                                                                             <Info className="h-3 w-3 text-muted-foreground shrink-0 cursor-help" />
                                                                         </TooltipTrigger>
                                                                         <TooltipContent side="right" className="flex flex-col gap-1 text-xs">
-                                                                            {c.httpOnly && <span className="flex items-center gap-1.5"><CheckCircle className={`h-3 w-3 ${getIndicatorTextColor('success')}`}/> HttpOnly</span>}
-                                                                            {c.secure && <span className="flex items-center gap-1.5"><CheckCircle className={`h-3 w-3 ${getIndicatorTextColor('success')}`}/> Secure</span>}
+                                                                            {c.httpOnly && <span className="flex items-center gap-1.5"><CircleCheck className={`h-3 w-3 ${getIndicatorTextColor('success')}`}/> HttpOnly</span>}
+                                                                            {c.secure && <span className="flex items-center gap-1.5"><CircleCheck className={`h-3 w-3 ${getIndicatorTextColor('success')}`}/> Secure</span>}
                                                                             {c.isThirdParty && <span className="flex items-center gap-1.5"><AlertTriangle className={`h-3 w-3 ${getIndicatorTextColor('warning')}`}/> Third Party</span>}
                                                                             {!c.httpOnly && !c.secure && !c.isThirdParty && <span>No special flags</span>}
                                                                         </TooltipContent>
@@ -257,7 +257,7 @@ export function SiteDetailsPanel({
                                                                 </span>
                                                             ) : (
                                                                 <span className={`flex items-center gap-1.5 ${getIndicatorTextColor('success')}`}>
-                                                                    <CheckCircle className="h-3.5 w-3.5" /> Stored
+                                                                    <CircleCheck className="h-3.5 w-3.5" /> Stored
                                                                 </span>
                                                             )}
                                                         </TableCell>
@@ -366,7 +366,7 @@ export function SiteDetailsPanel({
                                                             <TableCell className="text-xs font-medium">
                                                                 {r.status === 'completed' ? (
                                                                     <span className={`flex items-center gap-1.5 ${getIndicatorTextColor('success')}`}>
-                                                                        <CheckCircle className="h-3.5 w-3.5" /> OK
+                                                                        <CircleCheck className="h-3.5 w-3.5" /> OK
                                                                     </span>
                                                                 ) : r.status === 'blocked' ? (
                                                                     <span className="flex items-center gap-1.5 text-muted-foreground line-through">
@@ -474,7 +474,7 @@ export function SiteDetailsPanel({
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <ShieldCheck className={`h-4 w-4 ${getIndicatorTextColor('success')}`} />
+                                    <ShieldUser className={`h-4 w-4 ${getIndicatorTextColor('success')}`} />
                                     No fingerprinting detected — your device identity is safe here.
                                 </div>
                             )}
@@ -484,7 +484,7 @@ export function SiteDetailsPanel({
 
                         {/* ─── Reputation ───────────────────────────────────── */}
                         <div className="flex flex-col gap-3">
-                            <SectionTitle icon={ShieldAlert}>Reputation</SectionTitle>
+                            <SectionTitle icon={OctagonAlert}>Reputation</SectionTitle>
                             <SectionDescription>Whether this site has been flagged as unsafe, malicious, or deceptive by security databases.</SectionDescription>
                             {reputationLegacy ? (
                                 <div className="space-y-3">
@@ -508,7 +508,7 @@ export function SiteDetailsPanel({
                                                             <TableCell className="text-xs font-medium">
                                                                 {reputationLegacy.status === 'Clean' ? (
                                                                     <span className={`flex items-center gap-1.5 ${getIndicatorTextColor('success')}`}>
-                                                                        <CheckCircle className="h-3.5 w-3.5" /> Clean
+                                                                        <CircleCheck className="h-3.5 w-3.5" /> Clean
                                                                     </span>
                                                                 ) : (
                                                                     <span className={`flex items-center gap-1.5 ${getIndicatorTextColor('warning')}`}>
@@ -594,7 +594,7 @@ export function SiteDetailsPanel({
                                                         let iconClass = "text-muted-foreground";
                                                         if (p.classification === 'blocker') { Icon = XCircle; iconClass = getSafetyTextColor('critical'); }
                                                         else if (p.classification === 'bad') { Icon = ThumbsDown; iconClass = getSafetyTextColor('poor'); }
-                                                        else if (p.classification === 'good') { Icon = CheckCircle; iconClass = getSafetyTextColor('excellent'); }
+                                                        else if (p.classification === 'good') { Icon = CircleCheck; iconClass = getSafetyTextColor('excellent'); }
                                                         return (
                                                             <TableRow key={idx}>
                                                                 <TableCell className="w-10 pl-4 pr-2">
@@ -633,7 +633,7 @@ export function SiteDetailsPanel({
 
                         {/* ─── Security Headers ─────────────────────────────── */}
                         <div className="flex flex-col gap-3">
-                            <SectionTitle icon={ShieldCheck}>Connection Security</SectionTitle>
+                            <SectionTitle icon={ShieldUser}>Connection Security</SectionTitle>
                             <SectionDescription>Protections the site uses to keep your connection safe from eavesdropping and tampering.</SectionDescription>
                             {hasHeaders ? (
                                 <div className="space-y-3">
@@ -664,7 +664,7 @@ export function SiteDetailsPanel({
                                                             <TableCell className="text-xs font-medium">
                                                                 {h.present ? (
                                                                     <span className={`flex items-center gap-1.5 ${getIndicatorTextColor('success')}`}>
-                                                                        <CheckCircle className="h-3.5 w-3.5" /> Present
+                                                                        <CircleCheck className="h-3.5 w-3.5" /> Present
                                                                     </span>
                                                                 ) : (
                                                                     <span className={`flex items-center gap-1.5 ${getIndicatorTextColor('error')}`}>

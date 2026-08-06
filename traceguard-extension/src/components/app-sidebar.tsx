@@ -1,8 +1,8 @@
 import * as React from "react"
 import { useTranslation } from "react-i18next"
 import {
-  LayoutDashboard,
-  BarChart,
+  LayoutGrid,
+  BarChart2,
   ShieldAlert,
   SlidersHorizontal,
   Shield,
@@ -29,13 +29,13 @@ const data = {
     {
       title: "Overview",
       url: "#/overview",
-      icon: LayoutDashboard,
+      icon: LayoutGrid,
       isActive: false,
     },
     {
       title: "Rankings & Stats",
       url: "#/rankings",
-      icon: BarChart,
+      icon: BarChart2,
       isActive: false,
     },
   ],

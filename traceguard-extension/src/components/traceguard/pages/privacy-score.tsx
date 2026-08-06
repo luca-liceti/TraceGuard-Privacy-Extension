@@ -44,13 +44,13 @@ import * as React from "react"
 import { useTranslation } from "react-i18next"
 import { useAppState, useScoreHistory } from "@/lib/useStorage"
 import {
-    ShieldCheck,
+    ShieldUser,
     TrendingUp,
     TrendingDown,
     Info,
     Minus,
     Calendar,
-    BarChart3,
+    BarChart2,
     Target,
 } from "lucide-react"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
@@ -124,7 +124,7 @@ export default function PrivacyScorePage() {
                                     {state.ups}
                                 </span>
                             </div>
-                            <ShieldCheck className={cn(
+                            <ShieldUser className={cn(
                                 "absolute -bottom-2 -right-2 h-10 w-10",
                                 scoreLevel.color
                             )} />
@@ -195,7 +195,7 @@ export default function PrivacyScorePage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4 text-primary" />
+                        <BarChart2 className="h-4 w-4 text-primary" />
                         {t("30-Day Privacy Score Trend")}
                     </CardTitle>
                     <CardDescription>
@@ -257,7 +257,7 @@ export default function PrivacyScorePage() {
                     ) : (
                         <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                             <div className="text-center">
-                                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                                <BarChart2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
                                 <p className="text-sm">{t("No score history available yet")}</p>
                                 <p className="text-xs mt-1">{t("Browse some websites to start tracking")}</p>
                             </div>

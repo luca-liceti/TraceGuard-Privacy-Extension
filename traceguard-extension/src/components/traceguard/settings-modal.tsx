@@ -56,8 +56,8 @@ import {
     Info,
     Download,
     List,
-    Shield,
-    ShieldAlert
+    ShieldUser,
+    OctagonAlert
 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -379,7 +379,7 @@ export function SettingsModal() {
                                 {t("Appearance")}
                             </TabsTrigger>
                             <TabsTrigger value="privacy" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
-                                <Shield className="h-4 w-4" />
+                                <ShieldUser className="h-4 w-4" />
                                 {t("Privacy")}
                             </TabsTrigger>
                             <TabsTrigger value="notifications" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
@@ -387,7 +387,7 @@ export function SettingsModal() {
                                 {t("Notifications")}
                             </TabsTrigger>
                             <TabsTrigger value="domain-lists" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
-                                <ShieldAlert className="h-4 w-4" />
+                                <OctagonAlert className="h-4 w-4" />
                                 {t("Allow/Block")}
                             </TabsTrigger>
                             <TabsTrigger value="data" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">

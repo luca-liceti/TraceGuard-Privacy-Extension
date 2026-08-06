@@ -43,7 +43,7 @@ import React from "react"
 import { useTranslation } from "react-i18next"
 import {
     HelpCircle,
-    Shield,
+    ShieldUser,
     Eye,
     Globe,
     FileText,
@@ -97,7 +97,7 @@ const features: FeatureItem[] = [
     {
         title: "Privacy Score Tracking",
         description: "Monitor your browsing privacy over time with a comprehensive score.",
-        icon: Shield,
+        icon: ShieldUser,
     },
     {
         title: "Website Risk Analysis",
@@ -275,7 +275,7 @@ export default function HelpPage() {
                 <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Shield className="h-5 w-5 text-primary" />
+                            <ShieldUser className="h-5 w-5 text-primary" />
                             <div>
                                 <p className="font-medium text-sm">{t("TraceGuard Privacy Extension")}</p>
                                 <p className="text-xs text-muted-foreground">

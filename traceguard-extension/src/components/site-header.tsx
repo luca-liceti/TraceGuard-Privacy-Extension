@@ -15,8 +15,7 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <h1 className="text-base font-medium">{t("TraceGuard")}</h1>
-        <div className="ml-2 hidden sm:block"><SearchCommand /></div>
+        <div className="hidden sm:block"><SearchCommand /></div>
         <div className="ml-auto flex items-center gap-2">
           <NotificationDropdown />
           <ThemeToggle />

@@ -1,3 +1,8 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -138,4 +143,15 @@
 
 [data-sonner-toast][data-swiping="true"] {
   transform: translateX(var(--swipe-amount)) !important;
+}
+/* Enforce uniform, lightweight geometric styling for all Lucide icons */
+svg.lucide {
+  stroke-width: 1.5px !important;
+  fill: none !important;
+}
+
+/* Ensure a default uniform size of 16px, but allow Tailwind w-* and h-* classes to override it */
+svg.lucide:not([class*="w-"]):not([class*="h-"]):not([class*="size-"]) {
+  width: 16px;
+  height: 16px;
 }

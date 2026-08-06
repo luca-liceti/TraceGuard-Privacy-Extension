@@ -22,7 +22,7 @@ import {
   ChevronDownIcon,
   MoreVerticalIcon,
   PlusIcon,
-  ShieldAlertIcon,
+  OctagonAlertIcon,
   AlertTriangleIcon,
   DownloadIcon,
 } from "lucide-react"

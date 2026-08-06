@@ -33,9 +33,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatCard } from "@/components/ui/stat-card"
 import {
-  ShieldCheck,
-  ShieldAlert,
-  Shield,
+  ShieldUser,
+  OctagonAlert,
+  ShieldUser,
   Target,
   Cookie,
   Eye,
@@ -60,7 +60,7 @@ const DETECTOR_ICONS: Record<string, React.ComponentType<{ className?: string }>
   tracking:    Activity,
   cookies:     Cookie,
   inputs:      Key,
-  reputation:  Shield,
+  reputation:  ShieldUser,
   policy:      FileText,
 }
 
@@ -326,7 +326,7 @@ export default function RankingsPage() {
           title={t("Total Threats Blocked")}
           value={heroStats.totalThreats.toLocaleString()}
           subtitle={t("All detector events logged")}
-          icon={ShieldCheck}
+          icon={ShieldUser}
           iconColor="text-primary"
           trend={{
             direction: heroStats.threatDirection as "up" | "down",
@@ -359,7 +359,7 @@ export default function RankingsPage() {
               : t("Poor — avoid sensitive actions")
               : t("Visit some websites first")
           }
-          icon={ShieldAlert}
+          icon={OctagonAlert}
           iconColor={heroStats.avgWSS === null ? "text-muted-foreground" : "text-primary"}
         />
       </div>
@@ -484,7 +484,7 @@ export default function RankingsPage() {
           </CardHeader>
           <CardContent className="flex justify-center items-center pb-0">
             {categoryData.length === 0 ? (
-              <EmptyState icon={ShieldCheck} title={t("No threats detected yet")} description={t("Category breakdown will appear after browsing.")} />
+              <EmptyState icon={ShieldUser} title={t("No threats detected yet")} description={t("Category breakdown will appear after browsing.")} />
             ) : (
               <ChartContainer config={pieChartConfig} className="h-[280px] w-full">
                 <PieChart>
@@ -545,7 +545,7 @@ export default function RankingsPage() {
           </CardHeader>
           <CardContent>
             {riskBreakdown.every(r => r.events === 0) ? (
-              <EmptyState icon={ShieldCheck} title={t("All clear")} description={t("Risk breakdown will appear after browsing.")} />
+              <EmptyState icon={ShieldUser} title={t("All clear")} description={t("Risk breakdown will appear after browsing.")} />
             ) : (
               <div className="space-y-3">
                 {riskBreakdown.map(row => {
@@ -654,7 +654,7 @@ export default function RankingsPage() {
           </CardHeader>
           <CardContent>
             {wssTotalSites === 0 ? (
-              <EmptyState icon={ShieldCheck} title={t("No sites analyzed yet")} description={t("Visit some websites and TraceGuard will score them here.")} />
+              <EmptyState icon={ShieldUser} title={t("No sites analyzed yet")} description={t("Visit some websites and TraceGuard will score them here.")} />
             ) : (
               <ChartContainer config={wssConfig} className="h-[220px] w-full">
                 <BarChart data={wssData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>

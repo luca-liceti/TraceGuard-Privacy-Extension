@@ -36,7 +36,7 @@
  * =============================================================================
  */
 
-import { ShieldCheck, AlertTriangle, CheckCircle, LayoutDashboard, Globe, Shield, Flame, Activity, Cookie, FileText, Key, Lock, ShieldAlert, XCircle, ThumbsDown, Info, ExternalLink, Network, Fingerprint } from "lucide-react"
+import { ShieldUser, AlertTriangle, CircleCheck, LayoutGrid, Globe, ShieldUser, Flame, Activity, Cookie, FileText, Key, Lock, OctagonAlert, XCircle, ThumbsDown, Info, ExternalLink, Network, Fingerprint } from "lucide-react"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -46,7 +46,7 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Toaster } from "@/components/ui/sonner"
 import { storage } from "@/lib/storage"
-import { SiteRiskData, CrossSiteExposure } from "@/lib/types"
+import { SiteRiskData } from "@/lib/types"
 import {
     Accordion,
     AccordionContent,
@@ -63,7 +63,7 @@ import { getStatusConfig, getSafetyConfig, scoreToGrade, SAFETY_CONFIGS } from "
 // =============================================================================
 
 function getWSSIcon(wss: number) {
-    if (wss >= 60) return <CheckCircle className="h-5 w-5" />;
+    if (wss >= 60) return <CircleCheck className="h-5 w-5" />;
     return <AlertTriangle className="h-5 w-5" />;
 }
 
@@ -80,7 +80,7 @@ function getGradeColor(grade: string): string {
 
 const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> => ({
     reputation: {
-        icon: Shield,
+        icon: ShieldUser,
         label: t("Reputation"),
         description: t("Domain trustworthiness"),
         weight: "25%"
@@ -139,7 +139,7 @@ const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any
  
      return (
          <div className="flex items-center justify-center h-8 w-8 text-destructive animate-pulse" title={t("Vault Locked")}>
-             <ShieldAlert className="h-4 w-4" />
+             <OctagonAlert className="h-4 w-4" />
          </div>
      );
  }
@@ -149,18 +149,8 @@ function App() {
     const { t } = useTranslation();
     const state = useAppState();
     const settings = useSettings();
-    const [crossSiteExposure, setCrossSiteExposure] = useState<CrossSiteExposure>({});
-
-    // Load cross-site exposure
     useEffect(() => {
-        const loadExposure = async () => {
-            const exposure = await storage.getAllExposure();
-            setCrossSiteExposure(exposure);
-        };
-        loadExposure();
-
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
-            if (changes.crossSiteExposure) loadExposure();
 
             // Auto-update when siteCache changes (new analysis data available)
             if (changes.siteCache) {
@@ -200,8 +190,6 @@ function App() {
     }
 
     const currentSiteWSS = state.currentSite?.wss ?? null;
-    const exposureCount = Object.keys(crossSiteExposure).length;
-
     const openDashboard = () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('src/dashboard/index.html') });
         window.close();
@@ -213,7 +201,7 @@ function App() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-1">
-                        <Shield className="size-6 text-foreground shrink-0" />
+                        <ShieldUser className="size-6 text-foreground shrink-0" />
                         <span className="truncate font-semibold text-lg text-foreground">
                             TraceGuard
                         </span>
@@ -260,7 +248,7 @@ function App() {
                             <Accordion type="multiple" className="w-full">
                                 {Object.entries(state.currentSite.breakdown)
                                     .sort((a, b) => {
-                                        const order = ['tracking', 'cookies', 'input', 'reputation', 'policy'];
+                                        const order = ['tracking', 'cookies', 'input', 'fingerprinting', 'reputation', 'policy'];
                                         return order.indexOf(a[0]) - order.indexOf(b[0]);
                                     })
                                     .map(([key, score]) => {
@@ -336,19 +324,35 @@ function App() {
                                                             </>
                                                         )}
                                                         {key === 'input' && (
+                                                            <div className="flex justify-between items-start gap-2">
+                                                                <span className="shrink-0">{t("Requested PII")}</span>
+                                                                <div className="flex flex-wrap justify-end gap-1">
+                                                                    {state.currentSite?.detectionDetails?.input?.types && state.currentSite.detectionDetails.input.types.length > 0 ? (
+                                                                        state.currentSite.detectionDetails.input.types.map(type => (
+                                                                            <span key={type} className="px-1.5 py-0.5 bg-muted/80 text-[10px] font-medium rounded border border-border/50 capitalize">
+                                                                                {t(type)}
+                                                                            </span>
+                                                                        ))
+                                                                    ) : (
+                                                                        <span className="font-medium">{t("None")}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {key === 'fingerprinting' && (
                                                             <>
                                                                 <div className="flex justify-between">
-                                                                    <span>{t("Input fields")}</span>
-                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.input?.total ?? 0}</span>
+                                                                    <span>{t("Attempts")}</span>
+                                                                    <span className="font-medium">{state.currentSite?.enrichedDetails?.fingerprinting?.summary?.totalAttempts ?? 0}</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span>{t("Sensitive (HIGH)")}</span>
-                                                                    <span className="font-medium">{state.currentSite?.detectionDetails?.input?.sensitive ?? 0}</span>
+                                                                    <span>{t("Risk Level")}</span>
+                                                                    <span className="font-medium capitalize">{state.currentSite?.enrichedDetails?.fingerprinting?.summary?.riskLevel ?? t("None")}</span>
                                                                 </div>
-                                                                {state.currentSite?.detectionDetails?.input?.types && state.currentSite.detectionDetails.input.types.length > 0 && (
+                                                                {state.currentSite?.enrichedDetails?.fingerprinting?.summary?.techniques && state.currentSite.enrichedDetails.fingerprinting.summary.techniques.length > 0 && (
                                                                     <div className="flex justify-between">
-                                                                        <span>{t("Types")}</span>
-                                                                        <span className="font-medium text-xs">{state.currentSite.detectionDetails.input.types.join(', ')}</span>
+                                                                        <span>{t("Techniques")}</span>
+                                                                        <span className="font-medium text-xs text-right max-w-[150px]">{state.currentSite.enrichedDetails.fingerprinting.summary.techniques.join(', ')}</span>
                                                                     </div>
                                                                 )}
                                                             </>
@@ -397,7 +401,7 @@ function App() {
                                                                                 Icon = ThumbsDown;
                                                                                 iconClass = SAFETY_CONFIGS.poor.color;
                                                                             } else if (p.classification === 'good') {
-                                                                                Icon = CheckCircle;
+                                                                                Icon = CircleCheck;
                                                                                 iconClass = SAFETY_CONFIGS.excellent.color;
                                                                             }
                                                                             return (
@@ -428,7 +432,7 @@ function App() {
                                             {/* Security Headers */}
                                             {enriched.headers && enriched.headers.items.length > 0 && (
                                                 <div className="px-3 py-2 flex items-center gap-2">
-                                                    <ShieldCheck className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                    <ShieldUser className="h-4 w-4 text-muted-foreground shrink-0" />
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-xs font-medium">{t("Security Headers")}</div>
                                                         <div className="text-xs text-muted-foreground">
@@ -488,39 +492,6 @@ function App() {
                             </CardContent>
                         </Card>
                     )}
-
-                    {/* Data Exposure Summary */}
-                    {exposureCount > 0 && (
-                        <Card>
-                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                                <CardTitle className="text-sm font-medium">{t("Data Exposure")}</CardTitle>
-                                <span className="text-xs text-muted-foreground">{exposureCount} {t("PII types")}</span>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                                <Accordion type="single" collapsible className="w-full">
-                                    {Object.entries(crossSiteExposure).slice(0, 5).map(([type, sites]) => (
-                                        <AccordionItem key={type} value={type} className="border-b-0 border-t mt-1 pt-1 first:border-t-0 first:mt-0 first:pt-0">
-                                            <AccordionTrigger className="hover:no-underline py-1">
-                                                <div className="flex items-center justify-between w-full pr-2">
-                                                    <span className="capitalize text-xs text-muted-foreground">{t(type)}</span>
-                                                    <span className="text-xs font-medium">{sites.length} {t("sites")}</span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent>
-                                                <div className="space-y-1 pl-2 border-l border-border/50 ml-1 mt-1 max-h-[100px] overflow-y-auto">
-                                                    {sites.map(site => (
-                                                        <div key={site} className="text-[10px] text-muted-foreground truncate" title={site}>
-                                                            {site}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ))}
-                                </Accordion>
-                            </CardContent>
-                        </Card>
-                    )}
                     {/* Safe Streak */}
                     <Card>
                         <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
@@ -536,7 +507,7 @@ function App() {
                 {/* Dashboard Button */}
                 <div className="mt-4 pt-3 border-t">
                     <Button onClick={openDashboard} className="w-full" variant="outline" size="sm">
-                        <LayoutDashboard className="h-4 w-4" />
+                        <LayoutGrid className="h-4 w-4" />
                         {t("Open Dashboard")}
                     </Button>
                 </div>
