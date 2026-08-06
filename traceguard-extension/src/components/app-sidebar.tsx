@@ -5,7 +5,7 @@ import {
   BarChart2,
   ShieldAlert,
   SlidersHorizontal,
-  Shield,
+  ShieldUser,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -64,7 +64,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="pointer-events-none">
               <div className="flex aspect-square size-8 items-center justify-center group-data-[state=expanded]:-ml-2 group-data-[state=expanded]:-mr-2">
-                <Shield className="size-6 text-foreground" />
+                <ShieldUser className="size-6 text-foreground" />
               </div>
               <div className="flex flex-1 items-center text-left text-sm leading-tight">
                 <span className="truncate font-semibold text-lg text-foreground">
@@ -83,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         {greeting && (
-          <div className="px-4 py-2 text-xs text-muted-foreground font-medium animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="px-4 py-2 text-xs text-muted-foreground font-medium animate-in fade-in slide-in-from-bottom-2 duration-500 group-data-[state=collapsed]:hidden">
             {greeting}
           </div>
         )}

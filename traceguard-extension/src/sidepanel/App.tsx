@@ -36,7 +36,7 @@
  * =============================================================================
  */
 
-import { ShieldUser, AlertTriangle, CircleCheck, LayoutGrid, Globe, ShieldUser, Flame, Activity, Cookie, FileText, Key, Lock, OctagonAlert, XCircle, ThumbsDown, Info, ExternalLink, Network, Fingerprint } from "lucide-react"
+import { ShieldUser, AlertTriangle, CircleCheck, LayoutGrid, Globe, Flame, Activity, Cookie, FileText, Key, Lock, OctagonAlert, XCircle, ThumbsDown, Info, ExternalLink, Network, Fingerprint } from "lucide-react"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"

@@ -92,7 +92,8 @@ export function NotificationDropdown() {
         unreadCount,
         markAsRead,
         markAllAsRead,
-        removeNotification
+        removeNotification,
+        clearAll
     } = useNotifications()
 
     const handleNotificationClick = async (notification: NotificationEvent) => {
@@ -206,10 +207,13 @@ export function NotificationDropdown() {
                     <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                            className="justify-center text-primary cursor-pointer"
-                            onClick={() => navigate('/privacy-score')}
+                            className="justify-center text-destructive cursor-pointer"
+                            onClick={(e) => {
+                                e.preventDefault()
+                                clearAll()
+                            }}
                         >
-                            View privacy score
+                            Clear all notifications
                         </DropdownMenuItem>
                     </>
                 )}
