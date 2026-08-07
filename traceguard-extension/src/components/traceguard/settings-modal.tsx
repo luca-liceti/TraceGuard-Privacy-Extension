@@ -136,7 +136,7 @@ function SettingSlider({
                 step={step}
                 value={value}
                 onChange={(e) => onChange(Number(e.target.value))}
-                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                className="w-full h-2 bg-secondary rounded-md appearance-none cursor-pointer accent-primary"
             />
             <div className="flex justify-between mt-2 text-xs text-muted-foreground">
                 <span>{min} {unit}</span>
@@ -630,7 +630,7 @@ export function SettingsModal() {
                                     input.value = '';
                                 }}>{t("Add")}</Button>
                             </div>
-                            <div className="rounded-md border max-h-[150px] overflow-y-auto">
+                            <div className="rounded-md border max-h-40 overflow-y-auto">
                                 {whitelist.length === 0 ? (
                                     <div className="p-4 text-center text-sm text-muted-foreground">{t("No allowed sites")}</div>
                                 ) : (
@@ -681,7 +681,7 @@ export function SettingsModal() {
                                     input.value = '';
                                 }}>{t("Add")}</Button>
                             </div>
-                            <div className="rounded-md border max-h-[150px] overflow-y-auto">
+                            <div className="rounded-md border max-h-40 overflow-y-auto">
                                 {blacklist.length === 0 ? (
                                     <div className="p-4 text-center text-sm text-muted-foreground">{t("No blocked sites")}</div>
                                 ) : (

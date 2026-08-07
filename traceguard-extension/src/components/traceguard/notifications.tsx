@@ -141,7 +141,7 @@ export function NotificationDropdown() {
                 <DropdownMenuSeparator />
 
                 {recentNotifications.length > 0 ? (
-                    <ScrollArea className="h-[300px]">
+                    <ScrollArea className="h-72">
                         {recentNotifications.map((notification) => (
                             <DropdownMenuItem
                                 key={notification.id}

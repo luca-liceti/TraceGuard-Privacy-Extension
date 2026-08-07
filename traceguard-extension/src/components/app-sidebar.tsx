@@ -10,6 +10,7 @@ import {
 
 import { NavMain } from "@/components/nav-main"
 import { NavFooter } from "@/components/nav-footer"
+import { useLocation } from "react-router-dom"
 import { useUserName } from "@/lib/useStorage"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
@@ -57,6 +58,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, [userName])
 
+  const location = useLocation()
+
+  const navItems = React.useMemo(() => {
+    return data.navMain.map(item => ({
+      ...item,
+      isActive: location.pathname.includes(item.url.replace("#", ""))
+    }))
+  }, [location.pathname])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -79,7 +89,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         {greeting && (

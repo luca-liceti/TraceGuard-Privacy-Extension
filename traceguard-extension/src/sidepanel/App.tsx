@@ -387,7 +387,7 @@ function App() {
                                                                     </div>
                                                                 )}
                                                                 {state.currentSite?.detectionDetails?.policy?.points && state.currentSite.detectionDetails.policy.points.length > 0 && (
-                                                                    <ScrollArea className="h-[200px] mt-2 border-t pt-2 border-muted-foreground/20">
+                                                                    <ScrollArea className="h-52 mt-2 border-t pt-2 border-muted-foreground/20">
                                                                         {[...state.currentSite.detectionDetails.policy.points].sort((a: any, b: any) => {
                                                                             const order: Record<string, number> = { blocker: 1, bad: 2, neutral: 3, good: 4 };
                                                                             return (order[a.classification] || 5) - (order[b.classification] || 5);

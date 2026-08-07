@@ -3,7 +3,7 @@ import { SAFETY_CONFIGS } from "@/lib/risk-utils"
 
 /**
  * Standardized color mappings for letter grades (A-F)
- * Palette: A=emerald-500, B=emerald-400, C=yellow-500, D=orange-500, E/F=red-500
+ * Palette: A=success, B=success, C=warning, D=alert, E/F=destructive
  */
 export function getGradeTextColor(grade: string | undefined | null): string {
     switch (grade?.toUpperCase()) {
@@ -22,12 +22,12 @@ export function getGradeTextColor(grade: string | undefined | null): string {
  */
 export function getGradeBgColor(grade: string | undefined | null): string {
     switch (grade?.toUpperCase()) {
-        case "A": return "bg-emerald-500/10 border-transparent"
-        case "B": return "bg-emerald-400/10 border-transparent"
-        case "C": return "bg-yellow-500/10 border-transparent"
-        case "D": return "bg-orange-500/10 border-transparent"
+        case "A": return "bg-success/10 border-transparent"
+        case "B": return "bg-success/10 border-transparent"
+        case "C": return "bg-warning/10 border-transparent"
+        case "D": return "bg-alert/10 border-transparent"
         case "E":
-        case "F": return "bg-red-500/10 border-transparent"
+        case "F": return "bg-destructive/10 border-transparent"
         default: return "bg-muted/20 border-transparent"
     }
 }
@@ -51,11 +51,11 @@ export function getSafetyTextColor(level: string | undefined | null): string {
  */
 export function getSafetyBgColor(level: string | undefined | null): string {
     switch (level?.toLowerCase()) {
-        case "excellent": return "bg-emerald-500/10 border-transparent"
-        case "good":      return "bg-emerald-400/10 border-transparent"
-        case "fair":      return "bg-yellow-500/10 border-transparent"
-        case "poor":      return "bg-orange-500/10 border-transparent"
-        case "critical":  return "bg-red-500/10 border-transparent"
+        case "excellent": return "bg-success/10 border-transparent"
+        case "good":      return "bg-success/10 border-transparent"
+        case "fair":      return "bg-warning/10 border-transparent"
+        case "poor":      return "bg-alert/10 border-transparent"
+        case "critical":  return "bg-destructive/10 border-transparent"
         default: return "bg-muted/20 border-transparent"
     }
 }
@@ -65,11 +65,11 @@ export function getSafetyBgColor(level: string | undefined | null): string {
  */
 export function getSafetyBorderColor(level: string | undefined | null): string {
     switch (level?.toLowerCase()) {
-        case "excellent": return "border-l-emerald-500 dark:border-l-emerald-400"
-        case "good":      return "border-l-emerald-400 dark:border-l-emerald-300"
-        case "fair":      return "border-l-yellow-500 dark:border-l-yellow-400"
-        case "poor":      return "border-l-orange-500 dark:border-l-orange-400"
-        case "critical":  return "border-l-red-500 dark:border-l-red-400"
+        case "excellent": return "border-l-success"
+        case "good":      return "border-l-success"
+        case "fair":      return "border-l-warning"
+        case "poor":      return "border-l-alert"
+        case "critical":  return "border-l-destructive"
         default: return "border-l-muted-foreground"
     }
 }
@@ -79,10 +79,10 @@ export function getSafetyBorderColor(level: string | undefined | null): string {
  */
 export function getRiskLevelBadge(riskLevel: string | undefined | null): { variant: "outline" | "secondary", extra: string } {
     switch (riskLevel?.toLowerCase()) {
-        case "high":   return { variant: "outline", extra: "border-red-500/40 bg-red-500/10 text-red-500 dark:text-red-400" }
-        case "medium": return { variant: "outline", extra: "border-yellow-500/40 bg-yellow-500/10 text-yellow-500 dark:text-yellow-400" }
-        case "low":    return { variant: "outline", extra: "border-emerald-500/40 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" }
-        default:       return { variant: "outline", extra: "border-emerald-500/40 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" }
+        case "high":   return { variant: "outline", extra: "border-destructive/40 bg-destructive/10 text-destructive" }
+        case "medium": return { variant: "outline", extra: "border-warning/40 bg-warning/10 text-warning" }
+        case "low":    return { variant: "outline", extra: "border-success/40 bg-success/10 text-success" }
+        default:       return { variant: "outline", extra: "border-success/40 bg-success/10 text-success" }
     }
 }
 
@@ -91,9 +91,9 @@ export function getRiskLevelBadge(riskLevel: string | undefined | null): { varia
  */
 export function getIndicatorTextColor(type: 'success' | 'warning' | 'error'): string {
     switch (type) {
-        case 'success': return "text-emerald-500 dark:text-emerald-400"
-        case 'warning': return "text-yellow-500 dark:text-yellow-400"
-        case 'error': return "text-red-500 dark:text-red-400"
+        case 'success': return "text-success"
+        case 'warning': return "text-warning"
+        case 'error': return "text-destructive"
         default: return "text-muted-foreground"
     }
 }
@@ -105,19 +105,20 @@ export function getCategoryBadge(category: string | undefined | null): { variant
     switch (category?.toLowerCase()) {
         case "marketing":
         case "advertising":
-            return { variant: "outline", extra: "border-red-500/40 bg-red-500/10 text-red-500 dark:text-red-400" }
+            return { variant: "outline", extra: "border-destructive/40 bg-destructive/10 text-destructive" }
         case "analytics":
-            return { variant: "outline", extra: "border-yellow-500/40 bg-yellow-500/10 text-yellow-500 dark:text-yellow-400" }
+            return { variant: "outline", extra: "border-warning/40 bg-warning/10 text-warning" }
         case "social":
-            return { variant: "outline", extra: "border-emerald-400/40 bg-emerald-400/10 text-emerald-400 dark:text-emerald-300" }
+            return { variant: "outline", extra: "border-success/40 bg-success/10 text-success" }
         case "functional":
         case "necessary":
         case "content":
         case "cdn":
-            return { variant: "outline", extra: "border-emerald-500/40 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" }
+            return { variant: "outline", extra: "border-success/40 bg-success/10 text-success" }
         case "fingerprinting":
         case "cryptomining":
-            return { variant: "outline", extra: "border-purple-500/40 bg-purple-500/10 text-purple-500 dark:text-purple-400" }
+            // Replacing purple with destructive since it's highly malicious
+            return { variant: "outline", extra: "border-destructive/40 bg-destructive/10 text-destructive" }
         default:
             return { variant: "secondary", extra: "" }
     }
@@ -128,10 +129,10 @@ export function getCategoryBadge(category: string | undefined | null): { variant
  */
 export function getHeaderRatingBadge(rating: string | undefined | null): { variant: "outline" | "secondary", extra: string } {
     switch (rating?.toLowerCase()) {
-        case "good":    return { variant: "outline", extra: "border-emerald-500/40 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" }
-        case "fair":    return { variant: "outline", extra: "border-yellow-500/40 bg-yellow-500/10 text-yellow-500 dark:text-yellow-400" }
-        case "poor":    return { variant: "outline", extra: "border-orange-500/40 bg-orange-500/10 text-orange-500 dark:text-orange-400" }
-        case "missing": return { variant: "outline", extra: "border-red-500/40 bg-red-500/10 text-red-500 dark:text-red-400" }
+        case "good":    return { variant: "outline", extra: "border-success/40 bg-success/10 text-success" }
+        case "fair":    return { variant: "outline", extra: "border-warning/40 bg-warning/10 text-warning" }
+        case "poor":    return { variant: "outline", extra: "border-alert/40 bg-alert/10 text-alert" }
+        case "missing": return { variant: "outline", extra: "border-destructive/40 bg-destructive/10 text-destructive" }
         default:        return { variant: "secondary", extra: "" }
     }
 }

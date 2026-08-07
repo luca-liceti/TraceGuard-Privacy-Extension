@@ -113,7 +113,7 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
                       >
                         <span>{lang.name}</span>
                         {i18n.language === lang.code && (
-                          <Check className="ml-auto size-4 text-blue-500" />
+                          <Check className="ml-auto size-4 text-primary" />
                         )}
                       </DropdownMenuItem>
                     ))}

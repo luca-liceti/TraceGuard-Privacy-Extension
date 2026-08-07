@@ -40,7 +40,7 @@ export function NavMain({
           if (item.items && item.items.length > 0) {
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton tooltip={t(item.title)} onClick={item.onClick} asChild={!item.onClick}>
+                <SidebarMenuButton tooltip={t(item.title)} onClick={item.onClick} asChild={!item.onClick} isActive={item.isActive}>
                   {item.onClick ? (
                     <>
                       {item.icon && <item.icon />}
@@ -75,7 +75,7 @@ export function NavMain({
 
           return (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={t(item.title)} onClick={item.onClick} asChild={!item.onClick}>
+              <SidebarMenuButton tooltip={t(item.title)} onClick={item.onClick} asChild={!item.onClick} isActive={item.isActive}>
                 {item.onClick ? (
                   <>
                     {item.icon && <item.icon />}

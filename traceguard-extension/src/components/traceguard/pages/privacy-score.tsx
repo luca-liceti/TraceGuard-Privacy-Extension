@@ -211,7 +211,7 @@ export default function PrivacyScorePage() {
                                     color: "var(--primary)",
                                 },
                             }}
-                            className="h-[300px]"
+                            className="h-72"
                         >
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData}>
@@ -255,7 +255,7 @@ export default function PrivacyScorePage() {
                             </ResponsiveContainer>
                         </ChartContainer>
                     ) : (
-                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                        <div className="h-72 flex items-center justify-center text-muted-foreground">
                             <div className="text-center">
                                 <BarChart2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
                                 <p className="text-sm">{t("No score history available yet")}</p>

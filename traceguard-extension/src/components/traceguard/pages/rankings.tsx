@@ -310,7 +310,7 @@ export default function RankingsPage() {
   const wssTotalSites = sites.length
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:gap-6 lg:px-6 lg:py-6 @container/main">
+    <div className="flex flex-col gap-4 md:gap-6 @container/main">
 
       {/* Page Header */}
       <div>
@@ -326,8 +326,6 @@ export default function RankingsPage() {
           title={t("Total Threats Blocked")}
           value={heroStats.totalThreats.toLocaleString()}
           subtitle={t("All detector events logged")}
-          icon={ShieldUser}
-          iconColor="text-primary"
           trend={{
             direction: heroStats.threatDirection as "up" | "down",
             value: heroStats.threatTrend,
@@ -338,15 +336,11 @@ export default function RankingsPage() {
           title={t("Top Offender")}
           value={heroStats.topOffender ? heroStats.topOffender.replace(/^www\./, "") : "—"}
           subtitle={heroStats.topOffender ? t("Most threats from one domain") : t("No data yet")}
-          icon={Target}
-          iconColor="text-primary"
         />
         <StatCard
           title={t("PII Exposures")}
           value={heroStats.totalPii.toLocaleString()}
           subtitle={t("Sensitive field entries detected")}
-          icon={Lock}
-          iconColor="text-primary"
         />
         <StatCard
           title={t("Avg. Site Safety")}
@@ -359,8 +353,6 @@ export default function RankingsPage() {
               : t("Poor — avoid sensitive actions")
               : t("Visit some websites first")
           }
-          icon={OctagonAlert}
-          iconColor={heroStats.avgWSS === null ? "text-muted-foreground" : "text-primary"}
         />
       </div>
 
@@ -408,7 +400,7 @@ export default function RankingsPage() {
             {activityData.every(d => d.events === 0) ? (
               <EmptyState icon={Activity} title={t("No activity yet")} description={t("Threats will appear here as you browse the web.")} />
             ) : (
-              <ChartContainer config={activityConfig} className="h-[220px] w-full">
+              <ChartContainer config={activityConfig} className="h-56 w-full">
                 <AreaChart data={activityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="fillEvents" x1="0" y1="0" x2="0" y2="1">
@@ -486,7 +478,7 @@ export default function RankingsPage() {
             {categoryData.length === 0 ? (
               <EmptyState icon={ShieldUser} title={t("No threats detected yet")} description={t("Category breakdown will appear after browsing.")} />
             ) : (
-              <ChartContainer config={pieChartConfig} className="h-[280px] w-full">
+              <ChartContainer config={pieChartConfig} className="h-72 w-full">
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie
@@ -507,10 +499,10 @@ export default function RankingsPage() {
                   </Pie>
                   {/* Center label */}
                   <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
-                    <tspan x="50%" dy="-0.25em" className="fill-foreground" style={{ fontSize: 24, fontWeight: 700 }}>
+                    <tspan x="50%" dy="-0.25em" className="fill-foreground text-2xl font-bold">
                       {totalCategoryEvents}
                     </tspan>
-                    <tspan x="50%" dy="1.4em" className="fill-muted-foreground" style={{ fontSize: 11 }}>
+                    <tspan x="50%" dy="1.4em" className="fill-muted-foreground text-[11px]">
                       {t("total events")}
                     </tspan>
                   </text>
@@ -573,10 +565,9 @@ export default function RankingsPage() {
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                           <div
-                            className="h-full rounded-full transition-all duration-500 bg-primary"
+                            className={cn("h-full rounded-full transition-all duration-500 bg-primary", row.events > 0 ? "opacity-80" : "opacity-20")}
                             style={{
                               width: `${row.events > 0 ? row.avgSafety : 100}%`,
-                              opacity: row.events > 0 ? 0.8 : 0.2,
                             }}
                           />
                         </div>
@@ -656,7 +647,7 @@ export default function RankingsPage() {
             {wssTotalSites === 0 ? (
               <EmptyState icon={ShieldUser} title={t("No sites analyzed yet")} description={t("Visit some websites and TraceGuard will score them here.")} />
             ) : (
-              <ChartContainer config={wssConfig} className="h-[220px] w-full">
+              <ChartContainer config={wssConfig} className="h-56 w-full">
                 <BarChart data={wssData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="category" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} />
@@ -680,7 +671,7 @@ export default function RankingsPage() {
                       dataKey="count"
                       position="top"
                       formatter={(val: number) => val > 0 ? `${val} ${val === 1 ? t("site") : t("sites")}` : ""}
-                      style={{ fill: "var(--muted-foreground)", fontSize: 11, fontWeight: 500 }}
+                      className="fill-muted-foreground text-[11px] font-medium"
                     />
                   </Bar>
                 </BarChart>

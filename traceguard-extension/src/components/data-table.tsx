@@ -340,7 +340,7 @@ export function DataTable({ data, siteCache = {} }: { data: SiteVisit[]; siteCac
 
 
   return (
-    <div className="flex w-full flex-col gap-4 px-4 lg:px-6">
+    <div className="flex w-full flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex flex-1 items-center space-x-2">
           <Input

@@ -117,10 +117,10 @@ export function SectionCards() {
     : Math.round(((fpToday - fpYesterday) / fpYesterday) * 100)
 
   return (
-    <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-3 grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6">
-      <Card className="@container/card">
+    <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-3 grid grid-cols-1 gap-4 dark:*:data-[slot=card]:bg-card">
+      <Card className="@container/card bg-gradient-to-t from-warning/10 to-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
             {t("Trackers Detected")}
           </CardTitle>
           <div className={`flex items-center gap-1 text-xs font-medium ${trackersPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -143,9 +143,9 @@ export function SectionCards() {
         </CardContent>
       </Card>
       
-      <Card className="@container/card">
+      <Card className="@container/card bg-gradient-to-t from-success/10 to-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
             {t("Sites Analyzed")}
           </CardTitle>
           <div className={`flex items-center gap-1 text-xs font-medium ${sitesPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -168,9 +168,9 @@ export function SectionCards() {
         </CardContent>
       </Card>
       
-      <Card className="@container/card">
+      <Card className="@container/card bg-gradient-to-t from-destructive/10 to-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
             {t("PII Risk Events")}
           </CardTitle>
           <div className={`flex items-center gap-1 text-xs font-medium ${piiPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -193,9 +193,9 @@ export function SectionCards() {
         </CardContent>
       </Card>
       
-      <Card className="@container/card">
+      <Card className="@container/card bg-gradient-to-t from-success/10 to-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
             {t("Safe Browsing Streak")}
           </CardTitle>
           <div className={`flex items-center gap-1 text-xs font-medium ${streakPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -219,9 +219,9 @@ export function SectionCards() {
       </Card>
 
       {/* Network Requests card — tracker-flagged requests aggregated from enriched data */}
-      <Card className="@container/card">
+      <Card className="@container/card bg-gradient-to-t from-alert/10 to-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
             {t("Cross-site Network Requests")}
           </CardTitle>
           <div className={`flex items-center gap-1 text-xs font-medium ${netPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -247,9 +247,9 @@ export function SectionCards() {
       </Card>
 
       {/* Fingerprinting card — fingerprinting attempts aggregated from enriched data */}
-      <Card className="@container/card">
+      <Card className="@container/card bg-gradient-to-t from-destructive/10 to-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
             {t("Fingerprinting Attempts")}
           </CardTitle>
           <div className={`flex items-center gap-1 text-xs font-medium ${fpPercent >= 0 ? 'text-success' : 'text-destructive'}`}>

@@ -77,6 +77,7 @@ export interface StatusConfig {
     bgColor: string;
 }
 
+
 // =============================================================================
 // SAFETY LEVEL CONFIGURATIONS
 // Used for WSS (higher = safer)
@@ -87,41 +88,41 @@ export const SAFETY_CONFIGS: Record<SafetyLevel, SafetyConfig> = {
         level: 'excellent',
         label: 'Excellent',
         description: 'Very safe and trustworthy site',
-        color: 'text-emerald-500',
-        bgColor: 'bg-emerald-500/10',
-        borderColor: 'border-emerald-500/30',
+        color: 'text-success',
+        bgColor: 'bg-success/10',
+        borderColor: 'border-success/30',
     },
     good: {
         level: 'good',
         label: 'Good',
         description: 'Generally safe browsing',
-        color: 'text-emerald-400',
-        bgColor: 'bg-emerald-400/10',
-        borderColor: 'border-emerald-400/30',
+        color: 'text-success',
+        bgColor: 'bg-success/10',
+        borderColor: 'border-success/30',
     },
     fair: {
         level: 'fair',
         label: 'Fair',
         description: 'Some concerns found - be cautious',
-        color: 'text-yellow-500',
-        bgColor: 'bg-yellow-500/10',
-        borderColor: 'border-yellow-500/30',
+        color: 'text-warning',
+        bgColor: 'bg-warning/10',
+        borderColor: 'border-warning/30',
     },
     poor: {
         level: 'poor',
         label: 'Poor',
         description: 'Significant risks detected - proceed with caution',
-        color: 'text-orange-500',
-        bgColor: 'bg-orange-500/10',
-        borderColor: 'border-orange-500/30',
+        color: 'text-alert',
+        bgColor: 'bg-alert/10',
+        borderColor: 'border-alert/30',
     },
     critical: {
         level: 'critical',
         label: 'Critical',
         description: 'Major security concerns - avoid entering personal information',
-        color: 'text-red-500',
-        bgColor: 'bg-red-500/10',
-        borderColor: 'border-red-500/30',
+        color: 'text-destructive',
+        bgColor: 'bg-destructive/10',
+        borderColor: 'border-destructive/30',
     },
 };
 
@@ -140,36 +141,36 @@ export const STATUS_CONFIGS: Record<ScoreStatus, StatusConfig> = {
         status: 'excellent',
         label: 'Excellent',
         description: 'Your browsing habits are excellent!',
-        color: 'text-emerald-500',
-        bgColor: 'bg-emerald-500/10',
+        color: 'text-success',
+        bgColor: 'bg-success/10',
     },
     good: {
         status: 'good',
         label: 'Good',
         description: 'Good privacy practices, keep it up!',
-        color: 'text-emerald-400',
-        bgColor: 'bg-emerald-400/10',
+        color: 'text-success',
+        bgColor: 'bg-success/10',
     },
     fair: {
         status: 'fair',
         label: 'Fair',
         description: 'Room for improvement in privacy.',
-        color: 'text-yellow-500',
-        bgColor: 'bg-yellow-500/10',
+        color: 'text-warning',
+        bgColor: 'bg-warning/10',
     },
     poor: {
         status: 'poor',
         label: 'Poor',
         description: 'Consider reviewing your browsing habits.',
-        color: 'text-orange-500',
-        bgColor: 'bg-orange-500/10',
+        color: 'text-alert',
+        bgColor: 'bg-alert/10',
     },
     critical: {
         status: 'critical',
         label: 'Critical',
         description: 'Immediate attention recommended.',
-        color: 'text-red-500',
-        bgColor: 'bg-red-500/10',
+        color: 'text-destructive',
+        bgColor: 'bg-destructive/10',
     },
 };
 

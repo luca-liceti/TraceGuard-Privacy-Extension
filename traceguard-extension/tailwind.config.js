@@ -85,6 +85,10 @@ module.exports = {
     				DEFAULT: 'var(--warning)',
     				foreground: 'var(--warning-foreground)'
     			},
+    			alert: {
+    				DEFAULT: 'var(--alert)',
+    				foreground: 'var(--alert-foreground)'
+    			},
     			border: 'var(--border)',
     			input: 'var(--input)',
     			ring: 'var(--ring)',
