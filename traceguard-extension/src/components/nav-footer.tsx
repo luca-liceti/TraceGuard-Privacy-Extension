@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next"
 import { useToast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
+import { useNavigate } from "react-router-dom"
 import {
   Check,
   ChevronsUpDown,
@@ -46,6 +47,7 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
   const { toast } = useToast()
   const { setSettingsOpen } = useSettingsModal()
   const { lock } = useAuth()
+  const navigate = useNavigate()
 
   const languages = [
     { code: "en", name: "English (United States)" },
@@ -120,9 +122,9 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/help')}>
                 <HelpCircle className="mr-2 size-4" />
-                {t("Get help")}
+                {t("Help & Documentation")}
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <ExternalLink className="mr-2 size-4" />
