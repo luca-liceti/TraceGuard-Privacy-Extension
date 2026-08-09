@@ -386,3 +386,60 @@ export interface NotificationEvent {
     read: boolean;           // Has the user seen it?
     actionUrl?: string;      // Where to go when clicked
 }
+
+// =============================================================================
+// DOMAIN GROUPING
+// Bundles multiple visits to the same domain into a collapsible accordion row
+// =============================================================================
+
+/**
+ * A group of visits to the same domain, used to render accordion rows in the
+ * data table. The `summary` row is the parent (aggregated) row shown when
+ * collapsed. `visits` are the individual child rows shown when expanded.
+ *
+ * Aggregation strategy per column:
+ * - Safety Level   → worst-case (most severe) across all visits
+ * - WSS Score      → average across all visits
+ * - Trackers       → max (peak tracking exposure)
+ * - Cookies        → max (peak cookie count)
+ * - PII Risk       → "Yes" if any visit detected PII
+ * - Reputation     → worst-case (Blacklisted > Suspicious > Clean)
+ * - Policy Grade   → most recent visit's grade
+ * - Headers Grade  → most recent visit's grade
+ * - Fingerprinting → max attempts across all visits
+ * - Visit Time     → most recent timestamp
+ */
+export interface DomainGroup {
+    domain: string;
+    visitCount: number;
+    summary: {
+        id?: string;
+        domain: string;
+        timestamp: number;
+        wss: number;
+        safetyLevel: string;
+        trackers: number;
+        cookies: number;
+        inputs: string;
+        reputation: string;
+        policy: string;
+        headersGrade?: string;
+        fingerprintingAttempts?: number;
+        details?: any;
+    };
+    visits: Array<{
+        id?: string;
+        domain: string;
+        timestamp: number;
+        wss: number;
+        safetyLevel: string;
+        trackers: number;
+        cookies: number;
+        inputs: string;
+        reputation: string;
+        policy: string;
+        headersGrade?: string;
+        fingerprintingAttempts?: number;
+        details?: any;
+    }>;
+}
