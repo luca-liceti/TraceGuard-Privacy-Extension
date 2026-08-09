@@ -80,75 +80,89 @@ export function SearchCommand() {
 
   const goTo = (path: string) => {
     setOpen(false)
-    navigate(path)
+    setTimeout(() => {
+      navigate(path)
+    }, 50)
   }
 
   const openSettings = (tab: string) => {
     setOpen(false)
-    setActiveTab(tab)
-    setSettingsOpen(true)
+    setTimeout(() => {
+      setActiveTab(tab)
+      setSettingsOpen(true)
+    }, 50)
   }
 
   const openSiteDetails = (domain: string, data: SiteRiskData) => {
     setOpen(false)
-    setSelectedDomain(domain)
-    setSelectedSiteData(data)
-    setIsSitePanelOpen(true)
+    setTimeout(() => {
+      setSelectedDomain(domain)
+      setSelectedSiteData(data)
+      setIsSitePanelOpen(true)
+    }, 50)
   }
 
   // ── Quick Actions ──────────────────────────────────────────────────────────
 
   const handleLockExtension = () => {
     setOpen(false)
-    if (!confirm(t("Lock TraceGuard? You will need to re-enter your PIN to continue."))) return
-    lock()
+    setTimeout(() => {
+      if (!confirm(t("Lock TraceGuard? You will need to re-enter your PIN to continue."))) return
+      lock()
+    }, 50)
   }
 
   const handleExportData = async () => {
     setOpen(false)
-    try {
-      const allData = await chrome.storage.local.get(null)
-      const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `traceguard-backup-${new Date().toISOString().split("T")[0]}.json`
-      a.click()
-      URL.revokeObjectURL(url)
-      toast.success(t("Data Exported"), {
-        description: t("Your activity logs and settings have been exported."),
-        duration: 3000,
-      })
-    } catch {
-      toast.error(t("Export Failed"), {
-        description: t("Could not export data. Please try again."),
-      })
-    }
+    setTimeout(async () => {
+      try {
+        const allData = await chrome.storage.local.get(null)
+        const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `traceguard-backup-${new Date().toISOString().split("T")[0]}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success(t("Data Exported"), {
+          description: t("Your activity logs and settings have been exported."),
+          duration: 3000,
+        })
+      } catch {
+        toast.error(t("Export Failed"), {
+          description: t("Could not export data. Please try again."),
+        })
+      }
+    }, 50)
   }
 
   const handleClearLogs = async () => {
     setOpen(false)
-    if (!confirm(t("Clear all activity logs? This cannot be undone."))) return
-    await chrome.storage.local.set({ logs: [], piiDetections: [], detectorLogs: [] })
-    toast.success(t("Activity Logs Cleared"), {
-      description: t("All logged events have been removed."),
-      duration: 3000,
-    })
+    setTimeout(async () => {
+      if (!confirm(t("Clear all activity logs? This cannot be undone."))) return
+      await chrome.storage.local.set({ logs: [], piiDetections: [], detectorLogs: [] })
+      toast.success(t("Activity Logs Cleared"), {
+        description: t("All logged events have been removed."),
+        duration: 3000,
+      })
+    }, 50)
   }
 
   const handleResetScore = async () => {
     setOpen(false)
-    if (!confirm(t("Reset your Privacy Score to 100? This will clear your browsing history data."))) return
-    const currentState = (await chrome.storage.local.get("state")).state || {}
-    await chrome.storage.local.set({
-      state: { ...currentState, ups: 100, sitesAnalyzed: 0, trackersBlocked: 0, piiEventsCount: 0 },
-      scoreHistory: [],
-      siteCache: {},
-    })
-    toast.success(t("Privacy Score Reset"), {
-      description: t("Your UPS has been reset to 100."),
-      duration: 3000,
-    })
+    setTimeout(async () => {
+      if (!confirm(t("Reset your Privacy Score to 100? This will clear your browsing history data."))) return
+      const currentState = (await chrome.storage.local.get("state")).state || {}
+      await chrome.storage.local.set({
+        state: { ...currentState, ups: 100, sitesAnalyzed: 0, trackersBlocked: 0, piiEventsCount: 0 },
+        scoreHistory: [],
+        siteCache: {},
+      })
+      toast.success(t("Privacy Score Reset"), {
+        description: t("Your UPS has been reset to 100."),
+        duration: 3000,
+      })
+    }, 50)
   }
 
   // ── Data processing ────────────────────────────────────────────────────────
@@ -354,18 +368,6 @@ export function SearchCommand() {
               {visibleSites.map(([domain, data]) => (
                 <SiteItem key={String(domain)} domain={domain} data={data} />
               ))}
-              {hasMoreSites && (
-                <CommandItem
-                  value="view all sites rankings"
-                  onSelect={() => goTo("/rankings")}
-                  className="text-muted-foreground text-xs"
-                >
-                  <ShieldAlert className="mr-2 h-4 w-4 shrink-0" />
-                  <span>
-                    {t("View all {{count}} sites in Rankings →", { count: sites.length })}
-                  </span>
-                </CommandItem>
-              )}
             </CommandGroup>
           )}
         </CommandList>
