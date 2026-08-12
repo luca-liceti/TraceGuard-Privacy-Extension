@@ -388,10 +388,10 @@ export default function RankingsPage() {
                 <SelectTrigger className="@[767px]/card:hidden flex w-40" aria-label="Select a time range">
                   <SelectValue placeholder="Last 7 days" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="1d" className="rounded-lg">{t("Today")}</SelectItem>
-                  <SelectItem value="7d" className="rounded-lg">{t("Last 7 days")}</SelectItem>
-                  <SelectItem value="30d" className="rounded-lg">{t("Last 30 days")}</SelectItem>
+                <SelectContent>
+                  <SelectItem value="1d">{t("Today")}</SelectItem>
+                  <SelectItem value="7d">{t("Last 7 days")}</SelectItem>
+                  <SelectItem value="30d">{t("Last 30 days")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

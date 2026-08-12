@@ -149,30 +149,8 @@ function App() {
     const { t } = useTranslation();
     const state = useAppState();
     const settings = useSettings();
-    useEffect(() => {
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
-
-            // Auto-update when siteCache changes (new analysis data available)
-            if (changes.siteCache) {
-                chrome.tabs.query({ active: true, currentWindow: true }).then(async (tabs) => {
-                    if (tabs[0]?.url && !tabs[0].url.startsWith('chrome://') && !tabs[0].url.startsWith('chrome-extension://')) {
-                        try {
-                            const domain = new URL(tabs[0].url).hostname;
-                            const newCache = changes.siteCache.newValue as Record<string, SiteRiskData>;
-                            const siteData = newCache?.[domain];
-
-                            if (siteData) {
-                                console.log('[Sidepanel] Auto-updating with new analysis data for:', domain);
-                                const currentState = await storage.getState();
-                                await storage.updateState({ ...currentState, currentSite: siteData });
-                            }
-                        } catch (e) { /* ignore */ }
-                    }
-                });
-            }
-        };
-        chrome.storage.local.onChanged.addListener(listener);
-        return () => chrome.storage.local.onChanged.removeListener(listener);
+    useEffect(() => {        // Removed redundant siteCache listener because the background script correctly updates 
+        // state.currentSite on analysis completion, and useAppState() already triggers re-renders.
     }, []);
 
 

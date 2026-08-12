@@ -363,7 +363,7 @@ export function SettingsModal() {
 
     return (
         <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
-            <DialogContent className="max-w-4xl p-0 overflow-hidden gap-0 bg-background border shadow-2xl sm:rounded-xl h-[600px] flex flex-col">
+            <DialogContent className="max-w-4xl p-0 overflow-hidden gap-0 bg-background border shadow-2xl h-[600px] flex flex-col">
                 <DialogTitle className="sr-only">{t("Settings")}</DialogTitle>
                 <DialogDescription className="sr-only">{t("Configure TraceGuard preferences")}</DialogDescription>
 

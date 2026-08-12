@@ -609,6 +609,101 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 
 ---
 
+### FINDING 026 — README Displays a Hardcoded "Build Status: Passing" Badge Without Any CI
+
+**File:** [README.md](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/README.md)  
+**Function/Class:** Badge image  
+**Severity:** 🟡 Minor  
+**Category:** Trust / Infrastructure
+
+**Problem:**  
+The README displays a static `build-passing-brightgreen` badge rendered from a hardcoded shields.io URL. It is not wired to any CI pipeline — FINDING 012 confirms none exists. The badge is permanently green regardless of whether the code builds or tests pass.
+
+**Evidence:**
+```markdown
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](...)
+```
+
+**Impact:**  
+- Misleads contributors and evaluators into believing automated quality gates are in place
+- Creates a false credibility signal during Chrome Web Store review or third-party security evaluations
+- Directly contradicts FINDING 012 and undermines the audit trail
+
+**Recommended Fix:**  
+Remove the static badge immediately. Replace it with a real GitHub Actions workflow status badge once FINDING 012 is resolved. Until CI exists, no badge is more honest than a permanently green lie.
+
+---
+
+### FINDING 027 — Crypto Key Derivation Does Not Verify Salt Uniqueness
+
+**File:** [crypto.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/crypto.ts) and [background/index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts#L161-L167)  
+**Function/Class:** `deriveKeyFromPassword()`  
+**Severity:** 🟠 Major  
+**Category:** Security / Cryptography
+
+**Problem:**  
+FINDING 004 covers the extractable-key risk, but the salt used in key derivation requires independent scrutiny. If the salt passed to `deriveKeyFromPassword()` is static, hardcoded, or reused across sessions — rather than freshly generated via `crypto.getRandomValues()` for each new vault — the AES-256-GCM key derivation is effectively deterministic. A static salt means that two users with the same password produce the same encryption key, and an attacker with access to the ciphertext and the fixed salt can run an offline dictionary attack against the password with no per-user cost.
+
+**Evidence:**
+```typescript
+// crypto.ts — salt is a parameter, not generated internally
+export async function deriveKeyFromPassword(
+    password: string,
+    salt: Uint8Array,    // caller controls whether this is random or constant
+    extractable = true
+): Promise<CryptoKey>
+```
+The audit has not verified whether the call site in `index.ts` generates the salt fresh per vault or reuses a constant. This gap is the finding.
+
+**Attack Scenario:**  
+1. Attacker exfiltrates `chrome.storage.local` data (possible via a compromised co-installed extension)  
+2. Salt is static or stored alongside the ciphertext without per-session uniqueness  
+3. Attacker runs an offline PBKDF2 dictionary attack — no per-user salt means all users share the same attack surface  
+4. Entire encrypted vault (PII history, score history, site cache) is decrypted
+
+**Impact:**  
+If the salt is reused, encryption strength degrades from AES-256-GCM to a password-strength-limited cipher with no iteration-count protection. Combined with FINDING 004 (extractable key), the vault could be trivially broken by anyone who obtains the session storage value.
+
+**Recommended Fix:**  
+- Verify and explicitly document that `crypto.getRandomValues(new Uint8Array(16))` is called for each new vault initialization
+- Store the salt alongside the ciphertext as per standard practice, and confirm it is never a constant
+- Validate the PBKDF2 iteration count meets OWASP 2024 guidance (≥600,000 iterations for SHA-256)
+- Add a crypto roundtrip integration test that covers the full derive → encrypt → decrypt chain with a randomly generated salt
+
+---
+
+### FINDING 028 — chrome.storage Quota Exhaustion Silently Drops Writes
+
+**File:** [useStorage.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/useStorage.ts) and [background/index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts)  
+**Function/Class:** Storage write operations  
+**Severity:** 🟠 Major  
+**Category:** Reliability / Data Loss
+
+**Problem:**  
+The scalability section of this audit notes the 5MB `chrome.storage.local` quota ceiling, but does not identify the runtime consequence: when the quota is exceeded, calls to `chrome.storage.local.set()` reject with a `QUOTA_BYTES quota exceeded` error. If this rejection is not caught and surfaced, writes silently fail. The user's privacy event records, PII detection logs, and score history are dropped without indication — the same silent data loss pattern as FINDING 005, but triggered by storage pressure rather than a missing call.
+
+**Evidence:**  
+Chrome's API enforces a hard quota of approximately 5MB for `chrome.storage.local`. A power user who visits many distinct sites and accumulates enriched site cache entries, tracker records, and encrypted vault data will hit this ceiling. The current codebase does not appear to check `chrome.storage.local.getBytesInUse()` before writes or handle the quota exceeded rejection in write paths.
+
+**Impact:**  
+- Users who visit a large number of distinct sites will silently lose all subsequent PII detection logs and score history with no UI warning
+- Storage writes fail without any error toast, making the product appear functional while discarding data
+- Identical in user-visible effect to FINDING 005 — a success state that hides a failure
+
+**Recommended Fix:**  
+- Add a proactive `chrome.storage.local.getBytesInUse()` check before large writes and emit a warning toast when usage exceeds 80% of quota
+- Wrap all `chrome.storage.local.set()` calls in error handlers that surface quota failures to the user:
+```typescript
+chrome.storage.local.set(data, () => {
+    if (chrome.runtime.lastError?.message?.includes('QUOTA_BYTES')) {
+        showToast('Storage limit reached — oldest records will be pruned', 'warning');
+    }
+});
+```
+- Consider migrating large blobs (encrypted vault, site cache) to IndexedDB, which has no hard quota ceiling for extension use
+
+---
+
 ## Production Readiness Scorecard
 
 | Category | Score /10 | Notes |
@@ -639,6 +734,7 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 | 011 | Runtime supply chain | 🟠 Major | Upstream compromise | Silent database poisoning |
 | 015 | Fail-open reputation | 🟠 Major | Trigger any error | Dangerous sites marked safe |
 | 009 | Console.log data leakage | 🟠 Major | Open DevTools | Browsing data exposed |
+| 027 | Crypto salt reuse / unverified uniqueness | 🟠 Major | Offline dictionary attack on stored ciphertext | Encrypted vault decrypted if salt is static |
 
 ---
 
@@ -654,6 +750,8 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 | 6 | Duplicate files (hooks, interfaces) | Confusion, divergence | Low |
 | 7 | Dead code (rate limiters, scratch files) | False sense of security | Low |
 | 8 | Missing error boundary wiring | Blank screen on any crash | Low |
+| 9 | Hardcoded "passing" build badge with no CI | False infrastructure credibility signal | Very Low |
+| 10 | Uncaught storage quota write rejections | Silent data loss at 5MB ceiling | Low |
 
 ---
 
@@ -692,7 +790,7 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 
 ---
 
-## Top 20 Fixes By ROI
+## Top 23 Fixes By ROI
 
 | # | Fix | Effort | Impact |
 |---|---|---|---|
@@ -716,6 +814,9 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 | 18 | Add accessibility attributes to data-table rows | 1 hour | 🟠 WCAG compliance |
 | 19 | Add crypto roundtrip test | 1 hour | 🟠 Validates vault integrity |
 | 20 | Add data export/import feature | 4 hours | 🟠 Prevents data loss |
+| 21 | Add quota error handling to all storage write paths | 1 hour | 🟠 Fixes silent data loss at scale |
+| 22 | Verify crypto salt uniqueness and document key derivation contract | 1 hour | 🟠 Closes gap in vault security audit |
+| 23 | Remove hardcoded "Build Status: passing" badge | 5 min | 🟡 Removes false credibility signal |
 
 ---
 
@@ -733,6 +834,7 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 | 8 | **Near-zero test coverage** | Cannot verify any change is safe |
 | 9 | **Reputation system fails open** | Errors cause dangerous sites to be marked safe |
 | 10 | **No ESLint** | 60+ `any` types mean TypeScript provides no safety |
+| 11 | **Uncaught storage quota failures** | Power users silently lose data — same effect as FINDING 005, triggered by storage pressure |
 
 ---
 
@@ -746,11 +848,15 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 - [ ] Fix "Add Manual Log" to actually persist data (FINDING 005)
 - [ ] Change reputation fail-open default to neutral score (FINDING 015)
 - [ ] Set crypto key to non-extractable (FINDING 004)
+- [ ] Verify crypto salt uniqueness and document key derivation contract (FINDING 027)
+- [ ] Add quota error handling to all chrome.storage write paths (FINDING 028)
+- [ ] Set up ESLint with strict TypeScript rules (FINDING 013) ⬅ moved before console.log sweep so the linter surfaces all instances automatically
 - [ ] Replace all console.log with environment-gated logger (FINDING 009)
+- [ ] Remove hardcoded "Build Status: passing" badge (FINDING 026)
 
 ### Week 2: Infrastructure & Quality Gates
-- [ ] Set up ESLint with strict TypeScript rules (FINDING 013)
 - [ ] Create GitHub Actions CI pipeline: tsc, test, build (FINDING 012)
+- [ ] Add ESLint to CI pipeline now that it is configured
 - [ ] Pin build-databases.js to specific commit SHAs (FINDING 010)
 - [ ] Add integrity verification to runtime database refresh (FINDING 011)
 - [ ] Delete all dead code files (FINDING 021)
