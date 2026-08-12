@@ -42,6 +42,7 @@ import { enrichCookies } from './services/cookie-enricher';
 import { enrichTrackers } from './services/tracker-enricher';
 import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
 import { isLocalUrl } from '../lib/utils';
+import { runDataMigrations } from './services/migrations';
 
 // Serializes read-modify-write workflows. MV3 can handle messages concurrently;
 // without this queue, two visits can overwrite each other's encrypted cache/history.
@@ -219,6 +220,9 @@ initNetworkMonitor();
 chrome.runtime.onInstalled.addListener(async () => {
     console.log('TraceGuard Extension Installed');
 
+    // Run data migrations before initializing anything else
+    await runDataMigrations();
+
     // Load user settings from storage (or use defaults if this is a fresh install)
     const settings = await storage.getSettings();
     await storage.updateSettings(settings);
@@ -247,6 +251,9 @@ chrome.runtime.onInstalled.addListener(async () => {
  * It makes sure the extension is ready to work with fresh data.
  */
 chrome.runtime.onStartup.addListener(async () => {
+    // Run data migrations before initializing anything else
+    await runDataMigrations();
+
     // Reload the blacklist in case it was updated
     await loadBlacklist();
 
