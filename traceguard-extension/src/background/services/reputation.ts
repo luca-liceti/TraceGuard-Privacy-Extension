@@ -117,14 +117,16 @@ export async function checkReputation(url: string): Promise<ReputationResult> {
         const userWhitelist: string[] = settings.whitelist || [];
         const userBlacklist: string[] = settings.blacklist || [];
 
+        const domainMatches = (dom: string, pattern: string) => dom === pattern || dom.endsWith('.' + pattern);
+
         // LAYER 1: Whitelist takes absolute priority (force safe)
-        if (userWhitelist.some(w => domain.includes(w) || w.includes(domain))) {
+        if (userWhitelist.some(w => domainMatches(domain, w))) {
             console.log(`[Reputation] Layer 1: ${domain} is WHITELISTED → 100 (safe)`);
             return { score: 100, checks: ['Whitelisted by user'] };
         }
 
         // LAYER 2: User blacklist (force critical)
-        if (userBlacklist.some(b => domain.includes(b) || b.includes(domain))) {
+        if (userBlacklist.some(b => domainMatches(domain, b))) {
             console.log(`[Reputation] Layer 2: ${domain} is USER BLACKLISTED → 0 (critical)`);
             return { score: 0, checks: ['Found in user blacklist'] };
         }
@@ -141,7 +143,7 @@ export async function checkReputation(url: string): Promise<ReputationResult> {
 
     } catch (error) {
         console.error('[Reputation] Error checking reputation:', error);
-        return { score: 100, checks: [] }; // Default to safe if invalid URL
+        return { score: 50, checks: ['Reputation check failed — score uncertain'] }; // Default to neutral if invalid URL
     }
 }
 
@@ -158,6 +160,6 @@ export function checkReputationSync(url: string): ReputationResult {
         }
         return { score: 100, checks: [] };
     } catch {
-        return { score: 100, checks: [] };
+        return { score: 50, checks: ['Reputation check failed — score uncertain'] };
     }
 }
