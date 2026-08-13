@@ -54,6 +54,7 @@ let _trackerRadar: Record<string, TrackerRadarEntry> | null = null;
 let _cookieDB: CookieDatabase | null = null;
 let _easyPrivacySet: Set<string> | null = null;
 let _disconnectMap: Record<string, DisconnectEntry> | null = null;
+let _tosdrMap: Record<string, any> | null = null;
 
 // Compiled wildcard regexes (cached after first load)
 let _compiledWildcards: Array<{ regex: RegExp; entry: CookieDBEntry }> | null = null;
@@ -233,6 +234,48 @@ function buildRemoteTrackerRadar(domains: unknown, entities: unknown): Record<st
     return output;
 }
 
+function buildRemoteTosDR(raw: unknown): Record<string, any> {
+    if (!raw || typeof raw !== 'object') throw new Error('ToS;DR response is invalid');
+    const data = (raw as Record<string, any>).tosdr;
+    if (!data || typeof data !== 'object') throw new Error('ToS;DR data object missing');
+    
+    const output: Record<string, any> = {};
+    
+    for (const [key, review] of Object.entries(data)) {
+        if (!key.startsWith('tosdr/review/')) continue;
+        const domain = key.replace('tosdr/review/', '').toLowerCase();
+        
+        let grade = undefined;
+        if (review.rated) {
+            grade = typeof review.rated === 'object' ? (review.rated.letter || review.rated.human) : review.rated;
+        }
+
+        let score = 0;
+        if (grade) {
+            const gradeMap: Record<string, number> = { 'A': 100, 'B': 80, 'C': 60, 'D': 40, 'E': 20 };
+            score = gradeMap[grade.toUpperCase()] ?? 0;
+        }
+
+        const points = (review.points || []).map((p: any) => ({
+            title: p.title,
+            classification: p.point || 'neutral'
+        }));
+
+        output[domain] = {
+            found: true,
+            grade,
+            score,
+            source: 'tosdr-remote',
+            serviceName: review.slug || domain,
+            serviceId: review.id || 0,
+            points,
+            documents: []
+        };
+    }
+    
+    return output;
+}
+
 /**
  * Refreshes public tracker databases without sending browsing or user data.
  * Each source is independently optional, so a failed source leaves its last
@@ -245,6 +288,7 @@ export async function refreshDatabases(): Promise<void> {
         cookies: 'https://raw.githubusercontent.com/jkwakman/Open-Cookie-Database/master/open-cookie-database.csv',
         easyPrivacy: 'https://easylist.to/easylist/easyprivacy.txt',
         disconnect: 'https://raw.githubusercontent.com/nicedoc/tracking-protection-lists/main/services.json',
+        tosdr: 'https://raw.githubusercontent.com/tosdr/tosdr.org/master/api/1/all.json',
     } as const;
 
     const tasks = [
@@ -253,6 +297,7 @@ export async function refreshDatabases(): Promise<void> {
         fetchText(sources.cookies).then(text => writeRemoteSnapshot('cookieDB', buildRemoteCookieDatabase(text))),
         fetchText(sources.easyPrivacy).then(text => writeRemoteSnapshot('easyPrivacy', buildRemoteEasyPrivacyList(text))),
         fetchJson(sources.disconnect).then(data => writeRemoteSnapshot('disconnect', buildRemoteDisconnectMap(data))),
+        fetchJson(sources.tosdr).then(data => writeRemoteSnapshot('tosdr', buildRemoteTosDR(data))),
     ];
     const results = await Promise.allSettled(tasks);
     results.forEach((result, index) => {
@@ -265,6 +310,7 @@ export async function refreshDatabases(): Promise<void> {
     _cookieDB = null;
     _easyPrivacySet = null;
     _disconnectMap = null;
+    _tosdrMap = null;
     _compiledWildcards = null;
     console.log('[DatabaseLoader] Privacy database refresh completed');
 }
@@ -363,6 +409,28 @@ export async function getDisconnectMap(): Promise<Record<string, DisconnectEntry
         _disconnectMap = {};
     }
     return _disconnectMap;
+}
+
+/**
+ * Load and cache the ToS;DR database.
+ */
+export async function getTosDRMap(): Promise<Record<string, any>> {
+    if (_tosdrMap) return _tosdrMap;
+    try {
+        const remote = await readRemoteSnapshot<Record<string, any>>('tosdr');
+        if (remote && Object.keys(remote).length > 0) {
+            _tosdrMap = remote;
+            console.log(`[DatabaseLoader] Remote ToS;DR loaded: ${Object.keys(_tosdrMap).length} domains`);
+            return _tosdrMap;
+        }
+        const data = await import('../../assets/tosdr-data.json');
+        _tosdrMap = (data.default || data) as Record<string, any>;
+        console.log(`[DatabaseLoader] ToS;DR loaded: ${Object.keys(_tosdrMap).length} domains`);
+    } catch (e) {
+        console.warn('[DatabaseLoader] ToS;DR not found, using empty DB. Run: npm run build:tosdr');
+        _tosdrMap = {};
+    }
+    return _tosdrMap;
 }
 
 /**

@@ -112,7 +112,7 @@ function gradeToScore(grade: string | undefined): number {
     return gradeMap[grade.toUpperCase()] ?? 0;
 }
 
-import tosdrData from '../assets/tosdr-data.json';
+import { getTosDRMap } from './services/database-loader';
 
 /**
  * Check ToS;DR rating for a domain using the bundled local database
@@ -121,7 +121,8 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
     const domain = extractMainDomain(url);
     console.log(`[ToS;DR] Checking domain locally: ${domain} (from ${url})`);
 
-    const result = (tosdrData as Record<string, any>)[domain];
+    const tosdrData = await getTosDRMap();
+    const result = tosdrData[domain];
 
     if (result) {
         console.log(`[ToS;DR] Found local rating for ${domain}: Score ${result.score}`);
