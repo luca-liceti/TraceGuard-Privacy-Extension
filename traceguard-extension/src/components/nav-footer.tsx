@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Lock,
   Settings,
+  Shield,
 } from "lucide-react"
 
 import {
@@ -126,8 +127,8 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
                 <HelpCircle className="mr-2 size-4" />
                 {t("Help & Documentation")}
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <ExternalLink className="mr-2 size-4" />
+              <DropdownMenuItem onClick={() => navigate('/privacy-policy')}>
+                <Shield className="mr-2 size-4" />
                 {t("Privacy policy")}
               </DropdownMenuItem>
             </DropdownMenuGroup>

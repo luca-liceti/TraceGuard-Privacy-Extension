@@ -49,8 +49,7 @@ interface TosDRResult {
     documents?: { name: string; url: string }[];
 }
 
-// Cache for ToS;DR results now uses chrome.storage.session
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Cache for ToS;DR results is no longer needed (100% local)
 
 /**
  * Extract the main/root domain from URL
@@ -113,125 +112,29 @@ function gradeToScore(grade: string | undefined): number {
     return gradeMap[grade.toUpperCase()] ?? 0;
 }
 
+import tosdrData from '../assets/tosdr-data.json';
+
 /**
- * Check ToS;DR rating for a domain
- * Simplified: Just use the search API which returns full service info with rating
+ * Check ToS;DR rating for a domain using the bundled local database
  */
 export async function checkTosDR(url: string): Promise<TosDRResult> {
     const domain = extractMainDomain(url);
+    console.log(`[ToS;DR] Checking domain locally: ${domain} (from ${url})`);
 
-    console.log(`[ToS;DR] Checking domain: ${domain} (from ${url})`);
+    const result = (tosdrData as Record<string, any>)[domain];
 
-    // Check cache first
-    const session = await chrome.storage.session.get('tosDRCache');
-    const cache = session.tosDRCache || {};
-    const cached = cache[domain];
-    
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log('[ToS;DR] Cache hit:', cached.result);
-        return cached.result;
+    if (result) {
+        console.log(`[ToS;DR] Found local rating for ${domain}: Score ${result.score}`);
+        return result as TosDRResult;
     }
 
-    try {
-        const searchUrl = `https://api.tosdr.org/search/v4/?query=${encodeURIComponent(domain)}`;
-        console.log('[ToS;DR] Fetching:', searchUrl);
-
-        const response = await fetch(searchUrl);
-
-        if (!response.ok) {
-            console.warn('[ToS;DR] API error:', response.status);
-            return { found: false, score: 0, source: 'fallback' };
-        }
-
-        const data = await response.json();
-        console.log('[ToS;DR] API response:', JSON.stringify(data).slice(0, 500));
-
-        // Get services from response
-        const services = data.parameters?.services || data.services;
-
-        if (!services || services.length === 0) {
-            console.log('[ToS;DR] No services found for:', domain);
-            const fallback: TosDRResult = { found: false, score: 0, source: 'fallback' };
-            cache[domain] = { result: fallback, timestamp: Date.now() };
-            await chrome.storage.session.set({ tosDRCache: cache });
-            return fallback;
-        }
-
-        // Get first service
-        const service = services[0];
-        console.log('[ToS;DR] Service found:', service.name, 'Rating:', service.rating);
-
-        // Extract grade - handle rating object {hex, human, letter}
-        let grade: string | undefined;
-        if (service.rating) {
-            if (typeof service.rating === 'object') {
-                grade = service.rating.letter || service.rating.human;
-            } else if (typeof service.rating === 'string') {
-                grade = service.rating;
-            }
-        }
-
-        const score = gradeToScore(grade);
-        console.log(`[ToS;DR] Grade: ${grade} -> Score: ${score}`);
-
-        const result: TosDRResult = {
-            found: true,
-            grade: grade,
-            score: score,
-            source: 'tosdr',
-            serviceName: service.name,
-            serviceId: service.id,
-            points: [],
-            documents: []
-        };
-
-        // Fetch detailed points for the service using v2 API
-        try {
-            const detailsUrl = `https://api.tosdr.org/service/v2/?id=${service.id}`;
-            const detailsResponse = await fetch(detailsUrl);
-            if (detailsResponse.ok) {
-                const detailsData = await detailsResponse.json();
-                const points = detailsData.parameters?.points || [];
-                result.points = points.map((p: any) => ({
-                    title: p.title,
-                    classification: p.case?.classification || 'neutral'
-                }));
-                const documents = detailsData.parameters?.documents || [];
-                result.documents = documents.map((d: any) => ({
-                    name: d.name,
-                    url: d.url
-                }));
-            }
-        } catch (e) {
-            console.warn('[ToS;DR] Failed to fetch points:', e);
-        }
-
-        // Cache the result
-        cache[domain] = { result, timestamp: Date.now() };
-        
-        // Cap cache to 200 items
-        const cacheEntries = Object.entries(cache);
-        if (cacheEntries.length > 200) {
-            cacheEntries.sort((a: any, b: any) => a[1].timestamp - b[1].timestamp);
-            for (const [key] of cacheEntries.slice(0, cacheEntries.length - 200)) {
-                delete cache[key];
-            }
-        }
-        
-        await chrome.storage.session.set({ tosDRCache: cache });
-
-        return result;
-
-    } catch (error) {
-        console.error('[ToS;DR] Error:', error);
-        return { found: false, score: 0, source: 'fallback' };
-    }
+    console.log(`[ToS;DR] No local rating found for: ${domain}`);
+    return { found: false, score: 0, source: 'fallback' };
 }
 
 /**
- * Clear ToS;DR cache
+ * Clear ToS;DR cache (No-op now that it's local)
  */
 export async function clearTosDRCache(): Promise<void> {
-    await chrome.storage.session.remove('tosDRCache');
-    console.log('[ToS;DR] Cache cleared');
+    console.log('[ToS;DR] Local database used, no cache to clear');
 }

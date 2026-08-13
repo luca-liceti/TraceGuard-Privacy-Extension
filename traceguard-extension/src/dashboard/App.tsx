@@ -12,6 +12,7 @@ import PrivacyScorePage from "@/components/traceguard/pages/privacy-score"
 
 import HelpPage from "@/components/traceguard/pages/help"
 import RankingsPage from "@/components/traceguard/pages/rankings"
+import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
 import { SettingsProvider } from "@/components/traceguard/settings-context"
 import { SettingsModal } from "@/components/traceguard/settings-modal"
 
@@ -48,6 +49,7 @@ function AppContent() {
                     {/* Management Pages */}
                     <Route path="/rankings" element={<PageWrapper><RankingsPage /></PageWrapper>} />
                     <Route path="/help" element={<PageWrapper><HelpPage /></PageWrapper>} />
+                    <Route path="/privacy-policy" element={<PageWrapper><PrivacyPolicyPage /></PageWrapper>} />
                 </Routes>
             </Router>
         </>

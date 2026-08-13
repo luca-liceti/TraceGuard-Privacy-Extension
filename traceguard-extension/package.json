@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:blacklist && vite build",
+    "build": "npm run build:blacklist && npm run build:tosdr && vite build",
     "build:blacklist": "node scripts/build-blacklist.js",
+    "build:tosdr": "node scripts/build-tosdr.js",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",

@@ -28,7 +28,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { Badge } from "@/components/ui/badge"
-import { useDetectorLogs, useActivityLogs, useSiteCache, useAppState } from "@/lib/useStorage"
+import { useDetectorLogs, useActivityLogs, useSiteCache, useAppState, useSettings } from "@/lib/useStorage"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatCard } from "@/components/ui/stat-card"
@@ -133,6 +133,7 @@ export default function RankingsPage() {
   const logs = useMemo(() => rawLogs.filter(l => l.detector !== 'permissions'), [rawLogs])
   const piiLogs = useActivityLogs()
   const { sites } = useSiteCache()
+  const settings = useSettings()
 
   const [timeRange, setTimeRange] = useState("1d")
 
@@ -594,7 +595,11 @@ export default function RankingsPage() {
               <EmptyState
                 icon={Lock}
                 title={t("No PII detections recorded")}
-                description={t("Enable PII detection in settings to track sensitive form entries.")}
+                description={
+                  settings?.enablePIIDetection === false
+                    ? t("Enable PII detection in settings to track sensitive form entries.")
+                    : t("No sensitive form entries have been detected yet.")
+                }
               />
             ) : (
               <div className="space-y-3">

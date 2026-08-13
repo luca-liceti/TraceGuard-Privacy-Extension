@@ -130,6 +130,13 @@ export const footerItems: NavItem[] = [
         url: "/help",
         icon: HelpCircle,
     },
+    {
+        id: "privacy-policy",
+        title: "Privacy Policy",
+        description: "Our privacy commitments to you",
+        url: "/privacy-policy",
+        icon: ShieldUser,
+    },
 ]
 
 /**
