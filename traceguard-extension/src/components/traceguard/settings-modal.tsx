@@ -729,7 +729,7 @@ export function SettingsModal() {
 
                         <SettingItem
                             label={t("Database Refresh")}
-                            description={t("Check for tracker database updates on this schedule")}
+                            description={t("Check for tracker and ToS;DR database updates on this schedule")}
                         >
                             <Select value={String(databaseRefreshDays)} onValueChange={(value) => {
                                 setDatabaseRefreshDays(Number(value) as 1 | 3 | 7 | 14 | 30)
