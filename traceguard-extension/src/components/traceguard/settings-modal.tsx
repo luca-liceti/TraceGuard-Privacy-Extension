@@ -756,7 +756,7 @@ export function SettingsModal() {
                                     </Label>
                                 </div>
                                 <span className="text-sm text-muted-foreground">
-                                    {(storageInfo.bytesInUse / 1024).toFixed(1)} KB of {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
+                                    {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} MB of {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
                                 </span>
                             </div>
                             <Progress value={storagePercentage} className="h-2" />
