@@ -9,6 +9,7 @@ interface Props {
 interface State {
   hasError: boolean
   error?: Error
+  errorInfo?: ErrorInfo
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -22,6 +23,41 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
+    this.setState({ errorInfo })
+  }
+
+  private getIssueUrl(): string {
+    const title = encodeURIComponent(`Crash: ${this.state.error?.message || 'Unknown Error'}`)
+    
+    // Attempt to get extension version safely
+    let extVersion = 'Unknown';
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) {
+        extVersion = chrome.runtime.getManifest().version;
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    const body = encodeURIComponent(`
+**Describe the bug**
+The extension crashed with the following error.
+
+**Error Message**
+\`\`\`
+${this.state.error?.message || 'N/A'}
+\`\`\`
+
+**Stack Trace**
+\`\`\`
+${this.state.errorInfo?.componentStack || this.state.error?.stack || 'N/A'}
+\`\`\`
+
+**Additional Context**
+- Extension Version: ${extVersion}
+- Browser: ${navigator.userAgent}
+    `.trim())
+    return `https://github.com/luca-liceti/TraceGuard-Privacy-Extension/issues/new?title=${title}&body=${body}`
   }
 
   public render() {
@@ -36,14 +72,23 @@ export class ErrorBoundary extends Component<Props, State> {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button
-                onClick={() => this.setState({ 
-                  hasError: false, 
-                  error: undefined 
-                })}
-              >
-                Try again
-              </Button>
+              <div className="flex gap-4">
+                  <Button
+                    onClick={() => this.setState({ 
+                      hasError: false, 
+                      error: undefined,
+                      errorInfo: undefined
+                    })}
+                  >
+                    Try again
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(this.getIssueUrl(), '_blank')}
+                  >
+                    Report Issue on GitHub
+                  </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -53,4 +98,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
-
