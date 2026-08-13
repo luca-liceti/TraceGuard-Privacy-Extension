@@ -48,7 +48,7 @@ console.log('TraceGuard Content Script Loaded');
  * The 'async' keyword lets us use 'await' for operations that take time.
  */
 // Utility: Debounce function to prevent running analysis too often
-function debounce(func: Function, wait: number) {
+function debounce(func: (...args: any[]) => void, wait: number) {
     let timeout: NodeJS.Timeout;
     return function executedFunction(...args: any[]) {
         const later = () => {

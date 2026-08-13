@@ -36,7 +36,7 @@ import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';
 import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
-import { preWarmDatabases, lookupTrackerDomain, refreshDatabases } from './services/database-loader';
+import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
 import { initNetworkMonitor, getAndClearNetworkData } from './services/network-monitor';
 import { enrichCookies } from './services/cookie-enricher';
 import { enrichTrackers } from './services/tracker-enricher';
@@ -151,7 +151,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 async function refreshPrivacyDatabases() {
     try {
-        await refreshDatabases();
+
         await preWarmDatabases();
     } catch (error) {
         // Bundled/last-known snapshots remain available when an update is offline.

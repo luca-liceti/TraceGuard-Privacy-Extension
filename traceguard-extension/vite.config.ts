@@ -62,6 +62,10 @@ export default defineConfig({
       },
     },
   },
+  esbuild: {
+    drop: ['debugger'],
+    pure: ['console.log', 'console.info', 'console.debug', 'console.trace'],
+  },
   server: {
     port: 5173,
     strictPort: true,

@@ -103,6 +103,9 @@ export function validateScore(score: number | undefined | null, fallback: number
  * combines them into a single overall score. Think of it like calculating
  * a weighted average for a class - some tests count more than others!
  * 
+ * combines them into a single overall score. Think of it like calculating
+ * a weighted average for a class - some tests count more than others!
+ * 
  * @param breakdown - An object containing scores from each detector
  * @returns The overall Website Safety Score (0-100)
  */
@@ -113,8 +116,7 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
         reputation: validateScore(breakdown.reputation),
         tracking: validateScore(breakdown.tracking),
         cookies: validateScore(breakdown.cookies),
-        // Cached analyses from before fingerprinting was scored are neutral.
-        fingerprinting: validateScore(breakdown.fingerprinting, 100),
+        fingerprinting: validateScore(breakdown.fingerprinting),
         input: validateScore(breakdown.input),
         policy: validateScore(breakdown.policy)
     };
@@ -127,7 +129,7 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
 
     // STEP 3: Define the weights for each detector
     // These add up to 100% (1.0)
-    let weights = {
+    const weights = {
         ...WSS_WEIGHTS
     };
 
@@ -137,7 +139,6 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
         const policyWeight = weights.policy;
         weights.policy = 0;  // Policy contributes 0
 
-        // Redistribute proportionally to other metrics
         // We divide each weight by (1 - policyWeight) to scale them up
         const otherTotal = 1 - policyWeight;
         weights.reputation = weights.reputation / otherTotal;

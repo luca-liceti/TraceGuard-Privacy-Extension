@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { deriveKeyFromPassword, generateSalt, exportKey, verifySaltUniqueness } from "@/lib/crypto"
 
+import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
+
 type AuthState = "loading" | "setup" | "locked" | "unlocked"
 
 interface AuthContextType {
@@ -32,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -179,6 +182,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (authState === "setup") {
+    if (showPrivacyPolicy) {
+      return (
+        <div className="flex min-h-screen flex-col bg-background">
+          <div className="p-6">
+            <Button variant="outline" onClick={() => setShowPrivacyPolicy(false)}>
+              &larr; Back to Setup
+            </Button>
+          </div>
+          <div className="flex-1 overflow-auto">
+            <PrivacyPolicyPage />
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6 md:p-10">
         <Card className="w-full max-w-sm">
@@ -256,8 +274,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 </Button>
               </div>
             </form>
-            <div className="mt-4 text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-              By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+            <div className="mt-4 text-balance text-center text-xs text-muted-foreground [&_button]:underline [&_button]:underline-offset-4 hover:[&_button]:text-primary">
+              Before continuing, please review our <button type="button" onClick={() => setShowPrivacyPolicy(true)}>Privacy Policy</button>.
             </div>
           </CardContent>
         </Card>

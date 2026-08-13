@@ -683,10 +683,42 @@ export function DataTable({
     setIsDetailsOpen(true)
   }
 
-  const handleAddLogSubmit = (e: React.FormEvent) => {
+  const handleAddLogSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsAddLogOpen(false)
-    toast.success(t("Log added successfully"))
+    const form = e.currentTarget
+    const formData = new FormData(form)
+    
+    const domain = formData.get('domain') as string
+    const wss = parseInt(formData.get('wss') as string, 10) || 0
+    const trackers = parseInt(formData.get('trackers') as string, 10) || 0
+    const cookies = parseInt(formData.get('cookies') as string, 10) || 0
+    const reputation = formData.get('reputation') as string || 'Clean'
+    const policy = formData.get('policy') as string || 'N/A'
+    const inputs = formData.get('inputs') as string || 'No'
+
+    const timestamp = Date.now()
+
+    // Create individual detector logs for aggregation
+    const newLogs = [
+      { domain, timestamp, detector: 'reputation', score: reputation === 'Clean' ? 100 : reputation === 'Suspicious' ? 50 : 0, details: { status: reputation } },
+      { domain, timestamp, detector: 'policy', score: policy === 'A' ? 100 : policy === 'B' ? 80 : policy === 'C' ? 60 : policy === 'D' ? 40 : policy === 'E' ? 20 : 0, details: { grade: policy } },
+      { domain, timestamp, detector: 'inputs', score: inputs === 'Yes' ? 0 : 100, details: { sensitive: inputs === 'Yes' ? 1 : 0 } },
+      { domain, timestamp, detector: 'tracking', score: Math.max(0, 100 - trackers * 10), details: { trackerCount: trackers } },
+      { domain, timestamp, detector: 'cookies', score: Math.max(0, 100 - cookies * 5), details: { tracking: cookies } }
+    ]
+
+    try {
+      const data = await chrome.storage.local.get('detectorLogs')
+      const existingLogs = data.detectorLogs || []
+      await chrome.storage.local.set({ detectorLogs: [...existingLogs, ...newLogs] })
+      
+      setIsAddLogOpen(false)
+      toast.success(t("Log added successfully"))
+      form.reset()
+    } catch (err) {
+      console.error(err)
+      toast.error(t("Failed to save manual log"))
+    }
   }
 
   const handleExport = async () => {
@@ -793,27 +825,27 @@ export function DataTable({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="domain">{t("Domain")}</Label>
-                    <Input id="domain" placeholder="example.com" required />
+                    <Input id="domain" name="domain" placeholder="example.com" required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="wss">{t("Safety Score")}</Label>
-                    <Input id="wss" type="number" placeholder="85" min="0" max="100" required />
+                    <Input id="wss" name="wss" type="number" placeholder="85" min="0" max="100" required />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="trackers">{t("Trackers Detected")}</Label>
-                    <Input id="trackers" type="number" placeholder="0" min="0" required />
+                    <Input id="trackers" name="trackers" type="number" placeholder="0" min="0" required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="cookies">{t("Cookies Detected")}</Label>
-                    <Input id="cookies" type="number" placeholder="0" min="0" required />
+                    <Input id="cookies" name="cookies" type="number" placeholder="0" min="0" required />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="reputation">{t("Reputation")}</Label>
-                    <Select required defaultValue="Clean">
+                    <Select required defaultValue="Clean" name="reputation">
                       <SelectTrigger id="reputation">
                         <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
@@ -826,7 +858,7 @@ export function DataTable({
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="policy">{t("Policy Grade")}</Label>
-                    <Select required defaultValue="N/A">
+                    <Select required defaultValue="N/A" name="policy">
                       <SelectTrigger id="policy">
                         <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
@@ -843,7 +875,7 @@ export function DataTable({
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="inputs">{t("Sensitive Inputs (PII Risk)")}</Label>
-                  <Select required defaultValue="No">
+                  <Select required defaultValue="No" name="inputs">
                     <SelectTrigger id="inputs">
                       <SelectValue placeholder={t("Select")} />
                     </SelectTrigger>
