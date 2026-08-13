@@ -76,7 +76,7 @@ export function initNetworkMonitor() {
                 // Invalid URL, ignore
             }
         },
-        { urls: ['<all_urls>'] }
+        { urls: ['*://*/*'] }
     );
 
     // 2. Detect blocked requests (e.g., by uBlock Origin)
@@ -92,7 +92,7 @@ export function initNetworkMonitor() {
                 req.blockedReason = details.error;
             }
         },
-        { urls: ['<all_urls>'] }
+        { urls: ['*://*/*'] }
     );
 
     // 3. Capture response headers (security headers + Set-Cookie)
@@ -133,7 +133,7 @@ export function initNetworkMonitor() {
                 }
             }
         },
-        { urls: ['<all_urls>'] },
+        { urls: ['*://*/*'] },
         ['responseHeaders', 'extraHeaders'] // extraHeaders required for Set-Cookie in MV3
     );
 

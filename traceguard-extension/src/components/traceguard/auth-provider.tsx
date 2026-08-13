@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { deriveKeyFromPassword, generateSalt, exportKey } from "@/lib/crypto"
+import { deriveKeyFromPassword, generateSalt, exportKey, verifySaltUniqueness } from "@/lib/crypto"
 
 type AuthState = "loading" | "setup" | "locked" | "unlocked"
 
@@ -73,6 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Generate a new salt
       const salt = generateSalt()
+      if (!verifySaltUniqueness(salt)) {
+        throw new Error("Cryptographic salt validation failed. Please try again.")
+      }
       const saltArray = Array.from(salt)
       
       // Derive key

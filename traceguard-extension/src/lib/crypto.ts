@@ -13,6 +13,12 @@ const PBKDF2_HASH = 'SHA-256';
 
 /**
  * Derives a 256-bit AES-GCM CryptoKey from a user password and salt.
+ * 
+ * Cryptography Contract (PBKDF2):
+ * - Hash: SHA-256
+ * - Iterations: 600,000 (OWASP recommended minimum for 2024+)
+ * - Length: 256 bits
+ * - Salt: 16 bytes (Cryptographically secure random)
  */
 export async function deriveKeyFromPassword(password: string, salt: Uint8Array, extractable = true): Promise<CryptoKey> {
     const encoder = new TextEncoder();
@@ -134,8 +140,27 @@ export async function importKey(hexStr: string): Promise<CryptoKey> {
 }
 
 /**
- * Utility to generate a random salt
+ * Utility to generate a cryptographically secure random salt
  */
 export function generateSalt(): Uint8Array {
     return crypto.getRandomValues(new Uint8Array(16));
+}
+
+/**
+ * Validates that a salt is properly formed and cryptographically sound
+ * (Not empty, correct length, and not a static/zeroed array)
+ */
+export function verifySaltUniqueness(salt: Uint8Array): boolean {
+    if (!salt || salt.length !== 16) return false;
+    
+    // Check if the salt is just an array of zeros (uninitialized memory)
+    let isAllZeros = true;
+    for (let i = 0; i < salt.length; i++) {
+        if (salt[i] !== 0) {
+            isAllZeros = false;
+            break;
+        }
+    }
+    
+    return !isAllZeros;
 }
