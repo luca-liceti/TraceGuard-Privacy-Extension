@@ -47,17 +47,7 @@ interface QueuedRequest<T> {
     timestamp: number;             // When this request was queued
 }
 
-interface RateLimiterConfig {
-    maxRequestsPerMinute: number;
-    queueSize?: number; // Max queued requests (default: 100)
-}
 
-interface QueuedRequest<T> {
-    execute: () => Promise<T>;
-    resolve: (value: T) => void;
-    reject: (error: any) => void;
-    timestamp: number;
-}
 
 export class RateLimiter {
     private config: RateLimiterConfig;

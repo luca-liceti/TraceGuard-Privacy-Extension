@@ -43,6 +43,7 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { useAppState, useSettings } from "@/lib/useStorage"
+import { decryptData, importKey } from "@/lib/crypto"
 import { toast } from 'sonner'
 import {
     Bell,
@@ -341,6 +342,22 @@ export function SettingsModal() {
     const exportData = async () => {
         try {
             const allData = await chrome.storage.local.get(null);
+            
+            // Decrypt the secure vault items before export
+            const session = await chrome.storage.session.get('cryptoKeyHex');
+            if (session.cryptoKeyHex) {
+                const key = await importKey(session.cryptoKeyHex);
+                if (typeof allData.siteCache === 'string') {
+                    allData.siteCache = await decryptData(key, allData.siteCache) || {};
+                }
+                if (typeof allData.scoreHistory === 'string') {
+                    allData.scoreHistory = await decryptData(key, allData.scoreHistory) || [];
+                }
+                if (typeof allData.piiDetections === 'string') {
+                    allData.piiDetections = await decryptData(key, allData.piiDetections) || [];
+                }
+            }
+
             const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -349,7 +366,7 @@ export function SettingsModal() {
             a.click();
             URL.revokeObjectURL(url);
             toast.success(t('Data Exported'), {
-                description: t('Your activity logs and settings have been exported.'),
+                description: t('Your decrypted vault data has been exported.'),
                 duration: 3000
             });
         } catch (error) {

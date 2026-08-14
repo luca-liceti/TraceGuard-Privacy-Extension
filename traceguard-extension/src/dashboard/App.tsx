@@ -25,8 +25,30 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
     )
 }
 
+import { useEffect } from 'react'
+import { toast } from "sonner"
+
 function AppContent() {
     const { theme } = useTheme()
+
+    useEffect(() => {
+        const handleQuotaExceeded = () => {
+            toast.error("Storage Full", {
+                description: "You have reached the 5MB local storage limit. Please clear some logs or settings to save new data."
+            })
+        }
+        window.addEventListener('QUOTA_EXCEEDED', handleQuotaExceeded)
+        
+        const messageListener = (msg: any) => {
+            if (msg?.type === 'QUOTA_EXCEEDED') handleQuotaExceeded();
+        };
+        chrome.runtime.onMessage.addListener(messageListener);
+
+        return () => {
+            window.removeEventListener('QUOTA_EXCEEDED', handleQuotaExceeded)
+            chrome.runtime.onMessage.removeListener(messageListener);
+        }
+    }, [])
 
     return (
         <>

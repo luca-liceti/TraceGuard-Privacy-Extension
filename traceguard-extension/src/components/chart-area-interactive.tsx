@@ -38,6 +38,10 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+import { Activity } from "lucide-react"
+
+// ... (in imports at top)
+
 export function ChartAreaInteractive({
   timeRange: externalTimeRange,
   onTimeRangeChange,
@@ -93,12 +97,17 @@ export function ChartAreaInteractive({
         score: entry.ups
       }));
       
-    // Create a continuous line from midnight to current time
-    const todayData = [
-      { date: startOfToday.toISOString(), score: lastScore },
-      ...rawToday,
-      { date: new Date().toISOString(), score: rawToday.length > 0 ? rawToday[rawToday.length - 1].score : lastScore }
-    ];
+    const todayData = [];
+    if (beforeToday.length > 0) {
+      todayData.push({ date: startOfToday.toISOString(), score: lastScore });
+    }
+    todayData.push(...rawToday);
+    if (rawToday.length > 0 || beforeToday.length > 0) {
+      todayData.push({ 
+        date: new Date().toISOString(), 
+        score: rawToday.length > 0 ? rawToday[rawToday.length - 1].score : lastScore 
+      });
+    }
 
     return { dailyData, todayData };
   }, [history]);
@@ -139,7 +148,7 @@ export function ChartAreaInteractive({
   }, [dailyData, todayData, timeRange, history]);
 
   return (
-    <Card className="@container/card">
+    <Card className="@container/card h-full">
       <CardHeader className="relative">
         <CardTitle>User Privacy Score</CardTitle>
         <CardDescription>
@@ -190,86 +199,98 @@ export function ChartAreaInteractive({
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-64 w-full"
-        >
-          <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="fillScore" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-score)"
-                  stopOpacity={0.5}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-score)"
-                  stopOpacity={0.02}
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => {
-                if (timeRange === '1d') {
-                  return new Date(value).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit"
-                  })
-                }
-                const [y, m, d] = value.split('T')[0].split('-');
-                const localDate = new Date(Number(y), Number(m) - 1, Number(d));
-                return localDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
-            />
-            <YAxis 
-              domain={[0, 100]} 
-              tickLine={false} 
-              axisLine={false} 
-              tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} 
-              tickMargin={8} 
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    if (timeRange === '1d') {
-                      return new Date(value).toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit"
-                      })
-                    }
-                    const [y, m, d] = value.split('T')[0].split('-');
-                    const localDate = new Date(Number(y), Number(m) - 1, Number(d));
-                    return localDate.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
+        {!history || history.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 w-full gap-3 text-center pb-6">
+            <div className="p-3 rounded-full bg-muted/50">
+              <Activity className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">No data yet</p>
+              <p className="text-xs text-muted-foreground/70 mt-0.5">Your privacy score history will appear here over time.</p>
+            </div>
+          </div>
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-64 w-full"
+          >
+            <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="fillScore" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-score)"
+                    stopOpacity={0.5}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-score)"
+                    stopOpacity={0.02}
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={32}
+                tickFormatter={(value) => {
+                  if (timeRange === '1d') {
+                    return new Date(value).toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit"
                     })
-                  }}
-                  indicator="dot"
-                />
-              }
-            />
-            <Area
-              dataKey="score"
-              type="monotone"
-              fill="url(#fillScore)"
-              stroke="var(--color-score)"
-              strokeWidth={2}
-              stackId="a"
-            />
-          </AreaChart>
-        </ChartContainer>
+                  }
+                  const [y, m, d] = value.split('T')[0].split('-');
+                  const localDate = new Date(Number(y), Number(m) - 1, Number(d));
+                  return localDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                }}
+              />
+              <YAxis 
+                domain={[0, 100]} 
+                tickLine={false} 
+                axisLine={false} 
+                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} 
+                tickMargin={8} 
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) => {
+                      if (timeRange === '1d') {
+                        return new Date(value).toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit"
+                        })
+                      }
+                      const [y, m, d] = value.split('T')[0].split('-');
+                      const localDate = new Date(Number(y), Number(m) - 1, Number(d));
+                      return localDate.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    }}
+                    indicator="dot"
+                  />
+                }
+              />
+              <Area
+                dataKey="score"
+                type="monotone"
+                fill="url(#fillScore)"
+                stroke="var(--color-score)"
+                strokeWidth={2}
+                stackId="a"
+              />
+            </AreaChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )

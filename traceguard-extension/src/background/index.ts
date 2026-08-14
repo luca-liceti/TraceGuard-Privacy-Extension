@@ -30,6 +30,7 @@
  */
 
 import { storage } from '../lib/storage';
+import { z } from 'zod';
 import { loadBlacklist, checkReputation } from './services/reputation';
 import { calculateWSS } from '../lib/scoring';
 import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';
@@ -551,11 +552,26 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
  * @param message - The analysis data from the content script
  * @param sender - Information about where the message came from
  */
+const PageAnalysisSchema = z.object({
+    url: z.string(),
+    scores: z.record(z.number()),
+    detectionDetails: z.record(z.any()).optional(),
+    rawForEnrichment: z.any().optional()
+}).passthrough();
+
 async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSender) {
-    if (!message.url || isLocalUrl(message.url)) {
-        console.warn('[handlePageAnalysis] URL missing or is local URL:', message.url);
+    const parsed = PageAnalysisSchema.safeParse(message);
+    if (!parsed.success) {
+        console.warn('[handlePageAnalysis] Invalid message payload:', parsed.error);
         return;
     }
+    const validMessage = parsed.data;
+
+    if (!validMessage.url || isLocalUrl(validMessage.url)) {
+        console.warn('[handlePageAnalysis] URL missing or is local URL:', validMessage.url);
+        return;
+    }
+    message = validMessage;
 
     // Step 1: Check the website's reputation (is it on any blacklists?)
     const reputationResult = await checkReputation(message.url);

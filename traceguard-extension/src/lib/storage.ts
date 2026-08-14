@@ -69,7 +69,19 @@ export const storage = {
     },
 
     set: async (items: Partial<StorageSchema>): Promise<void> => {
-        return chrome.storage.local.set(items);
+        try {
+            await chrome.storage.local.set(items);
+        } catch (error: any) {
+            if (error?.message?.includes('QUOTA_BYTES') || error?.name === 'QuotaExceededError') {
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('QUOTA_EXCEEDED'));
+                } else {
+                    chrome.runtime.sendMessage({ type: 'QUOTA_EXCEEDED' }).catch(() => {});
+                }
+                console.error("Storage quota exceeded!", error);
+            }
+            throw error;
+        }
     },
 
     // Helper to get all settings with defaults applied
@@ -80,7 +92,7 @@ export const storage = {
 
     updateSettings: async (settings: Partial<UserSettings>): Promise<void> => {
         const current = await storage.getSettings();
-        await chrome.storage.local.set({ settings: { ...current, ...settings } });
+        await storage.set({ settings: { ...current, ...settings } });
     },
 
     // Helper to get app state with defaults
@@ -108,7 +120,7 @@ export const storage = {
                     pendingState = null;
                     
                     const current = await storage.getState();
-                    await chrome.storage.local.set({ state: { ...current, ...stateToSave } });
+                    await storage.set({ state: { ...current, ...stateToSave } });
                     resolve();
                 }, 200);
             });
@@ -147,7 +159,7 @@ export const storage = {
             filteredLogs = filteredLogs.slice(-1000);
         }
 
-        await chrome.storage.local.set({ detectorLogs: filteredLogs });
+        await storage.set({ detectorLogs: filteredLogs });
     },
 
     // Clean up old logs based on retention policy
@@ -165,7 +177,7 @@ export const storage = {
 
         const filteredLogs = logs.filter(l => (now - l.timestamp) < retentionMs);
 
-        await chrome.storage.local.set({ detectorLogs: filteredLogs });
+        await storage.set({ detectorLogs: filteredLogs });
     },
 
     // Get storage usage info
@@ -193,7 +205,7 @@ export const storage = {
         // Add domain if not already tracked
         if (!exposure[fieldType].includes(domain)) {
             exposure[fieldType].push(domain);
-            await chrome.storage.local.set({ crossSiteExposure: exposure });
+            await storage.set({ crossSiteExposure: exposure });
             console.log(`[Cross-Site Exposure] ${fieldType} now shared with ${exposure[fieldType].length} sites`);
         }
     },
@@ -248,7 +260,7 @@ export const storage = {
         // Keep max 100 notifications
         const trimmedNotifications = notifications.slice(0, 100);
 
-        await chrome.storage.local.set({ notifications: trimmedNotifications });
+        await storage.set({ notifications: trimmedNotifications });
         return newNotification.id;
     },
 
@@ -281,7 +293,7 @@ export const storage = {
             n.id === id ? { ...n, read: true } : n
         );
 
-        await chrome.storage.local.set({ notifications: updatedNotifications });
+        await storage.set({ notifications: updatedNotifications });
     },
 
     /**
@@ -293,14 +305,14 @@ export const storage = {
 
         const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
 
-        await chrome.storage.local.set({ notifications: updatedNotifications });
+        await storage.set({ notifications: updatedNotifications });
     },
 
     /**
      * Clear all notifications
      */
     clearNotifications: async (): Promise<void> => {
-        await chrome.storage.local.set({ notifications: [] });
+        await storage.set({ notifications: [] });
     },
 
     /**
@@ -312,6 +324,6 @@ export const storage = {
 
         const filteredNotifications = notifications.filter(n => n.id !== id);
 
-        await chrome.storage.local.set({ notifications: filteredNotifications });
+        await storage.set({ notifications: filteredNotifications });
     }
 };

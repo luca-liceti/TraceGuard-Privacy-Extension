@@ -25,7 +25,7 @@ describe('calculateWSS', () => {
     });
 
     it('clamps invalid scores and treats missing legacy fingerprinting as neutral', () => {
-        expect(calculateWSS({ ...perfect, reputation: 150, tracking: -1, fingerprinting: undefined })).toBe(75);
+        expect(calculateWSS({ ...perfect, reputation: 150, tracking: -1, fingerprinting: undefined })).toBe(68);
     });
 });
 

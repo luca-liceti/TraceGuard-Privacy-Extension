@@ -48,7 +48,7 @@
  * =============================================================================
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { storage } from './storage';
 import { AppState, UserSettings, SiteRiskData } from './types';
 import { importKey, decryptData } from './crypto';
@@ -154,17 +154,26 @@ export function useUserName() {
 
 export function useScoreHistory() {
     const [history, setHistory] = useState<import('./types').ScoreHistoryEntry[] | null>(null);
+    const lastUpdateRef = useRef<number>(0);
 
     useEffect(() => {
         chrome.storage.local.get('scoreHistory').then(async res => {
+            const timestamp = Date.now();
             const decrypted = await decryptIfNeeded(res.scoreHistory);
-            setHistory((decrypted || []) as import('./types').ScoreHistoryEntry[]);
+            if (timestamp >= lastUpdateRef.current) {
+                lastUpdateRef.current = timestamp;
+                setHistory((decrypted || []) as import('./types').ScoreHistoryEntry[]);
+            }
         });
 
         const listener = async (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.scoreHistory) {
+                const timestamp = Date.now();
                 const decrypted = await decryptIfNeeded(changes.scoreHistory.newValue);
-                setHistory((decrypted || []) as import('./types').ScoreHistoryEntry[]);
+                if (timestamp >= lastUpdateRef.current) {
+                    lastUpdateRef.current = timestamp;
+                    setHistory((decrypted || []) as import('./types').ScoreHistoryEntry[]);
+                }
             }
         };
         chrome.storage.onChanged.addListener(listener);
@@ -176,17 +185,26 @@ export function useScoreHistory() {
 
 export function useActivityLogs() {
     const [logs, setLogs] = useState<import('./types').PIIDetectionEvent[]>([]);
+    const lastUpdateRef = useRef<number>(0);
 
     useEffect(() => {
         chrome.storage.local.get('piiDetections').then(async res => {
+            const timestamp = Date.now();
             const decrypted = await decryptIfNeeded(res.piiDetections);
-            setLogs((decrypted || []) as import('./types').PIIDetectionEvent[]);
+            if (timestamp >= lastUpdateRef.current) {
+                lastUpdateRef.current = timestamp;
+                setLogs((decrypted || []) as import('./types').PIIDetectionEvent[]);
+            }
         });
 
         const listener = async (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.piiDetections) {
+                const timestamp = Date.now();
                 const decrypted = await decryptIfNeeded(changes.piiDetections.newValue);
-                setLogs((decrypted || []) as import('./types').PIIDetectionEvent[]);
+                if (timestamp >= lastUpdateRef.current) {
+                    lastUpdateRef.current = timestamp;
+                    setLogs((decrypted || []) as import('./types').PIIDetectionEvent[]);
+                }
             }
         };
         chrome.storage.onChanged.addListener(listener);
@@ -287,17 +305,22 @@ export function useNotifications() {
 export function useSiteCache() {
     const [siteCache, setSiteCache] = useState<Record<string, SiteRiskData>>({});
     const [isLoading, setIsLoading] = useState(true);
+    const lastUpdateRef = useRef<number>(0);
 
     useEffect(() => {
         // Initial fetch
         chrome.storage.local.get('siteCache').then(async res => {
+            const timestamp = Date.now();
             const decrypted = await decryptIfNeeded(res.siteCache);
-            let finalCache = decrypted || {};
-            if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
-                finalCache = {};
+            if (timestamp >= lastUpdateRef.current) {
+                lastUpdateRef.current = timestamp;
+                let finalCache = decrypted || {};
+                if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
+                    finalCache = {};
+                }
+                setSiteCache(finalCache as Record<string, SiteRiskData>);
+                setIsLoading(false);
             }
-            setSiteCache(finalCache as Record<string, SiteRiskData>);
-            setIsLoading(false);
         });
 
         // Listen for changes
@@ -306,12 +329,16 @@ export function useSiteCache() {
             areaName: string
         ) => {
             if (areaName === 'local' && changes.siteCache) {
+                const timestamp = Date.now();
                 const decrypted = await decryptIfNeeded(changes.siteCache.newValue);
-                let finalCache = decrypted || {};
-                if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
-                    finalCache = {};
+                if (timestamp >= lastUpdateRef.current) {
+                    lastUpdateRef.current = timestamp;
+                    let finalCache = decrypted || {};
+                    if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
+                        finalCache = {};
+                    }
+                    setSiteCache(finalCache as Record<string, SiteRiskData>);
                 }
-                setSiteCache(finalCache as Record<string, SiteRiskData>);
             }
         };
 

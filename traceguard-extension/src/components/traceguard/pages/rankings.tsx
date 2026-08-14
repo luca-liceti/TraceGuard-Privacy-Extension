@@ -159,7 +159,7 @@ export default function RankingsPage() {
     const todayThreats = logs.filter(l => l.timestamp >= startOfToday).length
     const yesterdayThreats = logs.filter(l => l.timestamp >= startOfYesterday && l.timestamp < startOfToday).length
     const threatTrend = yesterdayThreats === 0
-      ? (todayThreats > 0 ? "+100%" : "—")
+      ? "—"
       : `${todayThreats >= yesterdayThreats ? "+" : ""}${Math.round(((todayThreats - yesterdayThreats) / yesterdayThreats) * 100)}%`
     const threatDirection = todayThreats >= yesterdayThreats ? "up" : "down"
 

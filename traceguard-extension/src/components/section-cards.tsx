@@ -1,12 +1,7 @@
 import { TrendingUpIcon, TrendingDownIcon, ShieldIcon, ActivityIcon, GlobeIcon, NetworkIcon, FingerprintIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { StatCard } from "@/components/ui/stat-card"
 import { useAppState, useDetectorLogs, useActivityLogs, useSiteCache } from "@/lib/useStorage"
 import { SiteRiskData } from "@/lib/types"
 
@@ -22,6 +17,13 @@ export function SectionCards() {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
   const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000
 
+  // Helper to format trend
+  const formatTrend = (today: number, yesterday: number) => {
+    if (yesterday === 0) return "—"
+    const pct = Math.round(((today - yesterday) / yesterday) * 100)
+    return `${today >= yesterday ? "+" : ""}${pct}%`
+  }
+
   // 1. Trackers Detected
   const totalTrackers = appState?.trackersDetected || 0
   const trackersToday = detectorLogs
@@ -30,7 +32,7 @@ export function SectionCards() {
   const trackersYesterday = detectorLogs
     .filter(log => log.detector === 'tracking' && log.timestamp >= startOfYesterday && log.timestamp < startOfToday)
     .reduce((sum, log) => sum + (log.details?.trackerCount || 0), 0)
-  const trackersPercent = trackersYesterday === 0 ? (trackersToday > 0 ? 100 : 0) : Math.round(((trackersToday - trackersYesterday) / trackersYesterday) * 100)
+  const trackersTrend = formatTrend(trackersToday, trackersYesterday)
 
   // 2. Sites Analyzed
   const totalSites = appState?.sitesAnalyzed || 0
@@ -44,17 +46,18 @@ export function SectionCards() {
       .filter(log => log.timestamp >= startOfYesterday && log.timestamp < startOfToday)
       .map(log => log.domain)
   ).size
-  const sitesPercent = sitesYesterday === 0 ? (sitesToday > 0 ? 100 : 0) : Math.round(((sitesToday - sitesYesterday) / sitesYesterday) * 100)
+  const sitesTrend = formatTrend(sitesToday, sitesYesterday)
 
   // 3. PII Risk Events
   const totalPii = appState?.piiEventsCount || 0
   const piiToday = piiLogs.filter(log => log.timestamp >= startOfToday).length
   const piiYesterday = piiLogs.filter(log => log.timestamp >= startOfYesterday && log.timestamp < startOfToday).length
-  const piiPercent = piiYesterday === 0 ? (piiToday > 0 ? 100 : 0) : Math.round(((piiToday - piiYesterday) / piiYesterday) * 100)
+  const piiTrend = formatTrend(piiToday, piiYesterday)
 
   // 4. Safe Browsing Streak
   const streak = appState?.safeVisitStreak || 0
   const streakPercent = sitesToday > 0 ? Math.round((sitesToday / Math.max(totalSites, 1)) * 100) : 0
+  const streakTrend = totalSites === 0 || totalSites === sitesToday ? "—" : (streakPercent >= 0 ? `+${streakPercent}%` : `${streakPercent}%`)
 
   // ─── Enriched aggregates from site cache ───────────────────────────────────
 
@@ -98,9 +101,7 @@ export function SectionCards() {
   const totalNetRequests = Object.values(siteCache as Record<string, SiteRiskData>).reduce(
     (sum, s) => sum + (s.enrichedDetails?.networkRequests?.summary.thirdParty ?? 0), 0
   )
-  const netPercent = netYesterday.thirdParty === 0
-    ? (netToday.thirdParty > 0 ? 100 : 0)
-    : Math.round(((netToday.thirdParty - netYesterday.thirdParty) / netYesterday.thirdParty) * 100)
+  const netTrend = formatTrend(netToday.thirdParty, netYesterday.thirdParty)
 
   // 6. Fingerprinting — aggregate attempts from enriched data
   const fpToday = cacheSitesToday.reduce(
@@ -112,167 +113,76 @@ export function SectionCards() {
   const totalFp = Object.values(siteCache as Record<string, SiteRiskData>).reduce(
     (sum, s) => sum + (s.enrichedDetails?.fingerprinting?.summary.totalAttempts ?? 0), 0
   )
-  const fpPercent = fpYesterday === 0
-    ? (fpToday > 0 ? 100 : 0)
-    : Math.round(((fpToday - fpYesterday) / fpYesterday) * 100)
+  const fpTrend = formatTrend(fpToday, fpYesterday)
 
   return (
-    <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-3 grid grid-cols-1 gap-4 dark:*:data-[slot=card]:bg-card">
-      <Card className="@container/card bg-gradient-to-t from-warning/10 to-card">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
-            {t("Trackers Detected")}
-          </CardTitle>
-          <div className={`flex items-center gap-1 text-xs font-medium ${trackersPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {trackersPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            {trackersPercent >= 0 ? `+${trackersPercent}%` : `${trackersPercent}%`}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold tabular-nums">
-            {totalTrackers.toLocaleString()}
-          </div>
-          <div className="flex flex-col gap-0.5 mt-1">
-            <div className="text-xs font-medium flex items-center gap-1">
-              {t("Activity")} {trackersPercent >= 0 ? t('up') : t('down')} {t("today")} {trackersPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {t("Tracking scripts detected")}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="@xl/main:grid-cols-2 @5xl/main:grid-cols-3 grid grid-cols-1 gap-4">
+      <StatCard
+        title={t("Trackers Detected")}
+        value={totalTrackers.toLocaleString()}
+        subtitle={t("Tracking scripts detected")}
+        trend={{
+          direction: trackersToday >= trackersYesterday ? "up" : "down",
+          value: trackersTrend,
+          isPositive: trackersToday < trackersYesterday
+        }}
+      />
       
-      <Card className="@container/card bg-gradient-to-t from-success/10 to-card">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
-            {t("Sites Analyzed")}
-          </CardTitle>
-          <div className={`flex items-center gap-1 text-xs font-medium ${sitesPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {sitesPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            {sitesPercent >= 0 ? `+${sitesPercent}%` : `${sitesPercent}%`}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold tabular-nums">
-            {totalSites.toLocaleString()}
-          </div>
-          <div className="flex flex-col gap-0.5 mt-1">
-            <div className="text-xs font-medium flex items-center gap-1">
-              {t("Traffic")} {sitesPercent >= 0 ? t('up') : t('down')} {t("today")} {sitesPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {t("Unique domains scanned")}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title={t("Sites Analyzed")}
+        value={totalSites.toLocaleString()}
+        subtitle={t("Unique domains scanned")}
+        trend={{
+          direction: sitesToday >= sitesYesterday ? "up" : "down",
+          value: sitesTrend,
+          isPositive: sitesToday >= sitesYesterday
+        }}
+      />
       
-      <Card className="@container/card bg-gradient-to-t from-destructive/10 to-card">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
-            {t("PII Risk Events")}
-          </CardTitle>
-          <div className={`flex items-center gap-1 text-xs font-medium ${piiPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {piiPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            {piiPercent >= 0 ? `+${piiPercent}%` : `${piiPercent}%`}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold tabular-nums">
-            {totalPii.toLocaleString()}
-          </div>
-          <div className="flex flex-col gap-0.5 mt-1">
-            <div className="text-xs font-medium flex items-center gap-1">
-              {t("Risk")} {piiPercent > 0 ? t('up') : (piiPercent < 0 ? t('down') : t('stable'))} {t("today")} {piiPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {t("Sensitive info entries")}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title={t("PII Risk Events")}
+        value={totalPii.toLocaleString()}
+        subtitle={t("Sensitive info entries")}
+        trend={{
+          direction: piiToday > piiYesterday ? "up" : piiToday < piiYesterday ? "down" : "up",
+          value: piiTrend,
+          isPositive: piiToday <= piiYesterday
+        }}
+      />
       
-      <Card className="@container/card bg-gradient-to-t from-success/10 to-card">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
-            {t("Safe Browsing Streak")}
-          </CardTitle>
-          <div className={`flex items-center gap-1 text-xs font-medium ${streakPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {streakPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            {streakPercent >= 0 ? `+${streakPercent}%` : `${streakPercent}%`}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold tabular-nums">
-            {streak.toLocaleString()}
-          </div>
-          <div className="flex flex-col gap-0.5 mt-1">
-            <div className="text-xs font-medium flex items-center gap-1">
-              {t("Performance")} {streakPercent >= 0 ? t('steady') : t('dropping')} {streakPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {t("Consecutive safe visits")}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title={t("Safe Browsing Streak")}
+        value={totalSites === 0 ? "—" : streak.toLocaleString()}
+        subtitle={totalSites === 0 ? t("Visit some websites first") : t("Consecutive safe visits")}
+        trend={{
+          direction: streakPercent >= 0 ? "up" : "down",
+          value: streakTrend,
+          isPositive: streakPercent >= 0
+        }}
+      />
 
-      {/* Network Requests card — tracker-flagged requests aggregated from enriched data */}
-      <Card className="@container/card bg-gradient-to-t from-alert/10 to-card">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
-            {t("Cross-site Network Requests")}
-          </CardTitle>
-          <div className={`flex items-center gap-1 text-xs font-medium ${netPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {netPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            {netPercent >= 0 ? `+${netPercent}%` : `${netPercent}%`}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold tabular-nums">
-            {totalNetRequests.toLocaleString()}
-          </div>
-          <div className="flex flex-col gap-0.5 mt-1">
-            <div className="text-xs font-medium flex items-center gap-1">
-              {netToday.thirdParty > 0
-                ? `${netToday.thirdParty} ${t("third-party")} · ${netToday.blocked} ${t("blocked")} ${t("today")}`
-                : t("No data yet today")}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {t("Cross-site network calls detected")}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title={t("Cross-site Network Requests")}
+        value={totalNetRequests.toLocaleString()}
+        subtitle={t("Cross-site network calls detected")}
+        trend={{
+          direction: netToday.thirdParty >= netYesterday.thirdParty ? "up" : "down",
+          value: netTrend,
+          isPositive: netToday.thirdParty < netYesterday.thirdParty
+        }}
+      />
 
-      {/* Fingerprinting card — fingerprinting attempts aggregated from enriched data */}
-      <Card className="@container/card bg-gradient-to-t from-destructive/10 to-card">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
-            {t("Fingerprinting Attempts")}
-          </CardTitle>
-          <div className={`flex items-center gap-1 text-xs font-medium ${fpPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {fpPercent >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-            {fpPercent >= 0 ? `+${fpPercent}%` : `${fpPercent}%`}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold tabular-nums">
-            {totalFp.toLocaleString()}
-          </div>
-          <div className="flex flex-col gap-0.5 mt-1">
-            <div className="text-xs font-medium flex items-center gap-1">
-              {fpToday > 0
-                ? `${fpToday} ${t("attempts")} ${t("today")} ${fpPercent >= 0 ? '' : '↓'}`
-                : t("None detected today")}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {t("Canvas, WebGL, audio & more")}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title={t("Fingerprinting Attempts")}
+        value={totalFp.toLocaleString()}
+        subtitle={t("Canvas, WebGL, audio & more")}
+        trend={{
+          direction: fpToday >= fpYesterday ? "up" : "down",
+          value: fpTrend,
+          isPositive: fpToday <= fpYesterday
+        }}
+      />
     </div>
   )
 }
+

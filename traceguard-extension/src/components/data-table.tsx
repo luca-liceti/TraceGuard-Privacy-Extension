@@ -352,8 +352,17 @@ function GroupedTableBody({
           <React.Fragment key={group.domain}>
             {/* ── Parent / Summary Row ─────────────────────────────────── */}
             <TableRow
-              className={`cursor-pointer transition-colors ${isMulti ? "hover:bg-muted/60" : ""}`}
+              className={`transition-colors ${isMulti ? "cursor-pointer hover:bg-muted/60" : ""}`}
               onClick={() => isMulti && onToggle(group.domain)}
+              onKeyDown={(e) => {
+                if (isMulti && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault()
+                  onToggle(group.domain)
+                }
+              }}
+              tabIndex={isMulti ? 0 : undefined}
+              role={isMulti ? "button" : undefined}
+              aria-expanded={isMulti ? isExpanded : undefined}
             >
               {/* Domain cell with expand toggle */}
               <TableCell>
