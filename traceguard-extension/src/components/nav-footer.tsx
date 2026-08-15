@@ -1,8 +1,7 @@
 "use client"
 
 import { useTranslation } from "react-i18next"
-import { useToast } from "@/components/ui/use-toast"
-import { ToastAction } from "@/components/ui/toast"
+import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import {
   Check,
@@ -45,7 +44,6 @@ import { useAuth } from "@/components/traceguard/auth-provider"
 export function NavFooter({ user }: { user: { name: string, email: string } }) {
   const { isMobile } = useSidebar()
   const { t, i18n } = useTranslation()
-  const { toast } = useToast()
   const { setSettingsOpen } = useSettingsModal()
   const { lock } = useAuth()
   const navigate = useNavigate()
@@ -104,13 +102,11 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
                         onClick={() => {
                           const oldLanguage = i18n.language;
                           i18n.changeLanguage(lang.code);
-                          toast({
-                            description: t("Language changed successfully."),
-                            action: (
-                              <ToastAction altText={t("Undo")} onClick={() => i18n.changeLanguage(oldLanguage)}>
-                                {t("Undo")}
-                              </ToastAction>
-                            ),
+                          toast(t("Language changed successfully."), {
+                            action: {
+                              label: t("Undo"),
+                              onClick: () => i18n.changeLanguage(oldLanguage),
+                            },
                           });
                         }}
                       >
