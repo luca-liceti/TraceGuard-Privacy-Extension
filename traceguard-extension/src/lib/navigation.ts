@@ -103,13 +103,6 @@ export const navSections: NavSection[] = [
                 url: "/overview",
                 icon: LayoutGrid,
             },
-            {
-                id: "privacy-score",
-                title: "Privacy Score",
-                description: "Your UPS score and history",
-                url: "/privacy-score",
-                icon: ShieldUser,
-            },
         ],
     },
 
@@ -159,7 +152,6 @@ export const settingsSearchItems: SettingsSearchItem[] = [
     { id: 's-wss', label: 'Safety Score Threshold', description: 'Set minimum safety score for alerts', icon: ShieldUser, href: '/settings?tab=privacy' },
     { id: 's-retention', label: 'Data Retention', description: 'Manage log storage duration', icon: Database, href: '/settings?tab=data' },
     { id: 's-clear', label: 'Clear Data', description: 'Clear logs, reset score, or factory reset', icon: Database, href: '/settings?tab=data' },
-    { id: 'p-breakdown', label: 'Score Breakdown', description: 'See how your Privacy Score is calculated', icon: ShieldUser, href: '/privacy-score' },
 
 ]
 

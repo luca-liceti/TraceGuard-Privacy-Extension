@@ -8,7 +8,6 @@ import { AuthProvider } from "@/components/traceguard/auth-provider"
 
 // Import pages
 import OverviewPage from "@/components/traceguard/pages/overview"
-import PrivacyScorePage from "@/components/traceguard/pages/privacy-score"
 
 import HelpPage from "@/components/traceguard/pages/help"
 import RankingsPage from "@/components/traceguard/pages/rankings"
@@ -87,10 +86,6 @@ function AppContent() {
 
                     {/* Legacy dashboard route - redirect to overview */}
                     <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
-
-                    {/* Privacy & Security Pages */}
-                    <Route path="/privacy-score" element={<PageWrapper><PrivacyScorePage /></PageWrapper>} />
-
 
                     {/* Management Pages */}
                     <Route path="/rankings" element={<PageWrapper><RankingsPage /></PageWrapper>} />

@@ -22,7 +22,6 @@ import {
   BarChart2,
   HelpCircle,
   Sparkles,
-  Shield,
   ShieldAlert,
   Zap,
 } from "lucide-react"
@@ -254,10 +253,6 @@ export function SearchCommand() {
             <CommandItem value="rankings stats sites analysis" onSelect={() => goTo("/rankings")}>
               <BarChart2 className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{t("Rankings & Stats")}</span>
-            </CommandItem>
-            <CommandItem value="privacy score ups breakdown detail" onSelect={() => goTo("/privacy-score")}>
-              <Shield className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-              <span>{t("Privacy Score Breakdown")}</span>
             </CommandItem>
             <CommandItem value="help documentation faq guide support" onSelect={() => goTo("/help")}>
               <HelpCircle className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
