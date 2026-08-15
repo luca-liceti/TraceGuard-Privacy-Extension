@@ -89,7 +89,7 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
               <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                 <Settings className="mr-2 size-4" />
                 {t("Settings")}
-                <DropdownMenuShortcut>Ctrl ⇧ ,</DropdownMenuShortcut>
+                <DropdownMenuShortcut>{t("Ctrl ⇧ ,")}</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>

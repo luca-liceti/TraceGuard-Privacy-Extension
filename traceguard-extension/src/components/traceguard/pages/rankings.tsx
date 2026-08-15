@@ -89,29 +89,30 @@ const PII_COLORS: Record<string, string> = {
 }
 
 // Chart configs
-const activityConfig = {
-  events: { label: "Events Blocked", color: "var(--primary)" }
-} satisfies ChartConfig
+const getActivityConfig = (t: any): ChartConfig => ({
+  events: { label: t("Events Blocked"), color: "var(--primary)" }
+})
 
 const leaderboardConfig = {
   count: { label: "Threats Blocked", color: "var(--primary)" }
 } satisfies ChartConfig
 
-const pieChartConfig = {
-  tracking:    { label: "Tracking",    color: DETECTOR_COLORS.tracking },
-  cookies:     { label: "Cookies",     color: DETECTOR_COLORS.cookies },
-  inputs:      { label: "Inputs",      color: DETECTOR_COLORS.inputs },
-  reputation:  { label: "Reputation",  color: DETECTOR_COLORS.reputation },
-  policy:      { label: "Policy",      color: DETECTOR_COLORS.policy },
-} satisfies ChartConfig
+const getPieChartConfig = (t: any): ChartConfig => ({
+  tracking:    { label: t("Tracking"),    color: DETECTOR_COLORS.tracking },
+  cookies:     { label: t("Cookies"),     color: DETECTOR_COLORS.cookies },
+  inputs:      { label: t("Input Fields"), color: DETECTOR_COLORS.inputs },
+  reputation:  { label: t("Reputation"),  color: DETECTOR_COLORS.reputation },
+  policy:      { label: t("Privacy Policy"), color: DETECTOR_COLORS.policy },
+})
 
-const wssConfig = {
-  count: { label: "Sites", color: "var(--primary)" }
-} satisfies ChartConfig
+const getWssConfig = (t: any): ChartConfig => ({
+  count: { label: t("Sites"), color: "var(--primary)" }
+})
 
 // ─── Small helper components ────────────────────────────────────────────────
 
 function EmptyState({ icon: Icon, title, description }: { icon: React.ComponentType<{ className?: string }>; title: string; description: string }) {
+    const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
       <div className="p-3 rounded-full bg-muted/50">
@@ -387,7 +388,7 @@ export default function RankingsPage() {
               </ToggleGroup>
               <Select value={timeRange} onValueChange={setTimeRange}>
                 <SelectTrigger className="@[767px]/card:hidden flex w-40" aria-label="Select a time range">
-                  <SelectValue placeholder="Last 7 days" />
+                  <SelectValue placeholder={t("Last 7 days")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1d">{t("Today")}</SelectItem>
@@ -401,7 +402,7 @@ export default function RankingsPage() {
             {activityData.every(d => d.events === 0) ? (
               <EmptyState icon={Activity} title={t("No activity yet")} description={t("Threats will appear here as you browse the web.")} />
             ) : (
-              <ChartContainer config={activityConfig} className="h-56 w-full">
+              <ChartContainer config={getActivityConfig(t)} className="h-56 w-full">
                 <AreaChart data={activityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="fillEvents" x1="0" y1="0" x2="0" y2="1">
@@ -479,7 +480,7 @@ export default function RankingsPage() {
             {categoryData.length === 0 ? (
               <EmptyState icon={ShieldUser} title={t("No threats detected yet")} description={t("Category breakdown will appear after browsing.")} />
             ) : (
-              <ChartContainer config={pieChartConfig} className="h-72 w-full">
+              <ChartContainer config={getPieChartConfig(t)} className="h-72 w-full">
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Pie
@@ -522,7 +523,7 @@ export default function RankingsPage() {
               {categoryData.map((d, index) => (
                 <div key={d.name} className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-primary" style={{ opacity: 1 - index * 0.15 }} />
-                  <span className="text-xs text-muted-foreground">{DETECTOR_LABELS[d.name] || d.name}</span>
+                  <span className="text-xs text-muted-foreground">{t(DETECTOR_LABELS[d.name] || d.name)}</span>
                   <span className="text-xs font-semibold tabular-nums">{d.value}</span>
                 </div>
               ))}
@@ -548,7 +549,7 @@ export default function RankingsPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                          <span className="text-sm font-medium">{DETECTOR_LABELS[row.detector] || row.detector}</span>
+                          <span className="text-sm font-medium">{t(DETECTOR_LABELS[row.detector] || row.detector)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground tabular-nums">
@@ -652,7 +653,7 @@ export default function RankingsPage() {
             {wssTotalSites === 0 ? (
               <EmptyState icon={ShieldUser} title={t("No sites analyzed yet")} description={t("Visit some websites and TraceGuard will score them here.")} />
             ) : (
-              <ChartContainer config={wssConfig} className="h-56 w-full">
+              <ChartContainer config={getWssConfig(t)} className="h-56 w-full">
                 <BarChart data={wssData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="category" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} />

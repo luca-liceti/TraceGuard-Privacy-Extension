@@ -46,6 +46,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useNotifications } from "@/lib/useStorage"
 import { NotificationEvent } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 function formatTimeAgo(timestamp: number): string {
     const now = Date.now()
@@ -54,10 +56,10 @@ function formatTimeAgo(timestamp: number): string {
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
 
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
+    if (minutes < 1) return i18n.t('Just now')
+    if (minutes < 60) return i18n.t('{{m}}m ago', { m: minutes })
+    if (hours < 24) return i18n.t('{{h}}h ago', { h: hours })
+    if (days < 7) return i18n.t('{{d}}d ago', { d: days })
     return new Date(timestamp).toLocaleDateString()
 }
 
@@ -85,7 +87,24 @@ function getSeverityDot(severity: NotificationEvent['severity']) {
     }
 }
 
+/**
+ * Resolve a notification's title/message for display, translating via its
+ * i18n keys (with interpolated params) when present, falling back to the
+ * stored English text for older notifications.
+ */
+function localizeNotification(n: NotificationEvent, t: any): { title: string; message: string } {
+    const params = n.params ? { ...n.params } : undefined;
+    if (params && typeof params.fieldType === 'string') {
+        params.fieldType = t(params.fieldType);
+    }
+    return {
+        title: n.titleKey ? t(n.titleKey, params) : n.title,
+        message: n.messageKey ? t(n.messageKey, params) : n.message,
+    };
+}
+
 export function NotificationDropdown() {
+    const { t } = useTranslation();
     const navigate = useNavigate()
     const {
         notifications,
@@ -124,7 +143,7 @@ export function NotificationDropdown() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
                 <div className="flex items-center justify-between pr-2">
-                    <DropdownMenuLabel className="py-2">Notifications</DropdownMenuLabel>
+                    <DropdownMenuLabel className="py-2">{t("Notifications")}</DropdownMenuLabel>
                     {unreadCount > 0 && (
                         <DropdownMenuItem
                             className="h-auto py-1 px-2 text-xs cursor-pointer"
@@ -134,8 +153,7 @@ export function NotificationDropdown() {
                             }}
                         >
                             <Check className="h-3 w-3 mr-1" />
-                            Mark all read
-                        </DropdownMenuItem>
+                            {t("Mark all read")}</DropdownMenuItem>
                     )}
                 </div>
                 <DropdownMenuSeparator />
@@ -160,7 +178,7 @@ export function NotificationDropdown() {
                                             "text-sm truncate",
                                             !notification.read && "font-medium"
                                         )}>
-                                            {notification.title}
+                                            {localizeNotification(notification, t).title}
                                         </p>
                                         {!notification.read && (
                                             <span className={cn(
@@ -170,7 +188,7 @@ export function NotificationDropdown() {
                                         )}
                                     </div>
                                     <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                        {notification.message}
+                                        {localizeNotification(notification, t).message}
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-1.5">
                                         {formatTimeAgo(notification.timestamp)}
@@ -196,10 +214,9 @@ export function NotificationDropdown() {
                 ) : (
                     <div className="py-8 text-center text-muted-foreground">
                         <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No notifications yet</p>
+                        <p className="text-sm">{t("No notifications yet")}</p>
                         <p className="text-xs mt-1">
-                            You'll see alerts for risky sites and PII detection here
-                        </p>
+                            {t("You'll see alerts for risky sites and PII detection here")}</p>
                     </div>
                 )}
 
@@ -213,8 +230,7 @@ export function NotificationDropdown() {
                                 clearAll()
                             }}
                         >
-                            Clear all notifications
-                        </DropdownMenuItem>
+                            {t("Clear all notifications")}</DropdownMenuItem>
                     </>
                 )}
             </DropdownMenuContent>

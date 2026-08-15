@@ -44,6 +44,7 @@ import { enrichTrackers } from './services/tracker-enricher';
 import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
 import { isLocalUrl } from '../lib/utils';
 import { runDataMigrations } from './services/migrations';
+import i18n from '../lib/i18n';
 
 // Serializes read-modify-write workflows. MV3 can handle messages concurrently;
 // without this queue, two visits can overwrite each other's encrypted cache/history.
@@ -63,9 +64,15 @@ async function createNotification(
     if (!settings.notifications || settings.notificationLevel === 'silent') return;
     if (settings.notificationLevel === 'balanced' && notification.severity === 'info') return;
     try {
+        const params = notification.params ? { ...notification.params } : undefined;
+        if (params && typeof params.fieldType === 'string') {
+            params.fieldType = i18n.t(params.fieldType);
+        }
+        const title = notification.titleKey ? i18n.t(notification.titleKey, params) : notification.title;
+        const message = notification.messageKey ? i18n.t(notification.messageKey, params) : notification.message;
         await chrome.notifications.create(notification.id || `notif-${Date.now()}`, {
-            type: 'basic', iconUrl: 'src/assets/icons/icon-128.png', title: notification.title,
-            message: notification.message, priority: notification.severity === 'critical' ? 2 : 1,
+            type: 'basic', iconUrl: 'src/assets/icons/icon-128.png', title,
+            message, priority: notification.severity === 'critical' ? 2 : 1,
         });
     } catch (error) {
         // An OS notification must never prevent the local event from being saved.
@@ -916,7 +923,10 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         await createNotification({
             type: 'high_risk_site',
             title: 'Critical Risk Site!',
+            titleKey: 'Critical Risk Site!',
             message: `${domain} has been flagged as a critical risk with a safety score of ${wss}`,
+            messageKey: '{{domain}} has been flagged as a critical risk with a safety score of {{wss}}',
+            params: { domain, wss },
             domain,
             severity: 'critical',
             actionUrl: `/overview?viewSite=${encodeURIComponent(domain)}`
@@ -926,7 +936,10 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         await createNotification({
             type: 'high_risk_site',
             title: 'High Risk Site Detected',
+            titleKey: 'High Risk Site Detected',
             message: `${domain} falls below your safety threshold (Score: ${wss})`,
+            messageKey: '{{domain}} falls below your safety threshold (Score: {{wss}})',
+            params: { domain, wss },
             domain,
             severity: 'warning',
             actionUrl: `/overview?viewSite=${encodeURIComponent(domain)}`
@@ -1057,7 +1070,10 @@ async function handlePIIDetection(message: any) {
     await createNotification({
         type: 'pii_detected',
         title: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
+        titleKey: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
         message: `${event.fieldType} entered on ${event.site}${scoreImpact !== 0 ? ` (${scoreImpact} pts)` : ''}`,
+        messageKey: scoreImpact !== 0 ? '{{fieldType}} entered on {{site}} ({{scoreImpact}} pts)' : '{{fieldType}} entered on {{site}}',
+        params: { fieldType: event.fieldType, site: event.site, scoreImpact },
         domain: event.site,
         severity: notificationSeverity,
         actionUrl: `/overview?viewSite=${encodeURIComponent(event.site)}`
@@ -1073,8 +1089,8 @@ async function handlePIIDetection(message: any) {
                 chrome.tabs.sendMessage(tabs[0].id, {
                     type: 'SHOW_TOAST',
                     data: {
-                        title: 'TraceGuard Alert',
-                        message: `Sensitive input detected on ${event.site}`,
+                        title: i18n.t('TraceGuard Alert'),
+                        message: i18n.t('Sensitive input detected on {{site}}', { site: event.site }),
                         variant: 'warning'
                     }
                 }).catch(error => {

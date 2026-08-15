@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { deriveKeyFromPassword, generateSalt, exportKey, verifySaltUniqueness } from "@/lib/crypto"
 
 import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
+import { useTranslation } from "react-i18next";
 
 type AuthState = "loading" | "setup" | "locked" | "unlocked"
 
@@ -28,6 +29,7 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const { t } = useTranslation();
   const [authState, setAuthState] = useState<AuthState>("loading")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -79,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Generate a new salt
       const salt = generateSalt()
       if (!verifySaltUniqueness(salt)) {
-        throw new Error("Cryptographic salt validation failed. Please try again.")
+        throw new Error(t("Cryptographic salt validation failed. Please try again."))
       }
       const saltArray = Array.from(salt)
       
@@ -117,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthState("unlocked")
       return true
     } catch (err: any) {
-      setError(err.message || "Setup failed")
+      setError(err.message || t("Setup failed"))
       return false
     } finally {
       setLoading(false)
@@ -166,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthState("unlocked")
       return true
     } catch (err: any) {
-      setError("Incorrect Master Password")
+      setError(t("Incorrect Master Password"))
       return false
     } finally {
       setLoading(false)
@@ -189,8 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <div className="flex min-h-screen flex-col bg-background">
           <div className="p-6">
             <Button variant="outline" onClick={() => setShowPrivacyPolicy(false)}>
-              &larr; Back to Setup
-            </Button>
+              {t("&larr; Back to Setup")}</Button>
           </div>
           <div className="flex-1 overflow-auto">
             <PrivacyPolicyPage />
@@ -206,47 +207,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             <div className="flex aspect-square size-8 items-center justify-center mx-auto mb-2">
               <ShieldUser className="size-6 text-foreground" />
             </div>
-            <CardTitle className="text-xl">Secure Your Vault</CardTitle>
+            <CardTitle className="text-xl">{t("Secure Your Vault")}</CardTitle>
             <CardDescription>
-              Create a Master Password to encrypt your privacy logs.
-            </CardDescription>
+              {t("Create a Master Password to encrypt your privacy logs.")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => {
               e.preventDefault()
               if (password !== confirmPassword) {
-                setError("Passwords do not match")
+                setError(t("Passwords do not match"))
                 return
               }
               if (password.length < 10) {
-                setError("Password must be at least 10 characters")
+                setError(t("Password must be at least 10 characters"))
                 return
               }
               if (!/[A-Z]/.test(password)) {
-                setError("Password must contain at least one uppercase letter")
+                setError(t("Password must contain at least one uppercase letter"))
                 return
               }
               if (!/[0-9]/.test(password)) {
-                setError("Password must contain at least one number")
+                setError(t("Password must contain at least one number"))
                 return
               }
               if (!/[^A-Za-z0-9]/.test(password)) {
-                setError("Password must contain at least one special character (!@#$%...)") 
+                setError(t("Password must contain at least one special character (!@#$%...)")) 
                 return
               }
               if (userName.trim().length === 0) {
-                setError("Name is required")
+                setError(t("Name is required"))
                 return
               }
               setup(password, userName.trim())
             }}>
               <div className="grid gap-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="setup-name">What should we call you?</Label>
+                  <Label htmlFor="setup-name">{t("What should we call you?")}</Label>
                   <Input
                     id="setup-name"
                     type="text"
-                    placeholder="Your name"
+                    placeholder={t("Your name")}
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     disabled={loading}
@@ -254,11 +254,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="setup-password">Master Password</Label>
+                  <Label htmlFor="setup-password">{t("Master Password")}</Label>
                   <Input
                     id="setup-password"
                     type="password"
-                    placeholder="Enter password"
+                    placeholder={t("Enter password")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
@@ -273,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     ];
                     const strength = checks.filter(Boolean).length;
                     const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500'];
-                    const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+                    const labels = [t('Weak'), t('Fair'), t('Good'), t('Strong')];
                     return (
                       <div className="space-y-1">
                         <div className="flex gap-1">
@@ -285,18 +285,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Strength: {labels[strength - 1] ?? 'Very weak'} — min 10 chars, uppercase, number &amp; special character required
-                        </p>
+                          {t("Strength:")}{labels[strength - 1] ?? t('Very weak')} {t("— min 10 chars, uppercase, number &amp; special character required")}</p>
                       </div>
                     );
                   })()}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="setup-confirm">Confirm Password</Label>
+                  <Label htmlFor="setup-confirm">{t("Confirm Password")}</Label>
                   <Input
                     id="setup-confirm"
                     type="password"
-                    placeholder="Confirm password"
+                    placeholder={t("Confirm password")}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={loading}
@@ -310,12 +309,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Encrypting..." : "Create Vault"}
+                  {loading ? t("Encrypting...") : t("Create Vault")}
                 </Button>
               </div>
             </form>
             <div className="mt-4 text-balance text-center text-xs text-muted-foreground [&_button]:underline [&_button]:underline-offset-4 hover:[&_button]:text-primary">
-              Before continuing, please review our <button type="button" onClick={() => setShowPrivacyPolicy(true)}>Privacy Policy</button>.
+              {t("Before continuing, please review our")}<button type="button" onClick={() => setShowPrivacyPolicy(true)}>{t("Privacy Policy")}</button>.
             </div>
           </CardContent>
         </Card>
@@ -331,10 +330,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             <div className="flex aspect-square size-8 items-center justify-center mx-auto mb-2">
               <ShieldUser className="size-6 text-foreground" />
             </div>
-            <CardTitle className="text-xl">Vault Locked</CardTitle>
+            <CardTitle className="text-xl">{t("Vault Locked")}</CardTitle>
             <CardDescription>
-              Enter your Master Password to access your privacy logs.
-            </CardDescription>
+              {t("Enter your Master Password to access your privacy logs.")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => {
@@ -343,11 +341,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }}>
               <div className="grid gap-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="locked-password">Master Password</Label>
+                  <Label htmlFor="locked-password">{t("Master Password")}</Label>
                   <Input
                     id="locked-password"
                     type="password"
-                    placeholder="Enter password"
+                    placeholder={t("Enter password")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
@@ -363,7 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 )}
                 <Button type="submit" className="w-full" disabled={loading || !password}>
                   <Key className="mr-2 h-4 w-4" />
-                  {loading ? "Unlocking..." : "Unlock Vault"}
+                  {loading ? t("Unlocking...") : t("Unlock Vault")}
                 </Button>
               </div>
             </form>

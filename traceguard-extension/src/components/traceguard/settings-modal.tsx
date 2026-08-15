@@ -98,6 +98,7 @@ function SettingItem({
     controlId?: string
     children: React.ReactNode
 }) {
+    const { t } = useTranslation();
     return (
         <div className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5 flex-1 mr-4">
@@ -133,6 +134,7 @@ function SettingSlider({
     unit: string
     onChange: (value: number) => void
 }) {
+    const { t } = useTranslation();
     return (
         <div className="rounded-lg border p-4">
             <div className="flex flex-row items-center justify-between mb-4">
@@ -667,7 +669,7 @@ export function SettingsModal() {
                             <div className="grid grid-cols-[1fr_auto] items-center gap-2">
                                 <Input 
                                     id="add-whitelist" 
-                                    placeholder="e.g. example.com" 
+                                    placeholder={t("e.g. example.com")} 
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             const val = e.currentTarget.value.trim();
@@ -718,7 +720,7 @@ export function SettingsModal() {
                             <div className="grid grid-cols-[1fr_auto] items-center gap-2">
                                 <Input 
                                     id="add-blacklist" 
-                                    placeholder="e.g. badsite.com" 
+                                    placeholder={t("e.g. badsite.com")} 
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             const val = e.currentTarget.value.trim();
@@ -815,8 +817,7 @@ export function SettingsModal() {
                                     </Label>
                                 </div>
                                 <span className="text-sm text-muted-foreground">
-                                    {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} MB {t("of")} {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
-                                </span>
+                                    {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} {t("MB")}{t("of")} {(storageInfo.quota / 1024 / 1024).toFixed(0)} {t("MB")}</span>
                             </div>
                             <Progress value={storagePercentage} className="h-2" />
                         </div>

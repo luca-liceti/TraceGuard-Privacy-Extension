@@ -7,7 +7,7 @@ import { resources } from './translations';
 // and localStorage as a synchronous fallback during initial load so the UI doesn't flicker.
 const LANGUAGE_KEY = 'traceguard-language';
 
-const savedLanguage = localStorage.getItem(LANGUAGE_KEY) || 'en';
+const savedLanguage = (typeof localStorage !== 'undefined' ? localStorage.getItem(LANGUAGE_KEY) : null) || 'en';
 
 i18n
   .use(initReactI18next)
@@ -28,7 +28,7 @@ if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
   chrome.storage.local.get(LANGUAGE_KEY, (result) => {
     if (result[LANGUAGE_KEY] && result[LANGUAGE_KEY] !== i18n.language) {
       i18n.changeLanguage(result[LANGUAGE_KEY]);
-      localStorage.setItem(LANGUAGE_KEY, result[LANGUAGE_KEY]);
+      if (typeof localStorage !== 'undefined') localStorage.setItem(LANGUAGE_KEY, result[LANGUAGE_KEY]);
     }
   });
 
@@ -38,7 +38,7 @@ if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       const newLang = changes[LANGUAGE_KEY].newValue;
       if (newLang && newLang !== i18n.language) {
         i18n.changeLanguage(newLang);
-        localStorage.setItem(LANGUAGE_KEY, newLang);
+        if (typeof localStorage !== 'undefined') localStorage.setItem(LANGUAGE_KEY, newLang);
       }
     }
   });
@@ -47,7 +47,7 @@ if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
 // Intercept changeLanguage to also write to chrome.storage
 const originalChangeLanguage = i18n.changeLanguage.bind(i18n);
 i18n.changeLanguage = async (lng: string, ...args) => {
-  localStorage.setItem(LANGUAGE_KEY, lng);
+  if (typeof localStorage !== 'undefined') localStorage.setItem(LANGUAGE_KEY, lng);
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
     await chrome.storage.local.set({ [LANGUAGE_KEY]: lng });
   }

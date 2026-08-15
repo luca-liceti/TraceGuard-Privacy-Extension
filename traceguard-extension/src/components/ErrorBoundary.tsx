@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import i18n from '@/lib/i18n'
 
 interface Props {
   children: ReactNode;
@@ -70,7 +71,7 @@ ${this.state.errorInfo?.componentStack || this.state.error?.stack || 'N/A'}
         <div className="min-h-screen flex items-center justify-center bg-background p-8">
           <Card className="max-w-md">
             <CardHeader>
-              <CardTitle>Something went wrong</CardTitle>
+              <CardTitle>{i18n.t("Something went wrong")}</CardTitle>
               <CardDescription>
                 {this.state.error?.message || 'An unexpected error occurred'}
               </CardDescription>
@@ -84,14 +85,12 @@ ${this.state.errorInfo?.componentStack || this.state.error?.stack || 'N/A'}
                       errorInfo: undefined
                     })}
                   >
-                    Try again
-                  </Button>
+                    {i18n.t("Try again")}</Button>
                   <Button
                     variant="outline"
                     onClick={() => window.open(this.getIssueUrl(), '_blank')}
                   >
-                    Report Issue on GitHub
-                  </Button>
+                    {i18n.t("Report Issue on GitHub")}</Button>
               </div>
             </CardContent>
           </Card>

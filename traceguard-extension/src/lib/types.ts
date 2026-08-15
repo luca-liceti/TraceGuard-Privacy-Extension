@@ -380,8 +380,11 @@ export interface NotificationEvent {
     id: string;              // Unique identifier
     timestamp: number;       // When it was created
     type: 'high_risk_site' | 'pii_detected' | 'tracker_alert' | 'daily_summary' | 'info';
-    title: string;           // Short title for the notification
-    message: string;         // Detailed message
+    title: string;           // Short title for the notification (English fallback)
+    message: string;         // Detailed message (English fallback)
+    titleKey?: string;       // i18n key for the title (translated at display time)
+    messageKey?: string;     // i18n key for the message (translated at display time)
+    params?: Record<string, any>; // Interpolation params for titleKey/messageKey
     domain?: string;         // Which website it's about (if applicable)
     severity: 'critical' | 'warning' | 'info';  // How urgent is it?
     read: boolean;           // Has the user seen it?

@@ -792,7 +792,7 @@ export function DataTable({
     <ErrorBoundary fallback={
       <div className="flex w-full h-64 border rounded-md items-center justify-center text-muted-foreground gap-2">
         <AlertCircle className="h-6 w-6" />
-        <p>Failed to load activity logs table</p>
+        <p>{t("Failed to load activity logs table")}</p>
       </div>
     }>
     <div className="flex w-full flex-col gap-4">
@@ -843,7 +843,7 @@ export function DataTable({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="domain">{t("Domain")}</Label>
-                    <Input id="domain" name="domain" placeholder="example.com" required />
+                    <Input id="domain" name="domain" placeholder={t("example.com")} required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="wss">{t("Safety Score")}</Label>

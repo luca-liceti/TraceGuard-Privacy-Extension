@@ -31,14 +31,16 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 
 import { useEffect } from 'react'
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 function AppContent() {
     const { theme } = useTheme()
+    const { t } = useTranslation()
 
     useEffect(() => {
         const handleQuotaExceeded = () => {
-            toast.error("Storage Full", {
-                description: "You have reached the 5MB local storage limit. Please clear some logs or settings to save new data."
+            toast.error(t("Storage Full"), {
+                description: t("You have reached the 5MB local storage limit. Please clear some logs or settings to save new data.")
             })
         }
         window.addEventListener('QUOTA_EXCEEDED', handleQuotaExceeded)

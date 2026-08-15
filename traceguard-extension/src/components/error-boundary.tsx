@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   children?: ReactNode;
@@ -42,15 +43,14 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="flex min-h-[200px] w-full flex-col items-center justify-center p-6 text-center space-y-4">
           <Alert variant="destructive" className="max-w-md text-left">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Something went wrong</AlertTitle>
+            <AlertTitle>{t("Something went wrong")}</AlertTitle>
             <AlertDescription className="mt-2 text-xs font-mono overflow-auto max-h-32 p-2 bg-destructive/10 rounded">
               {this.state.error?.message || "Unknown error"}
             </AlertDescription>
           </Alert>
           <Button variant="outline" size="sm" onClick={this.handleReset}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Try again
-          </Button>
+            {t("Try again")}</Button>
         </div>
       );
     }

@@ -2,6 +2,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ErrorBoundary } from './ErrorBoundary';
+import { useTranslation } from "react-i18next";
 
 const openMock = vi.fn();
 Object.defineProperty(window, 'open', {
@@ -9,6 +10,7 @@ Object.defineProperty(window, 'open', {
 });
 
 function ProblemChild() {
+    const { t } = useTranslation();
     throw new Error('Test crash');
 }
 
@@ -20,7 +22,7 @@ describe('ErrorBoundary', () => {
     it('renders children when there is no error', () => {
         render(
             <ErrorBoundary>
-                <div>Safe child</div>
+                <div>{t("Safe child")}</div>
             </ErrorBoundary>
         );
         expect(screen.getByText('Safe child')).toBeDefined();

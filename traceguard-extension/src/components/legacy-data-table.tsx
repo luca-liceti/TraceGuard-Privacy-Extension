@@ -88,6 +88,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import { useTranslation } from "react-i18next";
 
 export const schema = z.object({
   id: z.number(),
@@ -138,7 +139,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "target",
-    header: () => <div className="w-full text-right">Target</div>,
+    header: () => <div className="w-full text-right">{t("Target")}</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
@@ -151,8 +152,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         }}
       >
         <Label htmlFor={`${row.original.id}-target`} className="sr-only">
-          Target
-        </Label>
+          {t("Target")}</Label>
         <Input
           className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
           defaultValue={row.original.target}
@@ -163,7 +163,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "limit",
-    header: () => <div className="w-full text-right">Limit</div>,
+    header: () => <div className="w-full text-right">{t("Limit")}</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
@@ -176,8 +176,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         }}
       >
         <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
-          Limit
-        </Label>
+          {t("Limit")}</Label>
         <Input
           className="h-8 w-16 border-transparent bg-transparent text-right shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background"
           defaultValue={row.original.limit}
@@ -199,20 +198,18 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
       return (
         <>
           <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
-            Reviewer
-          </Label>
+            {t("Reviewer")}</Label>
           <Select>
             <SelectTrigger
               className="h-8 w-40"
               id={`${row.original.id}-reviewer`}
             >
-              <SelectValue placeholder="Assign reviewer" />
+              <SelectValue placeholder={t("Assign reviewer")} />
             </SelectTrigger>
             <SelectContent align="end">
-              <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
+              <SelectItem value="Eddie Lake">{t("Eddie Lake")}</SelectItem>
               <SelectItem value="Jamik Tashpulatov">
-                Jamik Tashpulatov
-              </SelectItem>
+                {t("Jamik Tashpulatov")}</SelectItem>
             </SelectContent>
           </Select>
         </>
@@ -230,15 +227,15 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             size="icon"
           >
             <MoreVerticalIcon />
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">{t("Open menu")}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
+          <DropdownMenuItem>{t("Edit")}</DropdownMenuItem>
+          <DropdownMenuItem>{t("Make a copy")}</DropdownMenuItem>
+          <DropdownMenuItem>{t("Favorite")}</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Delete</DropdownMenuItem>
+          <DropdownMenuItem>{t("Delete")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -252,6 +249,7 @@ export function DataTable({
 }: {
   data: z.infer<typeof schema>[]
 }) {
+    const { t } = useTranslation();
   const [data, setData] = React.useState(() => initialData)
 
   const [columnVisibility, setColumnVisibility] =
@@ -299,26 +297,25 @@ export function DataTable({
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
-          View
-        </Label>
+          {t("View")}</Label>
         <Select defaultValue="outline">
           <SelectTrigger
             className="@4xl/main:hidden flex w-fit"
             id="view-selector"
           >
-            <SelectValue placeholder="Select a view" />
+            <SelectValue placeholder={t("Select a view")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Outline</SelectItem>
-            <SelectItem value="past-performance">Past Performance</SelectItem>
-            <SelectItem value="key-personnel">Key Personnel</SelectItem>
-            <SelectItem value="focus-documents">Focus Documents</SelectItem>
+            <SelectItem value="outline">{t("Outline")}</SelectItem>
+            <SelectItem value="past-performance">{t("Past Performance")}</SelectItem>
+            <SelectItem value="key-personnel">{t("Key Personnel")}</SelectItem>
+            <SelectItem value="focus-documents">{t("Focus Documents")}</SelectItem>
           </SelectContent>
         </Select>
         <TabsList className="@4xl/main:flex hidden bg-transparent p-0 gap-2">
-          <TabsTrigger value="outline" className="data-[state=active]:border-border data-[state=active]:bg-muted border border-transparent">Outline</TabsTrigger>
+          <TabsTrigger value="outline" className="data-[state=active]:border-border data-[state=active]:bg-muted border border-transparent">{t("Outline")}</TabsTrigger>
           <TabsTrigger value="past-performance" className="gap-1 data-[state=active]:border-border data-[state=active]:bg-muted border border-transparent">
-            Past Performance{" "}
+            {t("Past Performance")}{" "}
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
@@ -327,7 +324,7 @@ export function DataTable({
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel" className="gap-1 data-[state=active]:border-border data-[state=active]:bg-muted border border-transparent">
-            Key Personnel{" "}
+            {t("Key Personnel")}{" "}
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
@@ -335,11 +332,11 @@ export function DataTable({
               2
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents" className="data-[state=active]:border-border data-[state=active]:bg-muted border border-transparent">Focus Documents</TabsTrigger>
+          <TabsTrigger value="focus-documents" className="data-[state=active]:border-border data-[state=active]:bg-muted border border-transparent">{t("Focus Documents")}</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Search headers..."
+            placeholder={t("Search headers...")}
             value={(table.getColumn("header")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
               table.getColumn("header")?.setFilterValue(event.target.value)
@@ -350,8 +347,8 @@ export function DataTable({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <ColumnsIcon />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
+                <span className="hidden lg:inline">{t("Customize Columns")}</span>
+                <span className="lg:hidden">{t("Columns")}</span>
                 <ChevronDownIcon />
               </Button>
             </DropdownMenuTrigger>
@@ -381,7 +378,7 @@ export function DataTable({
           </DropdownMenu>
           <Button variant="outline" size="sm">
             <PlusIcon />
-            <span className="hidden lg:inline">Add Section</span>
+            <span className="hidden lg:inline">{t("Add Section")}</span>
           </Button>
         </div>
       </div>
@@ -429,8 +426,7 @@ export function DataTable({
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No results.
-                    </TableCell>
+                      {t("No results.")}</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -442,8 +438,7 @@ export function DataTable({
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Rows per page
-              </Label>
+                {t("Rows per page")}</Label>
               <Select
                 value={`${table.getState().pagination.pageSize}`}
                 onValueChange={(value) => {
@@ -465,7 +460,7 @@ export function DataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {t("Page")}{table.getState().pagination.pageIndex + 1} {t("of")}{" "}
               {table.getPageCount()}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
@@ -475,7 +470,7 @@ export function DataTable({
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to first page</span>
+                <span className="sr-only">{t("Go to first page")}</span>
                 <ChevronsLeftIcon />
               </Button>
               <Button
@@ -485,7 +480,7 @@ export function DataTable({
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to previous page</span>
+                <span className="sr-only">{t("Go to previous page")}</span>
                 <ChevronLeftIcon />
               </Button>
               <Button
@@ -495,7 +490,7 @@ export function DataTable({
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to next page</span>
+                <span className="sr-only">{t("Go to next page")}</span>
                 <ChevronRightIcon />
               </Button>
               <Button
@@ -505,7 +500,7 @@ export function DataTable({
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to last page</span>
+                <span className="sr-only">{t("Go to last page")}</span>
                 <ChevronsRightIcon />
               </Button>
             </div>
@@ -552,6 +547,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+    const { t } = useTranslation();
   const isMobile = useIsMobile()
 
   return (
@@ -565,8 +561,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
         <SheetHeader className="gap-1">
           <SheetTitle>{item.header}</SheetTitle>
           <SheetDescription>
-            Showing total visitors for the last 6 months
-          </SheetDescription>
+            {t("Showing total visitors for the last 6 months")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4 text-sm">
           {!isMobile && (
@@ -614,97 +609,88 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
               <Separator />
               <div className="grid gap-2">
                 <div className="flex gap-2 font-medium leading-none">
-                  Trending up by 5.2% this month{" "}
+                  {t("Trending up by 5.2% this month")}{" "}
                   <TrendingUpIcon className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  Showing total visitors for the last 6 months. This is just
-                  some random text to test the layout. It spans multiple lines
-                  and should wrap around.
-                </div>
+                  {t("Showing total visitors for the last 6 months. This is just                   some random text to test the layout. It spans multiple lines                   and should wrap around.")}</div>
               </div>
               <Separator />
             </>
           )}
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
-              <Label htmlFor="header">Header</Label>
+              <Label htmlFor="header">{t("Header")}</Label>
               <Input id="header" defaultValue={item.header} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="type">Type</Label>
+                <Label htmlFor="type">{t("Type")}</Label>
                 <Select defaultValue={item.type}>
                   <SelectTrigger id="type" className="w-full">
-                    <SelectValue placeholder="Select a type" />
+                    <SelectValue placeholder={t("Select a type")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Table of Contents">
-                      Table of Contents
-                    </SelectItem>
+                      {t("Table of Contents")}</SelectItem>
                     <SelectItem value="Executive Summary">
-                      Executive Summary
-                    </SelectItem>
+                      {t("Executive Summary")}</SelectItem>
                     <SelectItem value="Technical Approach">
-                      Technical Approach
-                    </SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Capabilities">Capabilities</SelectItem>
+                      {t("Technical Approach")}</SelectItem>
+                    <SelectItem value="Design">{t("Design")}</SelectItem>
+                    <SelectItem value="Capabilities">{t("Capabilities")}</SelectItem>
                     <SelectItem value="Focus Documents">
-                      Focus Documents
-                    </SelectItem>
-                    <SelectItem value="Narrative">Narrative</SelectItem>
-                    <SelectItem value="Cover Page">Cover Page</SelectItem>
+                      {t("Focus Documents")}</SelectItem>
+                    <SelectItem value="Narrative">{t("Narrative")}</SelectItem>
+                    <SelectItem value="Cover Page">{t("Cover Page")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t("Status")}</Label>
                 <Select defaultValue={item.status}>
                   <SelectTrigger id="status" className="w-full">
-                    <SelectValue placeholder="Select a status" />
+                    <SelectValue placeholder={t("Select a status")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Done">Done</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Not Started">Not Started</SelectItem>
+                    <SelectItem value="Done">{t("Done")}</SelectItem>
+                    <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                    <SelectItem value="Not Started">{t("Not Started")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="target">Target</Label>
+                <Label htmlFor="target">{t("Target")}</Label>
                 <Input id="target" defaultValue={item.target} />
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="limit">Limit</Label>
+                <Label htmlFor="limit">{t("Limit")}</Label>
                 <Input id="limit" defaultValue={item.limit} />
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="reviewer">Reviewer</Label>
+              <Label htmlFor="reviewer">{t("Reviewer")}</Label>
               <Select defaultValue={item.reviewer}>
                 <SelectTrigger id="reviewer" className="w-full">
-                  <SelectValue placeholder="Select a reviewer" />
+                  <SelectValue placeholder={t("Select a reviewer")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
+                  <SelectItem value="Eddie Lake">{t("Eddie Lake")}</SelectItem>
                   <SelectItem value="Jamik Tashpulatov">
-                    Jamik Tashpulatov
-                  </SelectItem>
-                  <SelectItem value="Emily Whalen">Emily Whalen</SelectItem>
+                    {t("Jamik Tashpulatov")}</SelectItem>
+                  <SelectItem value="Emily Whalen">{t("Emily Whalen")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </form>
         </div>
         <SheetFooter className="mt-auto flex gap-2 sm:flex-col sm:space-x-0">
-          <Button className="w-full">Submit</Button>
+          <Button className="w-full">{t("Submit")}</Button>
           <SheetClose asChild>
             <Button variant="outline" className="w-full">
-              Done
-            </Button>
+              {t("Done")}</Button>
           </SheetClose>
         </SheetFooter>
       </SheetContent>

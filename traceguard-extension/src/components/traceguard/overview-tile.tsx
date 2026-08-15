@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { getSafetyTextColor, getSafetyBgColor, getSafetyBorderColor } from "@/lib/theme-utils"
+import { useTranslation } from "react-i18next";
 
 interface OverviewTileProps {
     title: string
@@ -45,6 +46,7 @@ export function OverviewTile({
     trend,
     className
 }: OverviewTileProps) {
+    const { t } = useTranslation();
     return (
         <Link to={href} className="block group">
             <Card className={cn(
@@ -87,8 +89,7 @@ export function OverviewTile({
                     </div>
                     <div className="flex items-center justify-end mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="text-xs text-primary flex items-center gap-1">
-                            View details
-                            <ChevronRight className="h-3 w-3" />
+                            {t("View details")}<ChevronRight className="h-3 w-3" />
                         </span>
                     </div>
                 </CardContent>
@@ -117,6 +118,7 @@ const heroStatusConfig = {
 }
 
 export function HeroTile({ score, trend, status, href }: HeroTileProps) {
+    const { t } = useTranslation();
     const config = heroStatusConfig[status]
 
     return (
@@ -135,8 +137,7 @@ export function HeroTile({ score, trend, status, href }: HeroTileProps) {
                                     {score}
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                    out of 100
-                                </div>
+                                    {t("out of 100")}</div>
                             </div>
 
                             {/* Divider */}
@@ -173,11 +174,9 @@ export function HeroTile({ score, trend, status, href }: HeroTileProps) {
                         {/* CTA */}
                         <div className="text-right">
                             <p className="text-sm text-muted-foreground mb-2">
-                                Your Privacy Score
-                            </p>
+                                {t("Your Privacy Score")}</p>
                             <span className="text-sm text-primary flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                                View full report
-                                <ChevronRight className="h-4 w-4" />
+                                {t("View full report")}<ChevronRight className="h-4 w-4" />
                             </span>
                         </div>
                     </div>
