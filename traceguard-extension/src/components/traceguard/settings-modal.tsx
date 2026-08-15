@@ -44,6 +44,7 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { decryptData, importKey } from "@/lib/crypto"
+import { getErrorLog, clearErrorLog, type ErrorLogEntry } from "@/lib/error-log"
 import { toast } from 'sonner'
 import {
     Bell,
@@ -83,6 +84,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTheme } from "@/components/theme-provider"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useSettingsModal } from "./settings-context"
+
+
+// Validates a bare domain (e.g. example.com, sub.example.co.uk). Rejects
+// whitespace, ports, paths, and other junk that would silently never match.
+const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(\.[a-z]{2,})+$/i;
+
+function isValidDomain(value: string): boolean {
+    return DOMAIN_PATTERN.test(value);
+}
 
 
 // Setting item component for consistent styling
@@ -194,6 +204,7 @@ export function SettingsModal() {
     const [autoLockTimeout, setAutoLockTimeout] = useState(settings?.autoLockTimeout ?? -1)
     const [whitelist, setWhitelist] = useState<string[]>(settings?.whitelist || [])
     const [blacklist, setBlacklist] = useState<string[]>(settings?.blacklist || [])
+    const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([])
 
     // Fetch manifest version
     useEffect(() => {
@@ -219,6 +230,11 @@ export function SettingsModal() {
         updateStorageInfo()
         const interval = setInterval(updateStorageInfo, 5000)
         return () => clearInterval(interval)
+    }, [])
+
+    // Load the local-only error log for the diagnostics panel
+    useEffect(() => {
+        getErrorLog().then(setErrorLog)
     }, [])
 
     // Sync local state with stored settings when they load
@@ -433,6 +449,26 @@ export function SettingsModal() {
     }
 
     const storagePercentage = (storageInfo.bytesInUse / storageInfo.quota) * 100
+
+    const exportErrorLog = async () => {
+        try {
+            const entries = await getErrorLog()
+            const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `traceguard-errors-${new Date().toISOString().split('T')[0]}.json`
+            a.click()
+            URL.revokeObjectURL(url)
+        } catch {
+            toast.error('Could not export error log.')
+        }
+    }
+
+    const clearErrorLogs = async () => {
+        await clearErrorLog()
+        setErrorLog([])
+    }
 
     return (
         <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
@@ -716,8 +752,10 @@ export function SettingsModal() {
                                     placeholder={t("e.g. example.com")} 
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
-                                            const val = e.currentTarget.value.trim();
-                                            if (val && !whitelist.includes(val)) {
+                                            const val = e.currentTarget.value.trim().toLowerCase();
+                                            if (val && !isValidDomain(val)) {
+                                                toast.error(t("Invalid domain"), { description: t("Please enter a valid domain (e.g., example.com)") });
+                                            } else if (val && !whitelist.includes(val)) {
                                                 setWhitelist([...whitelist, val]);
                                                 handleChange();
                                             }
@@ -727,8 +765,10 @@ export function SettingsModal() {
                                 />
                                 <Button size="sm" onClick={() => {
                                     const input = document.getElementById('add-whitelist') as HTMLInputElement;
-                                    const val = input.value.trim();
-                                    if (val && !whitelist.includes(val)) {
+                                    const val = input.value.trim().toLowerCase();
+                                    if (val && !isValidDomain(val)) {
+                                        toast.error(t("Invalid domain"), { description: t("Please enter a valid domain (e.g., example.com)") });
+                                    } else if (val && !whitelist.includes(val)) {
                                         setWhitelist([...whitelist, val]);
                                         handleChange();
                                     }
@@ -743,7 +783,7 @@ export function SettingsModal() {
                                         {whitelist.map(domain => (
                                             <li key={domain} className="flex items-center justify-between p-2 px-3 text-sm">
                                                 <span>{domain}</span>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => {
+                                                <Button variant="ghost" size="icon" aria-label={`${t("Delete")}: ${domain}`} className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => {
                                                     setWhitelist(whitelist.filter(d => d !== domain));
                                                     handleChange();
                                                 }}>
@@ -767,8 +807,10 @@ export function SettingsModal() {
                                     placeholder={t("e.g. badsite.com")} 
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
-                                            const val = e.currentTarget.value.trim();
-                                            if (val && !blacklist.includes(val)) {
+                                            const val = e.currentTarget.value.trim().toLowerCase();
+                                            if (val && !isValidDomain(val)) {
+                                                toast.error(t("Invalid domain"), { description: t("Please enter a valid domain (e.g., example.com)") });
+                                            } else if (val && !blacklist.includes(val)) {
                                                 setBlacklist([...blacklist, val]);
                                                 handleChange();
                                             }
@@ -778,8 +820,10 @@ export function SettingsModal() {
                                 />
                                 <Button size="sm" onClick={() => {
                                     const input = document.getElementById('add-blacklist') as HTMLInputElement;
-                                    const val = input.value.trim();
-                                    if (val && !blacklist.includes(val)) {
+                                    const val = input.value.trim().toLowerCase();
+                                    if (val && !isValidDomain(val)) {
+                                        toast.error(t("Invalid domain"), { description: t("Please enter a valid domain (e.g., example.com)") });
+                                    } else if (val && !blacklist.includes(val)) {
                                         setBlacklist([...blacklist, val]);
                                         handleChange();
                                     }
@@ -794,7 +838,7 @@ export function SettingsModal() {
                                         {blacklist.map(domain => (
                                             <li key={domain} className="flex items-center justify-between p-2 px-3 text-sm">
                                                 <span>{domain}</span>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => {
+                                                <Button variant="ghost" size="icon" aria-label={`${t("Delete")}: ${domain}`} className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => {
                                                     setBlacklist(blacklist.filter(d => d !== domain));
                                                     handleChange();
                                                 }}>
@@ -986,6 +1030,40 @@ export function SettingsModal() {
                         <p className="text-sm text-muted-foreground">
                             {t("TraceGuard keeps a local journal of trackers, cookies, and privacy scores so you can review and improve your browsing habits. Everything stays on your device unless you enable Enhanced Policy Analysis, which checks unrated domains against tosdr.org.")}
                         </p>
+                    </div>
+
+                    <div className="rounded-lg border p-4 space-y-3">
+                        <Label className="text-base font-medium flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                            Diagnostics
+                        </Label>
+                        <p className="text-sm text-muted-foreground break-words">
+                            Recent errors are stored locally on this device to help troubleshoot. They never leave your browser.
+                        </p>
+                        {errorLog.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No errors recorded.</p>
+                        ) : (
+                            <>
+                                <div className="rounded-md border max-h-40 overflow-y-auto divide-y">
+                                    {errorLog.map((entry, i) => (
+                                        <div key={i} className="p-2 text-xs">
+                                            <span className="text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</span>
+                                            <p className="font-medium break-words">{entry.message}</p>
+                                            {entry.context && <p className="text-muted-foreground break-all">{entry.context}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <Button variant="outline" size="sm" onClick={exportErrorLog}>
+                                        <Download className="mr-2 h-3 w-3" />
+                                        Export error log
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={clearErrorLogs}>
+                                        Clear
+                                    </Button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </TabsContent>
                         </div>

@@ -1,0 +1,51 @@
+name: Refresh threat feed
+
+# Keeps the signed remote threat feed (served from main) fresh between releases.
+# Without this, the 14-day freshness cap in src/background/services/threat-feed.ts
+# would silently stop all installs from receiving updates.
+on:
+  schedule:
+    - cron: '0 4 * * 1' # Mondays 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: traceguard-extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./traceguard-extension
+        run: npm ci --legacy-peer-deps
+
+      - name: Rebuild phishlist
+        working-directory: ./traceguard-extension
+        run: npm run build:phishlist
+
+      - name: Sign phishlist
+        working-directory: ./traceguard-extension
+        env:
+          THREAT_SIGNING_KEY: ${{ secrets.THREAT_SIGNING_KEY }}
+        run: npm run sign:phishlist
+
+      - name: Commit refreshed feed
+        working-directory: ./traceguard-extension
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet src/assets/phishlist.json src/assets/phishlist.signed.json; then
+            git add src/assets/phishlist.json src/assets/phishlist.signed.json
+            git commit -m "chore(threat-feed): refresh phishlist and re-sign to sync feeds"
+            git push
+          else
+            echo "Threat feed already up to date."
+          fi

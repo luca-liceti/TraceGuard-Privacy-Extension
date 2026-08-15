@@ -90,7 +90,14 @@ async function build() {
     }
 
     if (domains.size === 0) {
-        console.error('[phishlist] No domains fetched. Aborting to avoid shipping an empty list.');
+        // Keep the last known-good snapshot so builds stay hermetic when the
+        // upstream feeds are down. Only hard-fail when there is no snapshot.
+        if (fs.existsSync(OUTPUT_FILE)) {
+            console.warn('[phishlist] No domains fetched; keeping existing snapshot.');
+            console.warn('[phishlist] Failures:', failures.join('; '));
+            return;
+        }
+        console.error('[phishlist] No domains fetched and no snapshot present. Aborting.');
         console.error('[phishlist] Failures:', failures.join('; '));
         process.exit(1);
     }

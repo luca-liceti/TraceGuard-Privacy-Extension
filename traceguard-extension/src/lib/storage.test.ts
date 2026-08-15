@@ -24,7 +24,7 @@ if (typeof crypto === 'undefined' || !crypto.subtle) {
     global.crypto = nodeCrypto.webcrypto;
 }
 
-import { storage } from './storage';
+import { storage, readSessionBuffer } from './storage';
 import { deriveKeyFromPassword, generateSalt } from './crypto';
 
 // Helper: create a real AES-GCM CryptoKey for tests that need encryption
@@ -153,10 +153,26 @@ describe('storage.addDetectorLog (no key)', () => {
 });
 
 // =============================================================================
+// Detector Logs — bulk append
+// =============================================================================
+describe('storage.addDetectorLogs (bulk)', () => {
+    it('appends many logs in a single write', async () => {
+        await storage.addDetectorLogs([
+            { detector: 'reputation', domain: 'a.com', score: 100, details: {}, message: 'A' },
+            { detector: 'cookies', domain: 'b.com', score: 80, details: {}, message: 'B' },
+        ]);
+
+        const { detectorLogs } = await chrome.storage.local.get<{ detectorLogs: any }>('detectorLogs');
+        expect(detectorLogs).toHaveLength(2);
+        expect(detectorLogs.map((l: any) => l.domain).sort()).toEqual(['a.com', 'b.com']);
+    });
+});
+
+// =============================================================================
 // Detector Logs — encrypted path
 // =============================================================================
 describe('storage.addDetectorLog (with key)', () => {
-    it('stores encrypted ciphertext and is skipped when vault locked', async () => {
+    it('stores encrypted ciphertext and buffers when vault locked', async () => {
         const key = await makeKey();
 
         await storage.addDetectorLog({
@@ -172,8 +188,8 @@ describe('storage.addDetectorLog (with key)', () => {
         expect(typeof detectorLogs).toBe('string');
         expect(detectorLogs).not.toContain('tracker.io');
 
-        // Adding ANOTHER log without a key while data is encrypted should skip
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        // Adding another log without a key while data is encrypted should buffer
+        // it (encrypted) in the session store rather than dropping it.
         await storage.addDetectorLog({
             detector: 'tracking',
             domain: 'other.com',
@@ -181,8 +197,10 @@ describe('storage.addDetectorLog (with key)', () => {
             details: {},
             message: 'No key',
         }); // no key
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Vault locked'));
-        consoleSpy.mockRestore();
+
+        const buffered = await readSessionBuffer<Array<{ domain: string }>>('bufferedDetectorLogs');
+        expect(buffered).not.toBeNull();
+        expect(buffered![0].domain).toBe('other.com');
     });
 
     it('round-trips encrypted logs correctly', async () => {
@@ -312,13 +330,14 @@ describe('storage.addExposure (with key)', () => {
         expect(crossSiteExposure).not.toContain('encrypted-site.com');
     });
 
-    it('skips write when vault is locked (data encrypted, no key)', async () => {
+    it('buffers when vault is locked (data encrypted, no key)', async () => {
         const key = await makeKey();
         await storage.addExposure('email', 'initial.com', key);
 
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         await storage.addExposure('email', 'second.com'); // no key
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Vault locked'));
-        consoleSpy.mockRestore();
+
+        const buffered = await readSessionBuffer<Record<string, string[]>>('bufferedExposure');
+        expect(buffered).not.toBeNull();
+        expect(buffered!.email).toContain('second.com');
     });
 });

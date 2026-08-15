@@ -147,6 +147,18 @@ export function generateSalt(): Uint8Array<ArrayBuffer> {
 }
 
 /**
+ * Generates a fresh 256-bit AES-GCM key (extractable, so it can be persisted
+ * to chrome.storage.session for the locked-vault buffer).
+ */
+export async function generateAesKey(): Promise<CryptoKey> {
+    return crypto.subtle.generateKey(
+        { name: ALGO_NAME, length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+    );
+}
+
+/**
  * Validates that a salt is properly formed and cryptographically sound
  * (Not empty, correct length, and not a static/zeroed array)
  */

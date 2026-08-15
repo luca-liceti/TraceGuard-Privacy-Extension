@@ -69,7 +69,9 @@ function extractMainDomain(url: string): string {
 
         // Handle new-style brand TLDs (company owns the TLD itself)
         // For domains like antigravity.google, search ToS;DR for "google"
-        const brandTLDs = ['google', 'microsoft', 'apple', 'amazon', 'facebook', 'meta', 'app', 'dev', 'page'];
+        // Brand TLDs only (single-owner). 'app', 'dev' and 'page' are public
+        // registrable TLDs, so collapsing vercel.app -> "app" was wrong.
+        const brandTLDs = ['google', 'microsoft', 'apple', 'amazon', 'facebook', 'meta'];
         if (parts.length === 2 && brandTLDs.includes(parts[1])) {
             return parts[1]; // Return just "google" for antigravity.google
         }
@@ -161,7 +163,7 @@ async function saveCache(domain: string, entry: CacheEntry) {
 async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
     try {
         return await rateLimiters.tosdr.execute(async () => {
-            const searchRes = await fetch(`https://api.tosdr.org/search/v4/?query=${domain}`);
+            const searchRes = await fetch(`https://api.tosdr.org/search/v4/?query=${encodeURIComponent(domain)}`);
             if (!searchRes.ok) return null;
             const searchData = await searchRes.json();
             

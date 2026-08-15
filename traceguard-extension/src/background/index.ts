@@ -29,11 +29,12 @@
  * =============================================================================
  */
 
-import { storage } from '../lib/storage';
+import { storage, readSessionBuffer, writeSessionBuffer } from '../lib/storage';
+import { recordError } from '../lib/error-log';
 import { z } from 'zod';
 import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './services/reputation';
 import { calculateWSS } from '../lib/scoring';
-import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail } from '../lib/types';
+import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry } from '../lib/types';
 import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
@@ -81,9 +82,18 @@ async function createNotification(
 }
 
 chrome.notifications.onClicked.addListener(async (notificationId) => {
+    // Notifications are stored encrypted whenever the vault has been set up,
+    // so decrypt before looking up the clicked id. Without this, every click
+    // would fall through to the generic dashboard.
+    const key = await getCryptoKey();
     const result = await chrome.storage.local.get('notifications');
     const raw = result.notifications;
-    const notifications = Array.isArray(raw) ? raw : [];
+    let notifications: any[] = [];
+    if (typeof raw === 'string') {
+        if (key) notifications = (await decryptData<any[]>(key, raw)) || [];
+    } else {
+        notifications = Array.isArray(raw) ? raw : [];
+    }
     const notification = notifications.find((n: any) => n.id === notificationId);
     
     if (notification && notification.actionUrl) {
@@ -126,8 +136,7 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
                 ? await decryptData(key, result.siteCache) || {} 
                 : result.siteCache || {};
         } else {
-            const session = await chrome.storage.session.get<Record<string, any>>('bufferedSiteCache');
-            siteCache = session.bufferedSiteCache || {};
+            siteCache = (await readSessionBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
         }
 
         const siteData = siteCache[domain];
@@ -139,6 +148,7 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
         }
     } catch (error) {
         console.error('[TabTracking] Error syncing site data:', error);
+        recordError('Tab tracking sync failed', String(error));
     }
 }
 
@@ -185,34 +195,50 @@ async function flushBufferedTelemetry() {
     const key = await getCryptoKey();
     if (!key) return; // Should not happen since UI just set it
 
-    const session = await chrome.storage.session.get<Record<string, any>>(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache']);
-    const local = await chrome.storage.local.get<Record<string, any>>(['piiDetections', 'scoreHistory', 'siteCache']);
-    
-    // Flush PII
-    if (session.bufferedPii && session.bufferedPii.length > 0) {
-        let pii = typeof local.piiDetections === 'string' ? await decryptData(key, local.piiDetections) || [] : local.piiDetections || [];
-        pii = [...pii, ...session.bufferedPii];
-        if (pii.length > 100) pii = pii.slice(-100);
-        await chrome.storage.local.set({ piiDetections: await encryptData(key, pii) });
-    }
+    // Buffers are encrypted with the session buffer key, so decrypt each here.
+    const [bufferedPii, bufferedScoreHistory, bufferedSiteCache, bufferedDetectorLogs, bufferedNotifications, bufferedExposure] = await Promise.all([
+        readSessionBuffer<any[]>('bufferedPii'),
+        readSessionBuffer<any[]>('bufferedScoreHistory'),
+        readSessionBuffer<Record<string, SiteRiskData>>('bufferedSiteCache'),
+        readSessionBuffer<any[]>('bufferedDetectorLogs'),
+        readSessionBuffer<any[]>('bufferedNotifications'),
+        readSessionBuffer<Record<string, string[]>>('bufferedExposure'),
+    ]);
+    const local = await chrome.storage.local.get<Record<string, any>>(['piiDetections', 'scoreHistory', 'siteCache', 'detectorLogs', 'notifications', 'crossSiteExposure']);
 
-    // Flush History
-    if (session.bufferedScoreHistory && session.bufferedScoreHistory.length > 0) {
-        let history = typeof local.scoreHistory === 'string' ? await decryptData(key, local.scoreHistory) || [] : local.scoreHistory || [];
-        history = [...history, ...session.bufferedScoreHistory];
-        if (history.length > 100) history = history.slice(-100);
-        await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
-    }
+    const mergeArray = async (storageKey: string, buffered: any[] | null, cap: number) => {
+        if (!buffered || buffered.length === 0) return;
+        let existing: any[] = typeof local[storageKey] === 'string'
+            ? (await decryptData(key, local[storageKey])) || []
+            : (local[storageKey] || []);
+        existing = [...existing, ...buffered];
+        if (existing.length > cap) existing = existing.slice(-cap);
+        await chrome.storage.local.set({ [storageKey]: await encryptData(key, existing) });
+    };
+
+    await mergeArray('piiDetections', bufferedPii, 100);
+    await mergeArray('scoreHistory', bufferedScoreHistory, 100);
+    await mergeArray('detectorLogs', bufferedDetectorLogs, 1000);
+    await mergeArray('notifications', bufferedNotifications, 100);
 
     // Flush Site Cache
-    if (session.bufferedSiteCache && Object.keys(session.bufferedSiteCache).length > 0) {
+    if (bufferedSiteCache && Object.keys(bufferedSiteCache).length > 0) {
         let cache = typeof local.siteCache === 'string' ? await decryptData(key, local.siteCache) || {} : local.siteCache || {};
-        cache = { ...cache, ...session.bufferedSiteCache };
+        cache = { ...cache, ...bufferedSiteCache };
         await chrome.storage.local.set({ siteCache: await encryptData(key, cache) });
     }
 
+    // Flush Cross-Site Exposure
+    if (bufferedExposure && Object.keys(bufferedExposure).length > 0) {
+        const exposure = typeof local.crossSiteExposure === 'string' ? await decryptData(key, local.crossSiteExposure) || {} : local.crossSiteExposure || {};
+        for (const [fieldType, domains] of Object.entries(bufferedExposure)) {
+            exposure[fieldType] = Array.from(new Set([...(exposure[fieldType] || []), ...(domains || [])]));
+        }
+        await chrome.storage.local.set({ crossSiteExposure: await encryptData(key, exposure) });
+    }
+
     // Clear buffers
-    await chrome.storage.session.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache']);
+    await chrome.storage.session.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure']);
     console.log('[Vault] Buffered telemetry flushed to encrypted storage.');
 }
 
@@ -403,6 +429,7 @@ async function syncStateWithCache() {
         }
     } catch (err) {
         console.error('[Sync] Error syncing state:', err);
+        recordError('State sync failed', String(err));
     }
 }
 
@@ -453,8 +480,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             const isBlacklisted = score === 0;
             sendResponse({ isBlacklisted, score, checks });
         }).catch(error => {
+            // Fail CLOSED on uncertainty: match checkReputation's own error
+            // contract (50 = uncertain), never report a domain as safe (100).
             console.warn('Reputation check failed:', error);
-            sendResponse({ isBlacklisted: false, score: 100 });  // Fail-safe: assume safe
+            sendResponse({ isBlacklisted: false, score: 50, checks: ['Reputation check failed — score uncertain'] });
         });
 
         return true;  // This tells Chrome to wait for our async response
@@ -492,7 +521,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         // Process the analysis in a separate function (it's complex, so we keep it organized)
         queueTelemetryWrite(() => handlePageAnalysis(message, _sender)).then(() => {
             sendResponse({ success: true });
-        }).catch(error => sendResponse({ success: false, error: String(error) }));
+        }).catch(error => {
+            recordError('Page analysis failed', String(error));
+            sendResponse({ success: false, error: String(error) });
+        });
         return true;  // Keep channel open for async response
     }
 
@@ -503,7 +535,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === 'PII_DETECTED') {
         queueTelemetryWrite(() => handlePIIDetection(message)).then(() => {
             sendResponse({ success: true });
-        }).catch(error => sendResponse({ success: false, error: String(error) }));
+        }).catch(error => {
+            recordError('PII detection failed', String(error));
+            sendResponse({ success: false, error: String(error) });
+        });
         return true;  // Keep channel open for async response
     }
 
@@ -656,7 +691,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         
         enrichedDetails = {
             cookies: {
-                items: cookies,
+                items: cookies.slice(0, 100), // cap stored detail; summary keeps full totals
                 summary: {
                     total: cookies.length,
                     active: cookies.filter(c => c.status === 'active').length,
@@ -665,7 +700,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                 }
             },
             trackers: {
-                items: trackers,
+                items: trackers.slice(0, 200), // cap stored detail; summary keeps full totals
                 summary: {
                     total: trackers.length,
                     active: trackers.filter(t => t.status === 'active').length,
@@ -674,7 +709,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                 }
             },
             networkRequests: {
-                items: networkData ? Object.values(networkData.requests) : [],
+                items: (networkData ? Object.values(networkData.requests) : []).slice(0, 200), // cap stored detail
                 summary: {
                     total: networkData ? Object.keys(networkData.requests).length : 0,
                     thirdParty: networkData ? Object.values(networkData.requests).filter(r => r.isThirdParty).length : 0,
@@ -695,7 +730,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                 })()
             },
             fingerprinting: {
-                items: fingerprintingItems,
+                items: fingerprintingItems.slice(0, 100), // cap stored detail
                 summary: {
                     totalAttempts: fpRaw.length,
                     techniques: fpRaw.map((f: any) => f.technique),
@@ -726,8 +761,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             ? await decryptData(key, result.siteCache) || {} 
             : result.siteCache || {};
     } else {
-        const session = await chrome.storage.session.get<Record<string, any>>('bufferedSiteCache');
-        siteCache = session.bufferedSiteCache || {};
+        siteCache = (await readSessionBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
     }
 
     // Keep track of how many times you've visited this site
@@ -763,7 +797,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     if (key) {
         await chrome.storage.local.set({ siteCache: await encryptData(key, siteCache) });
     } else {
-        await chrome.storage.session.set({ bufferedSiteCache: siteCache });
+        await writeSessionBuffer('bufferedSiteCache', siteCache);
     }
 
     // Step 5: Update the user's privacy state
@@ -802,14 +836,15 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     });
 
     // Step 6: Log the UPS change if there was one (for debugging and history)
+    const detectorLogsToWrite: Array<Omit<DetectorLogEntry, 'id' | 'timestamp'>> = [];
     if (upsImpact.message) {
-        await storage.addDetectorLog({
+        detectorLogsToWrite.push({
             detector: 'permissions',
             domain: domain,
             score: 0,
             details: { upsChange: upsImpact.newUPS - (state.ups || 100), newStreak: upsImpact.newStreak },
             message: upsImpact.message
-        }, key);
+        });
     }
 
     // Always add to the score history graph to keep the charts updated
@@ -820,8 +855,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             ? await decryptData(key, histResult.scoreHistory) || []
             : histResult.scoreHistory || [];
     } else {
-        const session = await chrome.storage.session.get<Record<string, any>>('bufferedScoreHistory');
-        history = session.bufferedScoreHistory || [];
+        history = (await readSessionBuffer<ScoreHistoryEntry[]>('bufferedScoreHistory')) || [];
     }
     
     history.push({
@@ -837,7 +871,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     if (key) {
         await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
     } else {
-        await chrome.storage.session.set({ bufferedScoreHistory: history });
+        await writeSessionBuffer('bufferedScoreHistory', history);
     }
 
     // Step 7: Log detailed information from each detector
@@ -872,16 +906,16 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Log each detector's findings to storage (6 logs total, one for each detector)
 
     // REPUTATION: Is this domain known to be dangerous?
-    await storage.addDetectorLog({
+    detectorLogsToWrite.push({
         detector: 'reputation',
         domain,
         score: reputationScore,
         details: { isBlacklisted: reputationScore === 0, status: reputationScore === 100 ? 'Clean' : reputationScore === 0 ? 'Blacklisted' : 'Suspicious' },
         message: detectorMessages.reputation
-    }, key);
+    });
 
     // TRACKING: How many third-party trackers are on this page?
-    await storage.addDetectorLog({
+    detectorLogsToWrite.push({
         detector: 'tracking',
         domain,
         score: finalScores.tracking,
@@ -891,34 +925,40 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             suspiciousTrackers: trackingDetails.suspiciousTrackers
         },
         message: detectorMessages.tracking
-    }, key);
+    });
 
     // COOKIES: Are there tracking or third-party cookies?
-    await storage.addDetectorLog({
+    detectorLogsToWrite.push({
         detector: 'cookies',
         domain,
         score: finalScores.cookies,
         details: message.detectionDetails?.cookies || {},
         message: detectorMessages.cookies
-    }, key);
+    });
 
     // INPUTS: Are there sensitive input fields (password, credit card, etc.)?
-    await storage.addDetectorLog({
+    detectorLogsToWrite.push({
         detector: 'inputs',
         domain,
         score: finalScores.input,
         details: message.detectionDetails?.input || {},
         message: detectorMessages.inputs
-    }, key);
+    });
 
     // POLICY: What's the privacy policy rating (from ToS;DR)?
-    await storage.addDetectorLog({
+    detectorLogsToWrite.push({
         detector: 'policy',
         domain,
         score: finalScores.policy,
         details: message.detectionDetails?.policy || {},
         message: detectorMessages.policy
-    }, key);
+    });
+
+    // Single batched write: avoids six read-decrypt-encrypt-write cycles of the
+    // full (up to 1,000-entry) detector log array per page visit.
+    if (detectorLogsToWrite.length > 0) {
+        await storage.addDetectorLogs(detectorLogsToWrite, key);
+    }
 
     // Step 8: Create notifications for risky sites
     const settings = await storage.getSettings();
@@ -1016,9 +1056,12 @@ async function handlePIIDetection(message: any) {
             ? await decryptData(key, storageData.scoreHistory) || []
             : storageData.scoreHistory || [];
     } else {
-        const session = await chrome.storage.session.get<Record<string, any>>(['bufferedPii', 'bufferedScoreHistory']);
-        piiDetections = session.bufferedPii || [];
-        scoreHistory = session.bufferedScoreHistory || [];
+        const [piiBuffer, historyBuffer] = await Promise.all([
+            readSessionBuffer<any[]>('bufferedPii'),
+            readSessionBuffer<any[]>('bufferedScoreHistory'),
+        ]);
+        piiDetections = piiBuffer || [];
+        scoreHistory = historyBuffer || [];
     }
 
     // Record this PII detection event
@@ -1051,10 +1094,10 @@ async function handlePIIDetection(message: any) {
             scoreHistory: await encryptData(key, scoreHistory) 
         });
     } else {
-        await chrome.storage.session.set({ 
-            bufferedPii: piiDetections, 
-            bufferedScoreHistory: scoreHistory 
-        });
+        await Promise.all([
+            writeSessionBuffer('bufferedPii', piiDetections),
+            writeSessionBuffer('bufferedScoreHistory', scoreHistory),
+        ]);
     }
 
     // Track which sites have received each type of your personal information

@@ -43,6 +43,7 @@ import {
     calculateFocusPenalty,
     PII_PATTERNS,
     BASE_PENALTIES,
+    getBasePenalty,
 } from './pii'
 
 describe('PII Penalty System', () => {
@@ -70,6 +71,11 @@ describe('PII Penalty System', () => {
 
         it('should have low penalty for name', () => {
             expect(BASE_PENALTIES.name).toBe(1)
+        })
+
+        it('should map the detector "credit card" display string to the creditCard penalty', () => {
+            expect(getBasePenalty('credit card')).toBe(9)
+            expect(getBasePenalty('Credit Card')).toBe(9)
         })
     })
 

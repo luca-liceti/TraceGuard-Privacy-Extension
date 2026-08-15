@@ -36,7 +36,46 @@
  */
 
 import { StorageSchema, UserSettings, AppState } from './types';
-import { encryptData, decryptData } from './crypto';
+import { encryptData, decryptData, generateAesKey, exportKey, importKey } from './crypto';
+
+// =============================================================================
+// SESSION BUFFER (vault locked)
+// Telemetry recorded while the vault is locked is buffered in
+// chrome.storage.session, encrypted with a session-scoped key, and flushed into
+// the encrypted local store when the vault is unlocked.
+// =============================================================================
+
+const BUFFER_KEY = 'bufferKeyHex';
+
+/** Session-scoped AES key for the locked-vault buffer (memory-only). */
+export async function getBufferKey(): Promise<CryptoKey> {
+    const session = await chrome.storage.session.get<Record<string, any>>(BUFFER_KEY);
+    if (session[BUFFER_KEY]) return importKey(session[BUFFER_KEY]);
+    const key = await generateAesKey();
+    await chrome.storage.session.set({ [BUFFER_KEY]: await exportKey(key) });
+    return key;
+}
+
+/**
+ * Reads a buffered value, transparently decrypting it. Also handles values
+ * written by older versions in plaintext.
+ */
+export async function readSessionBuffer<T = any>(name: string): Promise<T | null> {
+    const session = await chrome.storage.session.get<Record<string, any>>(name);
+    const raw = session[name];
+    if (raw === undefined) return null;
+    if (typeof raw === 'string') {
+        const key = await getBufferKey();
+        return (await decryptData<T>(key, raw)) ?? null;
+    }
+    return raw as T;
+}
+
+/** Encrypts and writes a value into the session buffer. */
+export async function writeSessionBuffer(name: string, value: any): Promise<void> {
+    const key = await getBufferKey();
+    await chrome.storage.session.set({ [name]: await encryptData(key, value) });
+}
 
 // =============================================================================
 // DEFAULT VALUES
@@ -69,6 +108,69 @@ const DEFAULT_STATE: AppState = {
     piiEventsCount: 0,            // Times you've entered personal info
     safeVisitStreak: 0            // Consecutive safe site visits
 };
+
+/**
+ * Shared implementation for addDetectorLog / addDetectorLogs. Reads the
+ * encrypted log array once, appends, applies retention + the 1,000-entry cap,
+ * and writes back once.
+ */
+async function persistDetectorLogs(
+    newLogs: Array<Omit<import('./types').DetectorLogEntry, 'id' | 'timestamp'>>,
+    key?: CryptoKey | null
+): Promise<void> {
+    const result = await chrome.storage.local.get('detectorLogs');
+    const raw = result.detectorLogs;
+
+    // Decrypt existing logs if they are encrypted
+    let logs: import('./types').DetectorLogEntry[];
+    if (key && typeof raw === 'string') {
+        logs = (await decryptData(key, raw)) || [];
+    } else if (typeof raw === 'string') {
+        // Vault is locked and data is encrypted — buffer the new logs in the
+        // encrypted session buffer so they are not lost.
+        const buffered = (await readSessionBuffer<import('./types').DetectorLogEntry[]>('bufferedDetectorLogs')) || [];
+        const stamped = newLogs.map(log => ({
+            ...log,
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: Date.now()
+        }));
+        await writeSessionBuffer('bufferedDetectorLogs', [...buffered, ...stamped]);
+        return;
+    } else {
+        logs = (raw || []) as import('./types').DetectorLogEntry[];
+    }
+
+    for (const log of newLogs) {
+        logs.push({
+            ...log,
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: Date.now()
+        });
+    }
+
+    // Cleanup old logs based on retention policy
+    const settings = await storage.getSettings();
+    const retentionDays = settings.logRetentionDays || 0; // 0 = forever
+    const now = Date.now();
+    const retentionMs = retentionDays * 24 * 60 * 60 * 1000;
+
+    let filteredLogs = logs;
+    if (retentionDays > 0) {
+        filteredLogs = logs.filter(l => (now - l.timestamp) < retentionMs);
+    }
+
+    // Keep max 1000 logs, remove oldest if exceeded
+    if (filteredLogs.length > 1000) {
+        filteredLogs = filteredLogs.slice(-1000);
+    }
+
+    // Encrypt on write when key is available
+    if (key) {
+        await storage.set({ detectorLogs: await encryptData(key, filteredLogs) as any });
+    } else {
+        await storage.set({ detectorLogs: filteredLogs });
+    }
+}
 
 export const storage = {
     get: async <K extends keyof StorageSchema>(keys: K | K[]): Promise<Pick<StorageSchema, K>> => {
@@ -133,53 +235,17 @@ export const storage = {
         log: Omit<import('./types').DetectorLogEntry, 'id' | 'timestamp'>,
         key?: CryptoKey | null
     ): Promise<void> => {
-        const result = await chrome.storage.local.get('detectorLogs');
-        const raw = result.detectorLogs;
+        await persistDetectorLogs([log], key);
+    },
 
-        // Decrypt existing logs if they are encrypted
-        let logs: import('./types').DetectorLogEntry[];
-        if (key && typeof raw === 'string') {
-            logs = (await decryptData(key, raw)) || [];
-        } else if (typeof raw === 'string') {
-            // Vault is locked and data is encrypted — skip the write to avoid corruption
-            console.warn('[storage.addDetectorLog] Vault locked; skipping write to protect encrypted data.');
-            return;
-        } else {
-            logs = (raw || []) as import('./types').DetectorLogEntry[];
-        }
-
-        const newLog: import('./types').DetectorLogEntry = {
-            ...log,
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            timestamp: Date.now()
-        };
-
-        logs.push(newLog);
-
-        // Check storage quota and cleanup if needed
-        const settings = await storage.getSettings();
-        const retentionDays = settings.logRetentionDays || 0; // 0 = forever
-
-        // Cleanup old logs based on retention policy
-        const now = Date.now();
-        const retentionMs = retentionDays * 24 * 60 * 60 * 1000;
-
-        let filteredLogs = logs;
-        if (retentionDays > 0) {
-            filteredLogs = logs.filter(l => (now - l.timestamp) < retentionMs);
-        }
-
-        // Keep max 1000 logs, remove oldest if exceeded
-        if (filteredLogs.length > 1000) {
-            filteredLogs = filteredLogs.slice(-1000);
-        }
-
-        // Encrypt on write when key is available
-        if (key) {
-            await storage.set({ detectorLogs: await encryptData(key, filteredLogs) as any });
-        } else {
-            await storage.set({ detectorLogs: filteredLogs });
-        }
+    // Bulk variant: appends many logs with a single read-decrypt-encrypt-write
+    // cycle instead of one per entry (used by the page-analysis pipeline).
+    addDetectorLogs: async (
+        logs: Array<Omit<import('./types').DetectorLogEntry, 'id' | 'timestamp'>>,
+        key?: CryptoKey | null
+    ): Promise<void> => {
+        if (!logs.length) return;
+        await persistDetectorLogs(logs, key);
     },
 
     // Clean up old logs based on retention policy
@@ -234,7 +300,14 @@ export const storage = {
         if (key && typeof raw === 'string') {
             exposure = (await decryptData(key, raw)) || {};
         } else if (typeof raw === 'string') {
-            console.warn('[storage.addExposure] Vault locked; skipping write to protect encrypted data.');
+            // Vault locked and data is encrypted — buffer instead of dropping.
+            const buffered = (await readSessionBuffer<import('./types').CrossSiteExposure>('bufferedExposure')) || {};
+            if (!buffered[fieldType]) buffered[fieldType] = [];
+            if (!buffered[fieldType].includes(domain)) {
+                buffered[fieldType].push(domain);
+                await writeSessionBuffer('bufferedExposure', buffered);
+                console.log(`[Cross-Site Exposure] ${fieldType} buffered for ${buffered[fieldType].length} sites (locked)`);
+            }
             return;
         } else {
             exposure = (raw || {}) as import('./types').CrossSiteExposure;
@@ -323,11 +396,17 @@ export const storage = {
         if (key && typeof raw === 'string') {
             notifications = (await decryptData(key, raw)) || [];
         } else if (typeof raw === 'string') {
-            // Vault locked and data is encrypted — skip the write. Writing a
-            // plaintext array here would both wipe every existing encrypted
-            // notification and downgrade the store to plaintext.
-            console.warn('[storage.addNotification] Vault locked; skipping write to protect encrypted data.');
-            return '';
+            // Vault locked and data is encrypted — buffer instead of dropping.
+            const buffered = (await readSessionBuffer<import('./types').NotificationEvent[]>('bufferedNotifications')) || [];
+            const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const newNotification: import('./types').NotificationEvent = {
+                ...notification,
+                id,
+                timestamp: Date.now(),
+                read: false
+            };
+            await writeSessionBuffer('bufferedNotifications', [newNotification, ...buffered].slice(0, 100));
+            return id;
         } else {
             notifications = (raw || []) as import('./types').NotificationEvent[];
         }

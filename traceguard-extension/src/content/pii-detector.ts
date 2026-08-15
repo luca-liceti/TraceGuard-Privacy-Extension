@@ -52,7 +52,6 @@ interface PIIEvent {
     fieldType: string;                     // Type of field (password, text, etc.)
     fieldName: string;                     // Name attribute of the field
     sensitivity: 'HIGH' | 'MEDIUM' | 'LOW'; // How sensitive is this data?
-    siteWRS: number;                       // Website Safety Score at the time
 }
 
 class PIIDetector {
@@ -71,6 +70,11 @@ class PIIDetector {
 
     // Start monitoring sensitive fields
     startMonitoring(sensitiveFields: { high: SensitiveField[]; medium: SensitiveField[]; low: SensitiveField[] }) {
+        // Clear stale listeners first: SPAs re-render fields without firing
+        // beforeunload, and a fresh element with a colliding fieldId must not be
+        // skipped while its detached predecessor leaks a listener.
+        this.stopMonitoring();
+
         // Monitor HIGH sensitivity fields
         sensitiveFields.high.forEach(field => {
             this.attachListener(field.element, 'HIGH', field.type);
@@ -118,26 +122,23 @@ class PIIDetector {
         return `${element.tagName}_${element.name || element.id || 'unnamed'}_${element.type}`;
     }
 
-    private async onPIIDetected(element: HTMLInputElement | HTMLTextAreaElement, sensitivity: 'HIGH' | 'MEDIUM' | 'LOW', semanticType: string) {
+    private onPIIDetected(element: HTMLInputElement | HTMLTextAreaElement, sensitivity: 'HIGH' | 'MEDIUM' | 'LOW', semanticType: string) {
         const domain = window.location.hostname;
         const fieldType = semanticType;
         const fieldName = element.name || element.id || 'unknown';
 
         console.warn(`[TraceGuard] PII detected: ${sensitivity} sensitivity field on ${domain}`);
 
-        // Get current site WSS from storage
-        const storage = await chrome.storage.local.get('siteCache');
-        const siteData = (storage.siteCache as Record<string, any>)?.[domain];
-        const siteWSS = siteData?.wss || 50; // Default if not yet analyzed
-
-        // Create detection event
+        // Create detection event. The background worker owns the authoritative
+        // site WSS (it holds the vault key and decrypted current-site state);
+        // reading siteCache here returns the encrypted blob once the vault is
+        // set up, so WSS is never derived in the content script.
         const event: PIIEvent = {
             timestamp: Date.now(),
             site: domain,
             fieldType: fieldType,
             fieldName: fieldName,
-            sensitivity: sensitivity,
-            siteWRS: siteWSS
+            sensitivity: sensitivity
         };
 
         this.detectionEvents.push(event);

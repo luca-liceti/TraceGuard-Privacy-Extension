@@ -155,14 +155,16 @@ export async function getAndClearNetworkData(tabId: number): Promise<TabNetworkD
     const data = tabData.get(tabId);
     if (!data) return null;
     
-    // Quick enrichment of the network requests using our databases
-    for (const req of Object.values(data.requests)) {
+    // Quick enrichment of the network requests using our databases.
+    // Parallelize: the database getters are memoized, so awaiting them serially
+    // in a 2,000-request loop added up to thousands of sequential microtasks.
+    await Promise.all(Object.values(data.requests).map(async (req) => {
         req.isTracker = await isTrackerDomain(req.domain);
         const radar = await lookupTrackerDomain(req.domain);
         if (radar && radar.owner) {
             req.organization = radar.owner;
         }
-    }
+    }));
     
     // We don't delete it immediately in case multiple analysis events fire,
     // but the next main_frame navigation will reset it.

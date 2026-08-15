@@ -28,9 +28,13 @@ jobs:
       working-directory: ./traceguard-extension
       run: npm run test:run
       
-    - name: Run Build
+    - name: Typecheck
       working-directory: ./traceguard-extension
-      run: npm run build
+      run: npm run typecheck
+
+    - name: Rebuild phishlist
+      working-directory: ./traceguard-extension
+      run: npm run build:phishlist
 
     - name: Sign threat feed
       if: ${{ secrets.THREAT_SIGNING_KEY != '' }}
@@ -38,6 +42,14 @@ jobs:
       env:
         THREAT_SIGNING_KEY: ${{ secrets.THREAT_SIGNING_KEY }}
       run: npm run sign:phishlist
+
+    - name: Build ToS;DR database
+      working-directory: ./traceguard-extension
+      run: npm run build:tosdr
+
+    - name: Build extension
+      working-directory: ./traceguard-extension
+      run: npx vite build
       
     - name: Package Extension
       working-directory: ./traceguard-extension

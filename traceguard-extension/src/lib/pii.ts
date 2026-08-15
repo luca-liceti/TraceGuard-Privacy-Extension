@@ -126,8 +126,16 @@ export const BASE_PENALTIES: Record<string, number> = {
  * Get base penalty for a field type
  */
 export function getBasePenalty(fieldType: string): number {
-    const normalizedType = fieldType.toLowerCase();
-    return BASE_PENALTIES[normalizedType] || BASE_PENALTIES.unknown;
+    // Normalize to a canonical key. Detectors emit display strings such as
+    // "credit card"; collapse whitespace and alias them onto the penalty map.
+    const normalizedType = fieldType.toLowerCase().replace(/\s+/g, '');
+    const aliases: Record<string, string> = {
+        creditcard: 'creditCard',
+        card: 'creditCard',
+        cvv: 'creditCard',
+    };
+    const key = aliases[normalizedType] || normalizedType;
+    return BASE_PENALTIES[key] || BASE_PENALTIES.unknown;
 }
 
 // ============================================================================

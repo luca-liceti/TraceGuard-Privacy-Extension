@@ -34,6 +34,7 @@ import {
     FingerprintingDetail,
     NetworkRequestDetail,
 } from "@/lib/types"
+import { sanitizeURL } from "@/lib/sanitize"
 import { format } from "date-fns"
 import {
     CircleCheck, XCircle, AlertTriangle, ThumbsDown, Info, Globe,
@@ -913,7 +914,9 @@ export function SiteDetailsPanel({
                                                     size="sm"
                                                     className="h-6 text-xs px-2 py-0"
                                                     onClick={() => {
-                                                        window.open(`https://tosdr.org/en/service/${policyLegacy.serviceId}`, '_blank');
+                                                        if (Number.isInteger(Number(policyLegacy.serviceId))) {
+                                                            window.open(`https://tosdr.org/en/service/${policyLegacy.serviceId}`, '_blank');
+                                                        }
                                                     }}
                                                 >
                                                     <Globe className="h-3 w-3 mr-1" />
@@ -983,13 +986,17 @@ export function SiteDetailsPanel({
                                         <div className="mt-2 space-y-2">
                                             <h4 className="text-sm font-semibold">{t("Documents")}</h4>
                                             <div className="flex flex-wrap gap-2">
-                                                {policyLegacy.documents.map((doc: any, idx: number) => (
-                                                    <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer">
-                                                        <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer text-xs font-normal">
-                                                            {doc.name}
-                                                        </Badge>
-                                                    </a>
-                                                ))}
+                                                {policyLegacy.documents.map((doc: any, idx: number) => {
+                                                    const safeUrl = sanitizeURL(doc?.url);
+                                                    if (!safeUrl) return null;
+                                                    return (
+                                                        <a key={idx} href={safeUrl} target="_blank" rel="noopener noreferrer">
+                                                            <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer text-xs font-normal">
+                                                                {doc.name}
+                                                            </Badge>
+                                                        </a>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
