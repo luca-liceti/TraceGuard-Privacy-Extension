@@ -19,7 +19,22 @@ const topDomains = [
     'twitter.com', 'instagram.com', 'linkedin.com', 'netflix.com', 'reddit.com',
     'wikipedia.org', 'yahoo.com', 'duckduckgo.com', 'github.com', 'tiktok.com',
     'twitch.tv', 'zoom.us', 'spotify.com', 'pinterest.com', 'tumblr.com',
-    'whatsapp.com', 'telegram.org', 'slack.com', 'discord.com', 'nytimes.com'
+    'whatsapp.com', 'telegram.org', 'slack.com', 'discord.com', 'nytimes.com',
+    'cnn.com', 'bbc.co.uk', 'foxnews.com', 'ebay.com', 'craigslist.org',
+    'imdb.com', 'espn.com', 'chase.com', 'bankofamerica.com', 'wellsfargo.com',
+    'paypal.com', 'walmart.com', 'target.com', 'bestbuy.com', 'homedepot.com',
+    'zillow.com', 'yelp.com', 'tripadvisor.com', 'booking.com', 'airbnb.com',
+    'uber.com', 'lyft.com', 'doordash.com', 'instacart.com', 'grubhub.com',
+    'hulu.com', 'disneyplus.com', 'hbo.com', 'paramountplus.com', 'peacocktv.com',
+    'adobe.com', 'salesforce.com', 'intuit.com', 'zoom.us', 'webex.com',
+    'dropbox.com', 'box.com', 'docusign.com', 'canva.com', 'figma.com',
+    'weather.com', 'accuweather.com', 'wunderground.com', 'npr.org', 'reuters.com',
+    'wsj.com', 'usatoday.com', 'bloomberg.com', 'cnbc.com', 'forbes.com',
+    'businessinsider.com', 'theverge.com', 'wired.com', 'techcrunch.com', 'cnet.com',
+    'stackoverflow.com', 'quora.com', 'medium.com', 'vimeo.com', 'soundcloud.com',
+    'patreon.com', 'kickstarter.com', 'indiegogo.com', 'gofundme.com', 'eventbrite.com',
+    'ticketmaster.com', 'livenation.com', 'stubhub.com', 'seatgeek.com', 'vividseats.com'
+    // Add more domains as needed up to 500
 ];
 
 /**
@@ -97,7 +112,8 @@ async function buildDatabase() {
                     serviceName: service.name,
                     serviceId: service.id,
                     points,
-                    documents
+                    documents,
+                    lastUpdated: Date.now() // Support for Stale-While-Revalidate pattern
                 };
             }
             

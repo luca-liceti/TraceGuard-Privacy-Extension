@@ -216,7 +216,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
       const level = row.getValue("safetyLevel") as string
       return (
         <Badge variant="secondary" className={`px-2.5 py-0.5 ${getSafetyBgColor(level)} ${getSafetyTextColor(level)}`}>
-          {level}
+          {t(level)}
         </Badge>
       )
     },
@@ -234,19 +234,19 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
   {
     accessorKey: "inputs",
     header: t("PII Risk"),
-    cell: ({ row }) => <div>{row.getValue("inputs")}</div>,
+    cell: ({ row }) => <div>{t(row.getValue("inputs") as string)}</div>,
   },
   {
     accessorKey: "reputation",
     header: t("Reputation"),
-    cell: ({ row }) => <div>{row.getValue("reputation")}</div>,
+    cell: ({ row }) => <div>{t(row.getValue("reputation") as string)}</div>,
   },
   {
     accessorKey: "policy",
     header: t("Policy"),
     cell: ({ row }) => {
       const grade = row.getValue("policy") as string
-      return <div className={`font-semibold ${getGradeTextColor(grade)}`}>{grade}</div>
+      return <div className={`font-semibold ${getGradeTextColor(grade)}`}>{t(grade)}</div>
     },
   },
   {
@@ -274,6 +274,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
   },
   {
     id: "actions",
+    header: t("Actions"),
     cell: ({ row, table }) => {
       return (
         <DropdownMenu>
@@ -404,7 +405,7 @@ function GroupedTableBody({
                   variant="secondary"
                   className={`px-2.5 py-0.5 ${getSafetyBgColor(s.safetyLevel)} ${getSafetyTextColor(s.safetyLevel)}`}
                 >
-                  {s.safetyLevel}
+                  {t(s.safetyLevel)}
                 </Badge>
               </TableCell>
 
@@ -430,17 +431,17 @@ function GroupedTableBody({
 
               {/* PII Risk: any Yes wins */}
               <TableCell>
-                <div>{s.inputs}</div>
+                <div>{t(s.inputs)}</div>
               </TableCell>
 
               {/* Reputation: worst-case */}
               <TableCell>
-                <div>{s.reputation}</div>
+                <div>{t(s.reputation)}</div>
               </TableCell>
 
               {/* Policy: most recent */}
               <TableCell>
-                <div className={`font-semibold ${getGradeTextColor(s.policy)}`}>{s.policy}</div>
+                <div className={`font-semibold ${getGradeTextColor(s.policy)}`}>{t(s.policy)}</div>
               </TableCell>
 
               {/* Headers: most recent */}
@@ -530,7 +531,7 @@ function GroupedTableBody({
                     variant="secondary"
                     className={`px-2 py-0 text-xs ${getSafetyBgColor(visit.safetyLevel)} ${getSafetyTextColor(visit.safetyLevel)}`}
                   >
-                    {visit.safetyLevel}
+                    {t(visit.safetyLevel)}
                   </Badge>
                 </TableCell>
 
@@ -541,14 +542,14 @@ function GroupedTableBody({
                 <TableCell><div className="text-sm">{visit.cookies}</div></TableCell>
 
                 {/* PII */}
-                <TableCell><div className="text-sm">{visit.inputs}</div></TableCell>
+                <TableCell><div className="text-sm">{t(visit.inputs)}</div></TableCell>
 
                 {/* Reputation */}
-                <TableCell><div className="text-sm">{visit.reputation}</div></TableCell>
+                <TableCell><div className="text-sm">{t(visit.reputation)}</div></TableCell>
 
                 {/* Policy */}
                 <TableCell>
-                  <div className={`font-semibold text-sm ${getGradeTextColor(visit.policy)}`}>{visit.policy}</div>
+                  <div className={`font-semibold text-sm ${getGradeTextColor(visit.policy)}`}>{t(visit.policy)}</div>
                 </TableCell>
 
                 {/* Headers */}

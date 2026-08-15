@@ -50,9 +50,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   React.useEffect(() => {
     if (userName) {
       const g = [
-        `Welcome back, ${userName} 👋`,
-        `Ready to browse safely, ${userName}?`,
-        `Good to see you, ${userName}`
+        t("Welcome back, {{name}} 👋", { name: userName }),
+        t("Ready to browse safely, {{name}}?", { name: userName }),
+        t("Good to see you, {{name}}", { name: userName })
       ]
       setGreeting(g[Math.floor(Math.random() * g.length)])
     }
@@ -97,7 +97,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {greeting}
           </div>
         )}
-        <NavFooter user={{ name: userName || "User", email: "TraceGuard Vault" }} />
+        <NavFooter user={{ name: userName || t("User"), email: "TraceGuard Vault" }} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

@@ -27,6 +27,7 @@ import {
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { useScoreHistory } from "@/lib/useStorage"
+import { useTranslation } from "react-i18next"
 
 const chartConfig = {
   visitors: {
@@ -50,6 +51,7 @@ export function ChartAreaInteractive({
   timeRange?: string;
   onTimeRangeChange?: (value: string) => void;
 } = {}) {
+  const { t } = useTranslation()
   const isMobile = useIsMobile()
   const [internalTimeRange, setInternalTimeRange] = React.useState("30d")
   
@@ -152,18 +154,18 @@ export function ChartAreaInteractive({
     <ErrorBoundary fallback={
       <Card className="h-[300px] flex items-center justify-center text-muted-foreground">
         <AlertCircle className="mr-2 h-5 w-5" />
-        Failed to load chart
+        {t("Failed to load chart")}
       </Card>
     }>
     <Card className="@container/card h-full">
       <CardHeader className="relative">
-        <CardTitle>User Privacy Score</CardTitle>
+        <CardTitle>{t("User Privacy Score")}</CardTitle>
         <CardDescription>
           <span className="@[540px]/card:block hidden">
-            Average score for {timeRange === '1d' ? 'today' : timeRange === '7d' ? 'the last 7 days' : 'the last 30 days'}
+            {t('Average score for')} {timeRange === '1d' ? t('today') : timeRange === '7d' ? t('the last 7 days') : t('the last 30 days')}
           </span>
           <span className="@[540px]/card:hidden">
-            {timeRange === '1d' ? 'Today' : timeRange === '7d' ? 'Last 7 days' : 'Last 30 days'}
+            {timeRange === '1d' ? t('Today') : timeRange === '7d' ? t('Last 7 days') : t('Last 30 days')}
           </span>
         </CardDescription>
         <div className="absolute right-4 top-4">
@@ -175,13 +177,13 @@ export function ChartAreaInteractive({
             className="@[767px]/card:flex hidden"
           >
             <ToggleGroupItem value="1d" className="h-8 px-2.5">
-              Today
+              {t("Today")}
             </ToggleGroupItem>
             <ToggleGroupItem value="7d" className="h-8 px-2.5">
-              Last 7 days
+              {t("Last 7 days")}
             </ToggleGroupItem>
             <ToggleGroupItem value="30d" className="h-8 px-2.5">
-              Last 30 days
+              {t("Last 30 days")}
             </ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -189,17 +191,17 @@ export function ChartAreaInteractive({
               className="@[767px]/card:hidden flex w-40"
               aria-label="Select a value"
             >
-              <SelectValue placeholder="Last 30 days" />
+              <SelectValue placeholder={t("Last 30 days")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="1d">
-                Today
+                {t("Today")}
               </SelectItem>
               <SelectItem value="7d">
-                Last 7 days
+                {t("Last 7 days")}
               </SelectItem>
               <SelectItem value="30d">
-                Last 30 days
+                {t("Last 30 days")}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -212,8 +214,8 @@ export function ChartAreaInteractive({
               <Activity className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">No data yet</p>
-              <p className="text-xs text-muted-foreground/70 mt-0.5">Your privacy score history will appear here over time.</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("No data yet")}</p>
+              <p className="text-xs text-muted-foreground/70 mt-0.5">{t("Your privacy score history will appear here over time.")}</p>
             </div>
           </div>
         ) : (

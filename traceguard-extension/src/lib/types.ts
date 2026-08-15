@@ -273,6 +273,7 @@ export interface UserSettings {
     displayMode?: 'popup' | 'sidebar';   // How the extension opens
     autoLockTimeout?: number;            // Vault auto-lock timeout in minutes (0 = never)
     databaseRefreshDays?: 1 | 3 | 7 | 14 | 30;
+    enableCloudTosdr?: boolean;          // Cloud Privacy Checks toggle
 }
 
 // =============================================================================

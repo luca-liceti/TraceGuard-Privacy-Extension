@@ -113,31 +113,140 @@ function gradeToScore(grade: string | undefined): number {
 }
 
 import { getTosDRMap } from './services/database-loader';
+import { storage } from '../lib/storage';
+
+interface CacheEntry {
+    data: TosDRResult;
+    timestamp: number;
+}
+
+let inMemoryCache: Record<string, CacheEntry> | null = null;
+
+async function getCache(): Promise<Record<string, CacheEntry>> {
+    if (inMemoryCache) return inMemoryCache;
+    const result = await chrome.storage.local.get('tosdr_cache');
+    inMemoryCache = result.tosdr_cache || {};
+    return inMemoryCache!;
+}
+
+async function saveCache(domain: string, entry: CacheEntry) {
+    if (!inMemoryCache) inMemoryCache = {};
+    inMemoryCache[domain] = entry;
+    await chrome.storage.local.set({ tosdr_cache: inMemoryCache });
+}
+
+async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
+    try {
+        const searchRes = await fetch(`https://api.tosdr.org/search/v4/?query=${domain}`);
+        if (!searchRes.ok) return null;
+        const searchData = await searchRes.json();
+        
+        if (searchData?.parameters?.services?.[0]) {
+            const service = searchData.parameters.services[0];
+            const detailsRes = await fetch(`https://api.tosdr.org/service/v2/?id=${service.id}`);
+            if (!detailsRes.ok) return null;
+            const detailsData = await detailsRes.json();
+            const details = detailsData?.parameters;
+            
+            if (details) {
+                return {
+                    found: true,
+                    grade: service.rating && service.rating !== 'N/A' ? service.rating : undefined,
+                    score: gradeToScore(service.rating),
+                    source: 'tosdr',
+                    serviceName: service.name,
+                    serviceId: service.id,
+                    points: details.points?.map((p: any) => ({ title: p.title, classification: p.classification })) || [],
+                    documents: details.documents?.map((d: any) => ({ name: d.name, url: d.url })) || []
+                };
+            }
+        }
+    } catch (err) {
+        console.error('[ToS;DR] Fetch error:', err);
+    }
+    return null;
+}
 
 /**
- * Check ToS;DR rating for a domain using the bundled local database
+ * Check ToS;DR rating using a Hybrid approach (Stale-While-Revalidate).
  */
 export async function checkTosDR(url: string): Promise<TosDRResult> {
     const domain = extractMainDomain(url);
-    console.log(`[ToS;DR] Checking domain locally: ${domain} (from ${url})`);
+    const settings = await storage.getSettings();
+    const enableCloud = settings.enableCloudTosdr ?? true;
+    const refreshDays = settings.databaseRefreshDays || 7;
+    const refreshMs = refreshDays * 24 * 60 * 60 * 1000;
+    
+    // Helper to trigger background update
+    const triggerLazyUpdate = async () => {
+        if (!enableCloud) return;
+        const fresh = await fetchFromTosdr(domain);
+        if (fresh) {
+            await saveCache(domain, { data: fresh, timestamp: Date.now() });
+        } else {
+            // Cache a negative result to avoid spamming the API
+            await saveCache(domain, { data: { found: false, score: 0, source: 'fallback' }, timestamp: Date.now() });
+        }
+    };
 
-    const tosdrData = await getTosDRMap();
-    // Use hasOwnProperty guard to prevent prototype pollution.
-    // A domain like "__proto__" or "constructor" must not reach the Object prototype chain.
-    const result = Object.prototype.hasOwnProperty.call(tosdrData, domain) ? tosdrData[domain] : undefined;
-
-    if (result) {
-        console.log(`[ToS;DR] Found local rating for ${domain}: Score ${result.score}`);
-        return result as TosDRResult;
+    // 1. Check dynamic cache first
+    const cache = await getCache();
+    const cachedEntry = Object.prototype.hasOwnProperty.call(cache, domain) ? cache[domain] : undefined;
+    
+    if (cachedEntry) {
+        const isStale = (Date.now() - cachedEntry.timestamp) > refreshMs;
+        if (isStale) {
+            console.log(`[ToS;DR] Cached rating stale for ${domain}, triggering lazy update`);
+            triggerLazyUpdate(); // fire and forget
+        } else {
+            console.log(`[ToS;DR] Cache hit for ${domain}`);
+        }
+        return cachedEntry.data;
     }
-
-    console.log(`[ToS;DR] No local rating found for: ${domain}`);
+    
+    // 2. Check local seed database
+    const seedMap = await getTosDRMap();
+    const seedResult = Object.prototype.hasOwnProperty.call(seedMap, domain) ? seedMap[domain] : undefined;
+    
+    if (seedResult) {
+        const seedTimestamp = seedResult.lastUpdated || 0;
+        const isStale = seedTimestamp > 0 && (Date.now() - seedTimestamp) > refreshMs;
+        
+        // If missing timestamp or explicitly stale, trigger an update
+        if (isStale || seedTimestamp === 0) {
+            console.log(`[ToS;DR] Seed rating stale for ${domain}, triggering lazy update`);
+            triggerLazyUpdate();
+        } else {
+            console.log(`[ToS;DR] Valid seed rating for ${domain}`);
+        }
+        
+        return seedResult as TosDRResult;
+    }
+    
+    // 3. Not in seed, not in cache
+    if (enableCloud) {
+        console.log(`[ToS;DR] Fetching dynamically for niche domain: ${domain}`);
+        const fresh = await fetchFromTosdr(domain);
+        if (fresh) {
+            await saveCache(domain, { data: fresh, timestamp: Date.now() });
+            return fresh;
+        }
+        
+        // Cache failure
+        const fallback: TosDRResult = { found: false, score: 0, source: 'fallback' };
+        await saveCache(domain, { data: fallback, timestamp: Date.now() });
+        return fallback;
+    }
+    
+    console.log(`[ToS;DR] No local rating and cloud disabled for: ${domain}`);
     return { found: false, score: 0, source: 'fallback' };
 }
 
 /**
- * Clear ToS;DR cache (No-op now that it's local)
+ * Clear ToS;DR dynamic cache
  */
 export async function clearTosDRCache(): Promise<void> {
-    console.log('[ToS;DR] Local database used, no cache to clear');
+    inMemoryCache = {};
+    await chrome.storage.local.remove('tosdr_cache');
+    console.log('[ToS;DR] Dynamic cache cleared');
 }

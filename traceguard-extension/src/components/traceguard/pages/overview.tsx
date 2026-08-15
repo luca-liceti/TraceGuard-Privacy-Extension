@@ -45,11 +45,11 @@ export default function OverviewPage() {
     }
 
     const getSafetyLevel = (wss: number): string => {
-      if (wss >= 80) return t("Excellent")
-      if (wss >= 60) return t("Good")
-      if (wss >= 40) return t("Fair")
-      if (wss >= 20) return t("Poor")
-      return t("Critical")
+      if (wss >= 80) return "Excellent"
+      if (wss >= 60) return "Good"
+      if (wss >= 40) return "Fair"
+      if (wss >= 20) return "Poor"
+      return "Critical"
     }
 
     const visits: SiteVisit[] = []
@@ -87,15 +87,15 @@ export default function OverviewPage() {
 
       const reputationDetails = Object.keys(group.detectors.reputation?.details || {}).length > 0 && group.detectors.reputation?.details?.status
         ? group.detectors.reputation?.details 
-        : { status: group.detectors.reputation?.score === 100 ? t('Clean') : group.detectors.reputation?.score === 0 ? t('Blacklisted') : t('Suspicious') };
+        : { status: group.detectors.reputation?.score === 100 ? 'Clean' : group.detectors.reputation?.score === 0 ? 'Blacklisted' : 'Suspicious' };
 
       const enriched = siteCache[group.domain]?.enrichedDetails
 
       const trackersCount = enriched?.trackers?.summary?.total ?? trackingDetails?.trackerCount ?? trackingDetails?.count ?? 0
       const cookiesCount = enriched?.cookies?.summary?.total ?? cookiesDetails?.tracking ?? 0
       const sensitiveInputsCount = inputsDetails?.sensitive ?? 0
-      const reputationStatus = reputationDetails?.status ?? t("Unknown")
-      const policyGrade = policyDetails?.grade ?? t("N/A")
+      const reputationStatus = reputationDetails?.status ?? "Unknown"
+      const policyGrade = policyDetails?.grade ?? "N/A"
 
       const finalDetails = {
          tracking: { details: trackingDetails },
@@ -116,7 +116,7 @@ export default function OverviewPage() {
         safetyLevel,
         trackers: trackersCount,
         cookies: cookiesCount,
-        inputs: sensitiveInputsCount > 0 ? t("Yes") : t("No"),
+        inputs: sensitiveInputsCount > 0 ? "Yes" : "No",
         reputation: reputationStatus,
         policy: policyGrade,
         headersGrade,

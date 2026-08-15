@@ -203,7 +203,7 @@ export function SearchCommand() {
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-xs font-semibold tabular-nums ${colorClass}`}>{wss}</span>
           <Badge variant="outline" className={`text-[10px] uppercase tracking-wide ${colorClass}`}>
-            {safetyLevelStr}
+            {t(safetyLevelStr)}
           </Badge>
         </div>
       </CommandItem>

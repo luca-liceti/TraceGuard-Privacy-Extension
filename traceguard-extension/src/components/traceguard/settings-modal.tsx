@@ -186,6 +186,7 @@ export function SettingsModal() {
     const [databaseRefreshDays, setDatabaseRefreshDays] = useState(settings?.databaseRefreshDays || 7)
     const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 50)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
+    const [enableCloudTosdr, setEnableCloudTosdr] = useState(settings?.enableCloudTosdr ?? true)
     const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
     const [autoLockTimeout, setAutoLockTimeout] = useState(settings?.autoLockTimeout ?? -1)
     const [whitelist, setWhitelist] = useState<string[]>(settings?.whitelist || [])
@@ -226,6 +227,7 @@ export function SettingsModal() {
             setDatabaseRefreshDays(settings.databaseRefreshDays || 7)
             setWssThreshold(settings.wssThreshold || 50)
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
+            setEnableCloudTosdr(settings.enableCloudTosdr ?? true)
             setDisplayMode(settings.displayMode || "popup")
             setAutoLockTimeout(settings.autoLockTimeout ?? -1)
             setWhitelist(settings.whitelist || [])
@@ -248,6 +250,7 @@ export function SettingsModal() {
             databaseRefreshDays: databaseRefreshDays as 1 | 3 | 7 | 14 | 30,
             wssThreshold,
             enablePIIDetection,
+            enableCloudTosdr,
             displayMode,
             autoLockTimeout,
             whitelist,
@@ -277,6 +280,7 @@ export function SettingsModal() {
             databaseRefreshDays: 7 as const,
             wssThreshold: 50,
             enablePIIDetection: true,
+            enableCloudTosdr: true,
             displayMode: "popup" as const,
             autoLockTimeout: -1,
         }
@@ -289,6 +293,7 @@ export function SettingsModal() {
         setDatabaseRefreshDays(defaultPreferences.databaseRefreshDays)
         setWssThreshold(defaultPreferences.wssThreshold)
         setEnablePIIDetection(defaultPreferences.enablePIIDetection)
+        setEnableCloudTosdr(defaultPreferences.enableCloudTosdr)
         setDisplayMode(defaultPreferences.displayMode)
         setAutoLockTimeout(defaultPreferences.autoLockTimeout)
 
@@ -550,6 +555,21 @@ export function SettingsModal() {
                         </SettingItem>
 
                         <SettingItem
+                            label={t("Enhanced Policy Analysis (Cloud)")}
+                            description={t("Securely check tosdr.org for privacy ratings of unrated niche websites")}
+                            controlId="cloud-tosdr-toggle"
+                        >
+                            <Switch
+                                id="cloud-tosdr-toggle"
+                                checked={enableCloudTosdr}
+                                onCheckedChange={(checked) => {
+                                    setEnableCloudTosdr(checked)
+                                    handleChange()
+                                }}
+                            />
+                        </SettingItem>
+
+                        <SettingItem
                             label={t("Vault Auto-Lock")}
                             description={t("When should your privacy vault automatically lock?")}
                         >
@@ -776,11 +796,11 @@ export function SettingsModal() {
                             }}>
                                 <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="1">1 day</SelectItem>
-                                    <SelectItem value="3">3 days</SelectItem>
-                                    <SelectItem value="7">7 days</SelectItem>
-                                    <SelectItem value="14">14 days</SelectItem>
-                                    <SelectItem value="30">30 days</SelectItem>
+                                    <SelectItem value="1">{t("1 day")}</SelectItem>
+                                    <SelectItem value="3">{t("3 days")}</SelectItem>
+                                    <SelectItem value="7">{t("7 days")}</SelectItem>
+                                    <SelectItem value="14">{t("14 days")}</SelectItem>
+                                    <SelectItem value="30">{t("30 days")}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </SettingItem>
@@ -795,7 +815,7 @@ export function SettingsModal() {
                                     </Label>
                                 </div>
                                 <span className="text-sm text-muted-foreground">
-                                    {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} MB of {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
+                                    {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} MB {t("of")} {(storageInfo.quota / 1024 / 1024).toFixed(0)} MB
                                 </span>
                             </div>
                             <Progress value={storagePercentage} className="h-2" />

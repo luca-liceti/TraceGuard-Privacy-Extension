@@ -55,7 +55,8 @@ const DEFAULT_SETTINGS: UserSettings = {
     blacklist: [],                // Sites you've marked as always dangerous
     lowPowerMode: false,          // Reduce CPU usage (skip some checks)
     logRetentionDays: 0,          // 0 = keep forever, until storage is full
-    databaseRefreshDays: 7
+    databaseRefreshDays: 7,
+    enableCloudTosdr: true        // Enhanced Policy Analysis (Cloud) defaults to true
 };
 
 /**
