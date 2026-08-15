@@ -3277,6 +3277,998 @@
     ],
     "documents": []
   },
+  "tiktok.com": {
+    "found": true,
+    "grade": "E",
+    "score": 20,
+    "source": "tosdr-local",
+    "serviceName": "TikTok",
+    "serviceId": "1448",
+    "points": [
+      {
+        "title": "You maintain ownership of your data",
+        "classification": "good"
+      },
+      {
+        "title": "Users should revisit the terms periodically, although in case of material changes, the service will notify",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service can suspend your account for several reasons",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service forces users into binding arbitration in the case of disputes",
+        "classification": "bad"
+      },
+      {
+        "title": "There is a date of the last update of the terms",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data may be sold or otherwise transferred as part of a bankruptcy proceeding or other type of financial transaction",
+        "classification": "bad"
+      },
+      {
+        "title": "Your IP address is collected, which can be used to view your approximate location",
+        "classification": "neutral"
+      },
+      {
+        "title": "Third-party cookies are used for statistics",
+        "classification": "bad"
+      },
+      {
+        "title": "Your data may be processed and stored anywhere in the world",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is gathered about you through third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data is used to employ targeted third-party advertising",
+        "classification": "bad"
+      },
+      {
+        "title": "Your profile is combined across various products",
+        "classification": "bad"
+      },
+      {
+        "title": "Details are provided about what kind of information they collect",
+        "classification": "good"
+      },
+      {
+        "title": "Private messages can be read",
+        "classification": "blocker"
+      },
+      {
+        "title": "Third-party cookies are used for advertising",
+        "classification": "bad"
+      },
+      {
+        "title": "This service may collect, use, and share location data",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is provided about how your personal data is used",
+        "classification": "good"
+      },
+      {
+        "title": "This service shares your personal data with third parties that are not involved in its operation",
+        "classification": "bad"
+      },
+      {
+        "title": "This service gives your personal data to third parties involved in its operation",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data is not sold",
+        "classification": "good"
+      },
+      {
+        "title": "You are tracked via web beacons, tracking pixels and device fingerprinting",
+        "classification": "bad"
+      },
+      {
+        "title": "This service ignores the Do Not Track (DNT) header and tracks users anyway even if they set this header.",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your IP address is collected, which can be used to view your approximate location",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your biometric data is collected",
+        "classification": "bad"
+      },
+      {
+        "title": "This service receives your precise location through GPS coordinates",
+        "classification": "bad"
+      },
+      {
+        "title": " You are being tracked via social media cookies/pixels",
+        "classification": "bad"
+      },
+      {
+        "title": "Many different types of personal data are collected",
+        "classification": "bad"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal information is used for many different purposes",
+        "classification": "bad"
+      },
+      {
+        "title": "The service can delete your account without prior notice and without a reason",
+        "classification": "bad"
+      },
+      {
+        "title": "This service does not guarantee that it or the products obtained through it meet the users' expectations or requirements",
+        "classification": "neutral"
+      },
+      {
+        "title": "You agree to defend, indemnify, and hold the service harmless in case of a claim related to your use of the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
+      },
+      {
+        "title": "The service may change its terms at any time, but the user will receive notification of the changes.",
+        "classification": "neutral"
+      },
+      {
+        "title": "If you offer suggestions to the service, they may use that without your approval or compensation, but they do not become the owner",
+        "classification": "good"
+      },
+      {
+        "title": "If you are the target of a copyright claim, your content may be removed",
+        "classification": "neutral"
+      },
+      {
+        "title": "You waive your moral rights",
+        "classification": "blocker"
+      },
+      {
+        "title": "Specific content can be deleted without reason and may be removed without prior notice",
+        "classification": "blocker"
+      },
+      {
+        "title": "Your account can be deleted without prior notice and without a reason",
+        "classification": "bad"
+      },
+      {
+        "title": "The service does not guarantee accuracy or reliability of the information provided",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your account can be suspended for several reasons",
+        "classification": "neutral"
+      },
+      {
+        "title": "Blocking first party cookies may limit your ability to use the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "Content you post may be edited by the service for any reason",
+        "classification": "blocker"
+      },
+      {
+        "title": "The service provider makes no warranty regarding uninterrupted, timely, secure or error-free service",
+        "classification": "neutral"
+      }
+    ],
+    "documents": []
+  },
+  "twitch.tv": {
+    "found": true,
+    "grade": "E",
+    "score": 20,
+    "source": "tosdr-local",
+    "serviceName": "Twitch",
+    "serviceId": "200",
+    "points": [
+      {
+        "title": "The service is provided 'as is' and to be used at the users' sole risk",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service tracks which web page referred you to it",
+        "classification": "bad"
+      },
+      {
+        "title": "This service collects your IP address for location use",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data is aggregated into statistics",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service provides a complete list of all cookies set by its website",
+        "classification": "good"
+      },
+      {
+        "title": "The service provides details about what kinds of personal information they collect",
+        "classification": "good"
+      },
+      {
+        "title": "The service may collect extra data about you through promotions",
+        "classification": "bad"
+      },
+      {
+        "title": "Tracking via third-party cookies for other purposes without your consent.",
+        "classification": "bad"
+      },
+      {
+        "title": "This service uses third-party cookies for statistics",
+        "classification": "bad"
+      },
+      {
+        "title": "Users shall not interfere with another person's enjoyment of the service",
+        "classification": "bad"
+      },
+      {
+        "title": " Terms may be changed any time at their discretion, without notice to the user ",
+        "classification": "bad"
+      },
+      {
+        "title": "You have the right to leave this service at any time",
+        "classification": "good"
+      },
+      {
+        "title": "Blocking cookies may limit your ability to use the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service may use your personal information for marketing purposes",
+        "classification": "bad"
+      },
+      {
+        "title": "The service allows you to opt out of providing personal information to third parties",
+        "classification": "good"
+      },
+      {
+        "title": "This service is only available to users over a certain age",
+        "classification": "neutral"
+      },
+      {
+        "title": "You can opt out of promotional communications",
+        "classification": "good"
+      },
+      {
+        "title": "This service may keep personal data after a request for erasure for business interests or legal obligations",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data is given to third parties",
+        "classification": "neutral"
+      },
+      {
+        "title": "Instead of asking directly, this Service will assume your consent merely from your usage.",
+        "classification": "bad"
+      },
+      {
+        "title": "Provides instructions on how to submit a copyright claim",
+        "classification": "neutral"
+      },
+      {
+        "title": "You cannot distribute or disclose your account to third parties",
+        "classification": "neutral"
+      },
+      {
+        "title": "Users agree not to use the service for illegal purposes",
+        "classification": "neutral"
+      },
+      {
+        "title": "Users agree not to submit libelous, harassing or threatening content",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service prohibits users from attempting to gain unauthorized access to other computer systems",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service prohibits users sending chain letters, junk mail, spam or any unsolicited messages",
+        "classification": "neutral"
+      },
+      {
+        "title": "Spidering or crawling is not allowed",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service does not condone any ideas contained in its user-generated contents",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service can license user content to third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "defend, indemnify, hold harmless; survives termination",
+        "classification": "neutral"
+      },
+      {
+        "title": "There is a date of the last update of the agreements",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service does not guarantee accuracy or reliability of the information provided",
+        "classification": "neutral"
+      },
+      {
+        "title": "Users have 1 year to take legal action against the service",
+        "classification": "bad"
+      },
+      {
+        "title": "Invalidity of any portion of the Terms of Service does not entail invalidity of its remainder",
+        "classification": "neutral"
+      },
+      {
+        "title": "The court of law governing the terms is in California, USA.",
+        "classification": "neutral"
+      },
+      {
+        "title": "Failure to enforce any provision of the Terms of Service does not constitute a waiver of such provision",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service does not guarantee that it or the products obtained through it meet the users' expectations or requirements",
+        "classification": "neutral"
+      },
+      {
+        "title": "Any liability on behalf of the service is only limited to the fees you paid as a user",
+        "classification": "bad"
+      },
+      {
+        "title": "This service forces users into binding arbitration in the case of disputes",
+        "classification": "bad"
+      },
+      {
+        "title": "The service can delete specific content without reason and may do it without prior notice",
+        "classification": "blocker"
+      },
+      {
+        "title": "The service may use tracking pixels, web beacons, browser fingerprinting, and/or device fingerprinting on users.",
+        "classification": "bad"
+      },
+      {
+        "title": "Third parties used by the service are bound by confidentiality obligations",
+        "classification": "good"
+      },
+      {
+        "title": "Prohibits the posting of pornographic content",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service has non-exclusive use of your content",
+        "classification": "good"
+      },
+      {
+        "title": "Users are responsible for any risks, damages, or losses they may incur by downloading materials",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service gathers information about you through third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "This service allows you to retrieve an archive of your data",
+        "classification": "good"
+      },
+      {
+        "title": "The service can sell or otherwise transfer your personal data as part of a bankruptcy proceeding or other type of financial transaction.",
+        "classification": "bad"
+      },
+      {
+        "title": "You can opt out of targeted advertising",
+        "classification": "good"
+      },
+      {
+        "title": "This service requires first-party cookies",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service provides information about how they collect personal data",
+        "classification": "good"
+      },
+      {
+        "title": "This service employs third-party cookies, but with opt-out instructions",
+        "classification": "bad"
+      },
+      {
+        "title": "The service uses social media cookies/pixels",
+        "classification": "bad"
+      },
+      {
+        "title": "The service informs users about the risk of publishing personal info online",
+        "classification": "good"
+      },
+      {
+        "title": "This service ignores the Do Not Track (DNT) header and tracks users anyway even if they set this header.",
+        "classification": "neutral"
+      },
+      {
+        "title": "There is a date of the last update of the terms",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are responsible for maintaining the security of your account and for the activities on your account",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service can distribute your content through any media known now or in the future ",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your profile is combined across various products",
+        "classification": "bad"
+      },
+      {
+        "title": "You agree to defend, indemnify, and hold the service harmless in case of a claim related to your use of the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service can delete your account without prior notice and without a reason",
+        "classification": "bad"
+      },
+      {
+        "title": "The service's data retention period is kept to the minimum necessary for fulfilling its purposes",
+        "classification": "good"
+      }
+    ],
+    "documents": []
+  },
+  "zoom.us": {
+    "found": true,
+    "grade": "D",
+    "score": 40,
+    "source": "tosdr-local",
+    "serviceName": "Zoom Video Communications",
+    "serviceId": "2198",
+    "points": [
+      {
+        "title": "They may stop providing the service at any time",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service informs users that its privacy policy does not apply to third party websites",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are responsible for maintaining the security of your account and for the activities on your account",
+        "classification": "neutral"
+      },
+      {
+        "title": "Users agree not to submit libelous, harassing or threatening content",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service provides archives of their Terms of Service so that changes can be viewed over time",
+        "classification": "good"
+      },
+      {
+        "title": "The court of law governing the terms is in a jurisdiction that is friendlier to user privacy protection.",
+        "classification": "good"
+      },
+      {
+        "title": "The court of law governing the terms is in Santa Clara County, California, USA",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service forces users into binding arbitration in the case of disputes",
+        "classification": "bad"
+      },
+      {
+        "title": "The service may use tracking pixels, web beacons, browser fingerprinting, and/or device fingerprinting on users.",
+        "classification": "bad"
+      },
+      {
+        "title": "The service may sell your data unless you opt out",
+        "classification": "bad"
+      },
+      {
+        "title": "Third parties used by the service are bound by confidentiality obligations",
+        "classification": "good"
+      },
+      {
+        "title": "You can request access, correction and/or deletion of your data",
+        "classification": "good"
+      },
+      {
+        "title": "This service gathers information about you through third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "This service tracks which web page referred you to it",
+        "classification": "bad"
+      },
+      {
+        "title": "You maintain ownership of your data",
+        "classification": "good"
+      },
+      {
+        "title": "This service is only available to users over a certain age",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service can delete your content if you violate the terms",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service may collect, use, and share location data",
+        "classification": "bad"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
+      },
+      {
+        "title": "The service provides details about what kinds of personal information they collect",
+        "classification": "good"
+      },
+      {
+        "title": "You can opt out of targeted advertising",
+        "classification": "good"
+      },
+      {
+        "title": "This service employs third-party cookies, but with opt-out instructions",
+        "classification": "bad"
+      },
+      {
+        "title": "You authorise the service to charge a credit card supplied on re-occurring basis",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service does not guarantee that it or the products obtained through it meet the users' expectations or requirements",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service provider makes no warranty regarding uninterrupted, timely, secure or error-free service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You agree to defend, indemnify, and hold the service harmless in case of a claim related to your use of the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "Any liability on behalf of the service is only limited to the fees you paid as a user",
+        "classification": "bad"
+      },
+      {
+        "title": "Users should revisit the terms periodically, although in case of material changes, the service will notify",
+        "classification": "neutral"
+      },
+      {
+        "title": "User accounts can be terminated after having been in breach of the terms of service repeatedly",
+        "classification": "good"
+      },
+      {
+        "title": "Users are responsible for any risks, damages, or losses they may incur by downloading materials",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service collects your IP address, which can be used to view your approximate location",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service does not guarantee accuracy or reliability of the information provided",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service can suspend your account for several reasons",
+        "classification": "neutral"
+      },
+      {
+        "title": "Users agree not to use the service for illegal purposes",
+        "classification": "neutral"
+      },
+      {
+        "title": "Failure to enforce any provision of the Terms of Service does not constitute a waiver of such provision",
+        "classification": "neutral"
+      },
+      {
+        "title": "Invalidity of any portion of the Terms of Service does not entail invalidity of its remainder",
+        "classification": "neutral"
+      },
+      {
+        "title": "Users have a reduced time period to take legal action against the service",
+        "classification": "bad"
+      },
+      {
+        "title": "The service uses your personal data to employ targeted third-party advertising",
+        "classification": "bad"
+      },
+      {
+        "title": "Tracking via third-party cookies for advertising",
+        "classification": "bad"
+      },
+      {
+        "title": "This service allows you to retrieve an archive of your data",
+        "classification": "good"
+      },
+      {
+        "title": "This service may keep personal data after a request for erasure for business interests or legal obligations",
+        "classification": "bad"
+      },
+      {
+        "title": "The service will only respond to government requests that are reasonable",
+        "classification": "good"
+      },
+      {
+        "title": "You can opt out of promotional communications",
+        "classification": "good"
+      },
+      {
+        "title": " The service is only available in some countries approved by its government",
+        "classification": "bad"
+      },
+      {
+        "title": "Do Not Track (DNT) headers are ignored and you are tracked anyway even if you set this header.",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data may be used for marketing purposes",
+        "classification": "bad"
+      },
+      {
+        "title": "There is a date of the last update of the agreements",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service gives your personal data to third parties involved in its operation",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data may be sold or otherwise transferred as part of a bankruptcy proceeding or other type of financial transaction",
+        "classification": "bad"
+      },
+      {
+        "title": "This service assumes no liability for any losses or damages resulting from any matter relating to the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You have the right to leave this service at any time",
+        "classification": "good"
+      },
+      {
+        "title": "The service uses social media cookies/pixels",
+        "classification": "bad"
+      },
+      {
+        "title": "Third-party cookies are used for statistics",
+        "classification": "bad"
+      },
+      {
+        "title": "The service is provided 'as is' and to be used at the users' sole risk",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your data may be processed and stored anywhere in the world",
+        "classification": "bad"
+      },
+      {
+        "title": "The service will not allow third parties to access your personal information without a legal basis",
+        "classification": "good"
+      },
+      {
+        "title": "Instead of asking directly, this Service will assume your consent merely from your usage.",
+        "classification": "bad"
+      }
+    ],
+    "documents": []
+  },
+  "spotify.com": {
+    "found": true,
+    "grade": "E",
+    "score": 20,
+    "source": "tosdr-local",
+    "serviceName": "Spotify",
+    "serviceId": "225",
+    "points": [
+      {
+        "title": "Many third parties are involved in operating the service",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is provided about how your personal data is used",
+        "classification": "good"
+      },
+      {
+        "title": "They may stop providing the service at any time",
+        "classification": "neutral"
+      },
+      {
+        "title": "You must report to the service any unauthorized use of your account or any breach of security",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service is only available for use individually and non-commercially.",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service does not guarantee that it or the products obtained through it meet the users' expectations or requirements",
+        "classification": "neutral"
+      },
+      {
+        "title": "Minors must have the authorization of their legal guardians to use the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service is not responsible for linked or (clearly) quoted content from third-party content providers",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service provider makes no warranty regarding uninterrupted, timely, secure or error-free service",
+        "classification": "neutral"
+      },
+      {
+        "title": "Specific content can be deleted without reason and may be removed without prior notice",
+        "classification": "blocker"
+      },
+      {
+        "title": "Usernames can be rejected or changed for any reason",
+        "classification": "bad"
+      },
+      {
+        "title": "The service has non-exclusive use of your content",
+        "classification": "good"
+      },
+      {
+        "title": "Instructions are provided on how to submit a copyright claim",
+        "classification": "neutral"
+      },
+      {
+        "title": "A free help desk is provided",
+        "classification": "good"
+      },
+      {
+        "title": "This service informs you that its Terms of Service does not apply to third party websites",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your account can be suspended for several reasons",
+        "classification": "neutral"
+      },
+      {
+        "title": "You maintain ownership of your content",
+        "classification": "good"
+      },
+      {
+        "title": "There is a date of the last update of the agreements",
+        "classification": "neutral"
+      },
+      {
+        "title": "Third parties are involved in operating the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service has a no refund policy with some exceptions",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your content can be licensed to third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "You waive your moral rights",
+        "classification": "blocker"
+      },
+      {
+        "title": "If you offer suggestions to the service, they become the owner of the ideas that you give them",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data is used to employ targeted third-party advertising",
+        "classification": "bad"
+      },
+      {
+        "title": "User accounts can be terminated after having been in breach of the terms of service repeatedly",
+        "classification": "good"
+      },
+      {
+        "title": "The service is provided 'as is' and to be used at your sole risk",
+        "classification": "neutral"
+      },
+      {
+        "title": "No guarantee is given regarding quality",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service provider makes no warranty regarding uninterrupted, timely, secure or error-free service",
+        "classification": "neutral"
+      },
+      {
+        "title": "The court of law governing the terms is in New York, New York",
+        "classification": "neutral"
+      },
+      {
+        "title": "Archives of their agreements are provided so that changes can be viewed over time",
+        "classification": "good"
+      },
+      {
+        "title": "Instead of asking directly, this Service will assume your consent to changes of terms merely from your usage.",
+        "classification": "bad"
+      },
+      {
+        "title": "Invalidity of any portion of the Terms of Service does not entail invalidity of its remainder",
+        "classification": "neutral"
+      },
+      {
+        "title": "Failure to enforce any provision of the Terms of Service does not constitute a waiver of such provision",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service assumes no responsibility and liability for the contents of links to other websites",
+        "classification": "neutral"
+      },
+      {
+        "title": "You agree to indemnify and hold the service harmless in case of a claim related to your use of the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are forced into binding arbitration in case of disputes",
+        "classification": "bad"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
+      },
+      {
+        "title": "The terms may be changed at any time, but you will receive notification of the changes",
+        "classification": "neutral"
+      },
+      {
+        "title": "Any liability on behalf of the service is only limited to the fees you paid as a user (or $30 USD)",
+        "classification": "bad"
+      },
+      {
+        "title": "You have the right to leave this service at any time",
+        "classification": "good"
+      },
+      {
+        "title": "Information is provided about what kind of personal information is collected",
+        "classification": "good"
+      },
+      {
+        "title": "Extra data may be collected about you through promotions",
+        "classification": "bad"
+      },
+      {
+        "title": "Your IP address is collected, which can be used to view your approximate location",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are responsible for maintaining the security of your account and for the activities on your account",
+        "classification": "neutral"
+      },
+      {
+        "title": "You can request access, correction and/or deletion of your data",
+        "classification": "good"
+      },
+      {
+        "title": "Location data may be collected, used and/or shared",
+        "classification": "bad"
+      },
+      {
+        "title": "Your profile is combined across various products",
+        "classification": "bad"
+      },
+      {
+        "title": " You are being tracked via social media cookies/pixels",
+        "classification": "bad"
+      },
+      {
+        "title": "Some personal data may be kept for business interests or legal obligations",
+        "classification": "bad"
+      },
+      {
+        "title": "You can opt out of targeted advertising",
+        "classification": "good"
+      },
+      {
+        "title": "Many different types of personal data are collected",
+        "classification": "bad"
+      },
+      {
+        "title": "You are tracked via web beacons, tracking pixels, browser fingerprinting, and/or device fingerprinting",
+        "classification": "bad"
+      },
+      {
+        "title": "App required for this service requires broad device permissions",
+        "classification": "bad"
+      },
+      {
+        "title": "Your biometric data is collected",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is gathered about you through third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "You can limit how your information is used by third-parties and the service",
+        "classification": "good"
+      },
+      {
+        "title": "Your personal data may be used for marketing purposes",
+        "classification": "bad"
+      },
+      {
+        "title": "This service is only available to users over 18 years old",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data is used for automated decision-making, profiling or AI training",
+        "classification": "blocker"
+      },
+      {
+        "title": "This service shares your personal data with third parties that are not essential to its operation",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data is aggregated into statistics",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service gives your personal data to third parties involved in its operation",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are responsible for maintaining the security of your account and for the activities on your account",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data may be sold or otherwise transferred as part of a bankruptcy proceeding or other type of financial transaction",
+        "classification": "bad"
+      },
+      {
+        "title": "Some personal data may be kept for business interests or legal obligations",
+        "classification": "bad"
+      },
+      {
+        "title": "Your data may be processed and stored anywhere in the world",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is provided about security practices",
+        "classification": "good"
+      },
+      {
+        "title": "You are informed about the risk of publishing personal info online",
+        "classification": "good"
+      },
+      {
+        "title": "The service assumes no liability for any damages the user incurs",
+        "classification": "neutral"
+      },
+      {
+        "title": "You can retrieve an archive of your data",
+        "classification": "good"
+      },
+      {
+        "title": "Your personal data may be disclosed to comply with government requests without notice to you",
+        "classification": "bad"
+      },
+      {
+        "title": "The service claims to be CCPA compliant for California users",
+        "classification": "good"
+      },
+      {
+        "title": "You authorise the service to charge a credit card supplied on re-occurring basis",
+        "classification": "neutral"
+      },
+      {
+        "title": "Separate policies are employed for different parts of the service",
+        "classification": "neutral"
+      }
+    ],
+    "documents": []
+  },
   "pinterest.com": {
     "found": true,
     "grade": "E",

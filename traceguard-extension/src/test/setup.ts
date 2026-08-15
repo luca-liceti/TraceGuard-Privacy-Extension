@@ -45,7 +45,7 @@ import { vi, beforeEach } from 'vitest'
 // ---------------------------------------------------------------------------
 let _localStore: Record<string, any> = {};
 let _sessionStore: Record<string, any> = {};
-const _onChangedListeners: Function[] = [];
+const _onChangedListeners: ((...args: any[]) => void)[] = [];
 
 function notifyChanged(changes: Record<string, chrome.storage.StorageChange>, area: string) {
     for (const listener of _onChangedListeners) {
@@ -109,10 +109,10 @@ const chromeMock = {
             }),
         },
         onChanged: {
-            addListener: vi.fn((listener: Function) => {
+            addListener: vi.fn((listener: (...args: any[]) => void) => {
                 _onChangedListeners.push(listener);
             }),
-            removeListener: vi.fn((listener: Function) => {
+            removeListener: vi.fn((listener: (...args: any[]) => void) => {
                 const idx = _onChangedListeners.indexOf(listener);
                 if (idx !== -1) _onChangedListeners.splice(idx, 1);
             }),

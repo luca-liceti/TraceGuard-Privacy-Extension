@@ -36,20 +36,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false)
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
 
-  useEffect(() => {
-    checkAuth()
-    
-    // Listen for alarms or messages that might lock the vault
-    const listener = (changes: any, namespace: string) => {
-      if (namespace === "session" && changes.cryptoKeyHex === undefined) {
-        // Key was removed from session (e.g. by auto-lock)
-        checkAuth()
-      }
-    }
-    chrome.storage.onChanged.addListener(listener)
-    return () => chrome.storage.onChanged.removeListener(listener)
-  }, [])
-
   const checkAuth = async () => {
     try {
       const local = await chrome.storage.local.get(["cryptoSalt", "validator"])
@@ -69,6 +55,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthState("setup") // fallback for dev
     }
   }
+
+  useEffect(() => {
+    checkAuth()
+    
+    // Listen for alarms or messages that might lock the vault
+    const listener = (changes: any, namespace: string) => {
+      if (namespace === "session" && changes.cryptoKeyHex === undefined) {
+        // Key was removed from session (e.g. by auto-lock)
+        checkAuth()
+      }
+    }
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
+  }, [])
+
+
 
   const setup = async (pwd: string, name: string) => {
     setLoading(true)

@@ -1,15 +1,13 @@
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts
-   76:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  562:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  614:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  620:26  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
-  620:29  error    Empty block statement                     no-empty
-  676:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  753:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
-  957:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  976:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  977:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   79:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  569:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  621:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  685:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  762:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  966:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  985:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  986:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/database-loader.ts
    57:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -29,89 +27,41 @@
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/network-monitor.ts
    16:10  warning  'isLocalAddress' is defined but never used  @typescript-eslint/no-unused-vars
-   75:22  warning  'e' is defined but never used               @typescript-eslint/no-unused-vars
-  129:34  warning  'e' is defined but never used               @typescript-eslint/no-unused-vars
+   80:22  warning  'e' is defined but never used               @typescript-eslint/no-unused-vars
+  134:34  warning  'e' is defined but never used               @typescript-eslint/no-unused-vars
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/tosdr-api.ts
   101:10  warning  'gradeToScore' is defined but never used  @typescript-eslint/no-unused-vars
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/ErrorBoundary.tsx
-  38:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  39:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/app-sidebar.tsx
-   6:3   warning  'ShieldAlert' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
-   7:3   warning  'SlidersHorizontal' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
-  15:10  warning  'TeamSwitcher' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
-  57:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/app-sidebar.tsx:57:7
-  55 |         `Good to see you, ${userName}`
-  56 |       ]
-> 57 |       setGreeting(g[Math.floor(Math.random() * g.length)])
-     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  58 |     }
-  59 |   }, [userName])
-  60 |  react-hooks/set-state-in-effect
+   6:3   warning  'ShieldAlert' is defined but never used        @typescript-eslint/no-unused-vars
+   7:3   warning  'SlidersHorizontal' is defined but never used  @typescript-eslint/no-unused-vars
+  15:10  warning  'TeamSwitcher' is defined but never used       @typescript-eslint/no-unused-vars
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/chart-area-interactive.tsx
-  62:6  warning  React Hook React.useEffect has a missing dependency: 'setTimeRange'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  63:6  warning  React Hook React.useEffect has a missing dependency: 'setTimeRange'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx
-   32:3   warning  'DropdownMenuCheckboxItem' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
-   63:3   warning  'Sheet' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
-   64:3   warning  'SheetContent' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
-   65:3   warning  'SheetDescription' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
-   66:3   warning  'SheetHeader' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
-   67:3   warning  'SheetTitle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
-   69:10  warning  'ScrollArea' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
-  108:7   warning  'GRADE_ORDER' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
-  193:24  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
-  289:69  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
-  292:69  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
-  298:53  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
-  319:27  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
-  679:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx:679:9
-  677 |       const visit = data.find(v => v.domain === domainToView)
-  678 |       if (visit) {
-> 679 |         setSelectedVisit(visit)
-      |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  680 |         setIsDetailsOpen(true)
-  681 |         searchParams.delete('viewSite')
-  682 |         setSearchParams(searchParams, { replace: true })  react-hooks/set-state-in-effect
-  688:27  error    Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx:688:27
-  686 |
-  687 |   // Reset to first page when filter or page size changes
-> 688 |   React.useEffect(() => { setPageIndex(0) }, [domainFilter, pageSize])
-      |                           ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  689 |
-  690 |   const handleViewDetails = (visit: SiteVisit) => {
-  691 |     setSelectedVisit(visit)                   react-hooks/set-state-in-effect
-  701:11  warning  'wss' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
-  776:46  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
-  912:36  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
-  912:64  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   34:3   warning  'DropdownMenuCheckboxItem' is defined but never used  @typescript-eslint/no-unused-vars
+   65:3   warning  'Sheet' is defined but never used                     @typescript-eslint/no-unused-vars
+   66:3   warning  'SheetContent' is defined but never used              @typescript-eslint/no-unused-vars
+   67:3   warning  'SheetDescription' is defined but never used          @typescript-eslint/no-unused-vars
+   68:3   warning  'SheetHeader' is defined but never used               @typescript-eslint/no-unused-vars
+   69:3   warning  'SheetTitle' is defined but never used                @typescript-eslint/no-unused-vars
+   71:10  warning  'ScrollArea' is defined but never used                @typescript-eslint/no-unused-vars
+  110:7   warning  'GRADE_ORDER' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  195:24  warning  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  291:69  warning  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  294:69  warning  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  300:53  warning  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  321:27  warning  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  703:11  warning  'wss' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  778:46  warning  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  920:36  warning  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  920:64  warning  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/legacy-data-table.tsx
     8:3   warning  'Row' is defined but never used               @typescript-eslint/no-unused-vars
@@ -146,61 +96,13 @@ Calling setState synchronously within an effect body causes cascading renders th
   9:11  warning  't' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/auth-provider.tsx
-    4:10  warning  'Lock' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
-    4:46  warning  'OctagonAlert' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
-   40:5   error    Error: Cannot access variable before it is declared
-
-`checkAuth` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/auth-provider.tsx:40:5
-  38 |
-  39 |   useEffect(() => {
-> 40 |     checkAuth()
-     |     ^^^^^^^^^ `checkAuth` accessed before it is declared
-  41 |     
-  42 |     // Listen for alarms or messages that might lock the vault
-  43 |     const listener = (changes: any, namespace: string) => {
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/auth-provider.tsx:53:3
-  51 |   }, [])
-  52 |
-> 53 |   const checkAuth = async () => {
-     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 54 |     try {
-     | ^^^^^^^^^
-> 55 |       const local = await chrome.storage.local.get(["cryptoSalt", "validator"])
-     …
-     | ^^^^^^^^^
-> 70 |     }
-     | ^^^^^^^^^
-> 71 |   }
-     | ^^^^ `checkAuth` is declared here
-  72 |
-  73 |   const setup = async (pwd: string, name: string) => {
-  74 |     setLoading(true)  react-hooks/immutability
-   43:32  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
-  117:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
-  152:16  warning  'e' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
-  166:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
-  166:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/layout.tsx
-  49:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/layout.tsx:49:5
-  47 |
-  48 |   useEffect(() => {
-> 49 |     setMounted(true)
-     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
-  50 |   }, [])
-  51 |
-  52 |   if (!mounted) {  react-hooks/set-state-in-effect
+    4:10  warning  'Lock' is defined but never used          @typescript-eslint/no-unused-vars
+    4:46  warning  'OctagonAlert' is defined but never used  @typescript-eslint/no-unused-vars
+   63:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  119:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  154:16  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  168:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  168:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/pages/overview.tsx
   17:138  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -236,40 +138,8 @@ Calling setState synchronously within an effect body causes cascading renders th
   384 |         open={isSitePanelOpen}  react-hooks/purity
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/settings-modal.tsx
-   59:5   warning  'List' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
-  177:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/settings-modal.tsx:177:9
-  175 |     useEffect(() => {
-  176 |         const manifest = chrome.runtime.getManifest()
-> 177 |         setManifestVersion(manifest.version)
-      |         ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  178 |     }, [])
-  179 |
-  180 |     // Fetch schema version from storage                                                                                                                                     react-hooks/set-state-in-effect
-  203:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/settings-modal.tsx:203:13
-  201 |     useEffect(() => {
-  202 |         if (settings) {
-> 203 |             setThemeLocal(settings.theme || "system")
-      |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  204 |             setNotificationLevel(settings.notificationLevel || "balanced")
-  205 |             setDataRetention(settings.dataRetention || 30)
-  206 |             setDatabaseRefreshDays(settings.databaseRefreshDays || 7)  react-hooks/set-state-in-effect
-  372:18  warning  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   59:5   warning  'List' is defined but never used   @typescript-eslint/no-unused-vars
+  392:18  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/site-details-panel.tsx
     41:55   warning  'ShieldAlert' is defined but never used                @typescript-eslint/no-unused-vars
@@ -302,8 +172,8 @@ Calling setState synchronously within an effect body causes cascading renders th
   130:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/dashboard/App.tsx
-  32:13  warning  'theme' is assigned a value but never used  @typescript-eslint/no-unused-vars
-  42:39  warning  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+  36:13  warning  'theme' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  46:39  warning  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/hooks/use-toast.ts
   21:7  warning  'actionTypes' is assigned a value but only used as a type  @typescript-eslint/no-unused-vars
@@ -324,8 +194,20 @@ Calling setState synchronously within an effect body causes cascading renders th
   46:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   54:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
+/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/storage.test.ts
+   17:32  warning  'beforeEach' is defined but never used    @typescript-eslint/no-unused-vars
+  148:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/storage.ts
-  74:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:87  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  218:87  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  262:92  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  356:96  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  396:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  410:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  431:84  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/theme-utils.ts
   1:10  warning  'cn' is defined but never used  @typescript-eslint/no-unused-vars
@@ -346,5 +228,17 @@ Calling setState synchronously within an effect body causes cascading renders th
   18:39  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
   45:11  warning  'settings' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
-✖ 143 problems (9 errors, 134 warnings)
+/home/luca/Documents/Github Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/test/setup.ts
+   46:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   48:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:49  warning  '_' is defined but never used             @typescript-eslint/no-unused-vars
+   63:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 154 problems (1 error, 153 warnings)
 

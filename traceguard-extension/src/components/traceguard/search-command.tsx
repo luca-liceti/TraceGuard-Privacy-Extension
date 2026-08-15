@@ -378,7 +378,7 @@ export function SearchCommand() {
         siteData={selectedSiteData}
         legacyDetails={selectedSiteData?.legacyDetails}
         domain={selectedDomain}
-        timestamp={selectedSiteData?.timestamp || Date.now()}
+        timestamp={selectedSiteData?.timestamp || 0}
         wss={selectedSiteData?.wss || 0}
         safetyLevel={getSafetyLevel(selectedSiteData?.wss || 0)}
         open={isSitePanelOpen}
