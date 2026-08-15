@@ -66,7 +66,9 @@ export async function getTrackerRadar(): Promise<Record<string, TrackerRadarEntr
     if (_trackerRadar) return _trackerRadar;
     try {
 
-        const data = await import('../../assets/tracker-radar.json');
+        const url = chrome.runtime.getURL('assets/tracker-radar.json');
+        const response = await fetch(url);
+        const data = await response.json();
         _trackerRadar = (data.default || data) as Record<string, TrackerRadarEntry>;
         console.log(`[DatabaseLoader] Tracker Radar loaded: ${Object.keys(_trackerRadar).length} domains`);
     } catch (e) {
@@ -83,7 +85,9 @@ export async function getCookieDB(): Promise<CookieDatabase> {
     if (_cookieDB) return _cookieDB;
     try {
 
-        const data = await import('../../assets/cookie-database.json');
+        const url = chrome.runtime.getURL('assets/cookie-database.json');
+        const response = await fetch(url);
+        const data = await response.json();
         _cookieDB = (data.default || data) as CookieDatabase;
         // Pre-compile wildcard regexes
         _compiledWildcards = (_cookieDB.wildcards || []).map(w => ({
@@ -106,7 +110,9 @@ export async function getEasyPrivacySet(): Promise<Set<string>> {
     if (_easyPrivacySet) return _easyPrivacySet;
     try {
 
-        const data = await import('../../assets/easyprivacy-domains.json');
+        const url = chrome.runtime.getURL('assets/easyprivacy-domains.json');
+        const response = await fetch(url);
+        const data = await response.json();
         const arr = (data.default || data) as string[];
         _easyPrivacySet = new Set(arr);
         console.log(`[DatabaseLoader] EasyPrivacy loaded: ${_easyPrivacySet.size} domains`);
@@ -124,7 +130,9 @@ export async function getDisconnectMap(): Promise<Record<string, DisconnectEntry
     if (_disconnectMap) return _disconnectMap;
     try {
 
-        const data = await import('../../assets/disconnect-services.json');
+        const url = chrome.runtime.getURL('assets/disconnect-services.json');
+        const response = await fetch(url);
+        const data = await response.json();
         _disconnectMap = (data.default || data) as Record<string, DisconnectEntry>;
         console.log(`[DatabaseLoader] Disconnect loaded: ${Object.keys(_disconnectMap).length} domains`);
     } catch (e) {
@@ -141,7 +149,9 @@ export async function getTosDRMap(): Promise<Record<string, any>> {
     if (_tosdrMap) return _tosdrMap;
     try {
 
-        const data = await import('../../assets/tosdr-data.json');
+        const url = chrome.runtime.getURL('assets/tosdr-data.json');
+        const response = await fetch(url);
+        const data = await response.json();
         _tosdrMap = (data.default || data) as Record<string, any>;
         console.log(`[DatabaseLoader] ToS;DR loaded: ${Object.keys(_tosdrMap).length} domains`);
     } catch (e) {

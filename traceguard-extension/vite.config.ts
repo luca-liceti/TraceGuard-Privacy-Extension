@@ -40,6 +40,26 @@ export default defineConfig({
         {
           src: 'src/assets/blacklist.json',
           dest: 'assets'
+        },
+        {
+          src: 'src/assets/tracker-radar.json',
+          dest: 'assets'
+        },
+        {
+          src: 'src/assets/cookie-database.json',
+          dest: 'assets'
+        },
+        {
+          src: 'src/assets/easyprivacy-domains.json',
+          dest: 'assets'
+        },
+        {
+          src: 'src/assets/disconnect-services.json',
+          dest: 'assets'
+        },
+        {
+          src: 'src/assets/tosdr-data.json',
+          dest: 'assets'
         }
       ]
     })
