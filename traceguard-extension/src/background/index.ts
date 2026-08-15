@@ -54,8 +54,11 @@ function queueTelemetryWrite(task: () => Promise<void>): Promise<void> {
     return next;
 }
 
-async function createNotification(notification: Parameters<typeof storage.addNotification>[0]) {
-    await storage.addNotification(notification);
+async function createNotification(
+    notification: Parameters<typeof storage.addNotification>[0],
+    key?: CryptoKey | null
+) {
+    await storage.addNotification(notification, key);
     const settings = await storage.getSettings();
     if (!settings.notifications || settings.notificationLevel === 'silent') return;
     if (settings.notificationLevel === 'balanced' && notification.severity === 'info') return;
@@ -556,7 +559,11 @@ const PageAnalysisSchema = z.object({
     url: z.string(),
     scores: z.record(z.number()),
     detectionDetails: z.record(z.any()).optional(),
-    rawForEnrichment: z.any().optional()
+    rawForEnrichment: z.object({
+        cookies:        z.array(z.any()).max(500).optional(),
+        trackers:       z.array(z.any()).max(500).optional(),
+        fingerprinting: z.array(z.any()).max(200).optional(),
+    }).optional()
 }).passthrough();
 
 async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSender) {
@@ -617,7 +624,9 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                 try {
                     const radar = await lookupTrackerDomain(new URL(f.scriptUrl).hostname);
                     org = radar?.owner || null;
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('[Enrichment] Fingerprint script lookup failed:', e);
+                }
             }
             return {
                 technique: f.technique,
@@ -779,12 +788,12 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Step 6: Log the UPS change if there was one (for debugging and history)
     if (upsImpact.message) {
         await storage.addDetectorLog({
-            detector: 'permissions',  // Using 'permissions' as a catch-all for system messages
+            detector: 'permissions',
             domain: domain,
             score: 0,
             details: { upsChange: upsImpact.newUPS - (state.ups || 100), newStreak: upsImpact.newStreak },
             message: upsImpact.message
-        });
+        }, key);
     }
 
     // Always add to the score history graph to keep the charts updated
@@ -853,7 +862,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         score: reputationScore,
         details: { isBlacklisted: reputationScore === 0, status: reputationScore === 100 ? 'Clean' : reputationScore === 0 ? 'Blacklisted' : 'Suspicious' },
         message: detectorMessages.reputation
-    });
+    }, key);
 
     // TRACKING: How many third-party trackers are on this page?
     await storage.addDetectorLog({
@@ -866,7 +875,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             suspiciousTrackers: trackingDetails.suspiciousTrackers
         },
         message: detectorMessages.tracking
-    });
+    }, key);
 
     // COOKIES: Are there tracking or third-party cookies?
     await storage.addDetectorLog({
@@ -875,7 +884,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         score: finalScores.cookies,
         details: message.detectionDetails?.cookies || {},
         message: detectorMessages.cookies
-    });
+    }, key);
 
     // INPUTS: Are there sensitive input fields (password, credit card, etc.)?
     await storage.addDetectorLog({
@@ -884,7 +893,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         score: finalScores.input,
         details: message.detectionDetails?.input || {},
         message: detectorMessages.inputs
-    });
+    }, key);
 
     // POLICY: What's the privacy policy rating (from ToS;DR)?
     await storage.addDetectorLog({
@@ -893,7 +902,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         score: finalScores.policy,
         details: message.detectionDetails?.policy || {},
         message: detectorMessages.policy
-    });
+    }, key);
 
     // Step 8: Create notifications for risky sites
     const settings = await storage.getSettings();
@@ -1028,7 +1037,7 @@ async function handlePIIDetection(message: any) {
 
     // Track which sites have received each type of your personal information
     // This enables the "Your email is known to X sites" feature in the dashboard
-    await storage.addExposure(event.fieldType, event.site);
+    await storage.addExposure(event.fieldType, event.site, key);
 
     // Update your privacy state with the new score
     await storage.updateState({
@@ -1052,7 +1061,7 @@ async function handlePIIDetection(message: any) {
         domain: event.site,
         severity: notificationSeverity,
         actionUrl: `/overview?viewSite=${encodeURIComponent(event.site)}`
-    });
+    }, key);
 
     // Send a toast notification to the webpage (the little popup message in the corner)
     // We only do this if the user has notifications enabled in their settings

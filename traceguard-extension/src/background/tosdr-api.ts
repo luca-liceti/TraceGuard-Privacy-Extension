@@ -122,7 +122,9 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
     console.log(`[ToS;DR] Checking domain locally: ${domain} (from ${url})`);
 
     const tosdrData = await getTosDRMap();
-    const result = tosdrData[domain];
+    // Use hasOwnProperty guard to prevent prototype pollution.
+    // A domain like "__proto__" or "constructor" must not reach the Object prototype chain.
+    const result = Object.prototype.hasOwnProperty.call(tosdrData, domain) ? tosdrData[domain] : undefined;
 
     if (result) {
         console.log(`[ToS;DR] Found local rating for ${domain}: Score ${result.score}`);

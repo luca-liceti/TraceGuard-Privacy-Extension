@@ -83,15 +83,16 @@ async function buildTrackerRadar() {
         entities = await fetchJson(entitiesUrl);
     } catch (e) {
         err(`Failed to fetch Tracker Radar entities: ${e.message}`);
-        // Fallback: use a curated subset
+        // Fallback: continue with empty entities (curated list still has coverage)
         entities = {};
     }
 
     try {
         domains = await fetchJson(domainsUrl);
     } catch (e) {
-        err(`Failed to fetch Tracker Radar domains: ${e.message}`);
-        domains = {};
+        // Domain list is critical — without it the extension cannot detect trackers.
+        // Rethrow so the build fails rather than shipping an empty database.
+        throw new Error(`Failed to fetch Tracker Radar domains (critical): ${e.message}`);
     }
 
     // Build optimized lookup: { [domain]: { owner, displayName, category, prevalence, fingerprinting } }
@@ -195,10 +196,9 @@ async function buildCookieDatabase() {
     try {
         csvText = await fetchText(csvUrl);
     } catch (e) {
-        err(`Failed to fetch Open Cookie Database: ${e.message}`);
-        // Write minimal fallback
-        await writeFile(join(ASSETS_DIR, 'cookie-database.json'), JSON.stringify({ exact: {}, wildcards: [] }));
-        return;
+        // Cookie database is critical — without it cookie classification is broken.
+        // Rethrow so the build fails rather than shipping an empty database.
+        throw new Error(`Failed to fetch Open Cookie Database (critical): ${e.message}`);
     }
 
     // Parse CSV (handle quoted fields)
@@ -360,9 +360,9 @@ async function buildEasyPrivacy() {
     try {
         text = await fetchText(url);
     } catch (e) {
-        err(`Failed to fetch EasyPrivacy: ${e.message}`);
-        await writeFile(join(ASSETS_DIR, 'easyprivacy-domains.json'), JSON.stringify([]));
-        return;
+        // EasyPrivacy is critical — without it tracker domain detection is crippled.
+        // Rethrow so the build fails rather than shipping an empty list.
+        throw new Error(`Failed to fetch EasyPrivacy (critical): ${e.message}`);
     }
 
     const domains = new Set();
@@ -403,14 +403,14 @@ async function buildDisconnectServices() {
     try {
         data = await fetchJson(url);
     } catch (e) {
-        // Try alternate source
+        // Try alternate source before failing
         try {
             const alt = 'https://raw.githubusercontent.com/disconnectme/disconnect-tracking-protection/master/services.json';
             data = await fetchJson(alt);
         } catch (e2) {
-            err(`Failed to fetch Disconnect services: ${e2.message}`);
-            await writeFile(join(ASSETS_DIR, 'disconnect-services.json'), JSON.stringify({}));
-            return;
+            // Disconnect services are critical — without them tracker categorization is broken.
+            // Rethrow so the build fails rather than shipping an empty database.
+            throw new Error(`Failed to fetch Disconnect services from both sources (critical): ${e2.message}`);
         }
     }
 
@@ -444,7 +444,9 @@ async function main() {
     log('Starting database build...');
     const start = Date.now();
 
-    await Promise.allSettled([
+    // Use Promise.all (NOT allSettled) so any failure causes the entire build to exit 1.
+    // This prevents deploying an extension with empty/broken privacy databases.
+    await Promise.all([
         buildTrackerRadar(),
         buildCookieDatabase(),
         buildEasyPrivacy(),

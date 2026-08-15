@@ -157,11 +157,13 @@ export function useScoreHistory() {
     const lastUpdateRef = useRef<number>(0);
 
     useEffect(() => {
+        let isMounted = true;
+        // Capture timestamp BEFORE fetch to correctly guard against stale data
+        const fetchTimestamp = Date.now();
         chrome.storage.local.get('scoreHistory').then(async res => {
-            const timestamp = Date.now();
             const decrypted = await decryptIfNeeded(res.scoreHistory);
-            if (timestamp >= lastUpdateRef.current) {
-                lastUpdateRef.current = timestamp;
+            if (isMounted && fetchTimestamp >= lastUpdateRef.current) {
+                lastUpdateRef.current = fetchTimestamp;
                 setHistory((decrypted || []) as import('./types').ScoreHistoryEntry[]);
             }
         });
@@ -170,14 +172,17 @@ export function useScoreHistory() {
             if (areaName === 'local' && changes.scoreHistory) {
                 const timestamp = Date.now();
                 const decrypted = await decryptIfNeeded(changes.scoreHistory.newValue);
-                if (timestamp >= lastUpdateRef.current) {
+                if (isMounted && timestamp >= lastUpdateRef.current) {
                     lastUpdateRef.current = timestamp;
                     setHistory((decrypted || []) as import('./types').ScoreHistoryEntry[]);
                 }
             }
         };
         chrome.storage.onChanged.addListener(listener);
-        return () => chrome.storage.onChanged.removeListener(listener);
+        return () => {
+            isMounted = false;
+            chrome.storage.onChanged.removeListener(listener);
+        };
     }, []);
 
     return history;
@@ -188,11 +193,13 @@ export function useActivityLogs() {
     const lastUpdateRef = useRef<number>(0);
 
     useEffect(() => {
+        let isMounted = true;
+        // Capture timestamp BEFORE fetch to correctly guard against stale data
+        const fetchTimestamp = Date.now();
         chrome.storage.local.get('piiDetections').then(async res => {
-            const timestamp = Date.now();
             const decrypted = await decryptIfNeeded(res.piiDetections);
-            if (timestamp >= lastUpdateRef.current) {
-                lastUpdateRef.current = timestamp;
+            if (isMounted && fetchTimestamp >= lastUpdateRef.current) {
+                lastUpdateRef.current = fetchTimestamp;
                 setLogs((decrypted || []) as import('./types').PIIDetectionEvent[]);
             }
         });
@@ -201,14 +208,17 @@ export function useActivityLogs() {
             if (areaName === 'local' && changes.piiDetections) {
                 const timestamp = Date.now();
                 const decrypted = await decryptIfNeeded(changes.piiDetections.newValue);
-                if (timestamp >= lastUpdateRef.current) {
+                if (isMounted && timestamp >= lastUpdateRef.current) {
                     lastUpdateRef.current = timestamp;
                     setLogs((decrypted || []) as import('./types').PIIDetectionEvent[]);
                 }
             }
         };
         chrome.storage.onChanged.addListener(listener);
-        return () => chrome.storage.onChanged.removeListener(listener);
+        return () => {
+            isMounted = false;
+            chrome.storage.onChanged.removeListener(listener);
+        };
     }, []);
 
     return logs;
@@ -218,17 +228,28 @@ export function useDetectorLogs() {
     const [logs, setLogs] = useState<import('./types').DetectorLogEntry[]>([]);
 
     useEffect(() => {
-        chrome.storage.local.get('detectorLogs').then(res => {
-            setLogs((res.detectorLogs || []) as import('./types').DetectorLogEntry[]);
+        let isMounted = true;
+        chrome.storage.local.get('detectorLogs').then(async res => {
+            // detectorLogs may be encrypted; decrypt if needed
+            const decrypted = await decryptIfNeeded(res.detectorLogs);
+            if (isMounted) {
+                setLogs((decrypted || []) as import('./types').DetectorLogEntry[]);
+            }
         });
 
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+        const listener = async (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.detectorLogs) {
-                setLogs((changes.detectorLogs.newValue || []) as import('./types').DetectorLogEntry[]);
+                const decrypted = await decryptIfNeeded(changes.detectorLogs.newValue);
+                if (isMounted) {
+                    setLogs((decrypted || []) as import('./types').DetectorLogEntry[]);
+                }
             }
         };
         chrome.storage.onChanged.addListener(listener);
-        return () => chrome.storage.onChanged.removeListener(listener);
+        return () => {
+            isMounted = false;
+            chrome.storage.onChanged.removeListener(listener);
+        };
     }, []);
 
     return logs;
@@ -239,23 +260,33 @@ export function useNotifications() {
     const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
-        // Initial fetch
-        chrome.storage.local.get('notifications').then(res => {
-            const notifs = (res.notifications || []) as import('./types').NotificationEvent[];
-            setNotifications(notifs);
-            setUnreadCount(notifs.filter(n => !n.read).length);
-        });
-
-        // Listen for changes
-        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-            if (areaName === 'local' && changes.notifications) {
-                const notifs = (changes.notifications.newValue || []) as import('./types').NotificationEvent[];
+        let isMounted = true;
+        // Initial fetch — notifications may now be encrypted
+        chrome.storage.local.get('notifications').then(async res => {
+            const decrypted = await decryptIfNeeded(res.notifications);
+            const notifs = (decrypted || []) as import('./types').NotificationEvent[];
+            if (isMounted) {
                 setNotifications(notifs);
                 setUnreadCount(notifs.filter(n => !n.read).length);
             }
+        });
+
+        // Listen for changes
+        const listener = async (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+            if (areaName === 'local' && changes.notifications) {
+                const decrypted = await decryptIfNeeded(changes.notifications.newValue);
+                const notifs = (decrypted || []) as import('./types').NotificationEvent[];
+                if (isMounted) {
+                    setNotifications(notifs);
+                    setUnreadCount(notifs.filter(n => !n.read).length);
+                }
+            }
         };
         chrome.storage.onChanged.addListener(listener);
-        return () => chrome.storage.onChanged.removeListener(listener);
+        return () => {
+            isMounted = false;
+            chrome.storage.onChanged.removeListener(listener);
+        };
     }, []);
 
     const markAsRead = async (id: string) => {
@@ -308,12 +339,13 @@ export function useSiteCache() {
     const lastUpdateRef = useRef<number>(0);
 
     useEffect(() => {
-        // Initial fetch
+        let isMounted = true;
+        // Capture timestamp BEFORE fetch to correctly guard against stale data
+        const fetchTimestamp = Date.now();
         chrome.storage.local.get('siteCache').then(async res => {
-            const timestamp = Date.now();
             const decrypted = await decryptIfNeeded(res.siteCache);
-            if (timestamp >= lastUpdateRef.current) {
-                lastUpdateRef.current = timestamp;
+            if (isMounted && fetchTimestamp >= lastUpdateRef.current) {
+                lastUpdateRef.current = fetchTimestamp;
                 let finalCache = decrypted || {};
                 if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
                     finalCache = {};
@@ -331,7 +363,7 @@ export function useSiteCache() {
             if (areaName === 'local' && changes.siteCache) {
                 const timestamp = Date.now();
                 const decrypted = await decryptIfNeeded(changes.siteCache.newValue);
-                if (timestamp >= lastUpdateRef.current) {
+                if (isMounted && timestamp >= lastUpdateRef.current) {
                     lastUpdateRef.current = timestamp;
                     let finalCache = decrypted || {};
                     if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
@@ -343,7 +375,10 @@ export function useSiteCache() {
         };
 
         chrome.storage.onChanged.addListener(listener);
-        return () => chrome.storage.onChanged.removeListener(listener);
+        return () => {
+            isMounted = false;
+            chrome.storage.onChanged.removeListener(listener);
+        };
     }, []);
 
     // Pre-compute the entries array for convenience

@@ -21,11 +21,19 @@ jobs:
         
     - name: Install dependencies
       working-directory: ./traceguard-extension
-      run: npm ci
+      run: npm ci --legacy-peer-deps
+
+    - name: Security audit
+      working-directory: ./traceguard-extension
+      run: npm audit --audit-level=high
       
     - name: Run ESLint
       working-directory: ./traceguard-extension
       run: npm run lint
+
+    - name: Run Tests
+      working-directory: ./traceguard-extension
+      run: npm run test:run
       
     - name: Run Build
       working-directory: ./traceguard-extension

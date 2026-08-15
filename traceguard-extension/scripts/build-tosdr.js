@@ -120,4 +120,5 @@ async function buildDatabase() {
     console.log(`Successfully wrote ${Object.keys(db).length} records to ${OUTPUT_FILE}`);
 }
 
-buildDatabase().catch(console.error);
+buildDatabase().catch(e => { console.error(e); process.exit(1); });
+

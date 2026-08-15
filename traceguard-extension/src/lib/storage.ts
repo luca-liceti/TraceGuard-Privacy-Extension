@@ -16,10 +16,16 @@
  * WHAT WE STORE:
  * 1. Settings - Your preferences (theme, notifications, whitelist/blacklist)
  * 2. App State - Your UPS score, sites analyzed count, safe streak
- * 3. Detector Logs - History of what we've detected on sites
- * 4. Notifications - Alerts and warnings we've shown you
- * 5. Cross-Site Exposure - Which sites know your email, phone, etc.
- * 6. Site Cache - Analyzed data about websites you've visited
+ * 3. Detector Logs - History of what we've detected on sites (ENCRYPTED)
+ * 4. Notifications - Alerts and warnings we've shown you (ENCRYPTED)
+ * 5. Cross-Site Exposure - Which sites know your email, phone, etc. (ENCRYPTED)
+ * 6. Site Cache - Analyzed data about websites you've visited (ENCRYPTED)
+ * 
+ * ENCRYPTION:
+ * Sensitive data (detectorLogs, notifications, crossSiteExposure) is encrypted
+ * with the user's vault key when the vault is unlocked. When locked, writes are
+ * either deferred (via the background buffer) or skipped. Reads of encrypted
+ * fields are handled by the background service worker which has access to the key.
  * 
  * STORAGE LIMITS:
  * Chrome gives extensions about 5MB of local storage. We automatically:
@@ -30,6 +36,7 @@
  */
 
 import { StorageSchema, UserSettings, AppState } from './types';
+import { encryptData, decryptData } from './crypto';
 
 // =============================================================================
 // DEFAULT VALUES
@@ -127,10 +134,28 @@ export const storage = {
         };
     })(),
 
-    // Add a detector log entry
-    addDetectorLog: async (log: Omit<import('./types').DetectorLogEntry, 'id' | 'timestamp'>): Promise<void> => {
+    // ==========================================================================
+    // Add a detector log entry.
+    // Pass `key` (the vault CryptoKey) to encrypt the log on write.
+    // ==========================================================================
+    addDetectorLog: async (
+        log: Omit<import('./types').DetectorLogEntry, 'id' | 'timestamp'>,
+        key?: CryptoKey | null
+    ): Promise<void> => {
         const result = await chrome.storage.local.get('detectorLogs');
-        const logs = (result.detectorLogs || []) as import('./types').DetectorLogEntry[];
+        const raw = result.detectorLogs;
+
+        // Decrypt existing logs if they are encrypted
+        let logs: import('./types').DetectorLogEntry[];
+        if (key && typeof raw === 'string') {
+            logs = (await decryptData(key, raw)) || [];
+        } else if (typeof raw === 'string') {
+            // Vault is locked and data is encrypted — skip the write to avoid corruption
+            console.warn('[storage.addDetectorLog] Vault locked; skipping write to protect encrypted data.');
+            return;
+        } else {
+            logs = (raw || []) as import('./types').DetectorLogEntry[];
+        }
 
         const newLog: import('./types').DetectorLogEntry = {
             ...log,
@@ -153,31 +178,47 @@ export const storage = {
             filteredLogs = logs.filter(l => (now - l.timestamp) < retentionMs);
         }
 
-        // Check storage usage and limit to prevent quota issues
         // Keep max 1000 logs, remove oldest if exceeded
         if (filteredLogs.length > 1000) {
             filteredLogs = filteredLogs.slice(-1000);
         }
 
-        await storage.set({ detectorLogs: filteredLogs });
+        // Encrypt on write when key is available
+        if (key) {
+            await storage.set({ detectorLogs: await encryptData(key, filteredLogs) as any });
+        } else {
+            await storage.set({ detectorLogs: filteredLogs });
+        }
     },
 
     // Clean up old logs based on retention policy
-    cleanupOldLogs: async (): Promise<void> => {
+    cleanupOldLogs: async (key?: CryptoKey | null): Promise<void> => {
         const settings = await storage.getSettings();
         const retentionDays = settings.logRetentionDays || 0;
 
         if (retentionDays === 0) return; // Keep forever
 
         const result = await chrome.storage.local.get('detectorLogs');
-        const logs = (result.detectorLogs || []) as import('./types').DetectorLogEntry[];
+        const raw = result.detectorLogs;
+
+        let logs: import('./types').DetectorLogEntry[];
+        if (key && typeof raw === 'string') {
+            logs = (await decryptData(key, raw)) || [];
+        } else if (typeof raw === 'string') {
+            return; // Can't clean up encrypted data without the key
+        } else {
+            logs = (raw || []) as import('./types').DetectorLogEntry[];
+        }
 
         const now = Date.now();
         const retentionMs = retentionDays * 24 * 60 * 60 * 1000;
-
         const filteredLogs = logs.filter(l => (now - l.timestamp) < retentionMs);
 
-        await storage.set({ detectorLogs: filteredLogs });
+        if (key) {
+            await storage.set({ detectorLogs: await encryptData(key, filteredLogs) as any });
+        } else {
+            await storage.set({ detectorLogs: filteredLogs });
+        }
     },
 
     // Get storage usage info
@@ -190,12 +231,23 @@ export const storage = {
     // Cross-site exposure tracking methods
 
     /**
-     * Record that a PII type was shared with a specific domain
-     * Used to track "Your email is known to X sites"
+     * Record that a PII type was shared with a specific domain.
+     * Pass `key` (the vault CryptoKey) to encrypt the exposure map on write.
      */
-    addExposure: async (fieldType: string, domain: string): Promise<void> => {
+    addExposure: async (fieldType: string, domain: string, key?: CryptoKey | null): Promise<void> => {
         const result = await chrome.storage.local.get('crossSiteExposure');
-        const exposure = (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
+        const raw = result.crossSiteExposure;
+
+        // Decrypt existing exposure map if it is encrypted
+        let exposure: import('./types').CrossSiteExposure;
+        if (key && typeof raw === 'string') {
+            exposure = (await decryptData(key, raw)) || {};
+        } else if (typeof raw === 'string') {
+            console.warn('[storage.addExposure] Vault locked; skipping write to protect encrypted data.');
+            return;
+        } else {
+            exposure = (raw || {}) as import('./types').CrossSiteExposure;
+        }
 
         // Initialize array if needed
         if (!exposure[fieldType]) {
@@ -205,35 +257,59 @@ export const storage = {
         // Add domain if not already tracked
         if (!exposure[fieldType].includes(domain)) {
             exposure[fieldType].push(domain);
-            await storage.set({ crossSiteExposure: exposure });
+
+            if (key) {
+                await storage.set({ crossSiteExposure: await encryptData(key, exposure) as any });
+            } else {
+                await storage.set({ crossSiteExposure: exposure });
+            }
             console.log(`[Cross-Site Exposure] ${fieldType} now shared with ${exposure[fieldType].length} sites`);
         }
     },
 
     /**
-     * Get count of sites that have received a specific PII type
+     * Get count of sites that have received a specific PII type.
+     * Pass `key` to decrypt if the data is stored encrypted.
      */
-    getExposureCount: async (fieldType: string): Promise<number> => {
+    getExposureCount: async (fieldType: string, key?: CryptoKey | null): Promise<number> => {
         const result = await chrome.storage.local.get('crossSiteExposure');
-        const exposure = (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
+        const raw = result.crossSiteExposure;
+        let exposure: import('./types').CrossSiteExposure;
+        if (key && typeof raw === 'string') {
+            exposure = (await decryptData(key, raw)) || {};
+        } else {
+            exposure = (typeof raw === 'string' ? {} : raw || {}) as import('./types').CrossSiteExposure;
+        }
         return exposure[fieldType]?.length || 0;
     },
 
     /**
-     * Get list of sites that have received a specific PII type
+     * Get list of sites that have received a specific PII type.
+     * Pass `key` to decrypt if the data is stored encrypted.
      */
-    getExposureSites: async (fieldType: string): Promise<string[]> => {
+    getExposureSites: async (fieldType: string, key?: CryptoKey | null): Promise<string[]> => {
         const result = await chrome.storage.local.get('crossSiteExposure');
-        const exposure = (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
+        const raw = result.crossSiteExposure;
+        let exposure: import('./types').CrossSiteExposure;
+        if (key && typeof raw === 'string') {
+            exposure = (await decryptData(key, raw)) || {};
+        } else {
+            exposure = (typeof raw === 'string' ? {} : raw || {}) as import('./types').CrossSiteExposure;
+        }
         return exposure[fieldType] || [];
     },
 
     /**
-     * Get all cross-site exposure data
+     * Get all cross-site exposure data.
+     * Pass `key` to decrypt if the data is stored encrypted.
      */
-    getAllExposure: async (): Promise<import('./types').CrossSiteExposure> => {
+    getAllExposure: async (key?: CryptoKey | null): Promise<import('./types').CrossSiteExposure> => {
         const result = await chrome.storage.local.get('crossSiteExposure');
-        return (result.crossSiteExposure || {}) as import('./types').CrossSiteExposure;
+        const raw = result.crossSiteExposure;
+        if (key && typeof raw === 'string') {
+            return (await decryptData(key, raw)) || {};
+        }
+        return (typeof raw === 'string' ? {} : raw || {}) as import('./types').CrossSiteExposure;
     },
 
     // ============================================
@@ -241,15 +317,31 @@ export const storage = {
     // ============================================
 
     /**
-     * Add a new notification event
+     * Add a new notification event.
+     * Pass `key` (the vault CryptoKey) to encrypt notifications on write.
      */
-    addNotification: async (notification: Omit<import('./types').NotificationEvent, 'id' | 'timestamp' | 'read'>): Promise<string> => {
+    addNotification: async (
+        notification: Omit<import('./types').NotificationEvent, 'id' | 'timestamp' | 'read'>,
+        key?: CryptoKey | null
+    ): Promise<string> => {
         const result = await chrome.storage.local.get('notifications');
-        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+        const raw = result.notifications;
 
+        // Decrypt existing notifications if they are encrypted
+        let notifications: import('./types').NotificationEvent[];
+        if (key && typeof raw === 'string') {
+            notifications = (await decryptData(key, raw)) || [];
+        } else if (typeof raw === 'string') {
+            // Vault locked — still save to a plaintext buffer so we don't lose critical alerts
+            notifications = [];
+        } else {
+            notifications = (raw || []) as import('./types').NotificationEvent[];
+        }
+
+        const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const newNotification: import('./types').NotificationEvent = {
             ...notification,
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id,
             timestamp: Date.now(),
             read: false
         };
@@ -260,70 +352,85 @@ export const storage = {
         // Keep max 100 notifications
         const trimmedNotifications = notifications.slice(0, 100);
 
-        await storage.set({ notifications: trimmedNotifications });
-        return newNotification.id;
+        if (key) {
+            await storage.set({ notifications: await encryptData(key, trimmedNotifications) as any });
+        } else {
+            await storage.set({ notifications: trimmedNotifications });
+        }
+        return id;
     },
 
     /**
-     * Get all notifications, optionally limited
+     * Get all notifications, optionally limited.
+     * Pass `key` to decrypt if the data is stored encrypted.
      */
-    getNotifications: async (limit?: number): Promise<import('./types').NotificationEvent[]> => {
+    getNotifications: async (limit?: number, key?: CryptoKey | null): Promise<import('./types').NotificationEvent[]> => {
         const result = await chrome.storage.local.get('notifications');
-        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+        const raw = result.notifications;
+        let notifications: import('./types').NotificationEvent[];
+        if (key && typeof raw === 'string') {
+            notifications = (await decryptData(key, raw)) || [];
+        } else {
+            notifications = (typeof raw === 'string' ? [] : raw || []) as import('./types').NotificationEvent[];
+        }
         return limit ? notifications.slice(0, limit) : notifications;
     },
 
     /**
-     * Get count of unread notifications
+     * Get count of unread notifications.
+     * Pass `key` to decrypt if the data is stored encrypted.
      */
-    getUnreadCount: async (): Promise<number> => {
-        const result = await chrome.storage.local.get('notifications');
-        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
+    getUnreadCount: async (key?: CryptoKey | null): Promise<number> => {
+        const notifications = await storage.getNotifications(undefined, key);
         return notifications.filter(n => !n.read).length;
     },
 
     /**
-     * Mark a notification as read
+     * Mark a notification as read.
+     * Pass `key` to read and re-encrypt.
      */
-    markAsRead: async (id: string): Promise<void> => {
-        const result = await chrome.storage.local.get('notifications');
-        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
-
-        const updatedNotifications = notifications.map(n =>
-            n.id === id ? { ...n, read: true } : n
-        );
-
-        await storage.set({ notifications: updatedNotifications });
+    markAsRead: async (id: string, key?: CryptoKey | null): Promise<void> => {
+        const notifications = await storage.getNotifications(undefined, key);
+        const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
+        if (key) {
+            await storage.set({ notifications: await encryptData(key, updated) as any });
+        } else {
+            await storage.set({ notifications: updated });
+        }
     },
 
     /**
-     * Mark all notifications as read
+     * Mark all notifications as read.
+     * Pass `key` to read and re-encrypt.
      */
-    markAllAsRead: async (): Promise<void> => {
-        const result = await chrome.storage.local.get('notifications');
-        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
-
-        const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
-
-        await storage.set({ notifications: updatedNotifications });
+    markAllAsRead: async (key?: CryptoKey | null): Promise<void> => {
+        const notifications = await storage.getNotifications(undefined, key);
+        const updated = notifications.map(n => ({ ...n, read: true }));
+        if (key) {
+            await storage.set({ notifications: await encryptData(key, updated) as any });
+        } else {
+            await storage.set({ notifications: updated });
+        }
     },
 
     /**
-     * Clear all notifications
+     * Clear all notifications.
      */
     clearNotifications: async (): Promise<void> => {
         await storage.set({ notifications: [] });
     },
 
     /**
-     * Remove a specific notification
+     * Remove a specific notification.
+     * Pass `key` to read and re-encrypt.
      */
-    removeNotification: async (id: string): Promise<void> => {
-        const result = await chrome.storage.local.get('notifications');
-        const notifications = (result.notifications || []) as import('./types').NotificationEvent[];
-
-        const filteredNotifications = notifications.filter(n => n.id !== id);
-
-        await storage.set({ notifications: filteredNotifications });
+    removeNotification: async (id: string, key?: CryptoKey | null): Promise<void> => {
+        const notifications = await storage.getNotifications(undefined, key);
+        const filtered = notifications.filter(n => n.id !== id);
+        if (key) {
+            await storage.set({ notifications: await encryptData(key, filtered) as any });
+        } else {
+            await storage.set({ notifications: filtered });
+        }
     }
 };

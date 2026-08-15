@@ -57,6 +57,11 @@ export function initNetworkMonitor() {
             try {
                 if (isLocalUrl(details.url)) return;
 
+                // Hard cap: stop recording once we hit 2,000 requests per tab.
+                // This prevents memory exhaustion from malicious pages that trigger
+                // unlimited unique fetch requests.
+                if (Object.keys(data.requests).length >= 2000) return;
+
                 const reqUrl = new URL(details.url);
                 const mainUrl = new URL(data.url);
                 const isThirdParty = reqUrl.hostname !== mainUrl.hostname && !reqUrl.hostname.endsWith('.' + mainUrl.hostname);

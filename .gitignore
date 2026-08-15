@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
-package-lock.json
+# NOTE: package-lock.json is committed to ensure reproducible builds in CI.
+# yarn.lock and pnpm-lock.yaml are excluded since we use npm.
 pnpm-lock.yaml
 yarn.lock
 
