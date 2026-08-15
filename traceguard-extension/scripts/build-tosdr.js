@@ -10,6 +10,20 @@ if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
+// Check if we should skip rebuilding to avoid API strain
+if (fs.existsSync(OUTPUT_FILE) && !process.env.FORCE_TOSDR_BUILD) {
+    const stats = fs.statSync(OUTPUT_FILE);
+    const ageDays = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60 * 24);
+    
+    // Only rebuild if older than 7 days, unless forced
+    if (ageDays < 7) {
+        console.log(`Local ToS;DR database is fresh (${Math.round(ageDays * 10) / 10} days old).`);
+        console.log('Skipping fetch to prevent API strain.');
+        console.log('To force rebuild, run: FORCE_TOSDR_BUILD=1 npm run build:tosdr (or delete src/assets/tosdr-data.json)');
+        process.exit(0);
+    }
+}
+
 // A list of popular domains to fetch for our local database.
 // In a full production scenario, this script would iterate through the paginated
 // ToS;DR API to dump the entire database. For this extension, we'll seed it
