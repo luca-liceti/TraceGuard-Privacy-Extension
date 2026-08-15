@@ -216,8 +216,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setError("Passwords do not match")
                 return
               }
-              if (password.length < 8) {
-                setError("Password must be at least 8 characters")
+              if (password.length < 10) {
+                setError("Password must be at least 10 characters")
+                return
+              }
+              if (!/[A-Z]/.test(password)) {
+                setError("Password must contain at least one uppercase letter")
+                return
+              }
+              if (!/[0-9]/.test(password)) {
+                setError("Password must contain at least one number")
+                return
+              }
+              if (!/[^A-Za-z0-9]/.test(password)) {
+                setError("Password must contain at least one special character (!@#$%...)") 
                 return
               }
               if (userName.trim().length === 0) {
@@ -250,6 +262,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     disabled={loading}
                     required
                   />
+                  {password.length > 0 && (() => {
+                    const checks = [
+                      password.length >= 10,
+                      /[A-Z]/.test(password),
+                      /[0-9]/.test(password),
+                      /[^A-Za-z0-9]/.test(password),
+                    ];
+                    const strength = checks.filter(Boolean).length;
+                    const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500'];
+                    const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex gap-1">
+                          {colors.map((color, i) => (
+                            <div
+                              key={i}
+                              className={`h-1 flex-1 rounded-full transition-all ${i < strength ? color : 'bg-muted'}`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Strength: {labels[strength - 1] ?? 'Very weak'} — min 10 chars, uppercase, number &amp; special character required
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="setup-confirm">Confirm Password</Label>
