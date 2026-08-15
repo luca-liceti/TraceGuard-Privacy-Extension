@@ -13,11 +13,12 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 - **User Privacy Score (UPS)**: A dynamic behavioral score that reflects your personal privacy health over time.
 
 ### Key Features
-- **Real-Time Tracker Detection**: Identifies and catalogs 70+ known tracking domains and analytics scripts.
+- **Real-Time Tracker Detection**: Identifies third-party trackers using a curated list plus bundled databases (DuckDuckGo Tracker Radar, EasyPrivacy, Disconnect).
 - **PII Monitoring**: Detects sensitive form inputs and warns you before you submit data to low-trust sites.
-- **Cookie Auditing**: Scans for cross-site tracking cookies that compromise your anonymity.
-- **Policy Grading**: Integrates with the ToS;DR API to fetch and display human-readable privacy grades.
+- **Cookie Auditing**: Detects tracking cookies from `Set-Cookie` headers and the DOM — cookie names and metadata only, never values (no `cookies` permission required).
+- **Policy Grading**: A hybrid ToS;DR integration — a bundled database by default, with an optional (off-by-default) live lookup for unrated sites.
 - **Modern Dashboard**: An interactive, responsive control center built with React, Vite, Tailwind CSS, and shadcn/ui.
+- **Local-First**: Everything runs on-device — no accounts, no telemetry, and sensitive data is encrypted behind a master password (the "vault").
 
 ## Threat Feed & Signed Updates
 
@@ -75,7 +76,7 @@ Once installed, TraceGuard runs automatically in the background. You can open th
 If you encounter issues or have questions, please use the following resources:
 - **Issue Tracker**: [GitHub Issues](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/issues) to report bugs or request features.
 - **Documentation**: Additional setup notes and architectural details are available in the [docs/](docs/) directory.
-- **Privacy Policy**: Read our privacy commitments in [privacy-policy.md](privacy-policy.md).
+- **Privacy Policy**: Read our privacy commitments in [PRIVACY.md](PRIVACY.md).
 
 ## Maintainers and Contributing
 
@@ -83,6 +84,6 @@ If you encounter issues or have questions, please use the following resources:
 
 We welcome contributions of all kinds—from bug fixes to new detectors! To get started:
 1. Please read our contribution guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
-2. Ensure you run `npm run build` to verify your changes compile properly before submitting a pull request.
+2. Run `npm run typecheck` and `npm run test:run` (or `npm run build`) to verify your changes before submitting a pull request.
 
 *Together, we can create a safer, more transparent web.*
