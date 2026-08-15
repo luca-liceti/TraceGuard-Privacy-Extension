@@ -5,6 +5,7 @@ import {
   ColumnDef,
 } from "@tanstack/react-table"
 import {
+  AlertCircle,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsLeftIcon,
@@ -26,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { getGradeTextColor, getSafetyBgColor, getSafetyTextColor } from "@/lib/theme-utils"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 
 import {
   DropdownMenu,
@@ -786,6 +788,12 @@ export function DataTable({
   }
 
   return (
+    <ErrorBoundary fallback={
+      <div className="flex w-full h-64 border rounded-md items-center justify-center text-muted-foreground gap-2">
+        <AlertCircle className="h-6 w-6" />
+        <p>Failed to load activity logs table</p>
+      </div>
+    }>
     <div className="flex w-full flex-col gap-4">
       {/* ── Toolbar ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
@@ -1016,5 +1024,6 @@ export function DataTable({
         legacyDetails={selectedVisit?.details}
       />
     </div>
+    </ErrorBoundary>
   )
 }

@@ -16,11 +16,15 @@ import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
 import { SettingsProvider } from "@/components/traceguard/settings-context"
 import { SettingsModal } from "@/components/traceguard/settings-modal"
 
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
 // Page Wrapper
 function PageWrapper({ children }: { children: React.ReactNode }) {
     return (
         <Layout>
-            {children}
+            <ErrorBoundary>
+                {children}
+            </ErrorBoundary>
         </Layout>
     )
 }

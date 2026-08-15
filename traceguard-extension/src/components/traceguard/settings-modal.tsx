@@ -68,6 +68,17 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTheme } from "@/components/theme-provider"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -78,16 +89,19 @@ import { useSettingsModal } from "./settings-context"
 function SettingItem({
     label,
     description,
+    controlId,
     children
 }: {
     label: string
     description?: string
+    /** Optional id linking this label to its control via htmlFor */
+    controlId?: string
     children: React.ReactNode
 }) {
     return (
         <div className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5 flex-1 mr-4">
-                <Label className="text-base font-medium">{label}</Label>
+                <Label htmlFor={controlId} className="text-base font-medium">{label}</Label>
                 {description && (
                     <p className="text-sm text-muted-foreground">{description}</p>
                 )}
@@ -131,12 +145,18 @@ function SettingSlider({
                 </Badge>
             </div>
             <input
+                id={label.toLowerCase().replace(/\s+/g, '-') + '-slider'}
                 type="range"
                 min={min}
                 max={max}
                 step={step}
                 value={value}
                 onChange={(e) => onChange(Number(e.target.value))}
+                aria-label={`${label}: ${value} ${unit}`}
+                aria-valuemin={min}
+                aria-valuemax={max}
+                aria-valuenow={value}
+                aria-valuetext={`${value} ${unit}`}
                 className="w-full h-2 bg-secondary rounded-md appearance-none cursor-pointer accent-primary"
             />
             <div className="flex justify-between mt-2 text-xs text-muted-foreground">
@@ -517,8 +537,10 @@ export function SettingsModal() {
                         <SettingItem
                             label={t("PII Detection")}
                             description={t("Monitor when you enter personal information on websites")}
+                            controlId="pii-detection-toggle"
                         >
                             <Switch
+                                id="pii-detection-toggle"
                                 checked={enablePIIDetection}
                                 onCheckedChange={(checked) => {
                                     setEnablePIIDetection(checked)
@@ -800,14 +822,46 @@ export function SettingsModal() {
                                  <p className="text-sm text-muted-foreground">{t("Remove specific data from the extension")}</p>
                              </div>
                              <div className="flex-shrink-0 flex gap-2">
-                                 <Button variant="outline" onClick={clearActivityLogs}>
-                                     <Trash2 className="mr-2 h-4 w-4" />
-                                     {t("Clear Activity Logs")}
-                                 </Button>
-                                 <Button variant="outline" onClick={resetPrivacyScore}>
-                                     <RotateCcw className="mr-2 h-4 w-4" />
-                                     {t("Reset Privacy Score")}
-                                 </Button>
+                                 <AlertDialog>
+                                     <AlertDialogTrigger asChild>
+                                         <Button variant="outline">
+                                             <Trash2 className="mr-2 h-4 w-4" />
+                                             {t("Clear Activity Logs")}
+                                         </Button>
+                                     </AlertDialogTrigger>
+                                     <AlertDialogContent>
+                                         <AlertDialogHeader>
+                                             <AlertDialogTitle>{t("Clear Activity Logs?")}</AlertDialogTitle>
+                                             <AlertDialogDescription>
+                                                 {t("This will delete all of your recorded browsing activity logs. Your overall privacy score will remain intact.")}
+                                             </AlertDialogDescription>
+                                         </AlertDialogHeader>
+                                         <AlertDialogFooter>
+                                             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                                             <AlertDialogAction onClick={clearActivityLogs}>{t("Continue")}</AlertDialogAction>
+                                         </AlertDialogFooter>
+                                     </AlertDialogContent>
+                                 </AlertDialog>
+                                 <AlertDialog>
+                                     <AlertDialogTrigger asChild>
+                                         <Button variant="outline">
+                                             <RotateCcw className="mr-2 h-4 w-4" />
+                                             {t("Reset Privacy Score")}
+                                         </Button>
+                                     </AlertDialogTrigger>
+                                     <AlertDialogContent>
+                                         <AlertDialogHeader>
+                                             <AlertDialogTitle>{t("Reset Privacy Score?")}</AlertDialogTitle>
+                                             <AlertDialogDescription>
+                                                 {t("This will reset your privacy score back to 100 and clear your historical score data. Activity logs will not be deleted.")}
+                                             </AlertDialogDescription>
+                                         </AlertDialogHeader>
+                                         <AlertDialogFooter>
+                                             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                                             <AlertDialogAction onClick={resetPrivacyScore}>{t("Continue")}</AlertDialogAction>
+                                         </AlertDialogFooter>
+                                     </AlertDialogContent>
+                                 </AlertDialog>
                              </div>
                         </div>
 
@@ -820,10 +874,26 @@ export function SettingsModal() {
                                  <p className="text-sm text-muted-foreground">{t("Irreversible actions that will delete your data")}</p>
                              </div>
                              <div className="flex-shrink-0">
-                                 <Button variant="destructive" onClick={clearAllData}>
-                                     <Trash2 className="mr-2 h-4 w-4" />
-                                     {t("Delete All Data")}
-                                 </Button>
+                                 <AlertDialog>
+                                     <AlertDialogTrigger asChild>
+                                         <Button variant="destructive">
+                                             <Trash2 className="mr-2 h-4 w-4" />
+                                             {t("Delete All Data")}
+                                         </Button>
+                                     </AlertDialogTrigger>
+                                     <AlertDialogContent>
+                                         <AlertDialogHeader>
+                                             <AlertDialogTitle>{t("Are you absolutely sure?")}</AlertDialogTitle>
+                                             <AlertDialogDescription>
+                                                 {t("This action cannot be undone. This will permanently delete your account, activity logs, settings, and remove your data from the local device.")}
+                                             </AlertDialogDescription>
+                                         </AlertDialogHeader>
+                                         <AlertDialogFooter>
+                                             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                                             <AlertDialogAction onClick={clearAllData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("Delete Data")}</AlertDialogAction>
+                                         </AlertDialogFooter>
+                                     </AlertDialogContent>
+                                 </AlertDialog>
                              </div>
                         </div>
                     </div>

@@ -38,7 +38,8 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-import { Activity } from "lucide-react"
+import { Activity, AlertCircle } from "lucide-react"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 
 // ... (in imports at top)
 
@@ -148,6 +149,12 @@ export function ChartAreaInteractive({
   }, [dailyData, todayData, timeRange, history]);
 
   return (
+    <ErrorBoundary fallback={
+      <Card className="h-[300px] flex items-center justify-center text-muted-foreground">
+        <AlertCircle className="mr-2 h-5 w-5" />
+        Failed to load chart
+      </Card>
+    }>
     <Card className="@container/card h-full">
       <CardHeader className="relative">
         <CardTitle>User Privacy Score</CardTitle>
@@ -293,5 +300,6 @@ export function ChartAreaInteractive({
         )}
       </CardContent>
     </Card>
+    </ErrorBoundary>
   )
 }
