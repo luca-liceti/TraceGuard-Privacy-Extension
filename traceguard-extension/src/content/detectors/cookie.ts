@@ -307,7 +307,7 @@ export function detectCookies(): number {
         // 0 weighted → 100
         // 4 weighted (2 analytics) → 100 - 12×log2(5) ≈ 72
         // 10 weighted → 100 - 12×log2(11) ≈ 58
-        // 20 weighted �        const K = 12;
+        const K = 12;
         const score = totalWeightedScore === 0
             ? 100
             : Math.max(0, Math.round(100 - (K * Math.log2(totalWeightedScore + 1))));
@@ -373,9 +373,10 @@ export function detectCookiesDetailed(): {
 }
 
 /**
- * Returns raw cookie name/value pairs for background enrichment
+ * Returns raw cookie names for background enrichment (values are intentionally
+ * not read or persisted).
  */
-export function detectCookiesRaw(): { name: string; value: string }[] {
+export function detectCookiesRaw(): { name: string }[] {
     try {
         const cookieString = document.cookie;
         if (!cookieString || cookieString.trim() === '') {
@@ -385,12 +386,9 @@ export function detectCookiesRaw(): { name: string; value: string }[] {
         return cookieString.split(';').map(pair => {
             const trimmedPair = pair.trim();
             const equalIndex = trimmedPair.indexOf('=');
-            if (equalIndex === -1) return null;
-            return {
-                name: trimmedPair.substring(0, equalIndex).trim(),
-                value: trimmedPair.substring(equalIndex + 1).trim()
-            };
-        }).filter(Boolean) as { name: string; value: string }[];
+            const name = (equalIndex === -1 ? trimmedPair : trimmedPair.substring(0, equalIndex)).trim();
+            return name ? { name } : null;
+        }).filter(Boolean) as { name: string }[];
     } catch (e) {
         return [];
     }

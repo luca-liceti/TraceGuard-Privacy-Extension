@@ -129,7 +129,7 @@ export function calculateWSS(breakdown: ScoreBreakdown): number {
 
     // STEP 3: Define the weights for each detector
     // These add up to 100% (1.0)
-    const weights = {
+    const weights: Record<keyof typeof WSS_WEIGHTS, number> = {
         ...WSS_WEIGHTS
     };
 

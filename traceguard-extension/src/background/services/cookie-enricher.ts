@@ -9,8 +9,8 @@ import { lookupCookie, lookupTrackerDomain } from './database-loader';
 
 export async function enrichCookies(
     url: string,
-    rawDomCookies: { name: string; value: string }[],
-    networkSetCookies: { name: string; value: string; domain: string }[]
+    rawDomCookies: { name: string }[],
+    networkSetCookies: { name: string; domain: string }[]
 ): Promise<CookieDetail[]> {
     const enriched: CookieDetail[] = [];
     const seenNames = new Set<string>();
@@ -26,7 +26,7 @@ export async function enrichCookies(
     const pageHost = new URL(url).hostname;
     
     // Helper to process a cookie
-    const processCookie = async (name: string, value: string, domain: string, httpOnly: boolean, secure: boolean, sameSite: string, expirationDate: number | null, status: 'active' | 'blocked' = 'active') => {
+    const processCookie = async (name: string, domain: string, httpOnly: boolean, secure: boolean, sameSite: string, expirationDate: number | null, status: 'active' | 'blocked' = 'active') => {
         if (seenNames.has(name)) return;
         seenNames.add(name);
         
@@ -58,7 +58,7 @@ export async function enrichCookies(
                 category = 'unclassified';
                 weight = 1;
                 // Basic cross-site tracking heuristic
-                if (name.length > 5 && value.length > 20 && !httpOnly) {
+                if (name.length > 5 && !httpOnly) {
                     category = 'marketing';
                     weight = 2;
                 }
@@ -70,7 +70,6 @@ export async function enrichCookies(
         enriched.push({
             name,
             domain,
-            value: value.length > 50 ? value.substring(0, 50) + '...' : value,
             category,
             organization: org,
             platform: dbEntry?.platform || null,
@@ -90,7 +89,7 @@ export async function enrichCookies(
     // Process store cookies (highest priority, most accurate metadata)
     for (const c of storeCookies) {
         await processCookie(
-            c.name, c.value, c.domain, c.httpOnly, c.secure, 
+            c.name, c.domain, c.httpOnly, c.secure, 
             c.sameSite === 'no_restriction' ? 'None' : c.sameSite === 'lax' ? 'Lax' : c.sameSite === 'strict' ? 'Strict' : 'unspecified',
             c.expirationDate || null,
             'active'
@@ -101,14 +100,14 @@ export async function enrichCookies(
     for (const c of networkSetCookies) {
         if (!seenNames.has(c.name)) {
             // If it's in Set-Cookie but not in chrome.cookies, it might have been blocked or is session
-            await processCookie(c.name, c.value, c.domain, false, false, 'unspecified', null, 'active');
+            await processCookie(c.name, c.domain, false, false, 'unspecified', null, 'active');
         }
     }
     
     // Process DOM cookies (fallback)
     for (const c of rawDomCookies) {
         if (!seenNames.has(c.name)) {
-            await processCookie(c.name, c.value, pageHost, false, false, 'unspecified', null, 'active');
+            await processCookie(c.name, pageHost, false, false, 'unspecified', null, 'active');
         }
     }
     

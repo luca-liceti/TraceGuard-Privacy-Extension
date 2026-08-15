@@ -5,14 +5,17 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:blacklist && npm run build:tosdr && vite build",
-    "build:blacklist": "node scripts/build-blacklist.js",
+    "build": "npm run build:phishlist && npm run build:tosdr && vite build",
+    "build:phishlist": "node scripts/build-phishlist.js",
+    "sign:phishlist": "node scripts/sign-phishlist.js",
+    "generate:threat-keys": "node scripts/generate-threat-keys.js",
     "build:tosdr": "node scripts/build-tosdr.js",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives"
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "chrome-extension",
@@ -25,7 +28,7 @@
   "license": "AGPL-3.0",
   "type": "commonjs",
   "dependencies": {
-    "@crxjs/vite-plugin": "2.0.0-beta.33",
+    "@crxjs/vite-plugin": "2.7.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
@@ -90,6 +93,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@typescript-eslint/eslint-plugin": "^8.67.0",
@@ -98,7 +102,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.4",
     "happy-dom": "^20.0.11",
-    "sharp": "^0.34.5",
+    "typescript": "^5.6.3",
     "vitest": "^4.0.16"
   }
 }

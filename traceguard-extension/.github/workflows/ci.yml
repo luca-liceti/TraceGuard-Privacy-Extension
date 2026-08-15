@@ -34,6 +34,10 @@ jobs:
     - name: Run Tests
       working-directory: ./traceguard-extension
       run: npm run test:run
+
+    - name: Typecheck
+      working-directory: ./traceguard-extension
+      run: npm run typecheck
       
     - name: Run Build
       working-directory: ./traceguard-extension

@@ -1,9 +1,43 @@
 # TraceGuard Privacy Policy
 
-Effective date: August 3, 2026
+Effective date: August 14, 2026
 
-TraceGuard analyzes the pages you visit locally in your browser to provide privacy and website-safety scores. It stores analysis results, including domain names, timestamps, detector results, score history, settings, and PII **field types** that you choose to enter. It never reads, stores, or transmits the contents of form fields, passwords, cookie values, or other entered personal data.
+TraceGuard is a **local-first privacy journal**. It analyzes the pages you visit on your own
+device to help you understand and change your browsing habits, and stores that analysis locally
+in Chrome extension storage. It has no backend and no user accounts.
 
-TraceGuard is 100% local during browsing. On the update schedule selected in Settings, it downloads public tracker, cookie-list, and ToS;DR database updates from their published sources (`raw.githubusercontent.com` and `easylist.to`). Those update requests contain no browsing, account, or other user data. It does not use analytics, telemetry, advertising SDKs, or sell or share personal data. Analysis data is stored locally in Chrome extension storage; sensitive history is encrypted after the user unlocks the vault.
+## What TraceGuard records (stored locally on your device)
 
-You can review, export, or clear locally stored data from TraceGuard Settings. Contact the publisher through the Chrome Web Store listing for privacy questions.
+- Domain names you visit, timestamps, and per-site privacy/safety scores.
+- Tracker domains and cookie **names** with metadata (HttpOnly / Secure / SameSite flags, expiry,
+  third-party status) — never cookie values.
+- Third-party request origins and paths (query strings and URL fragments are discarded).
+- Browser fingerprinting attempts and HTTP security headers observed on pages.
+- The **type** of sensitive form field you interacted with (e.g. "password", "email") — never the
+  value you typed.
+
+## What TraceGuard does NOT do
+
+- It never reads, stores, or transmits the contents of form fields, passwords, or other entered data.
+- It never stores cookie values or full request URLs.
+- It does not use analytics, telemetry, advertising SDKs, or any form of cross-site tracking.
+
+## External network requests
+
+TraceGuard is 100% local by default. The only optional external request is **Enhanced Policy
+Analysis**, which is **off by default**. If you enable it, TraceGuard sends the domain of unrated
+sites to ToS;DR (`api.tosdr.org`) to look up a privacy-policy rating; no other browsing data is
+included, and you can disable it at any time in Settings.
+
+Threat-intelligence data (phishing/malware domain lists from public feeds such as OpenPhish) is
+bundled at release time and refreshed from the publisher via signed updates. Those update requests
+contain no browsing or account data.
+
+## Encryption and control
+
+Sensitive history is encrypted with a master password you create (the "vault"). While the vault is
+locked, new journal entries are held in temporary in-memory storage (cleared when the browser
+closes) and encrypted on disk once you unlock. You can review, export, or clear all locally stored
+data from TraceGuard Settings at any time.
+
+Contact the publisher through the Chrome Web Store listing for privacy questions.

@@ -20,7 +20,7 @@ const PBKDF2_HASH = 'SHA-256';
  * - Length: 256 bits
  * - Salt: 16 bytes (Cryptographically secure random)
  */
-export async function deriveKeyFromPassword(password: string, salt: Uint8Array, extractable = true): Promise<CryptoKey> {
+export async function deriveKeyFromPassword(password: string, salt: Uint8Array<ArrayBuffer>, extractable = true): Promise<CryptoKey> {
     const encoder = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey(
         'raw',
@@ -90,7 +90,7 @@ export async function encryptData(key: CryptoKey, data: any): Promise<string> {
 /**
  * Decrypts a Base64-encoded string back to its original data.
  */
-export async function decryptData<T>(key: CryptoKey, encryptedBase64: string): Promise<T | null> {
+export async function decryptData<T = any>(key: CryptoKey, encryptedBase64: string): Promise<T | null> {
     try {
         const binary = atob(encryptedBase64);
         const combined = new Uint8Array(binary.length);
@@ -142,7 +142,7 @@ export async function importKey(hexStr: string): Promise<CryptoKey> {
 /**
  * Utility to generate a cryptographically secure random salt
  */
-export function generateSalt(): Uint8Array {
+export function generateSalt(): Uint8Array<ArrayBuffer> {
     return crypto.getRandomValues(new Uint8Array(16));
 }
 
@@ -150,7 +150,7 @@ export function generateSalt(): Uint8Array {
  * Validates that a salt is properly formed and cryptographically sound
  * (Not empty, correct length, and not a static/zeroed array)
  */
-export function verifySaltUniqueness(salt: Uint8Array): boolean {
+export function verifySaltUniqueness(salt: Uint8Array<ArrayBuffer>): boolean {
     if (!salt || salt.length !== 16) return false;
     
     // Check if the salt is just an array of zeros (uninitialized memory)

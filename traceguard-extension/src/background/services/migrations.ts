@@ -7,7 +7,7 @@ const CURRENT_SCHEMA_VERSION = 1;
 
 export async function runDataMigrations() {
     try {
-        const { schemaVersion } = await chrome.storage.local.get('schemaVersion');
+        const { schemaVersion } = await chrome.storage.local.get<{ schemaVersion?: number }>('schemaVersion');
         
         let currentVersion = schemaVersion;
         

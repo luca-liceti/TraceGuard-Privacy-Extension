@@ -46,7 +46,7 @@ import { Separator } from "@/components/ui/separator"
 import {
     getSafetyTextColor, getSafetyBgColor, getCategoryBadge,
     getHeaderRatingBadge, getGradeTextColor, getRiskLevelBadge,
-    getNetworkStatusTextColor, getIndicatorTextColor
+    getIndicatorTextColor
 } from "@/lib/theme-utils"
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";

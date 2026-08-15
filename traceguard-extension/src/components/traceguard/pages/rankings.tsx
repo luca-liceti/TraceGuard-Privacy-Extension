@@ -35,7 +35,6 @@ import { StatCard } from "@/components/ui/stat-card"
 import {
   ShieldUser,
   OctagonAlert,
-  ShieldUser,
   Target,
   Cookie,
   Eye,

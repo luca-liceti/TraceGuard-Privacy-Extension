@@ -34,7 +34,6 @@
 export interface CookieDetail {
     name: string;
     domain: string;
-    value: string;                      // Truncated to 50 chars for display
     category: 'necessary' | 'functional' | 'analytics' | 'marketing' | 'unclassified';
     organization: string | null;        // e.g. "Google LLC", "Meta Platforms, Inc."
     platform: string | null;            // e.g. "Google Analytics", "Facebook Pixel"
@@ -264,12 +263,9 @@ export interface UserSettings {
     whitelist: string[];                 // Domains the user trusts (always safe)
     blacklist: string[];                 // Domains the user blocked (always danger)
     notificationLevel?: 'silent' | 'balanced' | 'aggressive';  // How often to alert
-    dataRetention?: number;              // How many days to keep data
     wssThreshold?: number;               // Safety threshold for warnings
-    lowPowerMode?: boolean;              // Reduce background activity
     logRetentionDays?: number;           // How long to keep logs
     enablePIIDetection?: boolean;        // Watch for personal info entry
-    enableTrackerBlocking?: boolean;     // Block trackers (future feature)
     displayMode?: 'popup' | 'sidebar';   // How the extension opens
     autoLockTimeout?: number;            // Vault auto-lock timeout in minutes (0 = never)
     databaseRefreshDays?: 1 | 3 | 7 | 14 | 30;

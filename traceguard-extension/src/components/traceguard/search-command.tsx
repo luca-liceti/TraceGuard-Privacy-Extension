@@ -154,9 +154,10 @@ export function SearchCommand() {
       if (!confirm(t("Reset your Privacy Score to 100? This will clear your browsing history data."))) return
       const currentState = (await chrome.storage.local.get("state")).state || {}
       await chrome.storage.local.set({
-        state: { ...currentState, ups: 100, sitesAnalyzed: 0, trackersBlocked: 0, piiEventsCount: 0 },
+        state: { ...currentState, ups: 100, sitesAnalyzed: 0, trackersDetected: 0, piiEventsCount: 0, safeVisitStreak: 0 },
         scoreHistory: [],
         siteCache: {},
+        crossSiteExposure: {},
       })
       toast.success(t("Privacy Score Reset"), {
         description: t("Your UPS has been reset to 100."),
@@ -171,7 +172,7 @@ export function SearchCommand() {
   const recentSites = React.useMemo(() => {
     if (!sites || sites.length === 0) return []
     return [...sites]
-      .sort(([, a], [, b]) => (b.timestamp || 0) - (a.timestamp || 0))
+      .sort(([, a], [, b]) => (Number(b.lastAnalyzed) || 0) - (Number(a.lastAnalyzed) || 0))
       .slice(0, 3)
   }, [sites])
 
@@ -376,9 +377,9 @@ export function SearchCommand() {
       {/* Site Details Panel */}
       <SiteDetailsPanel
         siteData={selectedSiteData}
-        legacyDetails={selectedSiteData?.legacyDetails}
+        legacyDetails={selectedSiteData?.detectionDetails}
         domain={selectedDomain}
-        timestamp={selectedSiteData?.timestamp || 0}
+        timestamp={Number(selectedSiteData?.lastAnalyzed) || 0}
         wss={selectedSiteData?.wss || 0}
         safetyLevel={getSafetyLevel(selectedSiteData?.wss || 0)}
         open={isSitePanelOpen}

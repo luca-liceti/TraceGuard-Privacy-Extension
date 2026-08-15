@@ -4,6 +4,7 @@ import React from "react"
 import { Link } from "react-router-dom"
 import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { getSafetyTextColor, getSafetyBgColor, getSafetyBorderColor } from "@/lib/theme-utils"
 import { useTranslation } from "react-i18next";
@@ -110,11 +111,11 @@ interface HeroTileProps {
 }
 
 const heroStatusConfig = {
-    excellent: { label: 'EXCELLENT' },
-    good: { label: 'GOOD' },
-    fair: { label: 'FAIR' },
-    poor: { label: 'POOR' },
-    critical: { label: 'CRITICAL' }
+    excellent: { label: 'EXCELLENT', color: 'text-success' },
+    good: { label: 'GOOD', color: 'text-success' },
+    fair: { label: 'FAIR', color: 'text-warning' },
+    poor: { label: 'POOR', color: 'text-alert' },
+    critical: { label: 'CRITICAL', color: 'text-destructive' }
 }
 
 export function HeroTile({ score, trend, status, href }: HeroTileProps) {

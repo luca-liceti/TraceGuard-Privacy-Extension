@@ -19,6 +19,22 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 - **Policy Grading**: Integrates with the ToS;DR API to fetch and display human-readable privacy grades.
 - **Modern Dashboard**: An interactive, responsive control center built with React, Vite, Tailwind CSS, and shadcn/ui.
 
+## Threat Feed & Signed Updates
+
+The malware/phishing blocklist is built locally from public, no-account feeds ([OpenPhish](https://openphish.com/feed.txt) and [phishunt](https://phishunt.io)) — matching is done entirely on-device, so your browsing is never sent to a third party.
+
+To keep that blocklist fresh between extension releases, the background worker periodically fetches a **signed** update (`phishlist.signed.json`) and only accepts it when its Ed25519 signature verifies against an embedded public key, it is fresher than the last accepted feed, and it is newer than what is already stored. Any failure falls back to the bundled snapshot.
+
+### Key management
+
+```bash
+npm run generate:threat-keys   # creates scripts/keys/threat-signing-key.pem (gitignored, KEEP SECRET)
+npm run build:phishlist        # rebuild src/assets/phishlist.json from the feeds
+npm run sign:phishlist         # sign it -> src/assets/phishlist.signed.json (commit this)
+```
+
+The private key must **never** be committed. Store it as a GitHub Actions secret named `THREAT_SIGNING_KEY` so the release workflow can sign fresh feeds. Rotating the key invalidates all previously signed feeds — regenerate, re-sign, and redeploy the public key (`THREAT_FEED_PUBLIC_KEY_HEX` in `src/background/services/threat-feed.ts`) together.
+
 ## Getting Started
 
 ### Prerequisites

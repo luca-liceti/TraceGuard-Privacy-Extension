@@ -31,6 +31,13 @@ jobs:
     - name: Run Build
       working-directory: ./traceguard-extension
       run: npm run build
+
+    - name: Sign threat feed
+      if: ${{ secrets.THREAT_SIGNING_KEY != '' }}
+      working-directory: ./traceguard-extension
+      env:
+        THREAT_SIGNING_KEY: ${{ secrets.THREAT_SIGNING_KEY }}
+      run: npm run sign:phishlist
       
     - name: Package Extension
       working-directory: ./traceguard-extension
@@ -41,5 +48,7 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: traceguard-extension/traceguard-extension-${{ github.ref_name }}.zip
+        files: |
+          traceguard-extension/traceguard-extension-${{ github.ref_name }}.zip
+          traceguard-extension/src/assets/phishlist.signed.json
         generate_release_notes: true

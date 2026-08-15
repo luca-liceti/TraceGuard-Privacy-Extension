@@ -10,7 +10,7 @@
  * KEY SETTINGS:
  * - Uses React plugin for JSX/TSX support
  * - Uses crx plugin to build as a Chrome extension (from manifest.json)
- * - Copies static assets (like the blacklist.json) to the output folder
+ * - Copies static assets (like phishlist.json and the privacy databases) to the output folder
  * - Sets up path aliases (@ = src folder) for cleaner imports
  * 
  * BUILD OUTPUTS:
@@ -38,7 +38,7 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: 'src/assets/blacklist.json',
+          src: 'src/assets/phishlist.json',
           dest: 'assets'
         },
         {

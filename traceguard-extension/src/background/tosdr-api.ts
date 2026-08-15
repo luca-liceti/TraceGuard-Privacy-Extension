@@ -114,6 +114,7 @@ function gradeToScore(grade: string | undefined): number {
 
 import { getTosDRMap } from './services/database-loader';
 import { storage } from '../lib/storage';
+import { rateLimiters } from '../lib/rate-limiter';
 
 interface CacheEntry {
     data: TosDRResult;
@@ -122,9 +123,31 @@ interface CacheEntry {
 
 let inMemoryCache: Record<string, CacheEntry> | null = null;
 
+// One-time opt-in prompt for the (default-off) cloud lookup.
+let cloudPromptScheduled = false;
+async function maybePromptCloudOptIn() {
+    if (cloudPromptScheduled) return;
+    const { cloudTosdrPrompted } = await chrome.storage.local.get('cloudTosdrPrompted');
+    if (cloudTosdrPrompted) {
+        cloudPromptScheduled = true;
+        return;
+    }
+    const id = await storage.addNotification({
+        type: 'info',
+        title: 'Enhanced Policy Analysis is off',
+        message: 'Enable it to get privacy-policy ratings for more sites. It sends the visited domain to tosdr.org.',
+        severity: 'info',
+        actionUrl: '/overview?openSettings=privacy'
+    });
+    if (id) {
+        cloudPromptScheduled = true;
+        await chrome.storage.local.set({ cloudTosdrPrompted: true });
+    }
+}
+
 async function getCache(): Promise<Record<string, CacheEntry>> {
     if (inMemoryCache) return inMemoryCache;
-    const result = await chrome.storage.local.get('tosdr_cache');
+    const result = await chrome.storage.local.get<Record<string, any>>('tosdr_cache');
     inMemoryCache = result.tosdr_cache || {};
     return inMemoryCache!;
 }
@@ -137,30 +160,33 @@ async function saveCache(domain: string, entry: CacheEntry) {
 
 async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
     try {
-        const searchRes = await fetch(`https://api.tosdr.org/search/v4/?query=${domain}`);
-        if (!searchRes.ok) return null;
-        const searchData = await searchRes.json();
-        
-        if (searchData?.parameters?.services?.[0]) {
-            const service = searchData.parameters.services[0];
-            const detailsRes = await fetch(`https://api.tosdr.org/service/v2/?id=${service.id}`);
-            if (!detailsRes.ok) return null;
-            const detailsData = await detailsRes.json();
-            const details = detailsData?.parameters;
+        return await rateLimiters.tosdr.execute(async () => {
+            const searchRes = await fetch(`https://api.tosdr.org/search/v4/?query=${domain}`);
+            if (!searchRes.ok) return null;
+            const searchData = await searchRes.json();
             
-            if (details) {
-                return {
-                    found: true,
-                    grade: service.rating && service.rating !== 'N/A' ? service.rating : undefined,
-                    score: gradeToScore(service.rating),
-                    source: 'tosdr',
-                    serviceName: service.name,
-                    serviceId: service.id,
-                    points: details.points?.map((p: any) => ({ title: p.title, classification: p.classification })) || [],
-                    documents: details.documents?.map((d: any) => ({ name: d.name, url: d.url })) || []
-                };
+            if (searchData?.parameters?.services?.[0]) {
+                const service = searchData.parameters.services[0];
+                const detailsRes = await fetch(`https://api.tosdr.org/service/v2/?id=${service.id}`);
+                if (!detailsRes.ok) return null;
+                const detailsData = await detailsRes.json();
+                const details = detailsData?.parameters;
+                
+                if (details) {
+                    return {
+                        found: true,
+                        grade: service.rating && service.rating !== 'N/A' ? service.rating : undefined,
+                        score: gradeToScore(service.rating),
+                        source: 'tosdr',
+                        serviceName: service.name,
+                        serviceId: service.id,
+                        points: details.points?.map((p: any) => ({ title: p.title, classification: p.classification })) || [],
+                        documents: details.documents?.map((d: any) => ({ name: d.name, url: d.url })) || []
+                    };
+                }
             }
-        }
+            return null;
+        });
     } catch (err) {
         console.error('[ToS;DR] Fetch error:', err);
     }
@@ -173,7 +199,8 @@ async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
 export async function checkTosDR(url: string): Promise<TosDRResult> {
     const domain = extractMainDomain(url);
     const settings = await storage.getSettings();
-    const enableCloud = settings.enableCloudTosdr ?? true;
+    const enableCloud = settings.enableCloudTosdr ?? false;
+    if (!enableCloud) await maybePromptCloudOptIn();
     const refreshDays = settings.databaseRefreshDays || 7;
     const refreshMs = refreshDays * 24 * 60 * 60 * 1000;
     

@@ -68,7 +68,7 @@ import { getStatusConfig } from "@/lib/risk-utils"
 export default function PrivacyScorePage() {
     const { t } = useTranslation()
     const state = useAppState()
-    const scoreHistory = useScoreHistory()
+    const scoreHistory = useScoreHistory() ?? []
 
     if (!state) return <div className="p-4">{t("Loading...")}</div>
 
@@ -177,7 +177,7 @@ export default function PrivacyScorePage() {
                     title={t("Average Score")}
                     value={avgScore}
                     subtitle={t("All-time average")}
-                    icon={BarChart3}
+                    icon={BarChart2}
                     iconColor="text-warning"
                     valueColor={getStatusConfig(avgScore).color}
                 />

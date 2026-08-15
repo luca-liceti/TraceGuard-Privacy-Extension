@@ -14,8 +14,9 @@
  * in-memory store, so reads and writes are fully exercised.
  * =============================================================================
  */
+/// <reference types="node" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as nodeCrypto from 'crypto';
+import * as nodeCrypto from 'node:crypto';
 
 // Polyfill web crypto for Node/Vitest environment
 if (typeof crypto === 'undefined' || !crypto.subtle) {
@@ -87,7 +88,7 @@ describe('storage.addDetectorLog (no key)', () => {
             message: 'Clean',
         });
 
-        const { detectorLogs } = await chrome.storage.local.get('detectorLogs');
+        const { detectorLogs } = await chrome.storage.local.get<{ detectorLogs: any }>('detectorLogs');
         expect(Array.isArray(detectorLogs)).toBe(true);
         expect(detectorLogs).toHaveLength(1);
         expect(detectorLogs[0].id).toBeDefined();
@@ -116,7 +117,7 @@ describe('storage.addDetectorLog (no key)', () => {
             message: 'new',
         });
 
-        const { detectorLogs } = await chrome.storage.local.get('detectorLogs');
+        const { detectorLogs } = await chrome.storage.local.get<{ detectorLogs: any }>('detectorLogs');
         expect(detectorLogs.length).toBeLessThanOrEqual(1000);
     });
 
@@ -144,7 +145,7 @@ describe('storage.addDetectorLog (no key)', () => {
             message: 'fresh',
         });
 
-        const { detectorLogs } = await chrome.storage.local.get('detectorLogs');
+        const { detectorLogs } = await chrome.storage.local.get<{ detectorLogs: any }>('detectorLogs');
         const ids = detectorLogs.map((l: any) => l.id);
         expect(ids).not.toContain('stale');
         expect(detectorLogs.some((l: any) => l.domain === 'fresh.com')).toBe(true);
@@ -159,14 +160,14 @@ describe('storage.addDetectorLog (with key)', () => {
         const key = await makeKey();
 
         await storage.addDetectorLog({
-            detector: 'fingerprinting',
+            detector: 'tracking',
             domain: 'tracker.io',
             score: 20,
             details: {},
             message: 'Fingerprinting detected',
         }, key);
 
-        const { detectorLogs } = await chrome.storage.local.get('detectorLogs');
+        const { detectorLogs } = await chrome.storage.local.get<{ detectorLogs: any }>('detectorLogs');
         // Should be a ciphertext string, NOT an array
         expect(typeof detectorLogs).toBe('string');
         expect(detectorLogs).not.toContain('tracker.io');
@@ -191,7 +192,7 @@ describe('storage.addDetectorLog (with key)', () => {
         await storage.addDetectorLog({ detector: 'cookies', domain: 'b.com', score: 60, details: {}, message: 'B' }, key);
 
         // Should be stored as a string
-        const { detectorLogs: raw } = await chrome.storage.local.get('detectorLogs');
+        const { detectorLogs: raw } = await chrome.storage.local.get<{ detectorLogs: any }>('detectorLogs');
         expect(typeof raw).toBe('string');
     });
 });
@@ -234,15 +235,15 @@ describe('storage.addNotification (no key)', () => {
     });
 
     it('markAsRead sets read to true', async () => {
-        const id = await storage.addNotification({ type: 'tracker_detected', title: 'T', message: '', severity: 'info', domain: 'x.com' });
+        const id = await storage.addNotification({ type: 'tracker_alert', title: 'T', message: '', severity: 'info', domain: 'x.com' });
         await storage.markAsRead(id);
         const notifs = await storage.getNotifications();
         expect(notifs.find(n => n.id === id)?.read).toBe(true);
     });
 
     it('markAllAsRead marks all as read', async () => {
-        await storage.addNotification({ type: 'tracker_detected', title: 'A', message: '', severity: 'info', domain: 'a.com' });
-        await storage.addNotification({ type: 'tracker_detected', title: 'B', message: '', severity: 'info', domain: 'b.com' });
+        await storage.addNotification({ type: 'tracker_alert', title: 'A', message: '', severity: 'info', domain: 'a.com' });
+        await storage.addNotification({ type: 'tracker_alert', title: 'B', message: '', severity: 'info', domain: 'b.com' });
         await storage.markAllAsRead();
         const notifs = await storage.getNotifications();
         expect(notifs.every(n => n.read)).toBe(true);

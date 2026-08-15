@@ -27,6 +27,8 @@
  * =============================================================================
  */
 
+import { refreshThreatFeed } from './threat-feed';
+
 // =============================================================================
 // TYPE DEFINITIONS
 // These define the "shape" of data we work with (like a blueprint)
@@ -70,8 +72,8 @@ let staticBlacklist: Set<string> = new Set();
  */
 export async function loadBlacklist() {
     try {
-        // Get the URL to our blacklist file (it's packaged with the extension)
-        const url = chrome.runtime.getURL('assets/blacklist.json');
+        // Load the phishing/malware domain feed (built from OpenPhish + phishunt).
+        const url = chrome.runtime.getURL('assets/phishlist.json');
 
         // Fetch and parse the JSON file
         const response = await fetch(url);
@@ -81,16 +83,29 @@ export async function loadBlacklist() {
         // (Checking if something is in a Set is much faster than searching an array)
         staticBlacklist = new Set(data.domains);
 
-
-        console.log(`[Reputation] Loaded ${staticBlacklist.size} domains into static blacklist`);
+        console.log(`[Reputation] Loaded ${staticBlacklist.size} domains into threat blocklist`);
     } catch (error) {
-        console.error('[Reputation] Failed to load static blacklist:', error);
+        console.error('[Reputation] Failed to load threat blocklist:', error);
     }
 }
 
 export interface ReputationResult {
     score: number;
     checks: string[];
+}
+
+/**
+ * Refresh the static blacklist from the signed remote threat feed.
+ * Keeps the bundled snapshot on any failure (offline, stale, forged, replay).
+ */
+export async function refreshBlacklistFromRemote(): Promise<boolean> {
+    const domains = await refreshThreatFeed();
+    if (domains && domains.length > 0) {
+        staticBlacklist = new Set(domains);
+        console.log(`[Reputation] Refreshed threat blocklist to ${staticBlacklist.size} domains`);
+        return true;
+    }
+    return false;
 }
 
 /**

@@ -1,7 +1,8 @@
+/// <reference types="node" />
 import { describe, it, expect } from 'vitest';
 import { deriveKeyFromPassword, encryptData, decryptData, generateSalt, exportKey, importKey } from './crypto';
 
-import * as nodeCrypto from 'crypto';
+import * as nodeCrypto from 'node:crypto';
 
 // Polyfill web crypto for Node/Vitest environment
 if (typeof crypto === 'undefined' || !crypto.subtle) {

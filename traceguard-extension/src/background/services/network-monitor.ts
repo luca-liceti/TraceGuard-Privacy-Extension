@@ -20,7 +20,7 @@ interface TabNetworkData {
     url: string; // The URL of the main frame
     requests: Record<string, NetworkRequestDetail>; // URL -> Detail
     responseHeaders: { name: string; value: string }[];
-    setCookies: { name: string; value: string; domain: string }[];
+    setCookies: { name: string; domain: string }[];
 }
 
 // Stores network data per tab
@@ -32,7 +32,7 @@ const tabData = new Map<number, TabNetworkData>();
 export function initNetworkMonitor() {
     // 1. Log every attempted request
     chrome.webRequest.onBeforeRequest.addListener(
-        (details) => {
+        (details): undefined => {
             if (details.tabId < 0) return; // Ignore background requests
             
             // Initialize tab data on main_frame navigation
@@ -67,7 +67,7 @@ export function initNetworkMonitor() {
                 const isThirdParty = reqUrl.hostname !== mainUrl.hostname && !reqUrl.hostname.endsWith('.' + mainUrl.hostname);
 
                 data.requests[details.url] = {
-                    url: details.url,
+                    url: reqUrl.origin + reqUrl.pathname,
                     domain: reqUrl.hostname,
                     resourceType: details.type,
                     organization: null, // Populated during enrichment
@@ -102,7 +102,7 @@ export function initNetworkMonitor() {
 
     // 3. Capture response headers (security headers + Set-Cookie)
     chrome.webRequest.onHeadersReceived.addListener(
-        (details) => {
+        (details): undefined => {
             if (details.tabId < 0) return;
             const data = tabData.get(details.tabId);
             if (!data) return;
@@ -124,13 +124,12 @@ export function initNetworkMonitor() {
                             // Very basic parsing just to get name and value for enrichment
                             const parts = header.value.split(';');
                             const nameValue = parts[0].split('=');
-                            if (nameValue.length >= 2) {
-                                data.setCookies.push({
-                                    name: nameValue[0].trim(),
-                                    value: nameValue.slice(1).join('=').trim(),
-                                    domain: reqUrl.hostname // Default to request host, enrichment will refine
-                                });
-                            }
+                        if (nameValue.length >= 1) {
+                            data.setCookies.push({
+                                name: nameValue[0].trim(),
+                                domain: reqUrl.hostname // Default to request host, enrichment will refine
+                            });
+                        }
                         } catch (e) {
                             // Ignore
                         }

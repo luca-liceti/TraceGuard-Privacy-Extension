@@ -1,5 +1,5 @@
 import React from 'react'
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider, useTheme } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import Layout from "@/components/traceguard/layout"
@@ -13,7 +13,7 @@ import PrivacyScorePage from "@/components/traceguard/pages/privacy-score"
 import HelpPage from "@/components/traceguard/pages/help"
 import RankingsPage from "@/components/traceguard/pages/rankings"
 import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
-import { SettingsProvider } from "@/components/traceguard/settings-context"
+import { SettingsProvider, useSettingsModal } from "@/components/traceguard/settings-context"
 import { SettingsModal } from "@/components/traceguard/settings-modal"
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -32,6 +32,23 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 import { useEffect } from 'react'
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+
+// Deep-link: open the settings modal (e.g. from a notification) via ?openSettings=privacy.
+// Must live inside <Router> because it uses useLocation().
+function DeepLinkHandler() {
+    const location = useLocation()
+    const { setSettingsOpen, setActiveTab } = useSettingsModal()
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search)
+        if (params.get('openSettings')) {
+            setSettingsOpen(true)
+            setActiveTab(params.get('openSettings') || 'privacy')
+        }
+    }, [location.search])
+
+    return null
+}
 
 function AppContent() {
     const { theme } = useTheme()
@@ -60,6 +77,7 @@ function AppContent() {
         <>
             <Toaster />
             <Router>
+                <DeepLinkHandler />
                 <Routes>
                     {/* Default route - redirect to Overview */}
                     <Route path="/" element={<Navigate to="/overview" replace />} />

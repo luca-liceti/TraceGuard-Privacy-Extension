@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const local = await chrome.storage.local.get(["cryptoSalt", "validator"])
+      const local = await chrome.storage.local.get<{ cryptoSalt?: number[]; validator?: string }>(["cryptoSalt", "validator"])
       if (!local.cryptoSalt || !local.validator) {
         setAuthState("setup")
         return
@@ -130,7 +130,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
     setError("")
     try {
-      const local = await chrome.storage.local.get(["cryptoSalt", "validator"])
+      const local = await chrome.storage.local.get<{ cryptoSalt?: number[]; validator?: string }>(["cryptoSalt", "validator"])
+      if (!local.cryptoSalt || !local.validator) {
+        setError(t("Vault not set up"))
+        setLoading(false)
+        return false
+      }
       const salt = new Uint8Array(local.cryptoSalt)
       
       const key = await deriveKeyFromPassword(pwd, salt)

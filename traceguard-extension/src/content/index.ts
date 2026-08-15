@@ -49,7 +49,7 @@ console.log('TraceGuard Content Script Loaded');
  */
 // Utility: Debounce function to prevent running analysis too often
 function debounce(func: (...args: any[]) => void, wait: number) {
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
     return function executedFunction(...args: any[]) {
         const later = () => {
             clearTimeout(timeout);
@@ -68,12 +68,20 @@ async function runAnalysis() {
     }
 
     try {
+        // Respect the user's master on/off toggle — pause journaling when disabled.
+        const { settings } = await chrome.storage.local.get<{ settings?: any }>('settings');
+        if (settings?.enabled === false) return;
+
         // STEP 1: Analyze the current page for privacy issues
         const result = await analyzePage();
 
-        // STEP 2: Start monitoring sensitive fields for PII entry
+        // STEP 2: Start monitoring sensitive fields for PII entry (unless disabled)
         // piiDetector.startMonitoring will clear old listeners and attach new ones
-        piiDetector.startMonitoring(result.sensitiveFields);
+        if (settings?.enablePIIDetection !== false) {
+            piiDetector.startMonitoring(result.sensitiveFields);
+        } else {
+            piiDetector.stopMonitoring();
+        }
 
         // STEP 3: Send the analysis results to the background service worker
         await chrome.runtime.sendMessage({

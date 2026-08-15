@@ -53,10 +53,9 @@ const DEFAULT_SETTINGS: UserSettings = {
     theme: 'system',              // Match your OS theme (light/dark)
     whitelist: [],                // Sites you've marked as always safe
     blacklist: [],                // Sites you've marked as always dangerous
-    lowPowerMode: false,          // Reduce CPU usage (skip some checks)
-    logRetentionDays: 0,          // 0 = keep forever, until storage is full
+    logRetentionDays: 30,         // Days to keep activity logs before auto-deletion
     databaseRefreshDays: 7,
-    enableCloudTosdr: true        // Enhanced Policy Analysis (Cloud) defaults to true
+    enableCloudTosdr: false       // Enhanced Policy Analysis (Cloud) defaults to false (privacy-first)
 };
 
 /**
@@ -109,29 +108,20 @@ export const storage = {
         return { ...DEFAULT_STATE, ...(result.state || {}) };
     },
 
+    // Serializes state writes. A shared chain guarantees every caller's write is
+    // applied in order and every returned promise resolves exactly once — the
+    // previous debounced implementation could orphan a caller's promise (clearing
+    // its timer) and permanently hang the telemetry write queue.
     updateState: (function() {
-        let timeout: ReturnType<typeof setTimeout> | null = null;
-        let pendingState: Partial<AppState> | null = null;
-        
-        return async (state: Partial<AppState>): Promise<void> => {
-            pendingState = { ...(pendingState || {}), ...state };
-            
-            if (timeout) clearTimeout(timeout);
-            
-            return new Promise<void>((resolve) => {
-                timeout = setTimeout(async () => {
-                    if (!pendingState) {
-                        resolve();
-                        return;
-                    }
-                    const stateToSave = pendingState;
-                    pendingState = null;
-                    
-                    const current = await storage.getState();
-                    await storage.set({ state: { ...current, ...stateToSave } });
-                    resolve();
-                }, 200);
+        let chain: Promise<void> = Promise.resolve();
+        return (state: Partial<AppState>): Promise<void> => {
+            const run = chain.then(async () => {
+                const current = await storage.getState();
+                await storage.set({ state: { ...current, ...state } });
             });
+            // Keep the chain alive even if this write fails, so later writes still run.
+            chain = run.catch((error) => console.error('[storage.updateState] Write failed:', error));
+            return run;
         };
     })(),
 
@@ -333,8 +323,11 @@ export const storage = {
         if (key && typeof raw === 'string') {
             notifications = (await decryptData(key, raw)) || [];
         } else if (typeof raw === 'string') {
-            // Vault locked — still save to a plaintext buffer so we don't lose critical alerts
-            notifications = [];
+            // Vault locked and data is encrypted — skip the write. Writing a
+            // plaintext array here would both wipe every existing encrypted
+            // notification and downgrade the store to plaintext.
+            console.warn('[storage.addNotification] Vault locked; skipping write to protect encrypted data.');
+            return '';
         } else {
             notifications = (raw || []) as import('./types').NotificationEvent[];
         }

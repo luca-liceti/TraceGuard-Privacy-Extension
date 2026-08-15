@@ -55,7 +55,7 @@ export interface PageAnalysisResult {
     sensitiveFields: ReturnType<typeof detectSensitiveInputs>['fields'];
     detectionDetails: DetectionDetails;
     rawForEnrichment: {
-        cookies: { name: string; value: string }[];
+        cookies: { name: string }[];
         trackers: { url: string; type: string; domain: string }[];
         fingerprinting: { technique: string; scriptUrl: string | null }[];
     };

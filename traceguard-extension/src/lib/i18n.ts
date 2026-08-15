@@ -25,7 +25,7 @@ i18n
 // Setup synchronization between different extension views (popup, sidepanel, dashboard)
 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
   // Sync initial language from chrome.storage
-  chrome.storage.local.get(LANGUAGE_KEY, (result) => {
+  chrome.storage.local.get<{ [key: string]: any }>(LANGUAGE_KEY, (result) => {
     if (result[LANGUAGE_KEY] && result[LANGUAGE_KEY] !== i18n.language) {
       i18n.changeLanguage(result[LANGUAGE_KEY]);
       if (typeof localStorage !== 'undefined') localStorage.setItem(LANGUAGE_KEY, result[LANGUAGE_KEY]);
@@ -35,7 +35,7 @@ if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
   // Listen for changes from other views
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local' && changes[LANGUAGE_KEY]) {
-      const newLang = changes[LANGUAGE_KEY].newValue;
+      const newLang = changes[LANGUAGE_KEY].newValue as string | undefined;
       if (newLang && newLang !== i18n.language) {
         i18n.changeLanguage(newLang);
         if (typeof localStorage !== 'undefined') localStorage.setItem(LANGUAGE_KEY, newLang);

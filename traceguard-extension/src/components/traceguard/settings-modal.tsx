@@ -184,11 +184,12 @@ export function SettingsModal() {
     // Local state for settings
     const [themeLocal, setThemeLocal] = useState(settings?.theme || "system")
     const [notificationLevel, setNotificationLevel] = useState(settings?.notificationLevel || "balanced")
-    const [dataRetention, setDataRetention] = useState(settings?.dataRetention || 30)
+    const [logRetentionDays, setLogRetentionDays] = useState(settings?.logRetentionDays || 30)
     const [databaseRefreshDays, setDatabaseRefreshDays] = useState(settings?.databaseRefreshDays || 7)
     const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 50)
+    const [enabled, setEnabled] = useState(settings?.enabled ?? true)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
-    const [enableCloudTosdr, setEnableCloudTosdr] = useState(settings?.enableCloudTosdr ?? true)
+    const [enableCloudTosdr, setEnableCloudTosdr] = useState(settings?.enableCloudTosdr ?? false)
     const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
     const [autoLockTimeout, setAutoLockTimeout] = useState(settings?.autoLockTimeout ?? -1)
     const [whitelist, setWhitelist] = useState<string[]>(settings?.whitelist || [])
@@ -202,7 +203,7 @@ export function SettingsModal() {
 
     // Fetch schema version from storage
     useEffect(() => {
-        chrome.storage.local.get('schemaVersion').then((result) => {
+        chrome.storage.local.get<{ schemaVersion?: number }>('schemaVersion').then((result) => {
             setSchemaVersion(result.schemaVersion || 1)
         })
     }, [])
@@ -225,11 +226,12 @@ export function SettingsModal() {
         if (settings) {
             setThemeLocal(settings.theme || "system")
             setNotificationLevel(settings.notificationLevel || "balanced")
-            setDataRetention(settings.dataRetention || 30)
+            setLogRetentionDays(settings.logRetentionDays || 30)
             setDatabaseRefreshDays(settings.databaseRefreshDays || 7)
             setWssThreshold(settings.wssThreshold || 50)
+            setEnabled(settings.enabled ?? true)
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
-            setEnableCloudTosdr(settings.enableCloudTosdr ?? true)
+            setEnableCloudTosdr(settings.enableCloudTosdr ?? false)
             setDisplayMode(settings.displayMode || "popup")
             setAutoLockTimeout(settings.autoLockTimeout ?? -1)
             setWhitelist(settings.whitelist || [])
@@ -248,7 +250,8 @@ export function SettingsModal() {
             ...settings,
             theme: themeLocal,
             notificationLevel,
-            dataRetention,
+            enabled,
+            logRetentionDays,
             databaseRefreshDays: databaseRefreshDays as 1 | 3 | 7 | 14 | 30,
             wssThreshold,
             enablePIIDetection,
@@ -278,11 +281,12 @@ export function SettingsModal() {
         const defaultPreferences = {
             theme: "system" as const,
             notificationLevel: "balanced" as const,
-            dataRetention: 30,
+            enabled: true,
+            logRetentionDays: 30,
             databaseRefreshDays: 7 as const,
             wssThreshold: 50,
             enablePIIDetection: true,
-            enableCloudTosdr: true,
+            enableCloudTosdr: false,
             displayMode: "popup" as const,
             autoLockTimeout: -1,
         }
@@ -291,7 +295,8 @@ export function SettingsModal() {
         setThemeLocal(defaultPreferences.theme)
         applyTheme(defaultPreferences.theme)
         setNotificationLevel(defaultPreferences.notificationLevel)
-        setDataRetention(defaultPreferences.dataRetention)
+        setEnabled(defaultPreferences.enabled)
+        setLogRetentionDays(defaultPreferences.logRetentionDays)
         setDatabaseRefreshDays(defaultPreferences.databaseRefreshDays)
         setWssThreshold(defaultPreferences.wssThreshold)
         setEnablePIIDetection(defaultPreferences.enablePIIDetection)
@@ -341,11 +346,13 @@ export function SettingsModal() {
                 ...state,
                 ups: 100,
                 sitesAnalyzed: 0,
-                trackersBlocked: 0,
-                piiEventsCount: 0
+                trackersDetected: 0,
+                piiEventsCount: 0,
+                safeVisitStreak: 0
             },
             scoreHistory: [],
-            siteCache: {}
+            siteCache: {},
+            crossSiteExposure: {}
         })
         toast.success(t('Privacy Score Reset'), {
             description: t('Your UPS has been reset to 100.'),
@@ -370,18 +377,40 @@ export function SettingsModal() {
         try {
             const allData = await chrome.storage.local.get(null);
             
-            // Decrypt the secure vault items before export
-            const session = await chrome.storage.session.get('cryptoKeyHex');
+            // Decrypt every vault item before export so the backup is fully usable.
+            const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
             if (session.cryptoKeyHex) {
                 const key = await importKey(session.cryptoKeyHex);
-                if (typeof allData.siteCache === 'string') {
-                    allData.siteCache = await decryptData(key, allData.siteCache) || {};
+                const vaultFields: [string, 'object' | 'array'][] = [
+                    ['siteCache', 'object'],
+                    ['crossSiteExposure', 'object'],
+                    ['scoreHistory', 'array'],
+                    ['piiDetections', 'array'],
+                    ['detectorLogs', 'array'],
+                    ['notifications', 'array'],
+                ];
+                for (const [field, kind] of vaultFields) {
+                    if (typeof allData[field] === 'string') {
+                        allData[field] = await decryptData(key, allData[field]) || (kind === 'object' ? {} : []);
+                    }
                 }
-                if (typeof allData.scoreHistory === 'string') {
-                    allData.scoreHistory = await decryptData(key, allData.scoreHistory) || [];
-                }
-                if (typeof allData.piiDetections === 'string') {
-                    allData.piiDetections = await decryptData(key, allData.piiDetections) || [];
+            }
+
+            // Defensively strip any legacy cookie values / query strings that may
+            // predate the data-minimization change.
+            if (allData.siteCache && typeof allData.siteCache === 'object') {
+                for (const site of Object.values(allData.siteCache as Record<string, any>)) {
+                    const enriched = site?.enrichedDetails;
+                    if (enriched?.cookies?.items) {
+                        for (const c of enriched.cookies.items) delete c.value;
+                    }
+                    if (enriched?.networkRequests?.items) {
+                        for (const r of enriched.networkRequests.items) {
+                            if (typeof r.url === 'string') {
+                                try { const u = new URL(r.url); r.url = u.origin + u.pathname; } catch { /* keep as-is */ }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -541,6 +570,21 @@ export function SettingsModal() {
                     </div>
                     <Separator />
                     <div className="space-y-4">
+                        <SettingItem
+                            label={t("Extension Enabled")}
+                            description={t("Pause TraceGuard to stop analyzing and recording browsing activity")}
+                            controlId="enabled-toggle"
+                        >
+                            <Switch
+                                id="enabled-toggle"
+                                checked={enabled}
+                                onCheckedChange={(checked) => {
+                                    setEnabled(checked)
+                                    handleChange()
+                                }}
+                            />
+                        </SettingItem>
+
                         <SettingItem
                             label={t("PII Detection")}
                             description={t("Monitor when you enter personal information on websites")}
@@ -777,13 +821,13 @@ export function SettingsModal() {
                         <SettingSlider
                             label={t("Data Retention")}
                             description={t("Old activity logs will be automatically deleted after this period")}
-                            value={dataRetention}
+                            value={logRetentionDays}
                             min={7}
                             max={90}
                             step={1}
                             unit={t("days")}
                             onChange={(value) => {
-                                setDataRetention(value)
+                                setLogRetentionDays(value)
                                 handleChange()
                             }}
                         />
@@ -940,7 +984,7 @@ export function SettingsModal() {
                         </div>
                         <Separator />
                         <p className="text-sm text-muted-foreground">
-                            {t("TraceGuard is a privacy-first extension designed to protect your data while you browse. It runs entirely on your device and does not send data to external servers.")}
+                            {t("TraceGuard keeps a local journal of trackers, cookies, and privacy scores so you can review and improve your browsing habits. Everything stays on your device unless you enable Enhanced Policy Analysis, which checks unrated domains against tosdr.org.")}
                         </p>
                     </div>
                 </TabsContent>

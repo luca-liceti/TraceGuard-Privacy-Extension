@@ -138,14 +138,6 @@ async function buildDatabase() {
         }
     }
 
-    // Add some fallbacks/mocks for testing
-    if (!db['example.com']) {
-        db['example.com'] = {
-            found: true, grade: 'A', score: 100, source: 'tosdr-local',
-            serviceName: 'Example Domain', serviceId: 999999, points: []
-        };
-    }
-
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify(db, null, 2));
     console.log(`Successfully wrote ${Object.keys(db).length} records to ${OUTPUT_FILE}`);
 }

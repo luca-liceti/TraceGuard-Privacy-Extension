@@ -9,8 +9,7 @@ Object.defineProperty(window, 'open', {
     value: openMock
 });
 
-function ProblemChild() {
-    const { t } = useTranslation();
+function ProblemChild(): React.ReactNode {
     throw new Error('Test crash');
 }
 
@@ -22,7 +21,7 @@ describe('ErrorBoundary', () => {
     it('renders children when there is no error', () => {
         render(
             <ErrorBoundary>
-                <div>{t("Safe child")}</div>
+                <div>Safe child</div>
             </ErrorBoundary>
         );
         expect(screen.getByText('Safe child')).toBeDefined();

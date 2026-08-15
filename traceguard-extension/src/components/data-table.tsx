@@ -720,7 +720,7 @@ export function DataTable({
     ]
 
     try {
-      const data = await chrome.storage.local.get('detectorLogs')
+      const data = await chrome.storage.local.get<{ detectorLogs?: any[] }>('detectorLogs')
       const existingLogs = data.detectorLogs || []
       await chrome.storage.local.set({ detectorLogs: [...existingLogs, ...newLogs] })
       
@@ -735,7 +735,7 @@ export function DataTable({
 
   const handleExport = async () => {
     try {
-      const data = await chrome.storage.local.get('detectorLogs')
+      const data = await chrome.storage.local.get<{ detectorLogs?: any[] }>('detectorLogs')
       const logs = data.detectorLogs || []
       const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
@@ -773,7 +773,7 @@ export function DataTable({
 
   const handleDeleteLog = async (visit: SiteVisit) => {
     try {
-      const data = await chrome.storage.local.get('detectorLogs')
+      const data = await chrome.storage.local.get<{ detectorLogs?: any[] }>('detectorLogs')
       const logs = data.detectorLogs || []
       const timeWindow = Math.floor(visit.timestamp / 5000) * 5000
       const filteredLogs = logs.filter((log: any) => {

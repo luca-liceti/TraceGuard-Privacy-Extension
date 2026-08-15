@@ -86,32 +86,24 @@ export function detectSensitiveInputs(): InputDetectionResult {
     for (const input of inputs) {
         const element = input as HTMLInputElement | HTMLTextAreaElement;
         const type = element.type?.toLowerCase() || '';
-        const name = element.name?.toLowerCase() || '';
-        const id = element.id?.toLowerCase() || '';
+        // Standardized signals only (input `type` + `autocomplete`). We deliberately
+        // ignore arbitrary `name`/`id` attributes, which a page can spoof to fabricate
+        // PII events and distort the journal or spam notifications.
+        const autocomplete = element.autocomplete?.toLowerCase() || '';
 
-        // HIGH sensitivity: password, credit card, SSN
-        if (type === 'password' || name.includes('password') || id.includes('password')) {
+        const isPassword = type === 'password' || autocomplete.includes('password');
+        const isCard = autocomplete === 'cc-number' || autocomplete === 'cc-csc' || autocomplete === 'cc-exp';
+        const isEmail = type === 'email' || autocomplete === 'email';
+        const isPhone = type === 'tel' || autocomplete === 'tel';
+
+        if (isPassword) {
             high.push({ element, type: 'password', sensitivity: 'HIGH' });
-        } else if (name.includes('card') || name.includes('cc') || id.includes('card')) {
+        } else if (isCard) {
             high.push({ element, type: 'credit card', sensitivity: 'HIGH' });
-        } else if (name.includes('cvv')) {
-            high.push({ element, type: 'cvv', sensitivity: 'HIGH' });
-        } else if (name.includes('ssn')) {
-            high.push({ element, type: 'ssn', sensitivity: 'HIGH' });
-        }
-        // MEDIUM sensitivity: email, phone, address
-        else if (type === 'email' || name.includes('email') || id.includes('email')) {
+        } else if (isEmail) {
             medium.push({ element, type: 'email', sensitivity: 'MEDIUM' });
-        } else if (type === 'tel' || name.includes('phone') || name.includes('tel') || id.includes('phone')) {
+        } else if (isPhone) {
             medium.push({ element, type: 'phone', sensitivity: 'MEDIUM' });
-        } else if (name.includes('address')) {
-            medium.push({ element, type: 'address', sensitivity: 'MEDIUM' });
-        }
-        // LOW sensitivity: name, username
-        else if (name.includes('user') || id.includes('user')) {
-            low.push({ element, type: 'username', sensitivity: 'LOW' });
-        } else if (name.includes('name') || id.includes('name')) {
-            low.push({ element, type: 'name', sensitivity: 'LOW' });
         }
     }
     // Logarithmic score calculation (v3.0)

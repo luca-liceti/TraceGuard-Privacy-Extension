@@ -31,9 +31,9 @@
 
 import { storage } from '../lib/storage';
 import { z } from 'zod';
-import { loadBlacklist, checkReputation } from './services/reputation';
+import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './services/reputation';
 import { calculateWSS } from '../lib/scoring';
-import { SiteRiskData, ScoreHistoryEntry } from '../lib/types';
+import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail } from '../lib/types';
 import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
@@ -70,7 +70,7 @@ async function createNotification(
         }
         const title = notification.titleKey ? i18n.t(notification.titleKey, params) : notification.title;
         const message = notification.messageKey ? i18n.t(notification.messageKey, params) : notification.message;
-        await chrome.notifications.create(notification.id || `notif-${Date.now()}`, {
+        await chrome.notifications.create(`notif-${Date.now()}`, {
             type: 'basic', iconUrl: 'src/assets/icons/icon-128.png', title,
             message, priority: notification.severity === 'critical' ? 2 : 1,
         });
@@ -82,7 +82,8 @@ async function createNotification(
 
 chrome.notifications.onClicked.addListener(async (notificationId) => {
     const result = await chrome.storage.local.get('notifications');
-    const notifications = result.notifications || [];
+    const raw = result.notifications;
+    const notifications = Array.isArray(raw) ? raw : [];
     const notification = notifications.find((n: any) => n.id === notificationId);
     
     if (notification && notification.actionUrl) {
@@ -93,6 +94,7 @@ chrome.notifications.onClicked.addListener(async (notificationId) => {
 });
 
 const DATABASE_REFRESH_ALARM = 'databaseRefresh';
+const CLEANUP_ALARM = 'cleanupLogs';
 const DATABASE_REFRESH_OPTIONS = new Set([1, 3, 7, 14, 30]);
 
 async function configureDatabaseRefresh(days: number | undefined) {
@@ -108,10 +110,8 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
     if (!tabUrl || tabUrl.startsWith('chrome://') || tabUrl.startsWith('chrome-extension://') || tabUrl.startsWith('edge://') || tabUrl.startsWith('about:')) {
         const currentState = await storage.getState();
         if (currentState.currentSite) {
-            await storage.updateState({
-                ...currentState,
-                currentSite: undefined
-            });
+            // Pass only the changed field so concurrent counter writes are never clobbered.
+            await storage.updateState({ currentSite: undefined });
         }
         return;
     }
@@ -121,12 +121,12 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
         let siteCache: Record<string, import('../lib/types').SiteRiskData> = {};
         
         if (key) {
-            const result = await chrome.storage.local.get('siteCache');
+            const result = await chrome.storage.local.get<Record<string, any>>('siteCache');
             siteCache = typeof result.siteCache === 'string' 
                 ? await decryptData(key, result.siteCache) || {} 
                 : result.siteCache || {};
         } else {
-            const session = await chrome.storage.session.get('bufferedSiteCache');
+            const session = await chrome.storage.session.get<Record<string, any>>('bufferedSiteCache');
             siteCache = session.bufferedSiteCache || {};
         }
 
@@ -135,10 +135,7 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
         
         // Only update if it actually changed to avoid unnecessary re-renders
         if (currentState.currentSite?.domain !== siteData?.domain || currentState.currentSite?.lastAnalyzed !== siteData?.lastAnalyzed) {
-            await storage.updateState({
-                ...currentState,
-                currentSite: siteData || undefined
-            });
+            await storage.updateState({ currentSite: siteData || undefined });
         }
     } catch (error) {
         console.error('[TabTracking] Error syncing site data:', error);
@@ -162,16 +159,22 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 async function refreshPrivacyDatabases() {
     try {
-
         await preWarmDatabases();
     } catch (error) {
         // Bundled/last-known snapshots remain available when an update is offline.
         console.warn('[DatabaseLoader] Scheduled refresh failed; keeping current data:', error);
     }
+
+    // Best-effort signed threat-feed refresh; bundled snapshot remains on failure.
+    try {
+        await refreshBlacklistFromRemote();
+    } catch (error) {
+        console.warn('[Reputation] Threat-feed refresh failed; keeping bundled snapshot:', error);
+    }
 }
 
 async function getCryptoKey(): Promise<CryptoKey | null> {
-    const session = await chrome.storage.session.get('cryptoKeyHex');
+    const session = await chrome.storage.session.get<Record<string, any>>('cryptoKeyHex');
     if (session.cryptoKeyHex) {
         return importKey(session.cryptoKeyHex);
     }
@@ -182,8 +185,8 @@ async function flushBufferedTelemetry() {
     const key = await getCryptoKey();
     if (!key) return; // Should not happen since UI just set it
 
-    const session = await chrome.storage.session.get(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache']);
-    const local = await chrome.storage.local.get(['piiDetections', 'scoreHistory', 'siteCache']);
+    const session = await chrome.storage.session.get<Record<string, any>>(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache']);
+    const local = await chrome.storage.local.get<Record<string, any>>(['piiDetections', 'scoreHistory', 'siteCache']);
     
     // Flush PII
     if (session.bufferedPii && session.bufferedPii.length > 0) {
@@ -240,6 +243,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 
     // Pre-warm local databases for fast enrichment
     await configureDatabaseRefresh(settings.databaseRefreshDays);
+    await chrome.alarms.create(CLEANUP_ALARM, { periodInMinutes: 24 * 60 });
     await refreshPrivacyDatabases();
     await preWarmDatabases();
 
@@ -274,6 +278,7 @@ chrome.runtime.onStartup.addListener(async () => {
     // Make sure the display mode matches user preferences
     const settings = await storage.getSettings();
     await configureDatabaseRefresh(settings.databaseRefreshDays);
+    await chrome.alarms.create(CLEANUP_ALARM, { periodInMinutes: 24 * 60 });
     await configureDisplayMode(settings.displayMode || 'popup');
 
     // Sync corrupted/missing state from cache
@@ -321,7 +326,7 @@ async function syncStateWithCache() {
         }
 
         const state = await storage.getState();
-        const result = await chrome.storage.local.get(['siteCache', 'scoreHistory']);
+        const result = await chrome.storage.local.get<Record<string, any>>(['siteCache', 'scoreHistory']);
         
         let siteCacheData = result.siteCache;
         let historyData = result.scoreHistory;
@@ -564,8 +569,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
  */
 const PageAnalysisSchema = z.object({
     url: z.string(),
-    scores: z.record(z.number()),
-    detectionDetails: z.record(z.any()).optional(),
+    scores: z.record(z.string(), z.number()),
+    detectionDetails: z.record(z.string(), z.any()).optional(),
     rawForEnrichment: z.object({
         cookies:        z.array(z.any()).max(500).optional(),
         trackers:       z.array(z.any()).max(500).optional(),
@@ -586,6 +591,10 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         return;
     }
     message = validMessage;
+
+    // Honor the master on/off toggle — ignore analysis while paused.
+    const preSettings = await storage.getSettings();
+    if (!preSettings.enabled) return;
 
     // Step 1: Check the website's reputation (is it on any blacklists?)
     const reputationResult = await checkReputation(message.url);
@@ -618,14 +627,14 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     }
 
     // Build enriched data if raw data is provided
-    let enrichedDetails = undefined;
+    let enrichedDetails: EnrichedDetectionDetails | undefined = undefined;
     if (message.rawForEnrichment) {
         const cookies = await enrichCookies(message.url, message.rawForEnrichment.cookies, networkData?.setCookies || []);
         const trackers = await enrichTrackers(message.url, message.rawForEnrichment.trackers, networkData?.requests || {});
         const headers = analyzeHeaders(networkData?.responseHeaders || []);
         
         const fpRaw = message.rawForEnrichment.fingerprinting || [];
-        const fingerprintingItems = await Promise.all(fpRaw.map(async (f: any) => {
+        const fingerprintingItems: FingerprintingDetail[] = await Promise.all(fpRaw.map(async (f: any) => {
             let org = null;
             if (f.scriptUrl) {
                 try {
@@ -712,12 +721,12 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     let siteCache: Record<string, SiteRiskData> = {};
     
     if (key) {
-        const result = await chrome.storage.local.get('siteCache');
+        const result = await chrome.storage.local.get<Record<string, any>>('siteCache');
         siteCache = typeof result.siteCache === 'string' 
             ? await decryptData(key, result.siteCache) || {} 
             : result.siteCache || {};
     } else {
-        const session = await chrome.storage.session.get('bufferedSiteCache');
+        const session = await chrome.storage.session.get<Record<string, any>>('bufferedSiteCache');
         siteCache = session.bufferedSiteCache || {};
     }
 
@@ -806,12 +815,12 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Always add to the score history graph to keep the charts updated
     let history: ScoreHistoryEntry[] = [];
     if (key) {
-        const histResult = await chrome.storage.local.get('scoreHistory');
+        const histResult = await chrome.storage.local.get<Record<string, any>>('scoreHistory');
         history = typeof histResult.scoreHistory === 'string'
             ? await decryptData(key, histResult.scoreHistory) || []
             : histResult.scoreHistory || [];
     } else {
-        const session = await chrome.storage.session.get('bufferedScoreHistory');
+        const session = await chrome.storage.session.get<Record<string, any>>('bufferedScoreHistory');
         history = session.bufferedScoreHistory || [];
     }
     
@@ -999,7 +1008,7 @@ async function handlePIIDetection(message: any) {
     let scoreHistory: any[] = [];
 
     if (key) {
-        const storageData = await chrome.storage.local.get(['piiDetections', 'scoreHistory']);
+        const storageData = await chrome.storage.local.get<Record<string, any>>(['piiDetections', 'scoreHistory']);
         piiDetections = typeof storageData.piiDetections === 'string'
             ? await decryptData(key, storageData.piiDetections) || []
             : storageData.piiDetections || [];
@@ -1007,7 +1016,7 @@ async function handlePIIDetection(message: any) {
             ? await decryptData(key, storageData.scoreHistory) || []
             : storageData.scoreHistory || [];
     } else {
-        const session = await chrome.storage.session.get(['bufferedPii', 'bufferedScoreHistory']);
+        const session = await chrome.storage.session.get<Record<string, any>>(['bufferedPii', 'bufferedScoreHistory']);
         piiDetections = session.bufferedPii || [];
         scoreHistory = session.bufferedScoreHistory || [];
     }
@@ -1109,6 +1118,9 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         await chrome.storage.session.remove('cryptoKeyHex');
     } else if (alarm.name === DATABASE_REFRESH_ALARM) {
         await refreshPrivacyDatabases();
+    } else if (alarm.name === CLEANUP_ALARM) {
+        const key = await getCryptoKey();
+        await storage.cleanupOldLogs(key);
     }
 });
 

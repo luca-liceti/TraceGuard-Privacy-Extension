@@ -57,7 +57,7 @@ import { importKey, decryptData } from './crypto';
 async function decryptIfNeeded(data: any): Promise<any> {
     if (typeof data !== 'string') return data;
     try {
-        const session = await chrome.storage.session.get('cryptoKeyHex');
+        const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
         if (!session.cryptoKeyHex) return null; // Vault is locked
         const key = await importKey(session.cryptoKeyHex);
         return await decryptData(key, data);
@@ -136,13 +136,13 @@ export function useUserName() {
     const [userName, setUserName] = useState<string | null>(null);
 
     useEffect(() => {
-        chrome.storage.local.get('userName').then(res => {
+        chrome.storage.local.get<{ userName?: string }>('userName').then(res => {
             setUserName(res.userName || null);
         });
 
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.userName) {
-                setUserName(changes.userName.newValue || null);
+                setUserName((changes.userName.newValue as string | undefined) || null);
             }
         };
         chrome.storage.onChanged.addListener(listener);
