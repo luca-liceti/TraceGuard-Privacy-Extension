@@ -100,11 +100,11 @@ function SettingItem({
 }) {
     const { t } = useTranslation();
     return (
-        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5 flex-1 mr-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+            <div className="space-y-0.5 flex-1 min-w-0">
                 <Label htmlFor={controlId} className="text-base font-medium">{label}</Label>
                 {description && (
-                    <p className="text-sm text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground break-words">{description}</p>
                 )}
             </div>
             <div className="flex-shrink-0">
@@ -137,12 +137,12 @@ function SettingSlider({
     const { t } = useTranslation();
     return (
         <div className="rounded-lg border p-4">
-            <div className="flex flex-row items-center justify-between mb-4">
-                <div className="space-y-0.5">
+            <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
+                <div className="space-y-0.5 min-w-0">
                     <Label className="text-base font-medium">{label}</Label>
-                    <p className="text-sm text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground break-words">{description}</p>
                 </div>
-                <Badge variant="secondary" className="font-mono">
+                <Badge variant="secondary" className="font-mono shrink-0">
                     {value} {unit}
                 </Badge>
             </div>
@@ -809,14 +809,14 @@ export function SettingsModal() {
 
                         {/* Storage Usage */}
                         <div className="rounded-lg border p-4">
-                            <div className="flex flex-row items-center justify-between mb-4">
-                                <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
+                                <div className="space-y-0.5 min-w-0">
                                     <Label className="text-base font-medium flex items-center gap-2">
                                         <HardDrive className="h-4 w-4 text-muted-foreground" />
                                         {t("Storage Used")}
                                     </Label>
                                 </div>
-                                <span className="text-sm text-muted-foreground">
+                                <span className="text-sm text-muted-foreground shrink-0">
                                     {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} {t("MB")}{t("of")} {(storageInfo.quota / 1024 / 1024).toFixed(0)} {t("MB")}</span>
                             </div>
                             <Progress value={storagePercentage} className="h-2" />
@@ -824,10 +824,10 @@ export function SettingsModal() {
                     </div>
                     
                     <div className="space-y-4">
-                        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-                             <div className="space-y-0.5 flex-1 mr-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+                             <div className="space-y-0.5 flex-1 min-w-0">
                                  <Label className="text-base font-medium">{t("Export Data")}</Label>
-                                 <p className="text-sm text-muted-foreground">{t("Download a copy of your activity logs and settings")}</p>
+                                 <p className="text-sm text-muted-foreground break-words">{t("Download a copy of your activity logs and settings")}</p>
                              </div>
                              <div className="flex-shrink-0">
                                  <Button variant="outline" onClick={exportData}>
@@ -837,12 +837,12 @@ export function SettingsModal() {
                              </div>
                         </div>
 
-                        <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-                             <div className="space-y-0.5 flex-1 mr-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+                             <div className="space-y-0.5 flex-1 min-w-0">
                                  <Label className="text-base font-medium">{t("Clear Data")}</Label>
-                                 <p className="text-sm text-muted-foreground">{t("Remove specific data from the extension")}</p>
+                                 <p className="text-sm text-muted-foreground break-words">{t("Remove specific data from the extension")}</p>
                              </div>
-                             <div className="flex-shrink-0 flex gap-2">
+                             <div className="flex-shrink-0 flex flex-wrap gap-2">
                                  <AlertDialog>
                                      <AlertDialogTrigger asChild>
                                          <Button variant="outline">
@@ -886,13 +886,13 @@ export function SettingsModal() {
                              </div>
                         </div>
 
-                        <div className="flex flex-row items-center justify-between rounded-lg border border-destructive/50 p-4">
-                             <div className="space-y-0.5 flex-1 mr-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/50 p-4">
+                             <div className="space-y-0.5 flex-1 min-w-0">
                                  <Label className="text-base font-medium text-destructive flex items-center gap-2">
                                      <AlertTriangle className="h-4 w-4" />
                                      {t("Danger Zone")}
                                  </Label>
-                                 <p className="text-sm text-muted-foreground">{t("Irreversible actions that will delete your data")}</p>
+                                 <p className="text-sm text-muted-foreground break-words">{t("Irreversible actions that will delete your data")}</p>
                              </div>
                              <div className="flex-shrink-0">
                                  <AlertDialog>

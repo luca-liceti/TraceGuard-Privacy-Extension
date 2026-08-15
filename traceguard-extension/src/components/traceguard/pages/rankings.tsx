@@ -109,6 +109,8 @@ const getWssConfig = (t: any): ChartConfig => ({
   count: { label: t("Sites"), color: "var(--primary)" }
 })
 
+const toLabel = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
 // ─── Small helper components ────────────────────────────────────────────────
 
 function EmptyState({ icon: Icon, title, description }: { icon: React.ComponentType<{ className?: string }>; title: string; description: string }) {
@@ -273,7 +275,7 @@ export default function RankingsPage() {
   const piiData = useMemo(() => {
     const counts: Record<string, { count: number; sensitivity: string; sites: Set<string> }> = {}
     piiLogs.forEach(log => {
-      const label = log.fieldType.charAt(0).toUpperCase() + log.fieldType.slice(1)
+      const label = log.fieldType
       if (!counts[label]) counts[label] = { count: 0, sensitivity: log.sensitivity, sites: new Set() }
       counts[label].count++
       counts[label].sites.add(log.site)
@@ -612,7 +614,7 @@ export default function RankingsPage() {
                           className="w-2 h-2 rounded-full flex-shrink-0 bg-primary"
                           style={{ opacity: 1 - index * 0.2 }}
                         />
-                        <span className="text-sm font-medium">{entry.type}</span>
+                        <span className="text-sm font-medium">{toLabel(t(entry.type))}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
@@ -656,13 +658,14 @@ export default function RankingsPage() {
               <ChartContainer config={getWssConfig(t)} className="h-56 w-full">
                 <BarChart data={wssData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="category" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} />
+                  <XAxis dataKey="category" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} tickFormatter={(val) => t(val)} />
                   <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickMargin={8} allowDecimals={false} />
                   <ChartTooltip
                     cursor={{ fill: "var(--muted)" }}
                     content={<ChartTooltipContent
                       hideIndicator
                       className="min-w-[100px] w-[100px]"
+                      labelFormatter={(label) => t(label)}
                       formatter={(value) => [
                         `${value} ${value === 1 ? t("site") : t("sites")}`,
                         ""
