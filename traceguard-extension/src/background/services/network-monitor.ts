@@ -15,12 +15,13 @@
 import { NetworkRequestDetail } from '../../lib/types';
 import { isLocalAddress, isLocalUrl } from '../../lib/utils';
 import { isTrackerDomain, lookupTrackerDomain } from './database-loader';
+import { parseSetCookie, SetCookieRecord } from '../../lib/set-cookie';
 
 interface TabNetworkData {
     url: string; // The URL of the main frame
     requests: Record<string, NetworkRequestDetail>; // URL -> Detail
     responseHeaders: { name: string; value: string }[];
-    setCookies: { name: string; domain: string }[];
+    setCookies: SetCookieRecord[];
 }
 
 // Stores network data per tab
@@ -115,23 +116,18 @@ export function initNetworkMonitor() {
                 }));
             }
 
-            // Capture Set-Cookie headers from ANY request
+            // Capture Set-Cookie headers from ANY request. The header carries the
+            // full cookie metadata (name, domain, HttpOnly/Secure/SameSite flags,
+            // expiry), so no `cookies` permission is needed.
             if (details.responseHeaders) {
                 for (const header of details.responseHeaders) {
                     if (header.name.toLowerCase() === 'set-cookie' && header.value) {
                         try {
                             const reqUrl = new URL(details.url);
-                            // Very basic parsing just to get name and value for enrichment
-                            const parts = header.value.split(';');
-                            const nameValue = parts[0].split('=');
-                        if (nameValue.length >= 1) {
-                            data.setCookies.push({
-                                name: nameValue[0].trim(),
-                                domain: reqUrl.hostname // Default to request host, enrichment will refine
-                            });
-                        }
+                            const parsed = parseSetCookie(header.value, reqUrl.hostname);
+                            if (parsed) data.setCookies.push(parsed);
                         } catch (e) {
-                            // Ignore
+                            // Ignore invalid URLs/headers
                         }
                     }
                 }

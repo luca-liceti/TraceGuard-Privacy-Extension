@@ -36,11 +36,11 @@
  * - 0 tracking cookies → Score: 100 (safe)
  * - 2 analytics cookies (4 weighted) → Score: ~72
  * - 2 cross-site trackers (6 weighted) → Score: ~66
- * 
- * TECHNICAL NOTE:
+ * * TECHNICAL NOTE:
  * document.cookie only shows cookies accessible to JavaScript (not HttpOnly).
- * For enhanced detection with full cookie attributes, the chrome.cookies API
- * could be used in a future version.
+ * Full cookie attributes (HttpOnly, Secure, SameSite, expiry, third-party
+ * domain) are captured by the background network monitor from `Set-Cookie`
+ * response headers — no `cookies` permission is required.
  * =============================================================================
  */
 

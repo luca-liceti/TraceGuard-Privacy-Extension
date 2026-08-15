@@ -25,7 +25,6 @@
         "tabs",
         "notifications",
         "alarms",
-        "cookies",
         "webRequest"
     ],
     "host_permissions": [

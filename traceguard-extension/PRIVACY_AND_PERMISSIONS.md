@@ -24,16 +24,14 @@ side-panel context to the newly active tab, and release data for inactive tabs.
 sensitive input is entered on a risky site. `alarms` schedules periodic background maintenance
 (threat-feed refresh and log-retention cleanup).
 
-### `cookies`
-**Why it is needed:** TraceGuard reads cookie **names** and metadata (HttpOnly, Secure, SameSite
-flags, expiry date, and domain) to detect third-party tracking cookies and prolonged expiration
-dates. It never reads or stores cookie **values**, never modifies cookies, and never sends cookie
-data to an external server.
-
 ### `webRequest`
 **Why it is needed:** TraceGuard passively observes network requests to detect tracking pixels,
 analytics scripts, and third-party origins. It records only the request origin + path (never query
-strings) and whether the request was blocked. It does not block or modify requests.
+strings) and whether the request was blocked. It also observes `Set-Cookie` response headers to
+derive cookie **names** and metadata (HttpOnly, Secure, SameSite flags, expiry date, and domain)
+for tracking-cookie detection. It never reads cookie **values**, never modifies cookies, and never
+sends cookie data to an external server. (The `cookies` permission is intentionally NOT requested
+because TraceGuard only needs cookie names/metadata, which `Set-Cookie` headers already provide.)
 
 ## Host Permissions
 

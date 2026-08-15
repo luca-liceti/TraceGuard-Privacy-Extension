@@ -6,23 +6,16 @@
 
 import { CookieDetail } from '../../lib/types';
 import { lookupCookie, lookupTrackerDomain } from './database-loader';
+import { SetCookieRecord } from '../../lib/set-cookie';
 
 export async function enrichCookies(
     url: string,
     rawDomCookies: { name: string }[],
-    networkSetCookies: { name: string; domain: string }[]
+    networkSetCookies: SetCookieRecord[]
 ): Promise<CookieDetail[]> {
     const enriched: CookieDetail[] = [];
     const seenNames = new Set<string>();
-    
-    // 1. Get cookies directly from Chrome's cookie store (includes HttpOnly)
-    let storeCookies: chrome.cookies.Cookie[] = [];
-    try {
-        storeCookies = await chrome.cookies.getAll({ url });
-    } catch (e) {
-        console.warn('Failed to get chrome.cookies:', e);
-    }
-    
+
     const pageHost = new URL(url).hostname;
     
     // Helper to process a cookie
@@ -86,25 +79,15 @@ export async function enrichCookies(
         });
     };
     
-    // Process store cookies (highest priority, most accurate metadata)
-    for (const c of storeCookies) {
-        await processCookie(
-            c.name, c.domain, c.httpOnly, c.secure, 
-            c.sameSite === 'no_restriction' ? 'None' : c.sameSite === 'lax' ? 'Lax' : c.sameSite === 'strict' ? 'Strict' : 'unspecified',
-            c.expirationDate || null,
-            'active'
-        );
-    }
-    
-    // Process Network Set-Cookies (might catch blocked ones)
+    // 1. Process Network Set-Cookies (most complete source: includes HttpOnly,
+    //    Secure/SameSite flags, expiry, and third-party cookies — all from the
+    //    Set-Cookie headers observed by the network monitor, no `cookies` perm).
     for (const c of networkSetCookies) {
-        if (!seenNames.has(c.name)) {
-            // If it's in Set-Cookie but not in chrome.cookies, it might have been blocked or is session
-            await processCookie(c.name, c.domain, false, false, 'unspecified', null, 'active');
-        }
+        await processCookie(c.name, c.domain, c.httpOnly, c.secure, c.sameSite, c.expirationDate, 'active');
     }
-    
-    // Process DOM cookies (fallback)
+
+    // 2. Process DOM cookies (first-party, non-HttpOnly fallback for cookies set
+    //    via document.cookie, which never emit a Set-Cookie header).
     for (const c of rawDomCookies) {
         if (!seenNames.has(c.name)) {
             await processCookie(c.name, pageHost, false, false, 'unspecified', null, 'active');
