@@ -114,6 +114,5 @@ key.pem
 
 # Local AI/agent tooling state (not part of the project)
 .freebuff/
-.agents/*
-!.agents/AGENTS.md
+.agents/
 
