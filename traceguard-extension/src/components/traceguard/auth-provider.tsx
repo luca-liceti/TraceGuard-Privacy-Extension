@@ -196,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <div className="flex min-h-screen flex-col bg-background">
           <div className="p-6">
             <Button variant="outline" onClick={() => setShowPrivacyPolicy(false)}>
-              {t("&larr; Back to Setup")}</Button>
+              {t("← Back to Setup")}</Button>
           </div>
           <div className="flex-1 overflow-auto">
             <PrivacyPolicyPage />
@@ -290,7 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {t("Strength:")}{labels[strength - 1] ?? t('Very weak')} {t("— min 10 chars, uppercase, number &amp; special character required")}</p>
+                          {t("Strength:")}{labels[strength - 1] ?? t('Very weak')} {t("— min 10 chars, uppercase, number & special character required")}</p>
                       </div>
                     );
                   })()}

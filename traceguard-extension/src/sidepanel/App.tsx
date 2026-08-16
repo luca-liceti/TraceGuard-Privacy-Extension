@@ -1,5 +1,5 @@
 import { ShieldUser, Flame, Lock, OctagonAlert } from "lucide-react"
-import { useAppState, useSettings } from "@/lib/useStorage"
+import { useAppState, useSettings, useCurrentSite } from "@/lib/useStorage"
 import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,6 +43,7 @@ function App() {
     const { t } = useTranslation();
     const state = useAppState();
     const settings = useSettings();
+    const currentSite = useCurrentSite();
     useEffect(() => {        // Removed redundant siteCache listener because the background script correctly updates 
         // state.currentSite on analysis completion, and useAppState() already triggers re-renders.
     }, []);
@@ -68,7 +69,7 @@ function App() {
 
                 <div className="space-y-3 flex-1 overflow-y-auto">
                     <ScoreRing ups={state.ups} />
-                    <SiteDetails currentSite={state.currentSite} />
+                    <SiteDetails currentSite={currentSite} />
 
                     {/* Safe Streak */}
                     <Card>

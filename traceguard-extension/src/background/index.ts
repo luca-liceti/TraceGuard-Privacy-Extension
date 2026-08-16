@@ -142,9 +142,11 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
         const siteData = siteCache[domain];
         const currentState = await storage.getState();
         
-        // Only update if it actually changed to avoid unnecessary re-renders
+        // Only update if it actually changed to avoid unnecessary re-renders.
+        // Persist only non-sensitive fields to plaintext state — the full
+        // analysis lives in the encrypted siteCache.
         if (currentState.currentSite?.domain !== siteData?.domain || currentState.currentSite?.lastAnalyzed !== siteData?.lastAnalyzed) {
-            await storage.updateState({ currentSite: siteData || undefined });
+            await storage.updateState({ currentSite: siteData ? slimSiteData(siteData) : undefined });
         }
     } catch (error) {
         console.error('[TabTracking] Error syncing site data:', error);
@@ -238,7 +240,7 @@ async function flushBufferedTelemetry() {
     }
 
     // Clear buffers
-    await chrome.storage.session.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure']);
+    await chrome.storage.local.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure']);
     console.log('[Vault] Buffered telemetry flushed to encrypted storage.');
 }
 
@@ -602,8 +604,23 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
  * @param message - The analysis data from the content script
  * @param sender - Information about where the message came from
  */
+/**
+ * Reduces a SiteRiskData record to the non-sensitive fields that are safe to
+ * persist in the plaintext `state` (chrome.storage.local). The full analysis
+ * (detectionDetails + enrichedDetails) lives only in the encrypted siteCache.
+ */
+function slimSiteData(site: SiteRiskData): SiteRiskData {
+    return {
+        domain: site.domain,
+        wss: site.wss,
+        breakdown: site.breakdown,
+        lastAnalyzed: site.lastAnalyzed,
+    };
+}
+
 const PageAnalysisSchema = z.object({
     url: z.string(),
+    isInitialLoad: z.boolean().optional(),
     scores: z.record(z.string(), z.number()),
     detectionDetails: z.record(z.string(), z.any()).optional(),
     rawForEnrichment: z.object({
@@ -626,6 +643,12 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         return;
     }
     message = validMessage;
+
+    // A genuine navigation (the content script's initial analysis of a
+    // document load) is scoreable. Mutation-triggered re-analyses of the same
+    // page (isInitialLoad === false) must not re-apply penalties or duplicate
+    // history, logs, counters, or notifications.
+    const isNewNavigation = message.isInitialLoad !== false;
 
     // Honor the master on/off toggle — ignore analysis while paused.
     const preSettings = await storage.getSettings();
@@ -766,7 +789,6 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
 
     // Keep track of how many times you've visited this site
     const existingSite = siteCache[domain];
-    const visitCount = (existingSite?.visitCount || 0) + 1;
 
     // Determine if this is a unique domain visit today
     const now = Date.now();
@@ -781,7 +803,9 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         }
     }
 
-    // Add visit tracking to the site data
+    // Add visit tracking to the site data. Count one visit per genuine
+    // navigation; SPA re-analyses of the same page must not inflate the count.
+    const visitCount = (existingSite?.visitCount || 0) + (isNewNavigation ? 1 : 0);
     siteData.visitCount = visitCount;
     siteData.lastVisit = now;  // Current time in milliseconds
 
@@ -815,29 +839,36 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         }
     }
 
-    // Calculate how this visit affects your User Privacy Score (UPS)
-    // Safe sites give you a recovery bonus, risky sites apply a penalty
-    const upsImpact = calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0, isUniqueDomain);
+    // Calculate how this visit affects your User Privacy Score (UPS).
+    // Risky sites penalize on EVERY genuine navigation (revisiting a bad site
+    // keeps lowering the score); safe sites recover only on the first visit of
+    // the day (isUniqueDomain) so recovery can't be farmed by refreshing.
+    // SPA re-analyses of the same page never re-score.
+    const upsImpact = isNewNavigation
+        ? calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0, isUniqueDomain)
+        : null;
 
     // Save the updated state
     // Count enriched trackers detected on this visit (both active and blocked)
     const newTrackersCount = enrichedDetails ? enrichedDetails.trackers.items.length : 0;
     
-    // Only update currentSite if the analysis is from the active tab
-    const newCurrentSite = isActiveTab ? siteData : state.currentSite;
+    // Only update currentSite if the analysis is from the active tab.
+    // Persist only non-sensitive fields to plaintext state — the full analysis
+    // lives (encrypted) in siteCache.
+    const newCurrentSite = isActiveTab ? slimSiteData(siteData) : state.currentSite;
     
     await storage.updateState({
         ...state,
         currentSite: newCurrentSite,                                             // The site you're currently on (if active tab)
         sitesAnalyzed: state.sitesAnalyzed + (isUniqueDomain ? 1 : 0),           // Increment the counter only for unique sites today
-        trackersDetected: (state.trackersDetected || 0) + newTrackersCount,      // Bug fix: accumulate enriched tracker count
-        ups: upsImpact.newUPS,                                                   // Your updated privacy score
-        safeVisitStreak: upsImpact.newStreak                                     // How many safe sites in a row
+        trackersDetected: (state.trackersDetected || 0) + (isNewNavigation ? newTrackersCount : 0), // Accumulate once per genuine navigation
+        ups: upsImpact ? upsImpact.newUPS : (state.ups || 100),                  // Your updated privacy score
+        safeVisitStreak: upsImpact ? upsImpact.newStreak : (state.safeVisitStreak || 0) // How many safe sites in a row
     });
 
     // Step 6: Log the UPS change if there was one (for debugging and history)
     const detectorLogsToWrite: Array<Omit<DetectorLogEntry, 'id' | 'timestamp'>> = [];
-    if (upsImpact.message) {
+    if (upsImpact?.message) {
         detectorLogsToWrite.push({
             detector: 'permissions',
             domain: domain,
@@ -847,31 +878,34 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         });
     }
 
-    // Always add to the score history graph to keep the charts updated
-    let history: ScoreHistoryEntry[] = [];
-    if (key) {
-        const histResult = await chrome.storage.local.get<Record<string, any>>('scoreHistory');
-        history = typeof histResult.scoreHistory === 'string'
-            ? await decryptData(key, histResult.scoreHistory) || []
-            : histResult.scoreHistory || [];
-    } else {
-        history = (await readSessionBuffer<ScoreHistoryEntry[]>('bufferedScoreHistory')) || [];
-    }
-    
-    history.push({
-        timestamp: Date.now(),
-        ups: upsImpact.newUPS,
-        avgSiteRisk: wss,
-        reason: upsImpact.message || `Visited ${domain}`
-    });
+    // Append a score-history point only on a genuine navigation; SPA
+    // re-analyses of the same page must not duplicate the chart.
+    if (isNewNavigation && upsImpact) {
+        let history: ScoreHistoryEntry[] = [];
+        if (key) {
+            const histResult = await chrome.storage.local.get<Record<string, any>>('scoreHistory');
+            history = typeof histResult.scoreHistory === 'string'
+                ? await decryptData(key, histResult.scoreHistory) || []
+                : histResult.scoreHistory || [];
+        } else {
+            history = (await readSessionBuffer<ScoreHistoryEntry[]>('bufferedScoreHistory')) || [];
+        }
+        
+        history.push({
+            timestamp: Date.now(),
+            ups: upsImpact.newUPS,
+            avgSiteRisk: wss,
+            reason: upsImpact.message || `Visited ${domain}`
+        });
 
-    // Keep only the last 100 entries to save storage space
-    if (history.length > 100) history.splice(0, history.length - 100);
-    
-    if (key) {
-        await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
-    } else {
-        await writeSessionBuffer('bufferedScoreHistory', history);
+        // Keep only the last 100 entries to save storage space
+        if (history.length > 100) history.splice(0, history.length - 100);
+        
+        if (key) {
+            await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
+        } else {
+            await writeSessionBuffer('bufferedScoreHistory', history);
+        }
     }
 
     // Step 7: Log detailed information from each detector
@@ -955,8 +989,9 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     });
 
     // Single batched write: avoids six read-decrypt-encrypt-write cycles of the
-    // full (up to 1,000-entry) detector log array per page visit.
-    if (detectorLogsToWrite.length > 0) {
+    // full (up to 1,000-entry) detector log array per page visit. Only write
+    // once per genuine navigation so SPA re-analyses don't spam the journal.
+    if (isNewNavigation && detectorLogsToWrite.length > 0) {
         await storage.addDetectorLogs(detectorLogsToWrite, key);
     }
 
@@ -967,7 +1002,8 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Check if this site is dangerous enough to warn the user
     // WSS is a safety score: lower = more dangerous
 
-    if (wss <= 20) {
+    // Notify on each genuine navigation — SPA re-analyses must not spam alerts.
+    if (isNewNavigation && wss <= 20) {
         // CRITICAL RISK: Score is 20 or below - this site is very dangerous!
         await createNotification({
             type: 'high_risk_site',
@@ -980,7 +1016,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             severity: 'critical',
             actionUrl: `/overview?viewSite=${encodeURIComponent(domain)}`
         });
-    } else if (wss < threshold) {
+    } else if (isNewNavigation && wss < threshold) {
         // WARNING: Site falls below the user's personal safety threshold
         await createNotification({
             type: 'high_risk_site',

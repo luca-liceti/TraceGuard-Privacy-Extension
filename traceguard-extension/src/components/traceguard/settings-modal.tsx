@@ -223,7 +223,7 @@ export function SettingsModal() {
     useEffect(() => {
         const updateStorageInfo = async () => {
             const bytesInUse = await chrome.storage.local.getBytesInUse()
-            const quota = chrome.storage.local.QUOTA_BYTES || 5242880
+            const quota = chrome.storage.local.QUOTA_BYTES ?? 0
             setStorageInfo({ bytesInUse, quota })
         }
 
@@ -381,6 +381,9 @@ export function SettingsModal() {
         if (!confirm(t("Are you absolutely sure? This will reset TraceGuard to factory defaults."))) return
 
         await chrome.storage.local.clear()
+        // Also clear in-memory session state (vault key + any residual buffer
+        // key) so the factory reset is complete and returns to vault setup.
+        await chrome.storage.session.clear()
         toast.success(t('All Data Cleared'), {
             description: t('Extension data has been reset. Reloading...'),
             duration: 2000
@@ -448,7 +451,9 @@ export function SettingsModal() {
         }
     }
 
-    const storagePercentage = (storageInfo.bytesInUse / storageInfo.quota) * 100
+    const storagePercentage = storageInfo.quota > 0
+        ? Math.min(100, (storageInfo.bytesInUse / storageInfo.quota) * 100)
+        : 0
 
     const exportErrorLog = async () => {
         try {
@@ -905,9 +910,10 @@ export function SettingsModal() {
                                     </Label>
                                 </div>
                                 <span className="text-sm text-muted-foreground shrink-0">
-                                    {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} {t("MB")}{t("of")} {(storageInfo.quota / 1024 / 1024).toFixed(0)} {t("MB")}</span>
+                                    {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} {t("MB")}{storageInfo.quota > 0 ? ` ${t("of")} ${(storageInfo.quota / 1024 / 1024).toFixed(0)} ${t("MB")}` : ""}
+                                </span>
                             </div>
-                            <Progress value={storagePercentage} className="h-2" />
+                            {storageInfo.quota > 0 && <Progress value={storagePercentage} className="h-2" />}
                         </div>
                     </div>
                     

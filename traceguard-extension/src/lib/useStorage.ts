@@ -390,3 +390,45 @@ export function useSiteCache() {
         isLoading
     };
 }
+
+/**
+ * Returns the full (decrypted) SiteRiskData for the currently active site,
+ * read from the encrypted siteCache rather than the plaintext `state`.
+ * `state.currentSite` is intentionally slimmed to non-sensitive fields, so
+ * detailed breakdowns (detectionDetails/enrichedDetails) must come from here.
+ */
+export function useCurrentSite(): SiteRiskData | undefined {
+    const state = useAppState();
+    const [site, setSite] = useState<SiteRiskData | undefined>(undefined);
+    const domain = state?.currentSite?.domain;
+
+    useEffect(() => {
+        if (!domain) {
+            setSite(undefined);
+            return;
+        }
+        let isMounted = true;
+
+        const load = async () => {
+            const res = await chrome.storage.local.get('siteCache');
+            const decrypted = await decryptIfNeeded(res.siteCache);
+            const cache = (decrypted && typeof decrypted === 'object' && !Array.isArray(decrypted))
+                ? decrypted as Record<string, SiteRiskData>
+                : {};
+            if (isMounted) setSite(cache[domain]);
+        };
+
+        load();
+
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+            if (areaName === 'local' && changes.siteCache) load();
+        };
+        chrome.storage.onChanged.addListener(listener);
+        return () => {
+            isMounted = false;
+            chrome.storage.onChanged.removeListener(listener);
+        };
+    }, [domain]);
+
+    return site;
+}

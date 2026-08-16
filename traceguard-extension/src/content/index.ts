@@ -61,7 +61,7 @@ function debounce(func: (...args: any[]) => void, wait: number) {
 }
 
 // Function to perform analysis and notify background
-async function runAnalysis() {
+async function runAnalysis(isInitialLoad: boolean) {
     // Skip analysis on local addresses
     if (isLocalUrl(window.location.href)) {
         return;
@@ -86,6 +86,7 @@ async function runAnalysis() {
         // STEP 3: Send the analysis results to the background service worker
         await chrome.runtime.sendMessage({
             type: 'PAGE_ANALYSIS_RESULT',
+            isInitialLoad,
             url: window.location.href,
             scores: result.scores,
             detectionDetails: result.detectionDetails,
@@ -100,8 +101,8 @@ async function runAnalysis() {
 
 const debouncedAnalysis = debounce(runAnalysis, 1000);
 
-// Run initial analysis
-runAnalysis();
+// Run initial analysis (a genuine document load)
+runAnalysis(true);
 
 // Set up MutationObserver for SPAs (React, Vue, etc.)
 const observer = new MutationObserver((mutations) => {
@@ -132,7 +133,7 @@ const observer = new MutationObserver((mutations) => {
     }
 
     if (shouldReanalyze) {
-        debouncedAnalysis();
+        debouncedAnalysis(false);
     }
 });
 

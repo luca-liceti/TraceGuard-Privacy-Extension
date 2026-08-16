@@ -7,6 +7,7 @@ import {
   Palette,
   ShieldUser,
   Bell,
+  Cloud,
   HardDrive,
   Info,
   LayoutGrid,
@@ -14,13 +15,14 @@ import {
   MonitorSmartphone,
   Lock,
   AlertTriangle,
-  OctagonAlert,
   Database,
   Download,
   Trash2,
   RotateCcw,
+  RefreshCw,
   BarChart2,
   HelpCircle,
+  Power,
   Sparkles,
   ShieldAlert,
   Zap,
@@ -140,6 +142,8 @@ export function SearchCommand() {
     setTimeout(async () => {
       if (!confirm(t("Clear all activity logs? This cannot be undone."))) return
       await chrome.storage.local.set({ logs: [], piiDetections: [], detectorLogs: [] })
+      // Also drop any buffered entries so they can't re-merge on next unlock.
+      await chrome.storage.local.remove(['bufferedPii', 'bufferedDetectorLogs'])
       toast.success(t("Activity Logs Cleared"), {
         description: t("All logged events have been removed."),
         duration: 3000,
@@ -158,6 +162,8 @@ export function SearchCommand() {
         siteCache: {},
         crossSiteExposure: {},
       })
+      // Also drop any buffered entries so they can't re-merge on next unlock.
+      await chrome.storage.local.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure'])
       toast.success(t("Privacy Score Reset"), {
         description: t("Your UPS has been reset to 100."),
         duration: 3000,
@@ -300,9 +306,17 @@ export function SearchCommand() {
 
           {/* ── Privacy & Security ────────────────────────────────────────── */}
           <CommandGroup heading={t("Privacy & Security")}>
+            <CommandItem value="extension enabled enable disable pause toggle on off" onSelect={() => openSettings("privacy")}>
+              <Power className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+              <span>{t("Extension Enabled")}</span>
+            </CommandItem>
             <CommandItem value="pii detection privacy monitor personal data" onSelect={() => openSettings("privacy")}>
               <ShieldUser className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{t("PII Detection")}</span>
+            </CommandItem>
+            <CommandItem value="enhanced policy analysis cloud tosdr ratings rating privacy policy" onSelect={() => openSettings("privacy")}>
+              <Cloud className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+              <span>{t("Enhanced Policy Analysis (Cloud)")}</span>
             </CommandItem>
             <CommandItem value="vault auto-lock auto lock timeout pin" onSelect={() => openSettings("privacy")}>
               <Lock className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -328,13 +342,9 @@ export function SearchCommand() {
 
           {/* ── Domain Lists ──────────────────────────────────────────────── */}
           <CommandGroup heading={t("Domain Lists")}>
-            <CommandItem value="whitelist allowed sites exceptions trusted" onSelect={() => openSettings("domain-lists")}>
+            <CommandItem value="allow block whitelist blacklist allowed blocked sites exceptions trusted" onSelect={() => openSettings("domain-lists")}>
               <Globe className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-              <span>{t("Allowed Sites (Whitelist)")}</span>
-            </CommandItem>
-            <CommandItem value="blacklist blocked sites dangerous malicious" onSelect={() => openSettings("domain-lists")}>
-              <OctagonAlert className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-              <span>{t("Blocked Sites (Blacklist)")}</span>
+              <span>{t("Allow/Block")}</span>
             </CommandItem>
           </CommandGroup>
 
@@ -345,6 +355,10 @@ export function SearchCommand() {
             <CommandItem value="data retention logs keep days delete duration" onSelect={() => openSettings("data")}>
               <Database className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{t("Data Retention")}</span>
+            </CommandItem>
+            <CommandItem value="database refresh update schedule tracker tosdr frequency" onSelect={() => openSettings("data")}>
+              <RefreshCw className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+              <span>{t("Database Refresh")}</span>
             </CommandItem>
             <CommandItem value="storage used usage size quota disk" onSelect={() => openSettings("data")}>
               <HardDrive className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />

@@ -39,20 +39,21 @@ import { StorageSchema, UserSettings, AppState } from './types';
 import { encryptData, decryptData, generateAesKey, exportKey, importKey } from './crypto';
 
 // =============================================================================
-// SESSION BUFFER (vault locked)
+// PERSISTENT BUFFER (vault locked)
 // Telemetry recorded while the vault is locked is buffered in
-// chrome.storage.session, encrypted with a session-scoped key, and flushed into
-// the encrypted local store when the vault is unlocked.
+// chrome.storage.local (encrypted with a persistent buffer key) and flushed
+// into the vault-encrypted store when the vault is unlocked. Unlike the old
+// chrome.storage.session buffer, these entries survive browser restarts.
 // =============================================================================
 
 const BUFFER_KEY = 'bufferKeyHex';
 
-/** Session-scoped AES key for the locked-vault buffer (memory-only). */
+/** Persistent AES key for the locked-vault buffer (stored on disk). */
 export async function getBufferKey(): Promise<CryptoKey> {
-    const session = await chrome.storage.session.get<Record<string, any>>(BUFFER_KEY);
-    if (session[BUFFER_KEY]) return importKey(session[BUFFER_KEY]);
+    const stored = await chrome.storage.local.get<Record<string, any>>(BUFFER_KEY);
+    if (stored[BUFFER_KEY]) return importKey(stored[BUFFER_KEY]);
     const key = await generateAesKey();
-    await chrome.storage.session.set({ [BUFFER_KEY]: await exportKey(key) });
+    await chrome.storage.local.set({ [BUFFER_KEY]: await exportKey(key) });
     return key;
 }
 
@@ -61,8 +62,8 @@ export async function getBufferKey(): Promise<CryptoKey> {
  * written by older versions in plaintext.
  */
 export async function readSessionBuffer<T = any>(name: string): Promise<T | null> {
-    const session = await chrome.storage.session.get<Record<string, any>>(name);
-    const raw = session[name];
+    const stored = await chrome.storage.local.get<Record<string, any>>(name);
+    const raw = stored[name];
     if (raw === undefined) return null;
     if (typeof raw === 'string') {
         const key = await getBufferKey();
@@ -71,10 +72,10 @@ export async function readSessionBuffer<T = any>(name: string): Promise<T | null
     return raw as T;
 }
 
-/** Encrypts and writes a value into the session buffer. */
+/** Encrypts and writes a value into the persistent buffer. */
 export async function writeSessionBuffer(name: string, value: any): Promise<void> {
     const key = await getBufferKey();
-    await chrome.storage.session.set({ [name]: await encryptData(key, value) });
+    await chrome.storage.local.set({ [name]: await encryptData(key, value) });
 }
 
 // =============================================================================
@@ -281,7 +282,10 @@ export const storage = {
     // Get storage usage info
     getStorageUsage: async (): Promise<{ bytesInUse: number; quota: number }> => {
         const bytesInUse = await chrome.storage.local.getBytesInUse();
-        const quota = chrome.storage.local.QUOTA_BYTES || 5242880; // 5MB default
+        // With `unlimitedStorage` the quota is effectively unbounded; report 0
+        // when Chrome doesn't expose a concrete number so the UI shows only
+        // bytes used rather than a fabricated cap.
+        const quota = chrome.storage.local.QUOTA_BYTES ?? 0;
         return { bytesInUse, quota };
     },
 
