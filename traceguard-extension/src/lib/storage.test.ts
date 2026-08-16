@@ -25,7 +25,7 @@ if (typeof crypto === 'undefined' || !crypto.subtle) {
 }
 
 import { storage, readBuffer } from './storage';
-import { deriveKeyFromPassword, generateSalt } from './crypto';
+import { deriveKeyFromPassword, generateSalt, exportKey } from './crypto';
 
 // Helper: create a real AES-GCM CryptoKey for tests that need encryption
 async function makeKey(): Promise<CryptoKey> {
@@ -280,6 +280,70 @@ describe('storage.addNotification (no key)', () => {
     it('clearNotifications empties the list', async () => {
         await storage.addNotification({ type: 'pii_detected', title: 'A', message: '', severity: 'info', domain: 'a.com' });
         await storage.clearNotifications();
+        expect(await storage.getNotifications()).toHaveLength(0);
+    });
+});
+
+// =============================================================================
+// Notifications: encrypted path (vault key resolved internally)
+// =============================================================================
+describe('storage notifications (encrypted)', () => {
+    async function unlockVault(): Promise<CryptoKey> {
+        const key = await makeKey();
+        await chrome.storage.session.set({ cryptoKeyHex: await exportKey(key) });
+        return key;
+    }
+
+    it('markAsRead resolves the vault key and keeps notifications encrypted', async () => {
+        const key = await unlockVault();
+        const id = await storage.addNotification({ type: 'tracker_alert', title: 'A', message: '', severity: 'info', domain: 'x.com' }, key);
+
+        const before = await chrome.storage.local.get<{ notifications: any }>('notifications');
+        expect(typeof before.notifications).toBe('string'); // stored as ciphertext
+
+        // The UI hook calls markAsRead without a key.
+        await storage.markAsRead(id);
+
+        const after = await chrome.storage.local.get<{ notifications: any }>('notifications');
+        expect(typeof after.notifications).toBe('string'); // still encrypted
+        const list = await storage.getNotifications(undefined, key);
+        expect(list.find(n => n.id === id)?.read).toBe(true);
+    });
+
+    it('markAllAsRead does not wipe encrypted notifications', async () => {
+        const key = await unlockVault();
+        await storage.addNotification({ type: 'tracker_alert', title: 'A', message: '', severity: 'info', domain: 'a.com' }, key);
+        await storage.addNotification({ type: 'tracker_alert', title: 'B', message: '', severity: 'info', domain: 'b.com' }, key);
+
+        await storage.markAllAsRead();
+
+        const list = await storage.getNotifications(undefined, key);
+        expect(list).toHaveLength(2);
+        expect(list.every(n => n.read)).toBe(true);
+    });
+
+    it('removeNotification keeps the remaining entries encrypted', async () => {
+        const key = await unlockVault();
+        const id = await storage.addNotification({ type: 'pii_detected', title: 'Remove me', message: '', severity: 'warning', domain: 'x.com' }, key);
+        await storage.addNotification({ type: 'pii_detected', title: 'Keep me', message: '', severity: 'info', domain: 'y.com' }, key);
+
+        await storage.removeNotification(id);
+
+        const { notifications } = await chrome.storage.local.get<{ notifications: any }>('notifications');
+        expect(typeof notifications).toBe('string');
+        const list = await storage.getNotifications(undefined, key);
+        expect(list.find(n => n.id === id)).toBeUndefined();
+        expect(list.find(n => n.title === 'Keep me')).toBeDefined();
+    });
+
+    it('clearNotifications removes the key instead of writing plaintext', async () => {
+        const key = await unlockVault();
+        await storage.addNotification({ type: 'pii_detected', title: 'A', message: '', severity: 'info', domain: 'a.com' }, key);
+
+        await storage.clearNotifications();
+
+        const { notifications } = await chrome.storage.local.get<{ notifications: any }>('notifications');
+        expect(notifications).toBeUndefined();
         expect(await storage.getNotifications()).toHaveLength(0);
     });
 });

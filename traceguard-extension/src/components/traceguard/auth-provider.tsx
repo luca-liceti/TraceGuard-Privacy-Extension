@@ -6,6 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { deriveKeyFromPassword, generateSalt, exportKey, verifySaltUniqueness } from "@/lib/crypto"
 import { storage } from "@/lib/storage"
 
@@ -188,7 +199,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetVault = async () => {
-    if (!confirm(t("Reset TraceGuard to factory defaults? This permanently deletes ALL data and you'll create a new Master Password."))) return
     await storage.clearAll()
     setPassword('')
     setError('')
@@ -380,15 +390,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               </div>
             </form>
             <div className="mt-4 text-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground"
-                onClick={resetVault}
-                disabled={loading}
-              >
-                {t("Forgot password? Reset vault")}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                    disabled={loading}
+                  >
+                    {t("Forgot password? Reset vault")}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("Reset vault?")}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t("Reset TraceGuard to factory defaults? This permanently deletes ALL data and you'll create a new Master Password.")}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={resetVault}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {t("Delete Data")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </CardContent>
         </Card>

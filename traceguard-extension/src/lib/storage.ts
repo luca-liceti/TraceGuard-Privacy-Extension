@@ -541,10 +541,14 @@ export const storage = {
      * Pass `key` to read and re-encrypt.
      */
     markAsRead: async (id: string, key?: CryptoKey | null): Promise<void> => {
-        const notifications = await storage.getNotifications(undefined, key);
+        // Resolve the vault key when not supplied so callers without a direct
+        // handle to it (the UI) never wipe encrypted notifications by writing
+        // back an empty plaintext array.
+        const k = key === undefined ? await storage.getVaultKey() : key;
+        const notifications = await storage.getNotifications(undefined, k);
         const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
-        if (key) {
-            await storage.set({ notifications: await encryptData(key, updated) as any });
+        if (k) {
+            await storage.set({ notifications: await encryptData(k, updated) as any });
         } else {
             await storage.set({ notifications: updated });
         }
@@ -555,20 +559,22 @@ export const storage = {
      * Pass `key` to read and re-encrypt.
      */
     markAllAsRead: async (key?: CryptoKey | null): Promise<void> => {
-        const notifications = await storage.getNotifications(undefined, key);
+        const k = key === undefined ? await storage.getVaultKey() : key;
+        const notifications = await storage.getNotifications(undefined, k);
         const updated = notifications.map(n => ({ ...n, read: true }));
-        if (key) {
-            await storage.set({ notifications: await encryptData(key, updated) as any });
+        if (k) {
+            await storage.set({ notifications: await encryptData(k, updated) as any });
         } else {
             await storage.set({ notifications: updated });
         }
     },
 
     /**
-     * Clear all notifications.
+     * Clear all notifications. Removes the key so the store never holds a
+     * plaintext sentinel where encrypted data used to live.
      */
     clearNotifications: async (): Promise<void> => {
-        await storage.set({ notifications: [] });
+        await chrome.storage.local.remove('notifications');
     },
 
     /**
@@ -576,10 +582,11 @@ export const storage = {
      * Pass `key` to read and re-encrypt.
      */
     removeNotification: async (id: string, key?: CryptoKey | null): Promise<void> => {
-        const notifications = await storage.getNotifications(undefined, key);
+        const k = key === undefined ? await storage.getVaultKey() : key;
+        const notifications = await storage.getNotifications(undefined, k);
         const filtered = notifications.filter(n => n.id !== id);
-        if (key) {
-            await storage.set({ notifications: await encryptData(key, filtered) as any });
+        if (k) {
+            await storage.set({ notifications: await encryptData(k, filtered) as any });
         } else {
             await storage.set({ notifications: filtered });
         }

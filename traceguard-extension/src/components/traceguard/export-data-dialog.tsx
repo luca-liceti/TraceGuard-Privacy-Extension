@@ -95,6 +95,12 @@ export function ExportDataDialog({
                         />
                     </div>
 
+                    {password.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                            {t("Warning: without a password, this export contains your unencrypted browsing analysis in plaintext.")}
+                        </p>
+                    )}
+
                     {password.length > 0 && (
                         <div className="grid gap-2">
                             <Label htmlFor="export-password-confirm">{t("Confirm password")}</Label>

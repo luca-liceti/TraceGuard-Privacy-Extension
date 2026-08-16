@@ -135,13 +135,14 @@ async function maybePromptCloudOptIn() {
         cloudPromptScheduled = true;
         return;
     }
+    const key = await storage.getVaultKey();
     const id = await storage.addNotification({
         type: 'info',
         title: 'Enhanced Policy Analysis is off',
         message: 'Enable it to get privacy-policy ratings for more sites. It sends the visited domain to tosdr.org.',
         severity: 'info',
         actionUrl: '/overview?openSettings=privacy'
-    });
+    }, key);
     if (id) {
         cloudPromptScheduled = true;
         await chrome.storage.local.set({ cloudTosdrPrompted: true });
