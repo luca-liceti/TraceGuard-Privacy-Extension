@@ -325,6 +325,7 @@ export const storage = {
             'piiDetections',
             'bufferedDetectorLogs',
             'bufferedPii',
+            'errorLog',
         ]);
     },
 

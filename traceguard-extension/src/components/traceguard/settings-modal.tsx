@@ -341,13 +341,9 @@ export function SettingsModal() {
     }
 
     const clearActivityLogs = async () => {
-        if (!confirm(t("Clear all activity logs? This cannot be undone."))) return
-
-        await chrome.storage.local.set({
-            logs: [],
-            piiDetections: [],
-            detectorLogs: []
-        })
+        // Canonical path: removes keys so encrypted fields are never replaced
+        // by plaintext sentinels. The AlertDialog is the single confirmation.
+        await storage.clearActivityLogs()
         toast.success(t('Activity Logs Cleared'), {
             description: t('All logged events have been removed.'),
             duration: 3000
@@ -355,21 +351,7 @@ export function SettingsModal() {
     }
 
     const resetPrivacyScore = async () => {
-        if (!confirm(t("Reset your Privacy Score to 100? This will clear your browsing history data."))) return
-
-        await chrome.storage.local.set({
-            state: {
-                ...state,
-                ups: 100,
-                sitesAnalyzed: 0,
-                trackersDetected: 0,
-                piiEventsCount: 0,
-                safeVisitStreak: 0
-            },
-            scoreHistory: [],
-            siteCache: {},
-            crossSiteExposure: {}
-        })
+        await storage.resetScore()
         toast.success(t('Privacy Score Reset'), {
             description: t('Your UPS has been reset to 100.'),
             duration: 3000
@@ -377,9 +359,6 @@ export function SettingsModal() {
     }
 
     const clearAllData = async () => {
-        if (!confirm(t("⚠️ WARNING: This will delete ALL extension data including settings, logs, and scores. This cannot be undone. Are you sure?"))) return
-        if (!confirm(t("Are you absolutely sure? This will reset TraceGuard to factory defaults."))) return
-
         await storage.clearAll()
         toast.success(t('All Data Cleared'), {
             description: t('Extension data has been reset. Reloading...'),

@@ -25,7 +25,7 @@ if (typeof crypto === 'undefined' || !crypto.subtle) {
 }
 
 import { storage, readBuffer } from './storage';
-import { deriveKeyFromPassword, generateSalt, exportKey } from './crypto';
+import { deriveKeyFromPassword, generateSalt, exportKey, encryptData } from './crypto';
 
 // Helper: create a real AES-GCM CryptoKey for tests that need encryption
 async function makeKey(): Promise<CryptoKey> {
@@ -403,5 +403,46 @@ describe('storage.addExposure (with key)', () => {
         const buffered = await readBuffer<Record<string, string[]>>('bufferedExposure');
         expect(buffered).not.toBeNull();
         expect(buffered!.email).toContain('second.com');
+    });
+});
+
+// =============================================================================
+// Canonical clear/reset paths
+// =============================================================================
+describe('storage clear/reset paths', () => {
+    it('clearActivityLogs removes encrypted fields instead of writing plaintext', async () => {
+        const key = await makeKey();
+        await storage.addDetectorLog({ detector: 'cookies', domain: 'a.com', score: 60, details: {}, message: 'A' }, key);
+
+        await storage.clearActivityLogs();
+
+        const res = await chrome.storage.local.get(['detectorLogs', 'piiDetections']);
+        expect(res.detectorLogs).toBeUndefined();
+        expect(res.piiDetections).toBeUndefined();
+    });
+
+    it('clearActivityLogs also removes the error log', async () => {
+        await chrome.storage.local.set({ errorLog: [{ timestamp: 1, message: 'x' }] });
+
+        await storage.clearActivityLogs();
+
+        const { errorLog } = await chrome.storage.local.get('errorLog');
+        expect(errorLog).toBeUndefined();
+    });
+
+    it('resetScore removes encrypted scoreHistory/siteCache/crossSiteExposure', async () => {
+        const key = await makeKey();
+        await chrome.storage.local.set({
+            scoreHistory: await encryptData(key, [{ timestamp: 1, ups: 90, avgSiteRisk: 50, reason: 'x' }]),
+            siteCache: await encryptData(key, { 'a.com': { domain: 'a.com' } }),
+            crossSiteExposure: await encryptData(key, { email: ['a.com'] }),
+        });
+
+        await storage.resetScore();
+
+        const res = await chrome.storage.local.get(['scoreHistory', 'siteCache', 'crossSiteExposure']);
+        expect(res.scoreHistory).toBeUndefined();
+        expect(res.siteCache).toBeUndefined();
+        expect(res.crossSiteExposure).toBeUndefined();
     });
 });

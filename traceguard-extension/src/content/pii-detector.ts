@@ -61,11 +61,9 @@ class PIIDetector {
         handler: EventListener;
         triggered: boolean;
     }>;
-    private detectionEvents: PIIEvent[];
 
     constructor() {
         this.monitoredFields = new Map();
-        this.detectionEvents = [];
     }
 
     // Start monitoring sensitive fields
@@ -140,8 +138,6 @@ class PIIDetector {
             fieldName: fieldName,
             sensitivity: sensitivity
         };
-
-        this.detectionEvents.push(event);
 
         // Send to background for UPS calculation
         chrome.runtime.sendMessage({
