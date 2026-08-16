@@ -43,7 +43,7 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { useAppState, useSettings } from "@/lib/useStorage"
-import { exportAllData } from "@/lib/export"
+import { ExportDataDialog } from "./export-data-dialog"
 import { storage } from "@/lib/storage"
 import { getErrorLog, clearErrorLog, type ErrorLogEntry } from "@/lib/error-log"
 import { toast } from 'sonner'
@@ -206,6 +206,7 @@ export function SettingsModal() {
     const [whitelist, setWhitelist] = useState<string[]>(settings?.whitelist || [])
     const [blacklist, setBlacklist] = useState<string[]>(settings?.blacklist || [])
     const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([])
+    const [exportOpen, setExportOpen] = useState(false)
 
     // Fetch manifest version
     useEffect(() => {
@@ -388,25 +389,8 @@ export function SettingsModal() {
     }
 
 
-    const exportData = async () => {
-        try {
-            const exported = await exportAllData(t);
-            if (!exported) return; // user cancelled the password prompt
-            toast.success(t('Data Exported'), {
-                description: t('Your data has been exported.'),
-                duration: 3000
-            });
-        } catch (error) {
-            if ((error as Error)?.message === 'password-too-short') {
-                toast.error(t('Export Failed'), {
-                    description: t('The export password must be at least 8 characters.'),
-                });
-                return;
-            }
-            toast.error(t('Export Failed'), {
-                description: t('Could not export data. Please try again.')
-            });
-        }
+    const exportData = () => {
+        setExportOpen(true)
     }
 
     const storagePercentage = storageInfo.quota > 0
@@ -434,7 +418,8 @@ export function SettingsModal() {
     }
 
     return (
-        <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
+        <>
+            <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
             <DialogContent className="max-w-4xl p-0 overflow-hidden gap-0 bg-background border shadow-2xl h-[600px] flex flex-col">
                 <DialogTitle className="sr-only">{t("Settings")}</DialogTitle>
                 <DialogDescription className="sr-only">{t("Configure TraceGuard preferences")}</DialogDescription>
@@ -1034,6 +1019,9 @@ export function SettingsModal() {
                     </div>
                 </Tabs>
             </DialogContent>
-        </Dialog>
+            </Dialog>
+
+            <ExportDataDialog open={exportOpen} onOpenChange={setExportOpen} />
+        </>
     )
 }

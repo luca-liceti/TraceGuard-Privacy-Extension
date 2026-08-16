@@ -10,6 +10,9 @@
  *     actually usable)
  *   - strips cookie values and request query strings as a defensive measure
  *   - can be password-protected with PBKDF2-SHA256 + AES-GCM
+ *
+ * The password decision and prompt live in the UI (ExportDataDialog), not here,
+ * so the export never relies on browser `confirm`/`prompt` dialogs.
  * =============================================================================
  */
 
@@ -33,8 +36,6 @@ const VAULT_FIELDS: Array<[string, 'object' | 'array']> = [
     ['notifications', 'array'],
 ];
 
-type Translate = (key: string) => string;
-
 function triggerDownload(json: string, passwordProtected: boolean): void {
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -47,23 +48,10 @@ function triggerDownload(json: string, passwordProtected: boolean): void {
 
 /**
  * Gathers, sanitizes, optionally encrypts, and downloads a full data backup.
- * Throws if the user cancels the password prompt or supplies a weak password.
+ * Pass a non-empty `password` to encrypt the backup, or `null` for a plaintext
+ * export. Throws on failure; the caller handles cancellation and toasts.
  */
-export async function exportAllData(t: Translate): Promise<boolean> {
-    const protect = confirm(
-        t('Protect the export with a password? (OK = encrypted, Cancel = unencrypted)')
-    );
-
-    let password = '';
-    if (protect) {
-        const entered = window.prompt(t('Enter a password to encrypt your backup (minimum 8 characters):'));
-        if (entered === null) return false; // cancelled
-        password = entered.trim();
-        if (password.length < 8) {
-            throw new Error('password-too-short');
-        }
-    }
-
+export async function exportAllData(password: string | null): Promise<void> {
     const allData: Record<string, unknown> = await chrome.storage.local.get(null);
 
     // Never export the raw buffer key — it would let a reader decrypt
@@ -123,6 +111,4 @@ export async function exportAllData(t: Translate): Promise<boolean> {
     } else {
         triggerDownload(JSON.stringify(allData, null, 2), false);
     }
-
-    return true;
 }

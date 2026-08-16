@@ -62,9 +62,9 @@ function gradeToScore(grade) {
     return gradeMap[grade.toUpperCase()] || 0;
 }
 
-function fetchJson(url) {
+function fetchJson(url, timeoutMs = 15000) {
     return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
+        const req = https.get(url, (res) => {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
@@ -74,7 +74,11 @@ function fetchJson(url) {
                     reject(e);
                 }
             });
-        }).on('error', reject);
+        });
+        req.on('error', reject);
+        req.setTimeout(timeoutMs, () => {
+            req.destroy(new Error(`Timeout after ${timeoutMs}ms for ${url}`));
+        });
     });
 }
 

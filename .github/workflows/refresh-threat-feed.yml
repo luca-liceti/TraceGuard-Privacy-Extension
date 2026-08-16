@@ -31,7 +31,20 @@ jobs:
         working-directory: ./traceguard-extension
         run: npm run build:phishlist
 
+      - name: Check signing key
+        id: signing-key
+        shell: bash
+        env:
+          THREAT_SIGNING_KEY: ${{ secrets.THREAT_SIGNING_KEY }}
+        run: |
+          if [ -n "$THREAT_SIGNING_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Sign phishlist
+        if: steps.signing-key.outputs.available == 'true'
         working-directory: ./traceguard-extension
         env:
           THREAT_SIGNING_KEY: ${{ secrets.THREAT_SIGNING_KEY }}

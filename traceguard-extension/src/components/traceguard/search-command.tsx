@@ -44,7 +44,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useSiteCache } from "@/lib/useStorage"
 import { storage } from "@/lib/storage"
-import { exportAllData } from "@/lib/export"
+import { ExportDataDialog } from "./export-data-dialog"
 import { useSettingsModal } from "./settings-context"
 import { SiteDetailsPanel } from "./site-details-panel"
 import { getSafetyTextColor } from "@/lib/theme-utils"
@@ -66,6 +66,7 @@ export function SearchCommand() {
   const [selectedSiteData, setSelectedSiteData] = React.useState<SiteRiskData | null>(null)
   const [selectedDomain, setSelectedDomain] = React.useState<string>("")
   const [isSitePanelOpen, setIsSitePanelOpen] = React.useState(false)
+  const [exportOpen, setExportOpen] = React.useState(false)
 
   // ⌘K shortcut
   React.useEffect(() => {
@@ -115,27 +116,10 @@ export function SearchCommand() {
     }, 50)
   }
 
-  const handleExportData = async () => {
+  const handleExportData = () => {
     setOpen(false)
-    setTimeout(async () => {
-      try {
-        const exported = await exportAllData(t)
-        if (!exported) return
-        toast.success(t("Data Exported"), {
-          description: t("Your data has been exported."),
-          duration: 3000,
-        })
-      } catch (error) {
-        if ((error as Error)?.message === "password-too-short") {
-          toast.error(t("Export Failed"), {
-            description: t("The export password must be at least 8 characters."),
-          })
-          return
-        }
-        toast.error(t("Export Failed"), {
-          description: t("Could not export data. Please try again."),
-        })
-      }
+    setTimeout(() => {
+      setExportOpen(true)
     }, 50)
   }
 
@@ -386,6 +370,8 @@ export function SearchCommand() {
         open={isSitePanelOpen}
         onOpenChange={setIsSitePanelOpen}
       />
+
+      <ExportDataDialog open={exportOpen} onOpenChange={setExportOpen} />
     </>
   )
 }

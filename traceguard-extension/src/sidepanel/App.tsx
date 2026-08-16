@@ -1,9 +1,8 @@
 import { ShieldUser, Flame, Lock, OctagonAlert } from "lucide-react"
-import { useAppState, useSettings, useCurrentSite } from "@/lib/useStorage"
+import { useAppState, useCurrentSite } from "@/lib/useStorage"
 import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Toaster } from "@/components/ui/sonner"
 
@@ -42,11 +41,7 @@ function HeaderAuthStatus({ t }: { t: any }) {
 function App() {
     const { t } = useTranslation();
     const state = useAppState();
-    const settings = useSettings();
     const currentSite = useCurrentSite();
-    useEffect(() => {        // Removed redundant siteCache listener because the background script correctly updates 
-        // state.currentSite on analysis completion, and useAppState() already triggers re-renders.
-    }, []);
 
     if (!state) {
         return <div className="p-4 text-foreground bg-background">{t("Loading TraceGuard...")}</div>;

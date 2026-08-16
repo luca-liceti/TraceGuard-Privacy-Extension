@@ -26,12 +26,12 @@ const SOURCES = {
     phishunt: 'https://phishunt.io/api/v1/domains',
 };
 
-function fetchText(url) {
+function fetchText(url, timeoutMs = 15000) {
     return new Promise((resolve, reject) => {
-        https.get(url, { headers: { 'User-Agent': 'TraceGuard-build/1.0' } }, (res) => {
+        const req = https.get(url, { headers: { 'User-Agent': 'TraceGuard-build/1.0' } }, (res) => {
             if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
                 res.resume();
-                return resolve(fetchText(res.headers.location));
+                return resolve(fetchText(res.headers.location, timeoutMs));
             }
             let data = '';
             res.on('data', (c) => (data += c));
@@ -41,7 +41,11 @@ function fetchText(url) {
                 }
                 resolve(data);
             });
-        }).on('error', reject);
+        });
+        req.on('error', reject);
+        req.setTimeout(timeoutMs, () => {
+            req.destroy(new Error(`Timeout after ${timeoutMs}ms for ${url}`));
+        });
     });
 }
 
