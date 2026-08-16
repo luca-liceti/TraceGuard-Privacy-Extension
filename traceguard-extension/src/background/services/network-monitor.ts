@@ -13,7 +13,7 @@
  */
 
 import { NetworkRequestDetail } from '../../lib/types';
-import { isLocalAddress, isLocalUrl } from '../../lib/utils';
+import { isLocalUrl } from '../../lib/utils';
 import { isTrackerDomain, lookupTrackerDomain } from './database-loader';
 import { parseSetCookie, SetCookieRecord } from '../../lib/set-cookie';
 
@@ -27,6 +27,18 @@ interface TabNetworkData {
 // Stores network data per tab
 const tabData = new Map<number, TabNetworkData>();
 
+// Mirror of the user's "Enabled" master toggle. When disabled, the monitor
+// observes nothing: no requests, cookies, or headers are recorded.
+let monitorEnabled = true;
+
+/**
+ * Turns the network monitor on/off. Called from the background worker whenever
+ * the user toggles the extension's master switch.
+ */
+export function setNetworkMonitorEnabled(enabled: boolean): void {
+    monitorEnabled = enabled;
+}
+
 /**
  * Initializes the network monitor listeners.
  */
@@ -34,6 +46,7 @@ export function initNetworkMonitor() {
     // 1. Log every attempted request
     chrome.webRequest.onBeforeRequest.addListener(
         (details): undefined => {
+            if (!monitorEnabled) return; // Paused — observe nothing
             if (details.tabId < 0) return; // Ignore background requests
             
             // Initialize tab data on main_frame navigation
@@ -68,7 +81,7 @@ export function initNetworkMonitor() {
                 const isThirdParty = reqUrl.hostname !== mainUrl.hostname && !reqUrl.hostname.endsWith('.' + mainUrl.hostname);
 
                 data.requests[details.url] = {
-                    url: reqUrl.origin + reqUrl.pathname,
+                    url: reqUrl.origin, // Origin only — never store the request path
                     domain: reqUrl.hostname,
                     resourceType: details.type,
                     organization: null, // Populated during enrichment
@@ -88,6 +101,7 @@ export function initNetworkMonitor() {
     // 2. Detect blocked requests (e.g., by uBlock Origin)
     chrome.webRequest.onErrorOccurred.addListener(
         (details) => {
+            if (!monitorEnabled) return;
             if (details.tabId < 0) return;
             const data = tabData.get(details.tabId);
             if (!data) return;
@@ -104,6 +118,7 @@ export function initNetworkMonitor() {
     // 3. Capture response headers (security headers + Set-Cookie)
     chrome.webRequest.onHeadersReceived.addListener(
         (details): undefined => {
+            if (!monitorEnabled) return;
             if (details.tabId < 0) return;
             const data = tabData.get(details.tabId);
             if (!data) return;
@@ -148,6 +163,7 @@ export function initNetworkMonitor() {
  * Call this when page analysis is complete.
  */
 export async function getAndClearNetworkData(tabId: number): Promise<TabNetworkData | null> {
+    if (!monitorEnabled) return null;
     const data = tabData.get(tabId);
     if (!data) return null;
     

@@ -166,3 +166,18 @@ export function isLocalUrl(urlString: string): boolean {
         return true; 
     }
 }
+
+/**
+ * fetch() with a timeout. MV3 service workers have no default network timeout;
+ * a hung connection can stall page analysis or block the event loop. Uses
+ * AbortController to abort after `timeoutMs` (default 8s).
+ */
+export async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...init, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}

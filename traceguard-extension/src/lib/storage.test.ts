@@ -24,7 +24,7 @@ if (typeof crypto === 'undefined' || !crypto.subtle) {
     global.crypto = nodeCrypto.webcrypto;
 }
 
-import { storage, readSessionBuffer } from './storage';
+import { storage, readBuffer } from './storage';
 import { deriveKeyFromPassword, generateSalt } from './crypto';
 
 // Helper: create a real AES-GCM CryptoKey for tests that need encryption
@@ -198,7 +198,7 @@ describe('storage.addDetectorLog (with key)', () => {
             message: 'No key',
         }); // no key
 
-        const buffered = await readSessionBuffer<Array<{ domain: string }>>('bufferedDetectorLogs');
+        const buffered = await readBuffer<Array<{ domain: string }>>('bufferedDetectorLogs');
         expect(buffered).not.toBeNull();
         expect(buffered![0].domain).toBe('other.com');
     });
@@ -336,7 +336,7 @@ describe('storage.addExposure (with key)', () => {
 
         await storage.addExposure('email', 'second.com'); // no key
 
-        const buffered = await readSessionBuffer<Record<string, string[]>>('bufferedExposure');
+        const buffered = await readBuffer<Record<string, string[]>>('bufferedExposure');
         expect(buffered).not.toBeNull();
         expect(buffered!.email).toContain('second.com');
     });

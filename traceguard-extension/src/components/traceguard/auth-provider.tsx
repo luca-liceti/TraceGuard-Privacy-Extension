@@ -186,6 +186,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthState("locked")
   }
 
+  const resetVault = async () => {
+    if (!confirm(t("Reset the vault? This permanently deletes your encrypted journal and you'll create a new Master Password. Other settings like theme are kept."))) return
+    await chrome.storage.local.remove([
+      'cryptoSalt', 'validator', 'userName',
+      'siteCache', 'scoreHistory', 'piiDetections', 'detectorLogs', 'crossSiteExposure', 'notifications',
+      'bufferKeyHex',
+      'bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure',
+    ])
+    await chrome.storage.session.remove('cryptoKeyHex')
+    setPassword('')
+    setError('')
+    setAuthState('setup')
+  }
+
   if (authState === "loading") {
     return <div className="flex h-screen items-center justify-center bg-background"><ShieldUser className="h-8 w-8 animate-pulse text-foreground" /></div>
   }
@@ -370,6 +384,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 </Button>
               </div>
             </form>
+            <div className="mt-4 text-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+                onClick={resetVault}
+                disabled={loading}
+              >
+                {t("Forgot password? Reset vault")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

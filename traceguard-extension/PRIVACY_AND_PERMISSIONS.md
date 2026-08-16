@@ -26,12 +26,16 @@ sensitive input is entered on a risky site. `alarms` schedules periodic backgrou
 
 ### `webRequest`
 **Why it is needed:** TraceGuard passively observes network requests to detect tracking pixels,
-analytics scripts, and third-party origins. It records only the request origin + path (never query
-strings) and whether the request was blocked. It also observes `Set-Cookie` response headers to
-derive cookie **names** and metadata (HttpOnly, Secure, SameSite flags, expiry date, and domain)
-for tracking-cookie detection. It never reads cookie **values**, never modifies cookies, and never
-sends cookie data to an external server. (The `cookies` permission is intentionally NOT requested
-because TraceGuard only needs cookie names/metadata, which `Set-Cookie` headers already provide.)
+analytics scripts, and third-party origins. It records only the request **origin** (never the path
+or query string) and whether the request was blocked. It also observes `Set-Cookie` response
+headers to derive cookie **names** and metadata (HttpOnly, Secure, SameSite flags, expiry date,
+and domain) for tracking-cookie detection. It never reads cookie **values**, never modifies
+cookies, and never sends cookie data to an external server. (The `cookies` permission is
+intentionally NOT requested because TraceGuard only needs cookie names/metadata, which
+`Set-Cookie` headers already provide.)
+
+When the extension's master on/off toggle is disabled, the network monitor stops observing
+traffic entirely — no requests, cookies, or headers are recorded while paused.
 
 ## Host Permissions
 
@@ -50,3 +54,7 @@ and to observe third-party network requests across the web.
   the domain of unrated sites to `api.tosdr.org`. No other browsing data is transmitted.
 - **Data deletion:** Users can review, export, or wipe all local data from the dashboard Settings
   ("Export Data" and "Delete All Data").
+- **Locked-vault buffering:** While the vault is locked, new activity is buffered on disk encrypted
+  with a dedicated buffer key and is merged into the master-password-encrypted journal the next
+  time the vault is unlocked. This keeps the journal complete across browser restarts without
+  storing plaintext history.

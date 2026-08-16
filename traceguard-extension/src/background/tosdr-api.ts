@@ -117,6 +117,7 @@ function gradeToScore(grade: string | undefined): number {
 import { getTosDRMap } from './services/database-loader';
 import { storage } from '../lib/storage';
 import { rateLimiters } from '../lib/rate-limiter';
+import { fetchWithTimeout } from '../lib/utils';
 
 interface CacheEntry {
     data: TosDRResult;
@@ -163,13 +164,13 @@ async function saveCache(domain: string, entry: CacheEntry) {
 async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
     try {
         return await rateLimiters.tosdr.execute(async () => {
-            const searchRes = await fetch(`https://api.tosdr.org/search/v4/?query=${encodeURIComponent(domain)}`);
+            const searchRes = await fetchWithTimeout(`https://api.tosdr.org/search/v4/?query=${encodeURIComponent(domain)}`);
             if (!searchRes.ok) return null;
             const searchData = await searchRes.json();
             
             if (searchData?.parameters?.services?.[0]) {
                 const service = searchData.parameters.services[0];
-                const detailsRes = await fetch(`https://api.tosdr.org/service/v2/?id=${service.id}`);
+                const detailsRes = await fetchWithTimeout(`https://api.tosdr.org/service/v2/?id=${service.id}`);
                 if (!detailsRes.ok) return null;
                 const detailsData = await detailsRes.json();
                 const details = detailsData?.parameters;

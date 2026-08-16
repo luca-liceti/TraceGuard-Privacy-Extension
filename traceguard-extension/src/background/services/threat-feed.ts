@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../../lib/utils';
+
 /**
  * =============================================================================
  * THREAT FEED — Signed remote refresh for the phishing/malware blocklist
@@ -96,7 +98,7 @@ export async function verifySignedFeed(data: SignedPhishlist, publicKeyHex: stri
  */
 export async function refreshThreatFeed(): Promise<string[] | null> {
     try {
-        const res = await fetch(THREAT_FEED_URL, { cache: 'no-store' });
+        const res = await fetchWithTimeout(THREAT_FEED_URL, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = (await res.json()) as SignedPhishlist;

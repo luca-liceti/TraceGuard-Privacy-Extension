@@ -29,7 +29,7 @@
  * =============================================================================
  */
 
-import { storage, readSessionBuffer, writeSessionBuffer } from '../lib/storage';
+import { storage, readBuffer, writeBuffer } from '../lib/storage';
 import { recordError } from '../lib/error-log';
 import { z } from 'zod';
 import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './services/reputation';
@@ -39,7 +39,7 @@ import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
 import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
-import { initNetworkMonitor, getAndClearNetworkData } from './services/network-monitor';
+import { initNetworkMonitor, getAndClearNetworkData, setNetworkMonitorEnabled } from './services/network-monitor';
 import { enrichCookies } from './services/cookie-enricher';
 import { enrichTrackers } from './services/tracker-enricher';
 import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
@@ -136,7 +136,7 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
                 ? await decryptData(key, result.siteCache) || {} 
                 : result.siteCache || {};
         } else {
-            siteCache = (await readSessionBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
+            siteCache = (await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
         }
 
         const siteData = siteCache[domain];
@@ -199,12 +199,12 @@ async function flushBufferedTelemetry() {
 
     // Buffers are encrypted with the session buffer key, so decrypt each here.
     const [bufferedPii, bufferedScoreHistory, bufferedSiteCache, bufferedDetectorLogs, bufferedNotifications, bufferedExposure] = await Promise.all([
-        readSessionBuffer<any[]>('bufferedPii'),
-        readSessionBuffer<any[]>('bufferedScoreHistory'),
-        readSessionBuffer<Record<string, SiteRiskData>>('bufferedSiteCache'),
-        readSessionBuffer<any[]>('bufferedDetectorLogs'),
-        readSessionBuffer<any[]>('bufferedNotifications'),
-        readSessionBuffer<Record<string, string[]>>('bufferedExposure'),
+        readBuffer<any[]>('bufferedPii'),
+        readBuffer<any[]>('bufferedScoreHistory'),
+        readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache'),
+        readBuffer<any[]>('bufferedDetectorLogs'),
+        readBuffer<any[]>('bufferedNotifications'),
+        readBuffer<Record<string, string[]>>('bufferedExposure'),
     ]);
     const local = await chrome.storage.local.get<Record<string, any>>(['piiDetections', 'scoreHistory', 'siteCache', 'detectorLogs', 'notifications', 'crossSiteExposure']);
 
@@ -249,6 +249,10 @@ console.log('TraceGuard Background Service Worker Running');
 
 // Initialize the network monitor right away to start observing web requests
 initNetworkMonitor();
+
+// Honor the master on/off toggle for the network monitor as soon as settings
+// are available (and whenever they change below).
+storage.getSettings().then((settings) => setNetworkMonitorEnabled(settings.enabled !== false));
 
 // =============================================================================
 // EXTENSION LIFECYCLE EVENTS
@@ -571,6 +575,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
 
         // Update the display mode and refresh schedule immediately.
+        setNetworkMonitorEnabled(newSettings.enabled !== false);
         Promise.all([
             configureDisplayMode(newSettings.displayMode || 'popup'),
             configureDatabaseRefresh(newSettings.databaseRefreshDays),
@@ -784,7 +789,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             ? await decryptData(key, result.siteCache) || {} 
             : result.siteCache || {};
     } else {
-        siteCache = (await readSessionBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
+        siteCache = (await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
     }
 
     // Keep track of how many times you've visited this site
@@ -821,7 +826,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     if (key) {
         await chrome.storage.local.set({ siteCache: await encryptData(key, siteCache) });
     } else {
-        await writeSessionBuffer('bufferedSiteCache', siteCache);
+        await writeBuffer('bufferedSiteCache', siteCache);
     }
 
     // Step 5: Update the user's privacy state
@@ -888,7 +893,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                 ? await decryptData(key, histResult.scoreHistory) || []
                 : histResult.scoreHistory || [];
         } else {
-            history = (await readSessionBuffer<ScoreHistoryEntry[]>('bufferedScoreHistory')) || [];
+            history = (await readBuffer<ScoreHistoryEntry[]>('bufferedScoreHistory')) || [];
         }
         
         history.push({
@@ -904,7 +909,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         if (key) {
             await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
         } else {
-            await writeSessionBuffer('bufferedScoreHistory', history);
+            await writeBuffer('bufferedScoreHistory', history);
         }
     }
 
@@ -1065,20 +1070,8 @@ async function handlePIIDetection(message: any) {
     const event = message.data;
     console.log('[TraceGuard] PII event:', event);
 
-    // Get the current app state (privacy score, etc.)
-    const state = await storage.getState();
-
-    // Increment the count of PII events (how many times you've shared personal info)
-    const newPiiCount = state.piiEventsCount + 1;
-
-    // Calculate the penalty based on:
-    // - What type of info you entered (password = bigger penalty than name)
-    // - How safe the current website is (risky site = bigger penalty)
-    const siteWSS = state.currentSite?.wss || 50;  // Get current site's safety score (default to 50 if unknown)
-    const { newUPS, penalty } = calculatePIIPenalty(state.ups || 100, event.fieldType, siteWSS);
-    const scoreImpact = -penalty;  // Negative because it's a penalty
-
-    // Get existing stored data for PII detections and score history
+    // Read existing PII detections and score history first so we can dedupe
+    // repeated events for the same field type on the same site.
     const key = await getCryptoKey();
     let piiDetections: any[] = [];
     let scoreHistory: any[] = [];
@@ -1093,12 +1086,33 @@ async function handlePIIDetection(message: any) {
             : storageData.scoreHistory || [];
     } else {
         const [piiBuffer, historyBuffer] = await Promise.all([
-            readSessionBuffer<any[]>('bufferedPii'),
-            readSessionBuffer<any[]>('bufferedScoreHistory'),
+            readBuffer<any[]>('bufferedPii'),
+            readBuffer<any[]>('bufferedScoreHistory'),
         ]);
         piiDetections = piiBuffer || [];
         scoreHistory = historyBuffer || [];
     }
+
+    // Entering the same PII type on the same site is one exposure, not many.
+    // Skip duplicates (e.g. a form re-rendering mid-typing) so they can't
+    // re-apply penalties or spam notifications.
+    if (piiDetections.some((p: any) => p.site === event.site && p.fieldType === event.fieldType)) {
+        console.log('[TraceGuard] Skipping duplicate PII event:', event.site, event.fieldType);
+        return;
+    }
+
+    // Get the current app state (privacy score, etc.)
+    const state = await storage.getState();
+
+    // Increment the count of PII events (how many times you've shared personal info)
+    const newPiiCount = state.piiEventsCount + 1;
+
+    // Calculate the penalty based on:
+    // - What type of info you entered (password = bigger penalty than name)
+    // - How safe the current website is (risky site = bigger penalty)
+    const siteWSS = state.currentSite?.wss || 50;  // Get current site's safety score (default to 50 if unknown)
+    const { newUPS, penalty } = calculatePIIPenalty(state.ups || 100, event.fieldType, siteWSS);
+    const scoreImpact = -penalty;  // Negative because it's a penalty
 
     // Record this PII detection event
     // Note: We only store metadata (field TYPE, site, timestamp) - NOT the actual value you typed!
@@ -1131,8 +1145,8 @@ async function handlePIIDetection(message: any) {
         });
     } else {
         await Promise.all([
-            writeSessionBuffer('bufferedPii', piiDetections),
-            writeSessionBuffer('bufferedScoreHistory', scoreHistory),
+            writeBuffer('bufferedPii', piiDetections),
+            writeBuffer('bufferedScoreHistory', scoreHistory),
         ]);
     }
 

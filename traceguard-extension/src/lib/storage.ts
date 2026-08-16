@@ -61,7 +61,7 @@ export async function getBufferKey(): Promise<CryptoKey> {
  * Reads a buffered value, transparently decrypting it. Also handles values
  * written by older versions in plaintext.
  */
-export async function readSessionBuffer<T = any>(name: string): Promise<T | null> {
+export async function readBuffer<T = any>(name: string): Promise<T | null> {
     const stored = await chrome.storage.local.get<Record<string, any>>(name);
     const raw = stored[name];
     if (raw === undefined) return null;
@@ -73,7 +73,7 @@ export async function readSessionBuffer<T = any>(name: string): Promise<T | null
 }
 
 /** Encrypts and writes a value into the persistent buffer. */
-export async function writeSessionBuffer(name: string, value: any): Promise<void> {
+export async function writeBuffer(name: string, value: any): Promise<void> {
     const key = await getBufferKey();
     await chrome.storage.local.set({ [name]: await encryptData(key, value) });
 }
@@ -129,13 +129,13 @@ async function persistDetectorLogs(
     } else if (typeof raw === 'string') {
         // Vault is locked and data is encrypted — buffer the new logs in the
         // encrypted session buffer so they are not lost.
-        const buffered = (await readSessionBuffer<import('./types').DetectorLogEntry[]>('bufferedDetectorLogs')) || [];
+        const buffered = (await readBuffer<import('./types').DetectorLogEntry[]>('bufferedDetectorLogs')) || [];
         const stamped = newLogs.map(log => ({
             ...log,
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             timestamp: Date.now()
         }));
-        await writeSessionBuffer('bufferedDetectorLogs', [...buffered, ...stamped]);
+        await writeBuffer('bufferedDetectorLogs', [...buffered, ...stamped]);
         return;
     } else {
         logs = (raw || []) as import('./types').DetectorLogEntry[];
@@ -305,11 +305,11 @@ export const storage = {
             exposure = (await decryptData(key, raw)) || {};
         } else if (typeof raw === 'string') {
             // Vault locked and data is encrypted — buffer instead of dropping.
-            const buffered = (await readSessionBuffer<import('./types').CrossSiteExposure>('bufferedExposure')) || {};
+            const buffered = (await readBuffer<import('./types').CrossSiteExposure>('bufferedExposure')) || {};
             if (!buffered[fieldType]) buffered[fieldType] = [];
             if (!buffered[fieldType].includes(domain)) {
                 buffered[fieldType].push(domain);
-                await writeSessionBuffer('bufferedExposure', buffered);
+                await writeBuffer('bufferedExposure', buffered);
                 console.log(`[Cross-Site Exposure] ${fieldType} buffered for ${buffered[fieldType].length} sites (locked)`);
             }
             return;
@@ -401,7 +401,7 @@ export const storage = {
             notifications = (await decryptData(key, raw)) || [];
         } else if (typeof raw === 'string') {
             // Vault locked and data is encrypted — buffer instead of dropping.
-            const buffered = (await readSessionBuffer<import('./types').NotificationEvent[]>('bufferedNotifications')) || [];
+            const buffered = (await readBuffer<import('./types').NotificationEvent[]>('bufferedNotifications')) || [];
             const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const newNotification: import('./types').NotificationEvent = {
                 ...notification,
@@ -409,7 +409,7 @@ export const storage = {
                 timestamp: Date.now(),
                 read: false
             };
-            await writeSessionBuffer('bufferedNotifications', [newNotification, ...buffered].slice(0, 100));
+            await writeBuffer('bufferedNotifications', [newNotification, ...buffered].slice(0, 100));
             return id;
         } else {
             notifications = (raw || []) as import('./types').NotificationEvent[];
