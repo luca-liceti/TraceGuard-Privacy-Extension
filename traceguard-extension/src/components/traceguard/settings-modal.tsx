@@ -223,9 +223,7 @@ export function SettingsModal() {
     // Fetch storage usage
     useEffect(() => {
         const updateStorageInfo = async () => {
-            const bytesInUse = await chrome.storage.local.getBytesInUse()
-            const quota = chrome.storage.local.QUOTA_BYTES ?? 0
-            setStorageInfo({ bytesInUse, quota })
+            setStorageInfo(await storage.getStorageUsage())
         }
 
         updateStorageInfo()
@@ -881,7 +879,7 @@ export function SettingsModal() {
                         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
                              <div className="space-y-0.5 flex-1 min-w-0">
                                  <Label className="text-base font-medium">{t("Export Data")}</Label>
-                                 <p className="text-sm text-muted-foreground break-words">{t("Download a copy of your activity logs and settings")}</p>
+                                 <p className="text-sm text-muted-foreground break-words">{t("Export a JSON backup of all your data (optionally password-protected)")}</p>
                              </div>
                              <div className="flex-shrink-0">
                                  <Button variant="outline" onClick={exportData}>

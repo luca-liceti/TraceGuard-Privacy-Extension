@@ -28,7 +28,8 @@
  * fields are handled by the background service worker which has access to the key.
  * 
  * STORAGE LIMITS:
- * Chrome gives extensions about 5MB of local storage. We automatically:
+ * Chrome defaults to 10MB of local storage, but TraceGuard requests
+ * `unlimitedStorage`, so there is no practical cap. We still:
  * - Clean up old logs based on retention settings
  * - Limit logs to 1000 entries max
  * - Limit notifications to 100 entries max
@@ -249,6 +250,36 @@ export const storage = {
         await persistDetectorLogs(logs, key);
     },
 
+    // Returns the vault CryptoKey from session storage, or null when locked.
+    getVaultKey: async (): Promise<CryptoKey | null> => {
+        const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
+        return session.cryptoKeyHex ? importKey(session.cryptoKeyHex) : null;
+    },
+
+    // Reads detector logs, transparently decrypting them when the vault is
+    // unlocked. Returns [] when the vault is locked (data is unreadable).
+    getDetectorLogs: async (key?: CryptoKey | null): Promise<any[]> => {
+        const result = await chrome.storage.local.get('detectorLogs');
+        const raw = result.detectorLogs;
+        if (key && typeof raw === 'string') return (await decryptData(key, raw)) || [];
+        if (typeof raw === 'string') return []; // locked — cannot decrypt
+        return (raw || []) as any[];
+    },
+
+    // Removes detector logs matching a predicate, re-encrypting on write.
+    removeDetectorLogs: async (
+        predicate: (log: any) => boolean,
+        key?: CryptoKey | null
+    ): Promise<void> => {
+        const logs = await storage.getDetectorLogs(key);
+        const filtered = logs.filter((log) => !predicate(log));
+        if (key) {
+            await storage.set({ detectorLogs: await encryptData(key, filtered) as any });
+        } else {
+            await storage.set({ detectorLogs: filtered });
+        }
+    },
+
     // Clean up old logs based on retention policy
     cleanupOldLogs: async (key?: CryptoKey | null): Promise<void> => {
         const settings = await storage.getSettings();
@@ -326,11 +357,10 @@ export const storage = {
     // Get storage usage info
     getStorageUsage: async (): Promise<{ bytesInUse: number; quota: number }> => {
         const bytesInUse = await chrome.storage.local.getBytesInUse();
-        // With `unlimitedStorage` the quota is effectively unbounded; report 0
-        // when Chrome doesn't expose a concrete number so the UI shows only
-        // bytes used rather than a fabricated cap.
-        const quota = chrome.storage.local.QUOTA_BYTES ?? 0;
-        return { bytesInUse, quota };
+        // The manifest requests `unlimitedStorage`, so there is no real cap.
+        // Report quota 0 so the UI shows bytes used only. QUOTA_BYTES still
+        // returns 10 MB even under unlimitedStorage, so it must not be shown.
+        return { bytesInUse, quota: 0 };
     },
 
     // Cross-site exposure tracking methods

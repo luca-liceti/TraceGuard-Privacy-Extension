@@ -310,7 +310,7 @@ export function SearchCommand() {
               <Cloud className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{t("Enhanced Policy Analysis (Cloud)")}</span>
             </CommandItem>
-            <CommandItem value="vault auto-lock auto lock timeout pin" onSelect={() => openSettings("privacy")}>
+            <CommandItem value="vault auto-lock auto lock timeout" onSelect={() => openSettings("privacy")}>
               <Lock className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{t("Vault Auto-Lock")}</span>
             </CommandItem>

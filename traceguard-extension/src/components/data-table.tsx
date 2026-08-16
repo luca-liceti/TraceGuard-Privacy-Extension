@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { getGradeTextColor, getSafetyBgColor, getSafetyTextColor } from "@/lib/theme-utils"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
+import { storage } from "@/lib/storage"
 
 import {
   DropdownMenu,
@@ -708,22 +709,19 @@ export function DataTable({
     const policy = formData.get('policy') as string || 'N/A'
     const inputs = formData.get('inputs') as string || 'No'
 
-    const timestamp = Date.now()
-
-    // Create individual detector logs for aggregation
-    const newLogs = [
-      { domain, timestamp, detector: 'reputation', score: reputation === 'Clean' ? 100 : reputation === 'Suspicious' ? 50 : 0, details: { status: reputation } },
-      { domain, timestamp, detector: 'policy', score: policy === 'A' ? 100 : policy === 'B' ? 80 : policy === 'C' ? 60 : policy === 'D' ? 40 : policy === 'E' ? 20 : 0, details: { grade: policy } },
-      { domain, timestamp, detector: 'inputs', score: inputs === 'Yes' ? 0 : 100, details: { sensitive: inputs === 'Yes' ? 1 : 0 } },
-      { domain, timestamp, detector: 'tracking', score: Math.max(0, 100 - trackers * 10), details: { trackerCount: trackers } },
-      { domain, timestamp, detector: 'cookies', score: Math.max(0, 100 - cookies * 5), details: { tracking: cookies } }
-    ]
-
+    // Create individual detector logs for aggregation. Written through the
+    // storage helper so they are encrypted with the vault key like all other
+    // logs (never plaintext).
     try {
-      const data = await chrome.storage.local.get<{ detectorLogs?: any[] }>('detectorLogs')
-      const existingLogs = data.detectorLogs || []
-      await chrome.storage.local.set({ detectorLogs: [...existingLogs, ...newLogs] })
-      
+      const key = await storage.getVaultKey()
+      await storage.addDetectorLogs([
+        { domain, detector: 'reputation', score: reputation === 'Clean' ? 100 : reputation === 'Suspicious' ? 50 : 0, details: { status: reputation }, message: `Reputation: ${reputation}` },
+        { domain, detector: 'policy', score: policy === 'A' ? 100 : policy === 'B' ? 80 : policy === 'C' ? 60 : policy === 'D' ? 40 : policy === 'E' ? 20 : 0, details: { grade: policy }, message: `Policy grade: ${policy}` },
+        { domain, detector: 'inputs', score: inputs === 'Yes' ? 0 : 100, details: { sensitive: inputs === 'Yes' ? 1 : 0 }, message: `Sensitive inputs: ${inputs}` },
+        { domain, detector: 'tracking', score: Math.max(0, 100 - trackers * 10), details: { trackerCount: trackers }, message: `Trackers: ${trackers}` },
+        { domain, detector: 'cookies', score: Math.max(0, 100 - cookies * 5), details: { tracking: cookies }, message: `Tracking cookies: ${cookies}` },
+      ], key)
+
       setIsAddLogOpen(false)
       toast.success(t("Log added successfully"))
       form.reset()
@@ -735,8 +733,8 @@ export function DataTable({
 
   const handleExport = async () => {
     try {
-      const data = await chrome.storage.local.get<{ detectorLogs?: any[] }>('detectorLogs')
-      const logs = data.detectorLogs || []
+      const key = await storage.getVaultKey()
+      const logs = await storage.getDetectorLogs(key)
       const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -773,14 +771,12 @@ export function DataTable({
 
   const handleDeleteLog = async (visit: SiteVisit) => {
     try {
-      const data = await chrome.storage.local.get<{ detectorLogs?: any[] }>('detectorLogs')
-      const logs = data.detectorLogs || []
+      const key = await storage.getVaultKey()
       const timeWindow = Math.floor(visit.timestamp / 5000) * 5000
-      const filteredLogs = logs.filter((log: any) => {
+      await storage.removeDetectorLogs((log: any) => {
         const logTimeWindow = Math.floor(log.timestamp / 5000) * 5000
-        return !(log.domain === visit.domain && logTimeWindow === timeWindow)
-      })
-      await chrome.storage.local.set({ detectorLogs: filteredLogs })
+        return log.domain === visit.domain && logTimeWindow === timeWindow
+      }, key)
       toast.success(t("Log deleted successfully"))
     } catch (e) {
       console.error(e)
