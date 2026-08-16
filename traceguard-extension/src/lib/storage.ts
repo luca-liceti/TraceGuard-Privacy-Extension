@@ -279,6 +279,50 @@ export const storage = {
         }
     },
 
+    // ==========================================================================
+    // Canonical clear/reset paths. These REMOVE keys (rather than writing
+    // plaintext sentinels over encrypted fields) so the store never ends up in
+    // a mixed plaintext/encrypted state. Readers already default to []/{}
+    // when a key is absent.
+    // ==========================================================================
+
+    // Removes activity logs (detector logs + PII events) and their buffers.
+    clearActivityLogs: async (): Promise<void> => {
+        await chrome.storage.local.remove([
+            'logs',
+            'detectorLogs',
+            'piiDetections',
+            'bufferedDetectorLogs',
+            'bufferedPii',
+        ]);
+    },
+
+    // Resets the privacy score and wipes browsing-history-derived data.
+    resetScore: async (): Promise<void> => {
+        await chrome.storage.local.remove([
+            'scoreHistory',
+            'siteCache',
+            'crossSiteExposure',
+            'bufferedScoreHistory',
+            'bufferedSiteCache',
+            'bufferedExposure',
+        ]);
+        await storage.updateState({
+            ups: DEFAULT_STATE.ups,
+            sitesAnalyzed: DEFAULT_STATE.sitesAnalyzed,
+            trackersDetected: DEFAULT_STATE.trackersDetected,
+            piiEventsCount: DEFAULT_STATE.piiEventsCount,
+            safeVisitStreak: DEFAULT_STATE.safeVisitStreak,
+            currentSite: undefined,
+        });
+    },
+
+    // Full factory reset: clears local + session storage.
+    clearAll: async (): Promise<void> => {
+        await chrome.storage.local.clear();
+        await chrome.storage.session.clear();
+    },
+
     // Get storage usage info
     getStorageUsage: async (): Promise<{ bytesInUse: number; quota: number }> => {
         const bytesInUse = await chrome.storage.local.getBytesInUse();

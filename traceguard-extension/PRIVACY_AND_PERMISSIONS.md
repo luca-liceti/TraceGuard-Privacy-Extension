@@ -51,7 +51,9 @@ and to observe third-party network requests across the web.
 - **Local by default:** TraceGuard does not collect, transmit, or monetize user data. Journal data,
   logs, and scores are processed and stored locally on the device.
 - **Optional cloud lookup:** The optional "Enhanced Policy Analysis" feature (off by default) sends
-  the domain of unrated sites to `api.tosdr.org`. No other browsing data is transmitted.
+  the domain of unrated sites to `api.tosdr.org`. No other browsing data is transmitted. Lookup
+  results are cached locally in `tosdr_cache` (a plaintext, domain-only map of domain → policy
+  grade); it contains no page URLs, request data, or PII.
 - **Data deletion:** Users can review, export, or wipe all local data from the dashboard Settings
   ("Export Data" and "Delete All Data").
 - **Locked-vault buffering:** While the vault is locked, new activity is buffered on disk encrypted

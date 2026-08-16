@@ -43,7 +43,8 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { useAppState, useSettings } from "@/lib/useStorage"
-import { decryptData, importKey } from "@/lib/crypto"
+import { exportAllData } from "@/lib/export"
+import { storage } from "@/lib/storage"
 import { getErrorLog, clearErrorLog, type ErrorLogEntry } from "@/lib/error-log"
 import { toast } from 'sonner'
 import {
@@ -380,10 +381,7 @@ export function SettingsModal() {
         if (!confirm(t("⚠️ WARNING: This will delete ALL extension data including settings, logs, and scores. This cannot be undone. Are you sure?"))) return
         if (!confirm(t("Are you absolutely sure? This will reset TraceGuard to factory defaults."))) return
 
-        await chrome.storage.local.clear()
-        // Also clear in-memory session state (vault key + any residual buffer
-        // key) so the factory reset is complete and returns to vault setup.
-        await chrome.storage.session.clear()
+        await storage.clearAll()
         toast.success(t('All Data Cleared'), {
             description: t('Extension data has been reset. Reloading...'),
             duration: 2000
@@ -394,57 +392,19 @@ export function SettingsModal() {
 
     const exportData = async () => {
         try {
-            const allData = await chrome.storage.local.get(null);
-            
-            // Decrypt every vault item before export so the backup is fully usable.
-            const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
-            if (session.cryptoKeyHex) {
-                const key = await importKey(session.cryptoKeyHex);
-                const vaultFields: [string, 'object' | 'array'][] = [
-                    ['siteCache', 'object'],
-                    ['crossSiteExposure', 'object'],
-                    ['scoreHistory', 'array'],
-                    ['piiDetections', 'array'],
-                    ['detectorLogs', 'array'],
-                    ['notifications', 'array'],
-                ];
-                for (const [field, kind] of vaultFields) {
-                    if (typeof allData[field] === 'string') {
-                        allData[field] = await decryptData(key, allData[field]) || (kind === 'object' ? {} : []);
-                    }
-                }
-            }
-
-            // Defensively strip any legacy cookie values / query strings that may
-            // predate the data-minimization change.
-            if (allData.siteCache && typeof allData.siteCache === 'object') {
-                for (const site of Object.values(allData.siteCache as Record<string, any>)) {
-                    const enriched = site?.enrichedDetails;
-                    if (enriched?.cookies?.items) {
-                        for (const c of enriched.cookies.items) delete c.value;
-                    }
-                    if (enriched?.networkRequests?.items) {
-                        for (const r of enriched.networkRequests.items) {
-                            if (typeof r.url === 'string') {
-                                try { const u = new URL(r.url); r.url = u.origin + u.pathname; } catch { /* keep as-is */ }
-                            }
-                        }
-                    }
-                }
-            }
-
-            const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `traceguard-backup-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
+            const exported = await exportAllData(t);
+            if (!exported) return; // user cancelled the password prompt
             toast.success(t('Data Exported'), {
-                description: t('Your decrypted vault data has been exported.'),
+                description: t('Your data has been exported.'),
                 duration: 3000
             });
         } catch (error) {
+            if ((error as Error)?.message === 'password-too-short') {
+                toast.error(t('Export Failed'), {
+                    description: t('The export password must be at least 8 characters.'),
+                });
+                return;
+            }
             toast.error(t('Export Failed'), {
                 description: t('Could not export data. Please try again.')
             });

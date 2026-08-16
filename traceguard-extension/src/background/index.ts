@@ -445,6 +445,40 @@ async function syncStateWithCache() {
 // =============================================================================
 
 // =============================================================================
+// VAULT AUTO-LOCK (idle)
+// The vault locks after `autoLockTimeout` minutes of *inactivity*. Activity is
+// any message the background worker receives (page analyses while browsing, or
+// dashboard/sidepanel/popup messages). `armAutoLock` resets the countdown; the
+// one-shot alarm fires only if no activity occurs before it expires.
+// =============================================================================
+let lastAutoLockArm = 0;
+const AUTO_LOCK_ARM_THROTTLE_MS = 10_000;
+
+async function armAutoLock(force = false): Promise<void> {
+    try {
+        const settings = await storage.getSettings();
+        const timeout = settings.autoLockTimeout ?? 0;
+        if (!(timeout > 0)) {
+            await chrome.alarms.clear('autoLockTimer');
+            return;
+        }
+        // Only arm while the vault is actually unlocked (session key present).
+        const session = await chrome.storage.session.get('cryptoKeyHex');
+        if (!session.cryptoKeyHex) {
+            await chrome.alarms.clear('autoLockTimer');
+            return;
+        }
+        // Throttle so bursts of re-analysis messages don't churn the alarm.
+        const now = Date.now();
+        if (!force && now - lastAutoLockArm < AUTO_LOCK_ARM_THROTTLE_MS) return;
+        lastAutoLockArm = now;
+        await chrome.alarms.create('autoLockTimer', { delayInMinutes: timeout });
+    } catch (err) {
+        console.error('[Lock] Failed to arm auto-lock:', err);
+    }
+}
+
+// =============================================================================
 // MESSAGE HANDLING
 // Receives and responds to messages from other parts of the extension
 // =============================================================================
@@ -461,6 +495,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         console.warn('[Security] Rejected message from unknown sender:', _sender.id);
         return;
     }
+
+    // Any message from the extension counts as activity — reset the idle timer.
+    armAutoLock();
 
     // -------------------------------------------------------------------------
     // REPUTATION CHECK: Is this website known to be dangerous?
@@ -552,11 +589,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // UNLOCK VAULT: Flushes buffered telemetry to disk
     // -------------------------------------------------------------------------
     if (message.type === 'UNLOCK_VAULT') {
-        storage.getSettings().then(settings => {
-            if (settings.autoLockTimeout && settings.autoLockTimeout > 0) {
-                chrome.alarms.create('autoLockTimer', { delayInMinutes: settings.autoLockTimeout });
-            }
-        });
+        armAutoLock(true);
         flushBufferedTelemetry().then(() => sendResponse({ success: true }));
         return true;
     }
@@ -568,11 +601,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === 'SETTINGS_CHANGED') {
         const newSettings = message.settings;
 
-        if (newSettings.autoLockTimeout > 0) {
-            chrome.alarms.create('autoLockTimer', { delayInMinutes: newSettings.autoLockTimeout });
-        } else {
-            chrome.alarms.clear('autoLockTimer');
-        }
+        armAutoLock(true);
 
         // Update the display mode and refresh schedule immediately.
         setNetworkMonitorEnabled(newSettings.enabled !== false);

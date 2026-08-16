@@ -99,8 +99,8 @@ export default function HelpPage() {
       icon: <Lock className="w-5 h-5 text-primary" />,
       items: [
         {
-          question: t("What is the Privacy Vault / PIN?"),
-          answer: t("The Privacy Vault protects your TraceGuard data. Setting a PIN encrypts your logs and settings, ensuring that anyone with access to your computer cannot read your browsing history.")
+          question: t("What is the Privacy Vault / Master Password?"),
+          answer: t("The Privacy Vault protects your TraceGuard data. Setting a Master Password encrypts your logs and settings, ensuring that anyone with access to your computer cannot read your browsing history.")
         },
         {
           question: t("How does Auto-Lock work?"),
@@ -147,8 +147,8 @@ export default function HelpPage() {
       solution: t("Ensure that PII Detection is enabled in Settings → Privacy & Security. It also only triggers on fields it identifies as sensitive on low-scored sites.")
     },
     {
-      problem: t("I forgot my PIN / lost access to the vault"),
-      solution: t("Because your data is encrypted, a lost PIN cannot be recovered. You must use 'Delete All Data' in Settings → Data to reset the extension to factory defaults.")
+      problem: t("I forgot my Master Password / lost access to the vault"),
+      solution: t("Because your data is encrypted, a lost Master Password cannot be recovered. Use 'Forgot password? Reset vault' on the lock screen to start over with a new password.")
     }
   ]
 

@@ -351,6 +351,7 @@ export interface StorageSchema {
     piiDetections?: PIIDetectionEvent[];           // PII entry events
     crossSiteExposure?: CrossSiteExposure;         // Which sites know your info
     notifications?: NotificationEvent[];           // Alert notifications
+    tosdr_cache?: Record<string, unknown>;         // Opt-in ToS;DR policy-lookup cache (domain → grade), plaintext
 }
 
 // =============================================================================

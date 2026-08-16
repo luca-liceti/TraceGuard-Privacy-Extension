@@ -43,6 +43,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useSiteCache } from "@/lib/useStorage"
+import { storage } from "@/lib/storage"
+import { exportAllData } from "@/lib/export"
 import { useSettingsModal } from "./settings-context"
 import { SiteDetailsPanel } from "./site-details-panel"
 import { getSafetyTextColor } from "@/lib/theme-utils"
@@ -108,7 +110,7 @@ export function SearchCommand() {
   const handleLockExtension = () => {
     setOpen(false)
     setTimeout(() => {
-      if (!confirm(t("Lock TraceGuard? You will need to re-enter your PIN to continue."))) return
+      if (!confirm(t("Lock TraceGuard? You will need to re-enter your Master Password to continue."))) return
       lock()
     }, 50)
   }
@@ -117,19 +119,19 @@ export function SearchCommand() {
     setOpen(false)
     setTimeout(async () => {
       try {
-        const allData = await chrome.storage.local.get(null)
-        const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = `traceguard-backup-${new Date().toISOString().split("T")[0]}.json`
-        a.click()
-        URL.revokeObjectURL(url)
+        const exported = await exportAllData(t)
+        if (!exported) return
         toast.success(t("Data Exported"), {
-          description: t("Your activity logs and settings have been exported."),
+          description: t("Your data has been exported."),
           duration: 3000,
         })
-      } catch {
+      } catch (error) {
+        if ((error as Error)?.message === "password-too-short") {
+          toast.error(t("Export Failed"), {
+            description: t("The export password must be at least 8 characters."),
+          })
+          return
+        }
         toast.error(t("Export Failed"), {
           description: t("Could not export data. Please try again."),
         })
@@ -141,9 +143,7 @@ export function SearchCommand() {
     setOpen(false)
     setTimeout(async () => {
       if (!confirm(t("Clear all activity logs? This cannot be undone."))) return
-      await chrome.storage.local.set({ logs: [], piiDetections: [], detectorLogs: [] })
-      // Also drop any buffered entries so they can't re-merge on next unlock.
-      await chrome.storage.local.remove(['bufferedPii', 'bufferedDetectorLogs'])
+      await storage.clearActivityLogs()
       toast.success(t("Activity Logs Cleared"), {
         description: t("All logged events have been removed."),
         duration: 3000,
@@ -155,15 +155,7 @@ export function SearchCommand() {
     setOpen(false)
     setTimeout(async () => {
       if (!confirm(t("Reset your Privacy Score to 100? This will clear your browsing history data."))) return
-      const currentState = (await chrome.storage.local.get("state")).state || {}
-      await chrome.storage.local.set({
-        state: { ...currentState, ups: 100, sitesAnalyzed: 0, trackersDetected: 0, piiEventsCount: 0, safeVisitStreak: 0 },
-        scoreHistory: [],
-        siteCache: {},
-        crossSiteExposure: {},
-      })
-      // Also drop any buffered entries so they can't re-merge on next unlock.
-      await chrome.storage.local.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure'])
+      await storage.resetScore()
       toast.success(t("Privacy Score Reset"), {
         description: t("Your UPS has been reset to 100."),
         duration: 3000,

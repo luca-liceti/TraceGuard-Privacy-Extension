@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { deriveKeyFromPassword, generateSalt, exportKey, verifySaltUniqueness } from "@/lib/crypto"
+import { storage } from "@/lib/storage"
 
 import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
 import { useTranslation } from "react-i18next";
@@ -187,14 +188,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetVault = async () => {
-    if (!confirm(t("Reset the vault? This permanently deletes your encrypted journal and you'll create a new Master Password. Other settings like theme are kept."))) return
-    await chrome.storage.local.remove([
-      'cryptoSalt', 'validator', 'userName',
-      'siteCache', 'scoreHistory', 'piiDetections', 'detectorLogs', 'crossSiteExposure', 'notifications',
-      'bufferKeyHex',
-      'bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure',
-    ])
-    await chrome.storage.session.remove('cryptoKeyHex')
+    if (!confirm(t("Reset TraceGuard to factory defaults? This permanently deletes ALL data and you'll create a new Master Password."))) return
+    await storage.clearAll()
     setPassword('')
     setError('')
     setAuthState('setup')
