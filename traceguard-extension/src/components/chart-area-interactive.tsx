@@ -133,7 +133,8 @@ export function ChartAreaInteractive({
       // Format as YYYY-MM-DD in local time
       const dateString = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-      // Never fabricate a score for dates before the first recorded entry,       // backfilling "100" here implies a history the user never had.
+      // Never fabricate a score for dates before the first recorded entry,
+      // backfilling "100" here implies a history the user never had.
       if (firstDataDate && dateString < firstDataDate) continue;
       
       const existing = dailyData.find(item => item.date === dateString);

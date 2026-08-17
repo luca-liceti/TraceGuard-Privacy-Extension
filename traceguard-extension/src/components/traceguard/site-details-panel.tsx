@@ -201,17 +201,17 @@ const getFingerprintRiskLabels = (t: any): Record<string, string> => ({
 // =============================================================================
 
 const getHeaderFriendlyNames = (t: any): Record<string, string> => ({
-    "Content-Security-Policy": t("Content security policy, restricts what code can run on the page"),
-    "X-Frame-Options": t("Clickjacking protection, prevents this page from being embedded elsewhere"),
-    "Strict-Transport-Security": t("HTTPS enforced, your connection must be encrypted"),
-    "X-Content-Type-Options": t("MIME sniffing blocked, prevents browsers from misinterpreting files"),
-    "Referrer-Policy": t("Referrer privacy, limits what URL info is shared with other sites"),
-    "Permissions-Policy": t("Browser permissions locked, restricts access to camera, mic, location"),
-    "X-XSS-Protection": t("Cross-site scripting filter, legacy protection against script injection"),
-    "Cache-Control": t("Cache control, defines how responses are stored by browsers"),
-    "Cross-Origin-Opener-Policy": t("Cross-origin isolation, prevents other sites from accessing this window"),
-    "Cross-Origin-Embedder-Policy": t("Cross-origin embedding blocked, restricts cross-origin resource loads"),
-    "Cross-Origin-Resource-Policy": t("Cross-origin resource policy, controls who can load this site's resources"),
+    "Content-Security-Policy": t("Content security policy — restricts what code can run on the page"),
+    "X-Frame-Options": t("Clickjacking protection — prevents this page from being embedded elsewhere"),
+    "Strict-Transport-Security": t("HTTPS enforced — your connection must be encrypted"),
+    "X-Content-Type-Options": t("MIME sniffing blocked — prevents browsers from misinterpreting files"),
+    "Referrer-Policy": t("Referrer privacy — limits what URL info is shared with other sites"),
+    "Permissions-Policy": t("Browser permissions locked — restricts access to camera, mic, location"),
+    "X-XSS-Protection": t("Cross-site scripting filter — legacy protection against script injection"),
+    "Cache-Control": t("Cache control — defines how responses are stored by browsers"),
+    "Cross-Origin-Opener-Policy": t("Cross-origin isolation — prevents other sites from accessing this window"),
+    "Cross-Origin-Embedder-Policy": t("Cross-origin embedding blocked — restricts cross-origin resource loads"),
+    "Cross-Origin-Resource-Policy": t("Cross-origin resource policy — controls who can load this site's resources"),
 })
 
 function getHeaderFriendlyName(t: any, header: string, explanation: string): string {
@@ -341,7 +341,7 @@ export function SiteDetailsPanel({
                                         <div className="flex flex-col gap-1.5">
                                             {activeItems.length === 0 && blockedItems.length === 0 && (
                                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
-                                                    {t("No trackers found, this is good!")}</InsightRow>
+                                                    {t("No trackers found — this is good!")}</InsightRow>
                                             )}
                                             {Object.entries(grouped).map(([cat, trackers]) => {
                                                 const cfg = getTrackerCategoryDescriptions(t)[cat] ?? { label: cat, description: t("active on this page"), iconClass: "text-muted-foreground" }
@@ -349,13 +349,13 @@ export function SiteDetailsPanel({
                                                 const orgLabel = orgs.length > 0 ? ` (${orgs.slice(0, 2).join(", ")}${orgs.length > 2 ? ` +${orgs.length - 2} more` : ""})` : ""
                                                 return (
                                                     <InsightRow key={cat} icon={AlertTriangle} iconClass={cfg.iconClass}>
-                                                        <strong>{trackers.length} × {cfg.label}</strong>{orgLabel}, {cfg.description}
+                                                        <strong>{trackers.length} × {cfg.label}</strong>{orgLabel} — {cfg.description}
                                                     </InsightRow>
                                                 )
                                             })}
                                             {blockedItems.length > 0 && (
                                                 <InsightRow icon={XCircle} iconClass="text-muted-foreground" faded>
-                                                    <strong>{blockedItems.length} × {pluralize(blockedItems.length, "tracker blocked", "trackers blocked")}</strong>, {t("stopped by your browser or an extension before loading")}</InsightRow>
+                                                    <strong>{blockedItems.length} × {pluralize(blockedItems.length, "tracker blocked", "trackers blocked")}</strong> — {t("stopped by your browser or an extension before loading")}</InsightRow>
                                             )}
                                         </div>
 
@@ -412,15 +412,15 @@ export function SiteDetailsPanel({
                                     </div>
                                     {(trackingLegacy.count || 0) > 0 ? (
                                         <InsightRow icon={AlertTriangle} iconClass={getIndicatorTextColor('warning')}>
-                                            <strong>{trackingLegacy.count} {pluralize(trackingLegacy.count, "tracker detected", "trackers detected")}</strong> {t("on this page, they may be collecting data about your visit")}</InsightRow>
+                                            <strong>{trackingLegacy.count} {pluralize(trackingLegacy.count, "tracker detected", "trackers detected")}</strong> {t("on this page — they may be collecting data about your visit")}</InsightRow>
                                     ) : (
                                         <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
-                                            {t("No trackers found, this is good!")}</InsightRow>
+                                            {t("No trackers found — this is good!")}</InsightRow>
                                     )}
                                 </div>
                             ) : (
                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
-                                    {t("No trackers found, this is good!")}</InsightRow>
+                                    {t("No trackers found — this is good!")}</InsightRow>
                             )}
                         </div>
 
@@ -470,13 +470,13 @@ export function SiteDetailsPanel({
                                                 const IconComp = cfg.icon
                                                 return (
                                                     <InsightRow key={cat} icon={IconComp} iconClass={cfg.iconClass}>
-                                                        <strong>{cookies.length} × {cfg.label}</strong>, {cfg.description}
+                                                        <strong>{cookies.length} × {cfg.label}</strong> — {cfg.description}
                                                     </InsightRow>
                                                 )
                                             })}
                                             {blockedItems.length > 0 && (
                                                 <InsightRow icon={XCircle} iconClass="text-muted-foreground" faded>
-                                                    <strong>{blockedItems.length} × {pluralize(blockedItems.length, "cookie blocked", "cookies blocked")}</strong>, {t("prevented from being stored by your browser or an extension")}</InsightRow>
+                                                    <strong>{blockedItems.length} × {pluralize(blockedItems.length, "cookie blocked", "cookies blocked")}</strong> — {t("prevented from being stored by your browser or an extension")}</InsightRow>
                                             )}
                                         </div>
 
@@ -552,15 +552,15 @@ export function SiteDetailsPanel({
                                         </div>
                                         {crossSite > 0 && (
                                             <InsightRow icon={AlertTriangle} iconClass={getIndicatorTextColor('error')}>
-                                                <strong>{crossSite} {pluralize(crossSite, "cross-site tracking cookie", "cross-site tracking cookies")}</strong> {t("- follow you across the web to build an advertising profile")}</InsightRow>
+                                                <strong>{crossSite} {pluralize(crossSite, "cross-site tracking cookie", "cross-site tracking cookies")}</strong> {t("— follow you across the web to build an advertising profile")}</InsightRow>
                                         )}
                                         {analytics > 0 && (
                                             <InsightRow icon={BarChart} iconClass={getIndicatorTextColor('warning')}>
-                                                <strong>{analytics} {pluralize(analytics, "analytics or third-party cookie", "analytics or third-party cookies")}</strong> {t("- track how you use this site and share data with other services")}</InsightRow>
+                                                <strong>{analytics} {pluralize(analytics, "analytics or third-party cookie", "analytics or third-party cookies")}</strong> {t("— track how you use this site and share data with other services")}</InsightRow>
                                         )}
                                         {firstParty > 0 && (
                                             <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
-                                                <strong>{firstParty} {pluralize(firstParty, "first-party cookie", "first-party cookies")}</strong> {t("- set by this site only, no impact on your privacy score")}</InsightRow>
+                                                <strong>{firstParty} {pluralize(firstParty, "first-party cookie", "first-party cookies")}</strong> {t("— set by this site only, no impact on your privacy score")}</InsightRow>
                                         )}
                                         {crossSite + analytics + firstParty === 0 && (
                                             <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
@@ -598,19 +598,19 @@ export function SiteDetailsPanel({
                                         <div className="flex flex-col gap-1.5">
                                             {summary.trackerRequests > 0 && (
                                                 <InsightRow icon={AlertTriangle} iconClass={getIndicatorTextColor('error')}>
-                                                    <strong>{summary.trackerRequests} × {pluralize(summary.trackerRequests, "tracker server", "tracker servers")}</strong>, {t("received data about your visit")}</InsightRow>
+                                                    <strong>{summary.trackerRequests} × {pluralize(summary.trackerRequests, "tracker server", "tracker servers")}</strong> — {t("received data about your visit")}</InsightRow>
                                             )}
                                             {(summary.thirdParty - summary.trackerRequests) > 0 && (
                                                 <InsightRow icon={Info} iconClass={getIndicatorTextColor('warning')}>
-                                                    <strong>{summary.thirdParty - summary.trackerRequests} × {pluralize(summary.thirdParty - summary.trackerRequests, "third-party service", "third-party services")}</strong>, {t("contacted (CDNs, fonts, APIs, etc.)")}</InsightRow>
+                                                    <strong>{summary.thirdParty - summary.trackerRequests} × {pluralize(summary.thirdParty - summary.trackerRequests, "third-party service", "third-party services")}</strong> — {t("contacted (CDNs, fonts, APIs, etc.)")}</InsightRow>
                                             )}
                                             {samesite > 0 && (
                                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
-                                                    <strong>{samesite} × {pluralize(samesite, "connection", "connections")}</strong>, {t("to the site itself, normal page behaviour")}</InsightRow>
+                                                    <strong>{samesite} × {pluralize(samesite, "connection", "connections")}</strong> — {t("to the site itself — normal page behaviour")}</InsightRow>
                                             )}
                                             {summary.blocked > 0 && (
                                                 <InsightRow icon={XCircle} iconClass="text-muted-foreground" faded>
-                                                    <strong>{summary.blocked} × {pluralize(summary.blocked, "request blocked", "requests blocked")}</strong>, {t("before they could load")}</InsightRow>
+                                                    <strong>{summary.blocked} × {pluralize(summary.blocked, "request blocked", "requests blocked")}</strong> — {t("before they could load")}</InsightRow>
                                             )}
                                             {summary.total === 0 && (
                                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
@@ -703,7 +703,7 @@ export function SiteDetailsPanel({
                                             )}
                                             {types.map((type: string, idx: number) => {
                                                 const typeLabels: Record<string, string> = {
-                                                    password: t("password, your login credential"),
+                                                    password: t("password — your login credential"),
                                                     email: t("email address"),
                                                     tel: t("phone number"),
                                                     "credit-card": t("credit card number"),
@@ -723,7 +723,7 @@ export function SiteDetailsPanel({
                                             })}
                                             {sensitiveCount > 0 && types.length === 0 && (
                                                 <InsightRow icon={AlertTriangle} iconClass={getIndicatorTextColor('warning')}>
-                                                    <strong>{sensitiveCount} {pluralize(sensitiveCount, "sensitive field", "sensitive fields")}</strong> {t("detected, this page collects personal information")}</InsightRow>
+                                                    <strong>{sensitiveCount} {pluralize(sensitiveCount, "sensitive field", "sensitive fields")}</strong> {t("detected — this page collects personal information")}</InsightRow>
                                             )}
                                         </div>
                                     </div>
@@ -741,7 +741,7 @@ export function SiteDetailsPanel({
                         ══════════════════════════════════════════════════════ */}
                         <div className="flex flex-col gap-3">
                             <SectionTitle icon={Fingerprint}>{t("Fingerprinting")}</SectionTitle>
-                            <SectionDescription>{t("Techniques used to identify your device without cookies, harder to block and often invisible.")}</SectionDescription>
+                            <SectionDescription>{t("Techniques used to identify your device without cookies — harder to block and often invisible.")}</SectionDescription>
 
                             {hasFingerprinting ? (() => {
                                 const { items, summary } = enriched!.fingerprinting
@@ -764,7 +764,7 @@ export function SiteDetailsPanel({
                                                 const org = f.organization ? ` (${f.organization})` : ""
                                                 return (
                                                     <InsightRow key={idx} icon={AlertTriangle} iconClass={iconClass}>
-                                                        <strong className="capitalize">{f.technique} {t("fingerprinting")}</strong>{org}, {desc}
+                                                        <strong className="capitalize">{f.technique} {t("fingerprinting")}</strong>{org} — {desc}
                                                         {" "}<span className="text-muted-foreground text-xs">· {riskLabel}</span>
                                                     </InsightRow>
                                                 )
@@ -815,7 +815,7 @@ export function SiteDetailsPanel({
                                 )
                             })() : (
                                 <InsightRow icon={ShieldUser} iconClass={getIndicatorTextColor('success')}>
-                                    {t("No fingerprinting detected, your device identity is safe here.")}</InsightRow>
+                                    {t("No fingerprinting detected — your device identity is safe here.")}</InsightRow>
                             )}
                         </div>
 
@@ -841,7 +841,7 @@ export function SiteDetailsPanel({
                                         <div className="flex flex-col gap-1.5">
                                             {isClean ? (
                                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
-                                                    {t("This site has a")}<strong>{t("clean reputation")}</strong> {t("- no safety warnings found in any database")}</InsightRow>
+                                                    {t("This site has a")}<strong>{t("clean reputation")}</strong> {t("— no safety warnings found in any database")}</InsightRow>
                                             ) : (
                                                 <InsightRow icon={AlertTriangle} iconClass={getIndicatorTextColor('error')}>
                                                     {t("This site has been flagged as")}<strong>{t("suspicious or unsafe")}</strong> {t("in one or more security databases")}</InsightRow>
@@ -1034,9 +1034,9 @@ export function SiteDetailsPanel({
                                             {/* Missing headers first (most actionable) */}
                                             {missingItems.map((h: HeaderAnalysisDetail, idx: number) => (
                                                 <InsightRow key={`miss-${idx}`} icon={XCircle} iconClass={getIndicatorTextColor('error')}>
-                                                    <strong>{getHeaderFriendlyName(t, h.header, h.explanation).split(', ')[0]}</strong>
-                                                    {h.explanation.includes(', ') || getHeaderFriendlyName(t, h.header, h.explanation).includes(', ')
-                                                        ? `, ${getHeaderFriendlyName(t, h.header, h.explanation).split(', ').slice(1).join(', ')} `
+                                                    <strong>{getHeaderFriendlyName(t, h.header, h.explanation).split(' — ')[0]}</strong>
+                                                    {h.explanation.includes(' — ') || getHeaderFriendlyName(t, h.header, h.explanation).includes(' — ')
+                                                        ? ` — ${getHeaderFriendlyName(t, h.header, h.explanation).split(' — ').slice(1).join(' — ')} `
                                                         : " "
                                                     }
                                                     <span className="text-muted-foreground text-xs">{t("· missing")}</span>
@@ -1045,9 +1045,9 @@ export function SiteDetailsPanel({
                                             {/* Present headers */}
                                             {presentItems.map((h: HeaderAnalysisDetail, idx: number) => (
                                                 <InsightRow key={`pres-${idx}`} icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
-                                                    <strong>{getHeaderFriendlyName(t, h.header, h.explanation).split(', ')[0]}</strong>
-                                                    {getHeaderFriendlyName(t, h.header, h.explanation).includes(', ')
-                                                        ? `, ${getHeaderFriendlyName(t, h.header, h.explanation).split(', ').slice(1).join(', ')} `
+                                                    <strong>{getHeaderFriendlyName(t, h.header, h.explanation).split(' — ')[0]}</strong>
+                                                    {getHeaderFriendlyName(t, h.header, h.explanation).includes(' — ')
+                                                        ? ` — ${getHeaderFriendlyName(t, h.header, h.explanation).split(' — ').slice(1).join(' — ')} `
                                                         : " "
                                                     }
                                                     <span className="text-muted-foreground text-xs">{t("· active")}</span>

@@ -161,7 +161,7 @@ export default function RankingsPage() {
     const todayThreats = logs.filter(l => l.timestamp >= startOfToday).length
     const yesterdayThreats = logs.filter(l => l.timestamp >= startOfYesterday && l.timestamp < startOfToday).length
     const threatTrend = yesterdayThreats === 0
-      ? ", "
+      ? "—"
       : `${todayThreats >= yesterdayThreats ? "+" : ""}${Math.round(((todayThreats - yesterdayThreats) / yesterdayThreats) * 100)}%`
     const threatDirection = todayThreats >= yesterdayThreats ? "up" : "down"
 
@@ -337,7 +337,7 @@ export default function RankingsPage() {
         />
         <StatCard
           title={t("Top Offender")}
-          value={heroStats.topOffender ? heroStats.topOffender.replace(/^www\./, "") : ", "}
+          value={heroStats.topOffender ? heroStats.topOffender.replace(/^www\./, "") : "—"}
           subtitle={heroStats.topOffender ? t("Most threats from one domain") : t("No data yet")}
         />
         <StatCard
@@ -347,13 +347,13 @@ export default function RankingsPage() {
         />
         <StatCard
           title={t("Avg. Site Safety")}
-          value={heroStats.avgWSS !== null ? `${heroStats.avgWSS}/100` : ", "}
+          value={heroStats.avgWSS !== null ? `${heroStats.avgWSS}/100` : "—"}
           subtitle={
             heroStats.avgWSS !== null
-              ? heroStats.avgWSS >= 80 ? t("Excellent, keep it up!")
-              : heroStats.avgWSS >= 60 ? t("Good, room to improve")
-              : heroStats.avgWSS >= 40 ? t("Fair, some risky sites")
-              : t("Poor, avoid sensitive actions")
+              ? heroStats.avgWSS >= 80 ? t("Excellent — keep it up!")
+              : heroStats.avgWSS >= 60 ? t("Good — room to improve")
+              : heroStats.avgWSS >= 40 ? t("Fair — some risky sites")
+              : t("Poor — avoid sensitive actions")
               : t("Visit some websites first")
           }
         />
@@ -575,7 +575,7 @@ export default function RankingsPage() {
                           />
                         </div>
                         <span className={cn("text-xs font-semibold tabular-nums w-12 text-right", row.events > 0 ? "text-foreground" : "text-muted-foreground")}>
-                          {row.events > 0 ? `${row.avgSafety}/100` : ", "}
+                          {row.events > 0 ? `${row.avgSafety}/100` : "—"}
                         </span>
                       </div>
                     </div>

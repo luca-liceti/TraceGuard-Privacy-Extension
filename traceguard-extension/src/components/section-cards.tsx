@@ -19,7 +19,7 @@ export function SectionCards() {
 
   // Helper to format trend
   const formatTrend = (today: number, yesterday: number) => {
-    if (yesterday === 0) return ", "
+    if (yesterday === 0) return "—"
     const pct = Math.round(((today - yesterday) / yesterday) * 100)
     return `${today >= yesterday ? "+" : ""}${pct}%`
   }
@@ -57,7 +57,7 @@ export function SectionCards() {
   // 4. Safe Browsing Streak
   const streak = appState?.safeVisitStreak || 0
   const streakPercent = sitesToday > 0 ? Math.round((sitesToday / Math.max(totalSites, 1)) * 100) : 0
-  const streakTrend = totalSites === 0 || totalSites === sitesToday ? ", " : (streakPercent >= 0 ? `+${streakPercent}%` : `${streakPercent}%`)
+  const streakTrend = totalSites === 0 || totalSites === sitesToday ? "—" : (streakPercent >= 0 ? `+${streakPercent}%` : `${streakPercent}%`)
 
   // ─── Enriched aggregates from site cache ───────────────────────────────────
 
@@ -152,7 +152,7 @@ export function SectionCards() {
       
       <StatCard
         title={t("Safe Browsing Streak")}
-        value={totalSites === 0 ? ", " : streak.toLocaleString()}
+        value={totalSites === 0 ? "—" : streak.toLocaleString()}
         subtitle={totalSites === 0 ? t("Visit some websites first") : t("Consecutive safe visits")}
         trend={{
           direction: streakPercent >= 0 ? "up" : "down",

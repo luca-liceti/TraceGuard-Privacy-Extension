@@ -135,7 +135,7 @@ export function SiteDetails({ currentSite }: SiteDetailsProps) {
                                             </span>
                                             {key === 'policy' ? (
                                                 <span className={`text-sm font-bold ${getGradeColor(currentSite?.detectionDetails?.policy?.grade || '')}`}>
-                                                    {currentSite?.detectionDetails?.policy?.grade || ', '}
+                                                    {currentSite?.detectionDetails?.policy?.grade || '—'}
                                                 </span>
                                             ) : (
                                                 <span className={`text-sm font-bold ${getSafetyConfig(score).color}`}>

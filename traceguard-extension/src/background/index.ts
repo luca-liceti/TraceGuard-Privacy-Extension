@@ -526,7 +526,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             // Fail CLOSED on uncertainty: match checkReputation's own error
             // contract (50 = uncertain), never report a domain as safe (100).
             console.warn('Reputation check failed:', error);
-            sendResponse({ isBlacklisted: false, score: 50, checks: ['Reputation check failed, score uncertain'] });
+            sendResponse({ isBlacklisted: false, score: 50, checks: ['Reputation check failed — score uncertain'] });
         });
 
         return true;  // This tells Chrome to wait for our async response

@@ -309,7 +309,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {t("Strength:")}{labels[strength - 1] ?? t('Very weak')} {t("- min 10 chars, uppercase, number & special character required")}</p>
+                          {t("Strength:")}{labels[strength - 1] ?? t('Very weak')} {t("— min 10 chars, uppercase, number & special character required")}</p>
                       </div>
                     );
                   })()}
