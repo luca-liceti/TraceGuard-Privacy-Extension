@@ -40,4 +40,6 @@ locked, new journal entries are held in temporary in-memory storage (cleared whe
 closes) and encrypted on disk once you unlock. You can review, export, or clear all locally stored
 data from TraceGuard Settings at any time.
 
-Contact the publisher through the Chrome Web Store listing for privacy questions.
+## Contact
+
+For privacy questions, contact us at **traceguardprivacyextension@gmail.com**. You can also reach the publisher through the Chrome Web Store listing.
