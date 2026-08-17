@@ -3,6 +3,8 @@
 ![Version](https://img.shields.io/github/package-json/v/luca-liceti/TraceGuard-Privacy-Extension?filename=traceguard-extension/package.json&label=version)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![CI](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/actions/workflows/ci.yml/badge.svg)](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/actions/workflows/ci.yml)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/REPLACE_WITH_EXTENSION_ID)
+<!-- TODO: replace the Chrome Web Store link above with the live listing URL (https://chromewebstore.google.com/detail/<EXTENSION_ID>) once the extension is published. -->
 
 TraceGuard is a powerful, real-time privacy scoring and auditing Chrome Extension. It empowers users with transparent insights into how websites interact with their data, helping them make informed decisions about their digital footprint.
 
@@ -19,6 +21,14 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 - **Policy Grading**: A hybrid ToS;DR integration, a bundled database by default, with an optional (off-by-default) live lookup for unrated sites.
 - **Modern Dashboard**: An interactive, responsive control center built with React, Vite, Tailwind CSS, and shadcn/ui.
 - **Local-First**: Everything runs on-device, no accounts, no telemetry, and sensitive data is encrypted behind a master password (the "vault").
+
+## Screenshots
+
+![Dashboard Overview](docs/store-listing/screenshots/dashboard-overview.png)
+
+![Dashboard Rankings](docs/store-listing/screenshots/dashboard-rankings.png)
+
+![Dashboard Safety Scores](docs/store-listing/screenshots/dashboard-safety-scores.png)
 
 ## Threat Feed & Signed Updates
 
@@ -74,6 +84,7 @@ Once installed, TraceGuard runs automatically in the background. You can open th
 ## Getting Help
 
 If you encounter issues or have questions, please use the following resources:
+- **Discussions**: [GitHub Discussions](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/discussions) for questions, ideas, and community support.
 - **Issue Tracker**: [GitHub Issues](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/issues) to report bugs or request features.
 - **Documentation**: Additional setup notes and architectural details are available in the [docs/](docs/) directory.
 - **Privacy Policy**: Read our privacy commitments in [PRIVACY.md](PRIVACY.md).
