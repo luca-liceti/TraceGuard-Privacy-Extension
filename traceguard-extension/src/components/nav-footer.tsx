@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import {
+  Bug,
   Check,
   ChevronsUpDown,
   ExternalLink,
@@ -13,6 +14,8 @@ import {
   Settings,
   Shield,
 } from "lucide-react"
+
+import { openIssues } from "@/lib/support"
 
 import {
   DropdownMenu,
@@ -126,6 +129,10 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
               <DropdownMenuItem onClick={() => navigate('/privacy-policy')}>
                 <Shield className="mr-2 size-4" />
                 {t("Privacy policy")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openIssues()}>
+                <Bug className="mr-2 size-4" />
+                {t("Report an Issue")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
