@@ -28,7 +28,12 @@ import react from '@vitejs/plugin-react'
 import { crx } from '@crxjs/vite-plugin'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import path from 'path'
-import manifest from './manifest.json'
+import rawManifest from './manifest.json'
+import pkg from './package.json'
+
+// package.json is the single source of truth for the version. Inject it into
+// the manifest at build time so the packaged extension always matches.
+const manifest = { ...rawManifest, version: pkg.version }
 
 export default defineConfig({
   base: './',

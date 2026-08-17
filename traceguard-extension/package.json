@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/sync-version.mjs",
     "build": "npm run typecheck && npm run build:phishlist && npm run build:tosdr && vite build",
     "build:phishlist": "node scripts/build-phishlist.js",
     "sign:phishlist": "node scripts/sign-phishlist.js",
