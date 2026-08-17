@@ -11,6 +11,7 @@ build/
 .next/
 out/
 *.tsbuildinfo
+_site/
 
 # Extension build artifacts
 traceguard-extension/dist/
