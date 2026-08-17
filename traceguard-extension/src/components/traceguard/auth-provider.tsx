@@ -338,7 +338,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               </div>
             </form>
             <div className="mt-4 text-balance text-center text-xs text-muted-foreground [&_button]:underline [&_button]:underline-offset-4 hover:[&_button]:text-primary">
-              {t("Before continuing, please review our")}<button type="button" onClick={() => setShowPrivacyPolicy(true)}>{t("Privacy Policy")}</button>.
+              {t("Before continuing, please review our ")}<button type="button" onClick={() => setShowPrivacyPolicy(true)}>{t("Privacy Policy")}</button>.
             </div>
           </CardContent>
         </Card>
