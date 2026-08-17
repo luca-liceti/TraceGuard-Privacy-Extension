@@ -1,13 +1,39 @@
 // Builds a static privacy-policy page from PRIVACY.md for GitHub Pages.
 // Usage: node scripts/build-privacy-site.mjs
 // Output: _site/index.html
+//
+// The "Effective date" is derived from git history: the date of the most
+// recent commit that touched PRIVACY.md. It only changes when the policy
+// text actually changes (never on page load or on every build). Falls back
+// to the date written in PRIVACY.md when git is unavailable.
 
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const md = readFileSync(join(root, "PRIVACY.md"), "utf8");
+
+// Date of the last commit that modified PRIVACY.md, e.g. "August 16, 2026".
+function lastModifiedDate() {
+  try {
+    return execFileSync(
+      "git",
+      ["log", "-1", "--format=%cd", "--date=format:%B %-d, %Y", "--", "PRIVACY.md"],
+      { cwd: root, encoding: "utf8" }
+    ).trim();
+  } catch {
+    return null;
+  }
+}
+
+let md = readFileSync(join(root, "PRIVACY.md"), "utf8");
+
+// Substitute the git-derived date into the "Effective date" line.
+const gitDate = lastModifiedDate();
+if (gitDate) {
+  md = md.replace(/^Effective date:.*$/m, `Effective date: ${gitDate}`);
+}
 
 function inline(text) {
   return text

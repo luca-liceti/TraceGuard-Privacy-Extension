@@ -1,6 +1,6 @@
 # TraceGuard Privacy Policy
 
-Effective date: August 14, 2026
+Effective date: August 16, 2026
 
 TraceGuard is a **local-first privacy journal**. It analyzes the pages you visit on your own
 device to help you understand and change your browsing habits, and stores that analysis locally
