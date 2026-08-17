@@ -69,7 +69,8 @@ export interface InputDetectionResult {
 /**
  * Input Detector - Sensitive Input Field Detection
  * 
- * Detects sensitive input fields on the page by type and name.
+ * Detects sensitive input fields on the page by input type and standardized
+ * autocomplete tokens. We intentionally do not trust arbitrary name/id values.
  * CRITICAL: Only detects field TYPES, never stores actual values (zero PII storage).
  * 
  * Returns: Risk score 0-100
@@ -86,15 +87,60 @@ export function detectSensitiveInputs(): InputDetectionResult {
     for (const input of inputs) {
         const element = input as HTMLInputElement | HTMLTextAreaElement;
         const type = element.type?.toLowerCase() || '';
-        // Standardized signals only (input `type` + `autocomplete`). We deliberately
-        // ignore arbitrary `name`/`id` attributes, which a page can spoof to fabricate
-        // PII events and distort the journal or spam notifications.
+        // We use standardized signals (`type` + `autocomplete`), and fallback to
+        // name/id attributes, placeholders, and labels. While name/id could theoretically
+        // be spoofed, many legitimate sites (like insurance quotes) omit autocomplete and semantic labels.
         const autocomplete = element.autocomplete?.toLowerCase() || '';
+        // Autocomplete may contain an optional section plus billing/shipping
+        // scope before the semantic token, e.g. "shipping address-line1".
+        const autocompleteTokens = autocomplete.split(/\s+/).filter(Boolean);
+        const hasAutocompleteToken = (token: string) => autocompleteTokens.includes(token);
 
-        const isPassword = type === 'password' || autocomplete.includes('password');
-        const isCard = autocomplete === 'cc-number' || autocomplete === 'cc-csc' || autocomplete === 'cc-exp';
-        const isEmail = type === 'email' || autocomplete === 'email';
-        const isPhone = type === 'tel' || autocomplete === 'tel';
+        const isPassword = type === 'password' || autocompleteTokens.some(token => token.includes('password'));
+        const isCard = autocompleteTokens.some(token => ['cc-number', 'cc-csc', 'cc-exp'].includes(token));
+        const isEmail = type === 'email' || hasAutocompleteToken('email');
+        const isPhone = type === 'tel' || hasAutocompleteToken('tel');
+        // Some forms omit autocomplete metadata (as in many insurance quote
+        // forms), so use the field's placeholder, label, name, or id as a fallback.
+        const ariaLabelledby = element.getAttribute('aria-labelledby');
+        let ariaLabelledbyText = '';
+        if (ariaLabelledby) {
+            ariaLabelledbyText = ariaLabelledby.split(/\s+/).map(id => document.getElementById(id)?.textContent).filter(Boolean).join(' ');
+        }
+        const nameAttr = (element.getAttribute('name') || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_]/g, ' ');
+        const idAttr = (element.getAttribute('id') || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_]/g, ' ');
+
+        const visibleMetadata = [
+            element.getAttribute('placeholder'),
+            element.getAttribute('aria-label'),
+            ariaLabelledbyText,
+            nameAttr,
+            idAttr,
+            ...Array.from(document.querySelectorAll('label'))
+                .filter(label => label.htmlFor === element.id || label.contains(element))
+                .map(label => label.textContent)
+        ].filter(Boolean).join(' ').toLowerCase();
+        const hasAddressMetadata = /\b(address|street|city|state|province|region|zip|postal|apartment|apt|unit|county)\b/i.test(visibleMetadata);
+        // Address forms commonly split a physical address across several
+        // fields. These are the standardized HTML autocomplete tokens for
+        // those components; grouping them as "address" keeps the UI concise
+        // while still scoring each requested field.
+        const isAddress = hasAddressMetadata || autocompleteTokens.some(token => [
+            'street-address',
+            'address-line1',
+            'address-line2',
+            'address-line3',
+            'address-level1',
+            'address-level2',
+            'address-level3',
+            'address-level4',
+            'postal-code',
+            'country',
+            'country-name'
+        ].includes(token));
+        
+        const isName = autocompleteTokens.some(token => ['name', 'given-name', 'family-name', 'additional-name', 'honorific-prefix', 'honorific-suffix'].includes(token)) || /\b(first name|last name|full name|middle name)\b/i.test(visibleMetadata);
+        const isUsername = autocompleteTokens.some(token => ['username'].includes(token)) || /\b(username|user name)\b/i.test(visibleMetadata);
 
         if (isPassword) {
             high.push({ element, type: 'password', sensitivity: 'HIGH' });
@@ -104,6 +150,12 @@ export function detectSensitiveInputs(): InputDetectionResult {
             medium.push({ element, type: 'email', sensitivity: 'MEDIUM' });
         } else if (isPhone) {
             medium.push({ element, type: 'phone', sensitivity: 'MEDIUM' });
+        } else if (isAddress) {
+            medium.push({ element, type: 'address', sensitivity: 'MEDIUM' });
+        } else if (isName) {
+            low.push({ element, type: 'name', sensitivity: 'LOW' });
+        } else if (isUsername) {
+            low.push({ element, type: 'username', sensitivity: 'LOW' });
         }
     }
     // Logarithmic score calculation (v3.0)
@@ -127,7 +179,7 @@ export function detectSensitiveInputs(): InputDetectionResult {
     console.log('[Input] Total input fields found:', inputs.length);
     console.log('[Input] Sensitive fields detected:', {
         'HIGH sensitivity (passwords, cards)': high.length,
-        'MEDIUM sensitivity (email, phone)': medium.length,
+        'MEDIUM sensitivity (email, phone, address)': medium.length,
         'LOW sensitivity (name, username)': low.length,
         'Weighted count': weightedCount
     });
