@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-08-17T03:55:33.024Z",
+  "updated": "2026-08-17T04:08:12.976Z",
   "sources": [
     "openphish",
     "phishunt"
@@ -57,6 +57,7 @@
     "allegrolokalnie.283101.pl",
     "allegrolokalnie.lokalna-067.sbs",
     "allegrolokalnie.lokalna-199101.sbs",
+    "allegrolokalnie.lokalna-833.sbs",
     "allegrolokalnie.oferta-247157.cfd",
     "allegrolokalnie.oferta6623738445522.xyz",
     "allegrolokalnie.pi-0910.shop",
