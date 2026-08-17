@@ -34,7 +34,8 @@ import { recordError } from '../lib/error-log';
 import { z } from 'zod';
 import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './services/reputation';
 import { calculateWSS } from '../lib/scoring';
-import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry } from '../lib/types';
+import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState } from '../lib/types';
+import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
@@ -141,12 +142,18 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
 
         const siteData = siteCache[domain];
         const currentState = await storage.getState();
-        
+
         // Only update if it actually changed to avoid unnecessary re-renders.
         // Persist only non-sensitive fields to plaintext state, the full
         // analysis lives in the encrypted siteCache.
-        if (currentState.currentSite?.domain !== siteData?.domain || currentState.currentSite?.lastAnalyzed !== siteData?.lastAnalyzed) {
-            await storage.updateState({ currentSite: siteData ? slimSiteData(siteData) : undefined });
+        //
+        // This sync's cache read may predate a PAGE_ANALYSIS_RESULT that just
+        // landed for the same tab. resolveSyncCurrentSite never downgrades a
+        // fresher currentSite, so a fresh analysis is never clobbered back to
+        // the "not on any website" empty state.
+        const resolution = resolveSyncCurrentSite(domain, siteData, currentState.currentSite);
+        if (resolution.changed) {
+            await storage.updateState({ currentSite: resolution.next });
         }
     } catch (error) {
         console.error('[TabTracking] Error syncing site data:', error);
@@ -638,20 +645,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
  * @param message - The analysis data from the content script
  * @param sender - Information about where the message came from
  */
-/**
- * Reduces a SiteRiskData record to the non-sensitive fields that are safe to
- * persist in the plaintext `state` (chrome.storage.local). The full analysis
- * (detectionDetails + enrichedDetails) lives only in the encrypted siteCache.
- */
-function slimSiteData(site: SiteRiskData): SiteRiskData {
-    return {
-        domain: site.domain,
-        wss: site.wss,
-        breakdown: site.breakdown,
-        lastAnalyzed: site.lastAnalyzed,
-    };
-}
-
 const PageAnalysisSchema = z.object({
     url: z.string(),
     isInitialLoad: z.boolean().optional(),
@@ -887,18 +880,22 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     const newTrackersCount = enrichedDetails ? enrichedDetails.trackers.items.length : 0;
     
     // Only update currentSite if the analysis is from the active tab.
-    // Persist only non-sensitive fields to plaintext state, the full analysis
-    // lives (encrypted) in siteCache.
-    const newCurrentSite = isActiveTab ? slimSiteData(siteData) : state.currentSite;
-    
-    await storage.updateState({
-        ...state,
-        currentSite: newCurrentSite,                                             // The site you're currently on (if active tab)
+    // Persist only the non-sensitive fields to plaintext state, the full
+    // analysis lives (encrypted) in siteCache. Patch only the fields that
+    // changed: spreading a full stale `state` snapshot here could resurrect
+    // an outdated currentSite or counter after a tab switch.
+    const statePatch: Partial<AppState> = {
         sitesAnalyzed: state.sitesAnalyzed + (isUniqueDomain ? 1 : 0),           // Increment the counter only for unique sites today
         trackersDetected: (state.trackersDetected || 0) + (isNewNavigation ? newTrackersCount : 0), // Accumulate once per genuine navigation
-        ups: upsImpact ? upsImpact.newUPS : (state.ups || 100),                  // Your updated privacy score
-        safeVisitStreak: upsImpact ? upsImpact.newStreak : (state.safeVisitStreak || 0) // How many safe sites in a row
-    });
+    };
+    if (upsImpact) {
+        statePatch.ups = upsImpact.newUPS;                                       // Your updated privacy score
+        statePatch.safeVisitStreak = upsImpact.newStreak;                        // How many safe sites in a row
+    }
+    if (isActiveTab) {
+        statePatch.currentSite = slimSiteData(siteData);                         // The site you're currently on (if active tab)
+    }
+    await storage.updateState(statePatch);
 
     // Step 6: Log the UPS change if there was one (for debugging and history)
     const detectorLogsToWrite: Array<Omit<DetectorLogEntry, 'id' | 'timestamp'>> = [];
