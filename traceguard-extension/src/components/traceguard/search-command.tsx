@@ -28,7 +28,7 @@ import {
   Zap,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 
 import {
   CommandDialog,
@@ -128,9 +128,10 @@ export function SearchCommand() {
     setTimeout(async () => {
       if (!confirm(t("Clear all activity logs? This cannot be undone."))) return
       await storage.clearActivityLogs()
-      toast.success(t("Activity Logs Cleared"), {
+      toast.add({
+        type: "success",
+        title: t("Activity Logs Cleared"),
         description: t("All logged events have been removed."),
-        duration: 3000,
       })
     }, 50)
   }
@@ -140,9 +141,10 @@ export function SearchCommand() {
     setTimeout(async () => {
       if (!confirm(t("Reset your Privacy Score to 100? This will clear your browsing history data."))) return
       await storage.resetScore()
-      toast.success(t("Privacy Score Reset"), {
+      toast.add({
+        type: "success",
+        title: t("Privacy Score Reset"),
         description: t("Your UPS has been reset to 100."),
-        duration: 3000,
       })
     }, 50)
   }

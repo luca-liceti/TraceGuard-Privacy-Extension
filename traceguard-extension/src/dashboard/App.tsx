@@ -1,7 +1,7 @@
 import React from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider, useTheme } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "@/components/ui/toast"
 import Layout from "@/components/traceguard/layout"
 import { useSettings } from "@/lib/useStorage"
 import { AuthProvider } from "@/components/traceguard/auth-provider"
@@ -29,7 +29,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 }
 
 import { useEffect } from 'react'
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { useTranslation } from "react-i18next"
 
 // Deep-link: open the settings modal (e.g. from a notification) via ?openSettings=privacy.
@@ -55,8 +55,11 @@ function AppContent() {
 
     useEffect(() => {
         const handleQuotaExceeded = () => {
-            toast.error(t("Storage Full"), {
-                description: t("Couldn't save data — local storage is full. Clear some logs or sites to continue.")
+            toast.add({
+                type: "error",
+                title: t("Storage Full"),
+                description: t("Couldn't save data — local storage is full. Clear some logs or sites to continue."),
+                priority: "high",
             })
         }
         window.addEventListener('QUOTA_EXCEEDED', handleQuotaExceeded)

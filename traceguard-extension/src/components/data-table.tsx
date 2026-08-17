@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 import { z } from "zod"
 import { format } from "date-fns"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
@@ -513,7 +513,7 @@ function GroupedTableBody({
                       {visit.domain}
                     </span>
                     {idx === 0 && (
-                      <Badge className="text-[9px] px-1 py-0 h-3.5 font-medium bg-primary/10 text-primary border-transparent">
+                      <Badge className="text-[10px] px-1.5 py-0 h-4 font-medium bg-primary/15 text-primary border-primary/30 hover:bg-primary/15">
                         {t("Latest")}
                       </Badge>
                     )}
@@ -725,11 +725,11 @@ export function DataTable({
       ], key)
 
       setIsAddLogOpen(false)
-      toast.success(t("Log added successfully"))
+      toast.add({ type: "success", title: t("Log added successfully") })
       form.reset()
     } catch (err) {
       console.error(err)
-      toast.error(t("Failed to save manual log"))
+      toast.add({ type: "error", title: t("Failed to save manual log"), priority: "high" })
     }
   }
 
@@ -742,10 +742,10 @@ export function DataTable({
         JSON.stringify(logs, null, 2),
         `traceguard-logs-${new Date().toISOString().split('T')[0]}.json`
       )
-      toast.success(t("Logs exported successfully"))
+      toast.add({ type: "success", title: t("Logs exported successfully") })
     } catch (e) {
       console.error(e)
-      toast.error(t("Failed to export logs"))
+      toast.add({ type: "error", title: t("Failed to export logs"), priority: "high" })
     }
   }
 
@@ -755,10 +755,10 @@ export function DataTable({
         JSON.stringify(visit, null, 2),
         `traceguard-log-${visit.domain}-${visit.timestamp}.json`
       )
-      toast.success(t("Log exported successfully"))
+      toast.add({ type: "success", title: t("Log exported successfully") })
     } catch (e) {
       console.error(e)
-      toast.error(t("Failed to export log"))
+      toast.add({ type: "error", title: t("Failed to export log"), priority: "high" })
     }
   }
 
@@ -770,10 +770,10 @@ export function DataTable({
         const logTimeWindow = Math.floor(log.timestamp / 5000) * 5000
         return log.domain === visit.domain && logTimeWindow === timeWindow
       }, key)
-      toast.success(t("Log deleted successfully"))
+      toast.add({ type: "success", title: t("Log deleted successfully") })
     } catch (e) {
       console.error(e)
-      toast.error(t("Failed to delete log"))
+      toast.add({ type: "error", title: t("Failed to delete log"), priority: "high" })
     }
   }
 

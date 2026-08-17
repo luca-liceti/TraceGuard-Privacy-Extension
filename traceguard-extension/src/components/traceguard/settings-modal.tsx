@@ -46,7 +46,7 @@ import { useAppState, useSettings } from "@/lib/useStorage"
 import { ExportDataDialog } from "./export-data-dialog"
 import { storage } from "@/lib/storage"
 import { getErrorLog, clearErrorLog, type ErrorLogEntry } from "@/lib/error-log"
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import {
     Bell,
     Database,
@@ -287,9 +287,10 @@ export function SettingsModal() {
         })
 
         setHasChanges(false)
-        toast.success(t('Settings Saved'), {
+        toast.add({
+            type: 'success',
+            title: t('Settings Saved'),
             description: t('Your preferences have been updated successfully.'),
-            duration: 3000
         })
     }
 
@@ -334,9 +335,10 @@ export function SettingsModal() {
         })
 
         setHasChanges(false)
-        toast.info(t('Settings Reset'), {
+        toast.add({
+            type: 'info',
+            title: t('Settings Reset'),
             description: t('Preferences restored to default values.'),
-            duration: 3000
         })
     }
 
@@ -344,25 +346,28 @@ export function SettingsModal() {
         // Canonical path: removes keys so encrypted fields are never replaced
         // by plaintext sentinels. The AlertDialog is the single confirmation.
         await storage.clearActivityLogs()
-        toast.success(t('Activity Logs Cleared'), {
+        toast.add({
+            type: 'success',
+            title: t('Activity Logs Cleared'),
             description: t('All logged events have been removed.'),
-            duration: 3000
         })
     }
 
     const resetPrivacyScore = async () => {
         await storage.resetScore()
-        toast.success(t('Privacy Score Reset'), {
+        toast.add({
+            type: 'success',
+            title: t('Privacy Score Reset'),
             description: t('Your UPS has been reset to 100.'),
-            duration: 3000
         })
     }
 
     const clearAllData = async () => {
         await storage.clearAll()
-        toast.success(t('All Data Cleared'), {
+        toast.add({
+            type: 'success',
+            title: t('All Data Cleared'),
             description: t('Extension data has been reset. Reloading...'),
-            duration: 2000
         })
         setTimeout(() => window.location.reload(), 2000)
     }
@@ -387,7 +392,7 @@ export function SettingsModal() {
             a.click()
             URL.revokeObjectURL(url)
         } catch {
-            toast.error('Could not export error log.')
+            toast.add({ type: 'error', title: 'Could not export error log.', priority: 'high' })
         }
     }
 
@@ -681,7 +686,7 @@ export function SettingsModal() {
                                         if (e.key === 'Enter') {
                                             const val = e.currentTarget.value.trim().toLowerCase();
                                             if (val && !isValidDomain(val)) {
-                                                toast.error(t("Invalid domain"), { description: t("Please enter a valid domain (e.g., example.com)") });
+                                                toast.add({ type: "error", title: t("Invalid domain"), description: t("Please enter a valid domain (e.g., example.com)"), priority: "high" });
                                             } else if (val && !whitelist.includes(val)) {
                                                 setWhitelist([...whitelist, val]);
                                                 handleChange();
@@ -694,7 +699,7 @@ export function SettingsModal() {
                                     const input = document.getElementById('add-whitelist') as HTMLInputElement;
                                     const val = input.value.trim().toLowerCase();
                                     if (val && !isValidDomain(val)) {
-                                        toast.error(t("Invalid domain"), { description: t("Please enter a valid domain (e.g., example.com)") });
+                                        toast.add({ type: "error", title: t("Invalid domain"), description: t("Please enter a valid domain (e.g., example.com)"), priority: "high" });
                                     } else if (val && !whitelist.includes(val)) {
                                         setWhitelist([...whitelist, val]);
                                         handleChange();
@@ -736,7 +741,7 @@ export function SettingsModal() {
                                         if (e.key === 'Enter') {
                                             const val = e.currentTarget.value.trim().toLowerCase();
                                             if (val && !isValidDomain(val)) {
-                                                toast.error(t("Invalid domain"), { description: t("Please enter a valid domain (e.g., example.com)") });
+                                                toast.add({ type: "error", title: t("Invalid domain"), description: t("Please enter a valid domain (e.g., example.com)"), priority: "high" });
                                             } else if (val && !blacklist.includes(val)) {
                                                 setBlacklist([...blacklist, val]);
                                                 handleChange();
@@ -749,7 +754,7 @@ export function SettingsModal() {
                                     const input = document.getElementById('add-blacklist') as HTMLInputElement;
                                     const val = input.value.trim().toLowerCase();
                                     if (val && !isValidDomain(val)) {
-                                        toast.error(t("Invalid domain"), { description: t("Please enter a valid domain (e.g., example.com)") });
+                                        toast.add({ type: "error", title: t("Invalid domain"), description: t("Please enter a valid domain (e.g., example.com)"), priority: "high" });
                                     } else if (val && !blacklist.includes(val)) {
                                         setBlacklist([...blacklist, val]);
                                         handleChange();

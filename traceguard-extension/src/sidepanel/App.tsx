@@ -4,7 +4,7 @@ import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from "react-i18next"
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "@/components/ui/toast"
 
 import { SAFETY_CONFIGS } from "@/lib/risk-utils"
 import { ScoreRing } from "@/components/sidepanel/score-ring"

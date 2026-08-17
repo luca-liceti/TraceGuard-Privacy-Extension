@@ -1,7 +1,7 @@
 "use client"
 
 import { useTranslation } from "react-i18next"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { useNavigate } from "react-router-dom"
 import {
   Bug,
@@ -105,10 +105,14 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
                         onClick={() => {
                           const oldLanguage = i18n.language;
                           i18n.changeLanguage(lang.code);
-                          toast(t("Language changed successfully."), {
-                            action: {
-                              label: t("Undo"),
-                              onClick: () => i18n.changeLanguage(oldLanguage),
+                          const toastId = toast.add({
+                            description: t("Language changed successfully."),
+                            actionProps: {
+                              children: t("Undo"),
+                              onClick: () => {
+                                i18n.changeLanguage(oldLanguage);
+                                toast.close(toastId);
+                              },
                             },
                           });
                         }}

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react"
 import { Lock, Key, ShieldUser, AlertCircle, OctagonAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -279,9 +280,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="setup-password">{t("Master Password")}</Label>
-                  <Input
+                  <PasswordInput
                     id="setup-password"
-                    type="password"
                     placeholder={t("Enter password")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -316,9 +316,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="setup-confirm">{t("Confirm Password")}</Label>
-                  <Input
+                  <PasswordInput
                     id="setup-confirm"
-                    type="password"
                     placeholder={t("Confirm password")}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -366,9 +365,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               <div className="grid gap-6">
                 <div className="grid gap-2">
                   <Label htmlFor="locked-password">{t("Master Password")}</Label>
-                  <Input
+                  <PasswordInput
                     id="locked-password"
-                    type="password"
                     placeholder={t("Enter password")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

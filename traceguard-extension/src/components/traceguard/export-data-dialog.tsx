@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -52,14 +52,18 @@ export function ExportDataDialog({
             await exportAllData(password.length > 0 ? password : null)
             onOpenChange(false)
             reset()
-            toast.success(t("Data Exported"), {
+            toast.add({
+                type: "success",
+                title: t("Data Exported"),
                 description: t("Your data has been exported."),
-                duration: 3000,
             })
         } catch (e) {
             console.error(e)
-            toast.error(t("Export Failed"), {
+            toast.add({
+                type: "error",
+                title: t("Export Failed"),
                 description: t("Could not export data. Please try again."),
+                priority: "high",
             })
         } finally {
             setExporting(false)
