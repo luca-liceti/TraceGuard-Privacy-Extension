@@ -88,3 +88,26 @@ jobs:
           traceguard-extension/traceguard-extension-${{ github.ref_name }}.zip
           traceguard-extension/src/assets/phishlist.signed.json
         generate_release_notes: true
+
+    # Store credentials may be unset on forks, so gate the upload on their
+    # presence (the secrets context is not allowed in if: conditions).
+    - name: Check store credentials
+      id: store-creds
+      env:
+        CLIENT_ID: ${{ secrets.CHROME_WEB_STORE_CLIENT_ID }}
+      run: |
+        if [ -n "$CLIENT_ID" ]; then
+          echo "available=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "available=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Upload to Chrome Web Store
+      if: steps.store-creds.outputs.available == 'true'
+      working-directory: ./traceguard-extension
+      env:
+        CLIENT_ID: ${{ secrets.CHROME_WEB_STORE_CLIENT_ID }}
+        CLIENT_SECRET: ${{ secrets.CHROME_WEB_STORE_CLIENT_SECRET }}
+        REFRESH_TOKEN: ${{ secrets.CHROME_WEB_STORE_REFRESH_TOKEN }}
+        EXTENSION_ID: ${{ vars.EXTENSION_ID }}
+      run: npm run upload:store

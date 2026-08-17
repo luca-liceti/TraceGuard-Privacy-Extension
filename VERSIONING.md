@@ -45,5 +45,21 @@ Other references update on their own:
    ```bash
    git push && git push --tags
    ```
-4. The `Release` workflow builds `traceguard-extension-<tag>.zip` and creates a GitHub release.
-5. Upload the ZIP to the Chrome Web Store.
+4. The `Release` workflow builds `traceguard-extension-<tag>.zip`, creates a GitHub release with
+   auto-generated notes, and uploads the ZIP to the Chrome Web Store.
+
+## Chrome Web Store publishing
+
+The release workflow uploads the built ZIP to the Chrome Web Store automatically. Set these once
+in the repo (Settings > Secrets and variables > Actions):
+
+- Secrets: `CHROME_WEB_STORE_CLIENT_ID`, `CHROME_WEB_STORE_CLIENT_SECRET`,
+  `CHROME_WEB_STORE_REFRESH_TOKEN`. Generate them with the
+  [chrome-webstore-upload-keys](https://github.com/fregante/chrome-webstore-upload-keys) tool
+  (Google API OAuth credentials for your store developer account).
+- Variable: `EXTENSION_ID`, your extension's ID from the Chrome Web Store dashboard.
+
+The upload step is skipped when the credentials are absent (for example on forks). It uploads the
+new version for review; you publish it from the Chrome Web Store dashboard once Google approves.
+To publish automatically instead, change the `upload:store` script to use `publish` instead of
+`upload`.
