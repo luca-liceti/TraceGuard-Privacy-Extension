@@ -1,6 +1,6 @@
 # TraceGuard Privacy Extension
 
-![Version](https://img.shields.io/github/v/release/luca-liceti/TraceGuard-Privacy-Extension?label=version)
+![Version](https://img.shields.io/github/package-json/v/luca-liceti/TraceGuard-Privacy-Extension?filename=traceguard-extension/package.json&label=version)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![CI](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/actions/workflows/ci.yml/badge.svg)](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/actions/workflows/ci.yml)
 

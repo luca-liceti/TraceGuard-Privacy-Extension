@@ -28,8 +28,8 @@ bump the version.
 Other references update on their own:
 
 - `package-lock.json` is updated by `npm version`.
-- The README version badge reads the latest GitHub release tag, so it updates automatically when
-  you cut a release.
+- The README version badge reads the version from `package.json` via shields.io, so it updates
+  automatically whenever the version is bumped (no release required).
 - The `Release` workflow refuses to build if the git tag does not match `package.json`, so a
   mismatched tag can never produce a mislabeled ZIP.
 
