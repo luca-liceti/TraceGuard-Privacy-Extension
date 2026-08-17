@@ -53,7 +53,7 @@ export function ChartAreaInteractive({
 } = {}) {
   const { t } = useTranslation()
   const isMobile = useIsMobile()
-  const [internalTimeRange, setInternalTimeRange] = React.useState("30d")
+  const [internalTimeRange, setInternalTimeRange] = React.useState("1d")
   
   const timeRange = externalTimeRange !== undefined ? externalTimeRange : internalTimeRange
   const setTimeRange = onTimeRangeChange || setInternalTimeRange

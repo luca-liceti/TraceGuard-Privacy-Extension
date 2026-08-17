@@ -11,7 +11,7 @@ export default function OverviewPage() {
   const { t } = useTranslation()
   const detectorLogs = useDetectorLogs()
   const { siteCache } = useSiteCache()
-  const [timeRange, setTimeRange] = React.useState("30d")
+  const [timeRange, setTimeRange] = React.useState("1d")
 
   const groupedVisits = useMemo(() => {
     const groups = new Map<string, { domain: string; timestamp: number; wss: number; detectors: Record<string, { score: number, details: any }> }>()
