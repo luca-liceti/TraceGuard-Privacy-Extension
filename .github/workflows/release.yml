@@ -36,6 +36,9 @@ jobs:
       working-directory: ./traceguard-extension
       run: npm run build:phishlist
 
+    # The signing key is a repo secret and may be unset on forks. The secrets
+    # context is not allowed in if: conditions, so pass it via env and check it
+    # inside bash, exporting an output that later steps gate on.
     - name: Check signing key
       id: signing-key
       shell: bash
