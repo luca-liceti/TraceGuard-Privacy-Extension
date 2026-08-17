@@ -19,7 +19,16 @@ jobs:
         node-version: '20.x'
         cache: 'npm'
         cache-dependency-path: traceguard-extension/package-lock.json
-        
+
+    - name: Verify tag matches package version
+      working-directory: ./traceguard-extension
+      run: |
+        pkg="v$(node -p "require('./package.json').version")"
+        if [ "${{ github.ref_name }}" != "$pkg" ]; then
+          echo "Tag ${{ github.ref_name }} does not match package version $pkg" >&2
+          exit 1
+        fi
+
     - name: Install dependencies
       working-directory: ./traceguard-extension
       run: npm ci --legacy-peer-deps
