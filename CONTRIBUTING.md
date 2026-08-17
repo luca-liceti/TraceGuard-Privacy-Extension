@@ -35,6 +35,11 @@ React, Vite, TypeScript, and Tailwind CSS (shadcn/ui). The extension code lives 
 4. Load `traceguard-extension/dist` as an unpacked extension in Chrome to verify your changes.
 5. Open a pull request against `main`.
 
+## Versioning
+
+Every change that ships counts as a new version. See [VERSIONING.md](VERSIONING.md) for the
+SemVer policy and how the version propagates automatically from `package.json`.
+
 ## License
 
 TraceGuard is licensed under AGPL-3.0 (see [LICENSE](LICENSE)). Contributions are licensed under
