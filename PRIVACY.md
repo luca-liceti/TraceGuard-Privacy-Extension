@@ -10,10 +10,10 @@ in Chrome extension storage. It has no backend and no user accounts.
 
 - Domain names you visit, timestamps, and per-site privacy/safety scores.
 - Tracker domains and cookie **names** with metadata (HttpOnly / Secure / SameSite flags, expiry,
-  third-party status) — never cookie values.
+  third-party status), never cookie values.
 - Third-party request origins and paths (query strings and URL fragments are discarded).
 - Browser fingerprinting attempts and HTTP security headers observed on pages.
-- The **type** of sensitive form field you interacted with (e.g. "password", "email") — never the
+- The **type** of sensitive form field you interacted with (e.g. "password", "email"), never the
   value you typed.
 
 ## What TraceGuard does NOT do

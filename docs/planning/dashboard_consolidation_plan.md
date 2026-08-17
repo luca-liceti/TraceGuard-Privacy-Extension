@@ -2,13 +2,13 @@
 
 ## Background
 
-The TraceGuard dashboard currently has **10 separate pages** spread across the sidebar. After reading all of them, there are clear thematic overlaps and structural redundancies that make the navigation feel bloated for what is fundamentally a browser extension — a relatively compact tool.
+The TraceGuard dashboard currently has **10 separate pages** spread across the sidebar. After reading all of them, there are clear thematic overlaps and structural redundancies that make the navigation feel bloated for what is fundamentally a browser extension, a relatively compact tool.
 
 ---
 
 ## Redundancies Found
 
-### 🔴 Critical Overlaps — Pages That Cover the Same Data
+### 🔴 Critical Overlaps, Pages That Cover the Same Data
 
 #### 1. `sites-analyzed.tsx` vs `website-safety.tsx`
 Both pages show **the exact same data source** (`useSiteCache`) and both display:
@@ -38,7 +38,7 @@ The Overview page is intentionally a summary, but it re-renders non-trivial UI t
 
 These duplication are **expected** for a summary page but the overview currently also has formatting + computation bugs (e.g. a trend fallback path that renders trend text instead of the sparkline). However, this is separate from the redundancy problem.
 
-### 🟡 Moderate Overlaps — Pages That Share Structural DNA
+### 🟡 Moderate Overlaps, Pages That Share Structural DNA
 
 #### 4. `whitelist-blacklist.tsx` has its own local `StatCard` component
 This page defines a private `StatCard` function at the top (lines 57–85) that is almost identical to `@/components/ui/stat-card` (which all other pages already import). The only difference is it lacks `subtitle`, `href`, and `valueColor` props. → **Remove the local copy, use the shared one.**
@@ -96,8 +96,8 @@ This reduces the sidebar from 10 items to 6, which is much more appropriate for 
 #### [DELETE] [sites-analyzed.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/pages/sites-analyzed.tsx)
 #### [MODIFY] [website-safety.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/pages/website-safety.tsx)
 Rename to `sites-safety.tsx`. Add a tab bar with two tabs:
-- **"Safety Analysis"** — existing website-safety content (risk distribution bar, expandable site cards sorted by risk)
-- **"Visit History"** — existing sites-analyzed content (bar chart of most-visited, flat list with visit counts and last-visited dates)
+- **"Safety Analysis"**, existing website-safety content (risk distribution bar, expandable site cards sorted by risk)
+- **"Visit History"**, existing sites-analyzed content (bar chart of most-visited, flat list with visit counts and last-visited dates)
 
 Both tabs share the same search bar (filter applies to whichever tab is active) and the same stat row at the top (merge the two sets of 4 stat cards into a unified 5-card row: Total Sites, Avg Safety, At Risk, Safe, Today's Visits).
 
@@ -108,8 +108,8 @@ Both tabs share the same search bar (filter applies to whichever tab is active) 
 #### [DELETE] [trackers.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/pages/trackers.tsx)
 #### [MODIFY] [activity-logs.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/pages/activity-logs.tsx)
 Add a tab bar with two tabs:
-- **"Visit Logs"** — existing activity-logs content
-- **"Trackers"** — existing trackers content (stat cards + pie chart + top-tracking sites list)
+- **"Visit Logs"**, existing activity-logs content
+- **"Trackers"**, existing trackers content (stat cards + pie chart + top-tracking sites list)
 
 Also replace local `getSafetyLevelLocal` and `getSafetyInfo` with the shared `getSafetyLevel` / `getSafetyConfig` from `@/lib/risk-utils`.
 
@@ -121,8 +121,8 @@ Also replace local `getSafetyLevelLocal` and `getSafetyInfo` with the shared `ge
 #### [DELETE] [help.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/pages/help.tsx)
 #### [MODIFY] [settings.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/pages/settings.tsx)
 Add two new tabs to the existing tab list:
-- **"Help"** — migrate the Quick Start, Key Features, FAQ, and Understanding Scores sections from `help.tsx`
-- **"Integrations"** — migrate the Coming Soon hero + planned integrations grid from `integrations.tsx`
+- **"Help"**, migrate the Quick Start, Key Features, FAQ, and Understanding Scores sections from `help.tsx`
+- **"Integrations"**, migrate the Coming Soon hero + planned integrations grid from `integrations.tsx`
 - Move the "About" info from the existing `about` tab into the Help tab as a footer section. Remove the standalone About tab.
 
 The Settings page already uses a tabs-based layout, making this a natural fit.
@@ -177,7 +177,7 @@ The Settings page already uses a tabs-based layout, making this a natural fit.
 - No orphaned routes (old `/trackers`, `/integrations`, `/help` should 404 or redirect)
 
 ### Files to Check for Hardcoded Route References
-- `overview.tsx` — links to `/website-safety`, `/activity-logs`, `/sites`, `/privacy-score`
-- `sidebar.tsx` — all `href` values
-- `app-sidebar.tsx` — if used, check its route references too
+- `overview.tsx`, links to `/website-safety`, `/activity-logs`, `/sites`, `/privacy-score`
+- `sidebar.tsx`, all `href` values
+- `app-sidebar.tsx`, if used, check its route references too
 - Popup/sidepanel entry points in `src/popup/` and `src/sidepanel/`

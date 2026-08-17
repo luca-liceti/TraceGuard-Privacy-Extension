@@ -68,7 +68,7 @@ async function runAnalysis(isInitialLoad: boolean) {
     }
 
     try {
-        // Respect the user's master on/off toggle — pause journaling when disabled.
+        // Respect the user's master on/off toggle, pause journaling when disabled.
         const { settings } = await chrome.storage.local.get<{ settings?: any }>('settings');
         if (settings?.enabled === false) return;
 

@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * TRACKER ENRICHER — Identifies trackers and assigns metadata
+ * TRACKER ENRICHER, Identifies trackers and assigns metadata
  * =============================================================================
  */
 

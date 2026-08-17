@@ -269,7 +269,7 @@ export function getStatusConfig(ups: number): StatusConfig {
 }
 
 /**
- * Convert a 0-100 score to a letter grade (A–F).
+ * Convert a 0-100 score to a letter grade (A-F).
  * Uses the same WSS/UPS thresholds as getSafetyLevel / getScoreStatus.
  *
  * @param score - Any 0-100 score

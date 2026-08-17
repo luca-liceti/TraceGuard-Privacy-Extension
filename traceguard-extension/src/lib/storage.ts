@@ -128,7 +128,7 @@ async function persistDetectorLogs(
     if (key && typeof raw === 'string') {
         logs = (await decryptData(key, raw)) || [];
     } else if (typeof raw === 'string') {
-        // Vault is locked and data is encrypted — buffer the new logs in the
+        // Vault is locked and data is encrypted, buffer the new logs in the
         // encrypted session buffer so they are not lost.
         const buffered = (await readBuffer<import('./types').DetectorLogEntry[]>('bufferedDetectorLogs')) || [];
         const stamped = newLogs.map(log => ({
@@ -213,7 +213,7 @@ export const storage = {
     },
 
     // Serializes state writes. A shared chain guarantees every caller's write is
-    // applied in order and every returned promise resolves exactly once — the
+    // applied in order and every returned promise resolves exactly once, the
     // previous debounced implementation could orphan a caller's promise (clearing
     // its timer) and permanently hang the telemetry write queue.
     updateState: (function() {
@@ -262,7 +262,7 @@ export const storage = {
         const result = await chrome.storage.local.get('detectorLogs');
         const raw = result.detectorLogs;
         if (key && typeof raw === 'string') return (await decryptData(key, raw)) || [];
-        if (typeof raw === 'string') return []; // locked — cannot decrypt
+        if (typeof raw === 'string') return []; // locked, cannot decrypt
         return (raw || []) as any[];
     },
 
@@ -379,7 +379,7 @@ export const storage = {
         if (key && typeof raw === 'string') {
             exposure = (await decryptData(key, raw)) || {};
         } else if (typeof raw === 'string') {
-            // Vault locked and data is encrypted — buffer instead of dropping.
+            // Vault locked and data is encrypted, buffer instead of dropping.
             const buffered = (await readBuffer<import('./types').CrossSiteExposure>('bufferedExposure')) || {};
             if (!buffered[fieldType]) buffered[fieldType] = [];
             if (!buffered[fieldType].includes(domain)) {
@@ -475,7 +475,7 @@ export const storage = {
         if (key && typeof raw === 'string') {
             notifications = (await decryptData(key, raw)) || [];
         } else if (typeof raw === 'string') {
-            // Vault locked and data is encrypted — buffer instead of dropping.
+            // Vault locked and data is encrypted, buffer instead of dropping.
             const buffered = (await readBuffer<import('./types').NotificationEvent[]>('bufferedNotifications')) || [];
             const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const newNotification: import('./types').NotificationEvent = {

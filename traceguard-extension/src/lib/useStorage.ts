@@ -261,7 +261,7 @@ export function useNotifications() {
 
     useEffect(() => {
         let isMounted = true;
-        // Initial fetch — notifications may now be encrypted
+        // Initial fetch, notifications may now be encrypted
         chrome.storage.local.get('notifications').then(async res => {
             const decrypted = await decryptIfNeeded(res.notifications);
             const notifs = (decrypted || []) as import('./types').NotificationEvent[];

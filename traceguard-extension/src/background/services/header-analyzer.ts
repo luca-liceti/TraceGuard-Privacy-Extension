@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * HEADER ANALYZER — Analyzes HTTP security and privacy headers
+ * HEADER ANALYZER, Analyzes HTTP security and privacy headers
  * =============================================================================
  */
 

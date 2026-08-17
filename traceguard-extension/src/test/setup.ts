@@ -41,7 +41,7 @@ import '@testing-library/jest-dom'
 import { vi, beforeEach } from 'vitest'
 
 // ---------------------------------------------------------------------------
-// In-memory backing stores — reset before each test for full isolation
+// In-memory backing stores, reset before each test for full isolation
 // ---------------------------------------------------------------------------
 let _localStore: Record<string, any> = {};
 let _sessionStore: Record<string, any> = {};

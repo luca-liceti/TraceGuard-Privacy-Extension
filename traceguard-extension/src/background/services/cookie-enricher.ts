@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * COOKIE ENRICHER — Identifies cookies and assigns metadata
+ * COOKIE ENRICHER, Identifies cookies and assigns metadata
  * =============================================================================
  */
 
@@ -80,7 +80,7 @@ export async function enrichCookies(
     };
     
     // 1. Process Network Set-Cookies (most complete source: includes HttpOnly,
-    //    Secure/SameSite flags, expiry, and third-party cookies — all from the
+    //    Secure/SameSite flags, expiry, and third-party cookies, all from the
     //    Set-Cookie headers observed by the network monitor, no `cookies` perm).
     for (const c of networkSetCookies) {
         await processCookie(c.name, c.domain, c.httpOnly, c.secure, c.sameSite, c.expirationDate, 'active');

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * =============================================================================
- * BUILD-DATABASES.JS — Privacy Knowledge Base Builder
+ * BUILD-DATABASES.JS, Privacy Knowledge Base Builder
  * =============================================================================
  *
  * WHAT THIS DOES:
  * Fetches 4 open-source privacy databases at BUILD TIME and processes them into
  * optimized JSON assets the extension bundles locally. Users never make network
- * calls to look up tracker/cookie info — everything is offline.
+ * calls to look up tracker/cookie info, everything is offline.
  *
  * DATABASES:
  * 1. DuckDuckGo Tracker Radar  → tracker-radar.json
@@ -90,7 +90,7 @@ async function buildTrackerRadar() {
     try {
         domains = await fetchJson(domainsUrl);
     } catch (e) {
-        // Domain list is critical — without it the extension cannot detect trackers.
+        // Domain list is critical, without it the extension cannot detect trackers.
         // Rethrow so the build fails rather than shipping an empty database.
         throw new Error(`Failed to fetch Tracker Radar domains (critical): ${e.message}`);
     }
@@ -196,7 +196,7 @@ async function buildCookieDatabase() {
     try {
         csvText = await fetchText(csvUrl);
     } catch (e) {
-        // Cookie database is critical — without it cookie classification is broken.
+        // Cookie database is critical, without it cookie classification is broken.
         // Rethrow so the build fails rather than shipping an empty database.
         throw new Error(`Failed to fetch Open Cookie Database (critical): ${e.message}`);
     }
@@ -286,7 +286,7 @@ async function buildCookieDatabase() {
                 entry,
             });
         } else {
-            // Exact match — use lowercased name as key for case-insensitive lookup
+            // Exact match, use lowercased name as key for case-insensitive lookup
             exact[cookieName.toLowerCase()] = entry;
         }
     }
@@ -360,7 +360,7 @@ async function buildEasyPrivacy() {
     try {
         text = await fetchText(url);
     } catch (e) {
-        // EasyPrivacy is critical — without it tracker domain detection is crippled.
+        // EasyPrivacy is critical, without it tracker domain detection is crippled.
         // Rethrow so the build fails rather than shipping an empty list.
         throw new Error(`Failed to fetch EasyPrivacy (critical): ${e.message}`);
     }
@@ -408,7 +408,7 @@ async function buildDisconnectServices() {
             const alt = 'https://raw.githubusercontent.com/disconnectme/disconnect-tracking-protection/master/services.json';
             data = await fetchJson(alt);
         } catch (e2) {
-            // Disconnect services are critical — without them tracker categorization is broken.
+            // Disconnect services are critical, without them tracker categorization is broken.
             // Rethrow so the build fails rather than shipping an empty database.
             throw new Error(`Failed to fetch Disconnect services from both sources (critical): ${e2.message}`);
         }

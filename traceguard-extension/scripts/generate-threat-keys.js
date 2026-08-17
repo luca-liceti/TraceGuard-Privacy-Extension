@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * GENERATE THREAT-FEED SIGNING KEYS — Ed25519 keypair
+ * GENERATE THREAT-FEED SIGNING KEYS, Ed25519 keypair
  * =============================================================================
  *
  * Generates an Ed25519 keypair used to sign the remote phishlist update

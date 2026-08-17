@@ -161,7 +161,7 @@ export default function RankingsPage() {
     const todayThreats = logs.filter(l => l.timestamp >= startOfToday).length
     const yesterdayThreats = logs.filter(l => l.timestamp >= startOfYesterday && l.timestamp < startOfToday).length
     const threatTrend = yesterdayThreats === 0
-      ? "—"
+      ? ", "
       : `${todayThreats >= yesterdayThreats ? "+" : ""}${Math.round(((todayThreats - yesterdayThreats) / yesterdayThreats) * 100)}%`
     const threatDirection = todayThreats >= yesterdayThreats ? "up" : "down"
 
@@ -337,7 +337,7 @@ export default function RankingsPage() {
         />
         <StatCard
           title={t("Top Offender")}
-          value={heroStats.topOffender ? heroStats.topOffender.replace(/^www\./, "") : "—"}
+          value={heroStats.topOffender ? heroStats.topOffender.replace(/^www\./, "") : ", "}
           subtitle={heroStats.topOffender ? t("Most threats from one domain") : t("No data yet")}
         />
         <StatCard
@@ -347,13 +347,13 @@ export default function RankingsPage() {
         />
         <StatCard
           title={t("Avg. Site Safety")}
-          value={heroStats.avgWSS !== null ? `${heroStats.avgWSS}/100` : "—"}
+          value={heroStats.avgWSS !== null ? `${heroStats.avgWSS}/100` : ", "}
           subtitle={
             heroStats.avgWSS !== null
-              ? heroStats.avgWSS >= 80 ? t("Excellent — keep it up!")
-              : heroStats.avgWSS >= 60 ? t("Good — room to improve")
-              : heroStats.avgWSS >= 40 ? t("Fair — some risky sites")
-              : t("Poor — avoid sensitive actions")
+              ? heroStats.avgWSS >= 80 ? t("Excellent, keep it up!")
+              : heroStats.avgWSS >= 60 ? t("Good, room to improve")
+              : heroStats.avgWSS >= 40 ? t("Fair, some risky sites")
+              : t("Poor, avoid sensitive actions")
               : t("Visit some websites first")
           }
         />
@@ -362,7 +362,7 @@ export default function RankingsPage() {
       {/* ── Main 2-col grid ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
 
-        {/* 1. Activity Volume — full width, AreaChart */}
+        {/* 1. Activity Volume, full width, AreaChart */}
         <Card className="col-span-1 md:col-span-2 @container/card">
           <CardHeader className="relative">
             <CardTitle>{t("Activity Volume")}</CardTitle>
@@ -422,7 +422,7 @@ export default function RankingsPage() {
           </CardContent>
         </Card>
 
-        {/* 2. Top Offenders Leaderboard — full width */}
+        {/* 2. Top Offenders Leaderboard, full width */}
         <Card className="col-span-1 md:col-span-2">
           <CardHeader>
             <CardTitle>{t("Top Offenders Leaderboard")}</CardTitle>
@@ -471,7 +471,7 @@ export default function RankingsPage() {
           </CardContent>
         </Card>
 
-        {/* 3. Threat Categories — half width, color-coded pie */}
+        {/* 3. Threat Categories, half width, color-coded pie */}
         <Card>
           <CardHeader>
             <CardTitle>{t("Threat Categories")}</CardTitle>
@@ -575,7 +575,7 @@ export default function RankingsPage() {
                           />
                         </div>
                         <span className={cn("text-xs font-semibold tabular-nums w-12 text-right", row.events > 0 ? "text-foreground" : "text-muted-foreground")}>
-                          {row.events > 0 ? `${row.avgSafety}/100` : "—"}
+                          {row.events > 0 ? `${row.avgSafety}/100` : ", "}
                         </span>
                       </div>
                     </div>
@@ -586,7 +586,7 @@ export default function RankingsPage() {
           </CardContent>
         </Card>
 
-        {/* 5. Sensitive Data Targeted — half width */}
+        {/* 5. Sensitive Data Targeted, half width */}
         <Card>
           <CardHeader>
             <CardTitle>{t("Sensitive Data Targeted")}</CardTitle>
@@ -640,7 +640,7 @@ export default function RankingsPage() {
           </CardContent>
         </Card>
 
-        {/* 6. WSS Distribution — half width, color-coded bins */}
+        {/* 6. WSS Distribution, half width, color-coded bins */}
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between">

@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * DATABASE LOADER — Lazy-loads bundled privacy databases into memory
+ * DATABASE LOADER, Lazy-loads bundled privacy databases into memory
  * =============================================================================
  *
  * WHAT THIS FILE DOES:

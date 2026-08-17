@@ -90,7 +90,7 @@ src/
 | `/privacy-score` | PrivacyScorePage | ✅ Active |
 | `/rankings` | RankingsPage | ✅ Active |
 | `/help` | HelpPage | ✅ Active |
-| `/activity-logs` | ActivityLogsPage | ❌ Dead — defined but not in router |
+| `/activity-logs` | ActivityLogsPage | ❌ Dead, defined but not in router |
 | `/sites-analyzed` | SitesAnalyzedPage | ❌ Dead |
 | `/sites-safety` | SitesSafetyPage | ❌ Dead |
 | `/trackers` | TrackersPage | ❌ Dead |
@@ -111,7 +111,7 @@ src/
 | Input sub-score | 0–100 | Higher = fewer sensitive fields | [input.ts:L134–136](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/input.ts#L134-L136) |
 | Policy sub-score | 0–100 | Higher = better ToS;DR grade | [policy.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/policy.ts) |
 | Reputation sub-score | 0–100 | Higher = safer | [reputation.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts) |
-| Fingerprinting score | 0–100 | Higher = more FP detected | [fingerprinting.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/fingerprinting.ts) — **not used in WSS** |
+| Fingerprinting score | 0–100 | Higher = more FP detected | [fingerprinting.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/fingerprinting.ts), **not used in WSS** |
 
 **WSS Weights:** Reputation 30% · Tracking 30% · Cookies 20% · Input 15% · Policy 5% · **Fingerprinting 0% (needs fix)**
 
@@ -122,9 +122,9 @@ src/
 | `https://api.tosdr.org/search/v4/?query={domain}` | Base domain only | [tosdr-api.ts:L138](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/tosdr-api.ts#L138) |
 | `https://api.tosdr.org/service/v2/?id={id}` | ToS;DR service ID | [tosdr-api.ts:L189](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/tosdr-api.ts#L189) |
 | `https://urlhaus-api.abuse.ch/v1/host/` | `{ host: hostname }` | [reputation.ts:L133](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts#L133) |
-| `ferf1mheo22r9ira.public.blob.vercel-storage.com` | Avatar image request | [profile.tsx:L23](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/profile.tsx#L23) — **dead code, not loaded** |
+| `ferf1mheo22r9ira.public.blob.vercel-storage.com` | Avatar image request | [profile.tsx:L23](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/profile.tsx#L23), **dead code, not loaded** |
 
-🔄 The external avatar URL in `profile.tsx` is dead code — the file is not imported. The actual sidebar uses `AvatarFallback` (initials) with no external request. **Downgraded from Blocker.**
+🔄 The external avatar URL in `profile.tsx` is dead code, the file is not imported. The actual sidebar uses `AvatarFallback` (initials) with no external request. **Downgraded from Blocker.**
 
 **No analytics, no telemetry, no user tracking.**
 
@@ -151,11 +151,11 @@ src/
 
 ## 3. Partially Implemented / Inconsistent
 
-### 3a. "Trackers Blocked" — Misleading Attribution
+### 3a. "Trackers Blocked", Misleading Attribution
 
 🔄 **Owner clarification**: This stat is meant to track trackers blocked by the user's *browser or other extensions*, not by TraceGuard itself.
 
-**Problem**: The value shown (`appState.trackersDetected`) at [section-cards.tsx:L27](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/section-cards.tsx#L27) is the count of trackers **detected** by TraceGuard's own tracking detector — not trackers blocked by other extensions. There is no mechanism to read block counts from uBlock Origin, Privacy Badger, or the browser's built-in blocker. The label and the data source are mismatched.
+**Problem**: The value shown (`appState.trackersDetected`) at [section-cards.tsx:L27](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/section-cards.tsx#L27) is the count of trackers **detected** by TraceGuard's own tracking detector, not trackers blocked by other extensions. There is no mechanism to read block counts from uBlock Origin, Privacy Badger, or the browser's built-in blocker. The label and the data source are mismatched.
 
 **To fix**: Either (a) rename to "Trackers Detected" to match what the data actually represents, or (b) implement reading block counts from other extensions (complex, may not be possible via Chrome APIs without cooperation from those extensions).
 
@@ -163,11 +163,11 @@ src/
 
 [trackers.tsx:L64–74](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/pages/trackers.tsx#L64-L74) treats `breakdown.tracking` score 0 as "Clean" and >60 as "High." Since tracking score 0 = many trackers and >60 = few trackers, the labels are inverted.
 
-🔄 **Mitigated by**: This page is **not routed** — it's dead code. If it's ever re-added, the bucketing must be fixed first.
+🔄 **Mitigated by**: This page is **not routed**, it's dead code. If it's ever re-added, the bucketing must be fixed first.
 
 ### 3c. Hardcoded Reputation Placeholder
 
-[analyzer.ts:L73](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/analyzer.ts#L73): `const reputationScore = 100` — the comment says the background will overwrite it. The background does replace this with the real reputation check result before computing WSS. However, if the reputation check fails or the URLhaus API is broken (which it currently is — see §4a), this `100` propagates as 30% of the WSS.
+[analyzer.ts:L73](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/analyzer.ts#L73): `const reputationScore = 100`, the comment says the background will overwrite it. The background does replace this with the real reputation check result before computing WSS. However, if the reputation check fails or the URLhaus API is broken (which it currently is, see §4a), this `100` propagates as 30% of the WSS.
 
 ### 3d. Search Bar Missing & Navigation Config Has Dead Routes
 
@@ -175,7 +175,7 @@ The dashboard topbar is currently missing a search bar (needs to be implemented 
 
 ### 3e. `enrichedDetails` Often Empty
 
-The `enrichedDetails` field (cookie organizations, tracker prevalence, network request breakdown, header grades, fingerprinting details) requires the background enrichment pipeline to fully populate. Multiple dashboard columns show "—" fallbacks when this data is missing.
+The `enrichedDetails` field (cookie organizations, tracker prevalence, network request breakdown, header grades, fingerprinting details) requires the background enrichment pipeline to fully populate. Multiple dashboard columns show ", " fallbacks when this data is missing.
 
 🔄 **Owner note**: Cookie organization detection needs reliability work.
 
@@ -183,14 +183,14 @@ The `enrichedDetails` field (cookie organizations, tracker prevalence, network r
 
 ## 4. Broken, Mock, or Missing
 
-### 4a. URLhaus API — Requires API Key
+### 4a. URLhaus API, Requires API Key
 
-🔄 **Researched per owner comment**: The URLhaus API (abuse.ch) **requires an Auth-Key** as of 2025. Keys are obtained free via [auth.abuse.ch](https://auth.abuse.ch) signup — **per-account, not per-project**. You cannot embed a single API key for all users.
+🔄 **Researched per owner comment**: The URLhaus API (abuse.ch) **requires an Auth-Key** as of 2025. Keys are obtained free via [auth.abuse.ch](https://auth.abuse.ch) signup, **per-account, not per-project**. You cannot embed a single API key for all users.
 
 **Options**:
 1. **Remove URLhaus integration** and rely solely on the local blacklist for reputation. This is the simplest path.
 2. **Have users provide their own key** via settings (add an API key field to settings-modal, store in local storage, pass in the request header). Adds friction but keeps the feature.
-3. **Replace with a key-less API** — Google Safe Browsing v4 lookup API allows 10,000 free requests/day with a project API key embedded in the extension. This was listed in the MASTER_PLAN but never implemented.
+3. **Replace with a key-less API**, Google Safe Browsing v4 lookup API allows 10,000 free requests/day with a project API key embedded in the extension. This was listed in the MASTER_PLAN but never implemented.
 
 Currently, all reputation checks via URLhaus silently fail to "safe" (score 100), meaning reputation contributes the maximum 30% to WSS for every site.
 
@@ -240,15 +240,15 @@ Currently: The `notifications` permission is declared in manifest. The `Notifica
 
 ### ✅ PASS: No User Input Values Read
 
-Every content-script detector reads **only metadata** — `element.type`, `element.name`, `element.id`, `element.placeholder`, `element.autocomplete`. Never `element.value`.
+Every content-script detector reads **only metadata**, `element.type`, `element.name`, `element.id`, `element.placeholder`, `element.autocomplete`. Never `element.value`.
 
-The PII detector checks `target.value.length > 0` at [pii-detector.ts:L101](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/pii-detector.ts#L101) — a boolean check, not a value read.
+The PII detector checks `target.value.length > 0` at [pii-detector.ts:L101](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/pii-detector.ts#L101), a boolean check, not a value read.
 
 🔄 **Owner clarification on PII detection intent**: The extension detects that a website *requests* certain PII types, compares this against the site's WSS/reputation, and checks whether the user actually inputs data into those fields. It does **not** compare input content against a stored PII database. The current implementation matches this intent.
 
 ### ✅ PASS: No PII Values Stored or Transmitted
 
-`PII_DETECTED` message payload: `{ timestamp, site, fieldType, fieldName, sensitivity, siteWRS }` — no actual PII.
+`PII_DETECTED` message payload: `{ timestamp, site, fieldType, fieldName, sensitivity, siteWRS }`, no actual PII.
 
 ### ✅ PASS: Outbound Calls Send Only Bare Domains
 
@@ -260,7 +260,7 @@ Zero analytics SDKs, zero telemetry endpoints, zero outbound calls except ToS;DR
 
 ### ✅ PASS: No External Requests from Active Code
 
-🔄 The external Vercel avatar URL in `profile.tsx` is **dead code** — not imported by any file. The active sidebar footer ([nav-footer.tsx:L67](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/nav-footer.tsx#L67)) uses `AvatarImage src=""` (empty, falls through to initials fallback). No undisclosed external requests in active code.
+🔄 The external Vercel avatar URL in `profile.tsx` is **dead code**, not imported by any file. The active sidebar footer ([nav-footer.tsx:L67](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/nav-footer.tsx#L67)) uses `AvatarImage src=""` (empty, falls through to initials fallback). No undisclosed external requests in active code.
 
 ---
 
@@ -282,7 +282,7 @@ Zero analytics SDKs, zero telemetry endpoints, zero outbound calls except ToS;DR
 ### XSS Surface
 
 - No `innerHTML` in source. ✅
-- One `dangerouslySetInnerHTML` in [chart.tsx:L81](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/ui/chart.tsx#L81) — generates CSS theme vars from internal config. **Safe.**
+- One `dangerouslySetInnerHTML` in [chart.tsx:L81](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/ui/chart.tsx#L81), generates CSS theme vars from internal config. **Safe.**
 - All page-derived strings rendered via JSX auto-escaping. ✅
 
 🔄 **Yes, policy URLs should be sanitized.** A page could set its privacy policy link to `javascript:alert(1)`. When a user clicks the ToS;DR link in the sidepanel or site-details-panel, this could execute. Fix: pass the URL through `sanitizeURL()` from [sanitize.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/sanitize.ts) before rendering in `<a href>`.
@@ -306,7 +306,7 @@ This is defense-in-depth. In MV3, content scripts run in an isolated world so a 
 ### Storage
 
 - Encryption at rest via AES-GCM for sensitive data. ✅
-- `siteCache` has **no cap** — could grow unbounded. See punch list.
+- `siteCache` has **no cap**, could grow unbounded. See punch list.
 - No write debouncing. Every state update writes immediately.
 
 ### Privacy Policy
@@ -320,13 +320,13 @@ This is defense-in-depth. In MV3, content scripts run in an isolated world so a 
 ### Error Handling ✅
 All layers (content detectors, background handlers, storage operations) have try/catch with safe defaults. Error boundaries on all UI roots.
 
-### Race Conditions ⚠️ — Must Be Addressed
+### Race Conditions ⚠️, Must Be Addressed
 
 🔄 **Owner confirms this must be fixed.**
 
 `background/index.ts` performs read-modify-write on `siteCache`, `activityLogs`, `state`, and `scoreHistory` without locking.
 
-**Concrete fix — use a write queue:**
+**Concrete fix, use a write queue:**
 ```typescript
 // In background/index.ts
 const writeQueue = new Map<string, Promise<void>>();
@@ -372,11 +372,11 @@ if (cache.size > 200) {
 
 🔄 **Owner note**: Documentation is old and doesn't reflect recent changes. Many changes are in git commit messages.
 
-Key divergences (informational only — not a judgment):
+Key divergences (informational only, not a judgment):
 
 | Area | Docs say | Code does |
 |------|----------|-----------|
-| Languages | 12 (README) | 4 (en/es/fr/de) — 🔄 owner: 4 is the target |
+| Languages | 12 (README) | 4 (en/es/fr/de), 🔄 owner: 4 is the target |
 | WSS factors | 6 including Protocol (MASTER_PLAN) | 5 without Protocol |
 | Dashboard pages | 10 (navigation.ts) | 4 active routes |
 | Fingerprinting | Included in analysis | Runs but 0% WSS weight |
@@ -395,27 +395,27 @@ Key divergences (informational only — not a judgment):
 
 ### 🔴 Blocker (3)
 
-**B1. Fix "Trackers Blocked" label and data source** — [section-cards.tsx:L125](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/section-cards.tsx#L125), [data-table.tsx:L373](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx#L373)
+**B1. Fix "Trackers Blocked" label and data source**, [section-cards.tsx:L125](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/section-cards.tsx#L125), [data-table.tsx:L373](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx#L373)
 - Either rename to "Trackers Detected" (matches current data), or implement a mechanism to read block counts from the browser/other extensions (complex). The current label is a false claim about functionality that doesn't exist.
 
 **B2. Write a privacy policy** for Chrome Web Store
 - Must disclose: local data storage of browsing metadata, outbound requests to tosdr.org (domains only) and abuse.ch (hostnames only), page content metadata scanning. Store it at a hosted URL and link from manifest or store listing.
 
-**B3. Implement Search Bar and Sync Navigation Routes** — [navigation.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/navigation.ts), [search-command.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/search-command.tsx)
+**B3. Implement Search Bar and Sync Navigation Routes**, [navigation.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/navigation.ts), [search-command.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/traceguard/search-command.tsx)
 - The dashboard topbar needs the shadcn search bar implemented. Before exposing it, remove the 6 unrouted pages from `navigationItems` and `settingsSearchItems` so users don't search for and land on blank pages (e.g., "Activity Logs").
 
 ### 🟠 High (7)
 
-**H1. Add fingerprinting to WSS formula** — [scoring.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/scoring.ts), [types.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/types.ts)
+**H1. Add fingerprinting to WSS formula**, [scoring.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/scoring.ts), [types.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/types.ts)
 - Add `fingerprinting` to `ScoreBreakdown`. Implement logarithmic sub-score. Redistribute weights. Update tests.
 
-**H2. Fix race conditions in background storage writes** — [background/index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts)
+**H2. Fix race conditions in background storage writes**, [background/index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts)
 - Implement a per-key write queue or use `chrome.storage.session` as a write lock. See §7 for concrete approach.
 
-**H3. Resolve URLhaus integration** — [reputation.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts)
+**H3. Resolve URLhaus integration**, [reputation.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts)
 - Recommend: Remove URLhaus (requires per-user API key, not viable for a consumer extension). Replace with Google Safe Browsing Lookup API or strengthen the local blacklist instead. Until fixed, reputation is always 100 (30% of WSS is meaningless).
 
-**H4. Delete dead code files** — `profile.tsx`, `integrations.tsx`, `data.json` (contains third-party names)
+**H4. Delete dead code files**, `profile.tsx`, `integrations.tsx`, `data.json` (contains third-party names)
 - These ship in the bundle for no reason. `data.json` has names like "Jamik Tashpulatov" that should not be in a published extension.
 
 **H5. Sanitize policy URLs** in sidepanel and site-details-panel
@@ -423,31 +423,31 @@ Key divergences (informational only — not a judgment):
 
 **H6. Add `sender.id` validation** to the `onMessage` handler at [background/index.ts:L284](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts#L284).
 
-**H7. Add `siteCache` size cap** — Currently unbounded; grows with every unique domain. Add LRU eviction at e.g. 500 entries.
+**H7. Add `siteCache` size cap**, Currently unbounded; grows with every unique domain. Add LRU eviction at e.g. 500 entries.
 
 ### 🟡 Medium (5)
 
-**M1. Implement OS-level notifications** — Call `chrome.notifications.create()` for high-risk/PII events, controlled by existing settings toggles (`notifications.enabled`, `highRisk`, `piiExposure`).
+**M1. Implement OS-level notifications**, Call `chrome.notifications.create()` for high-risk/PII events, controlled by existing settings toggles (`notifications.enabled`, `highRisk`, `piiExposure`).
 
-**M2. Enable database remote updates** — Un-comment fetch URLs in [database-loader.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/database-loader.ts). Add a refresh interval setting (default 7 days). Hook into the existing `alarms` infrastructure.
+**M2. Enable database remote updates**, Un-comment fetch URLs in [database-loader.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/database-loader.ts). Add a refresh interval setting (default 7 days). Hook into the existing `alarms` infrastructure.
 
-**M3. Add write debouncing** — Multiple rapid navigations cause rapid `chrome.storage.local.set()`. Use `debounce()` from [utils.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/utils.ts) on storage writes with a 500ms delay.
+**M3. Add write debouncing**, Multiple rapid navigations cause rapid `chrome.storage.local.set()`. Use `debounce()` from [utils.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/utils.ts) on storage writes with a 500ms delay.
 
 **M4. Update version in manifest.json** from 1.0.0 to match actual release state.
 
-**M5. Cap in-memory caches** — Add max-entries (200) to ToS;DR and URLhaus Maps to prevent memory growth during long sessions. See §7 for implementation.
+**M5. Cap in-memory caches**, Add max-entries (200) to ToS;DR and URLhaus Maps to prevent memory growth during long sessions. See §7 for implementation.
 
 ### 🟢 Low (5)
 
 **L1. Update README language count** from 12 to 4 (en/es/fr/de).
 
-**L2. Decide on dead page files** — The 6 unrouted pages (activity-logs, sites-analyzed, sites-safety, trackers, whitelist-blacklist, integrations) are dead code. Either delete them to reduce bundle size or re-route them if they're intended to come back.
+**L2. Decide on dead page files**, The 6 unrouted pages (activity-logs, sites-analyzed, sites-safety, trackers, whitelist-blacklist, integrations) are dead code. Either delete them to reduce bundle size or re-route them if they're intended to come back.
 
 **L3. Remove `form_focus` from UPSEvent type** and `calculateWRS` deprecated alias from scoring.ts.
 
 **L4. Add offline indicator** to sidepanel when external APIs are unreachable.
 
-**L5. Update/consolidate planning docs** — Or add a note at the top of each doc saying "superseded by git commit history" to avoid confusion.
+**L5. Update/consolidate planning docs**, Or add a note at the top of each doc saying "superseded by git commit history" to avoid confusion.
 
 ---
 

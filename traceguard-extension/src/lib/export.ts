@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * EXPORT — Single canonical "Export Data" path
+ * EXPORT, Single canonical "Export Data" path
  * =============================================================================
  *
  * Both the Settings modal and the search-command palette route through
@@ -54,7 +54,7 @@ function triggerDownload(json: string, passwordProtected: boolean): void {
 export async function exportAllData(password: string | null): Promise<void> {
     const allData: Record<string, unknown> = await chrome.storage.local.get(null);
 
-    // Never export the raw buffer key — it would let a reader decrypt
+    // Never export the raw buffer key, it would let a reader decrypt
     // locked-vault buffered telemetry.
     delete allData.bufferKeyHex;
     delete allData.cryptoKeyHex; // defensive: should never be in local anyway

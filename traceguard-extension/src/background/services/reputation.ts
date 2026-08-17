@@ -158,7 +158,7 @@ export async function checkReputation(url: string): Promise<ReputationResult> {
 
     } catch (error) {
         console.error('[Reputation] Error checking reputation:', error);
-        return { score: 50, checks: ['Reputation check failed — score uncertain'] }; // Default to neutral if invalid URL
+        return { score: 50, checks: ['Reputation check failed, score uncertain'] }; // Default to neutral if invalid URL
     }
 }
 
@@ -175,6 +175,6 @@ export function checkReputationSync(url: string): ReputationResult {
         }
         return { score: 100, checks: [] };
     } catch {
-        return { score: 50, checks: ['Reputation check failed — score uncertain'] };
+        return { score: 50, checks: ['Reputation check failed, score uncertain'] };
     }
 }

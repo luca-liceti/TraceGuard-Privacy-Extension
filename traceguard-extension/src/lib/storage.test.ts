@@ -76,7 +76,7 @@ describe('storage.getState', () => {
 });
 
 // =============================================================================
-// Detector Logs — unencrypted path
+// Detector Logs, unencrypted path
 // =============================================================================
 describe('storage.addDetectorLog (no key)', () => {
     it('adds a log entry with id and timestamp', async () => {
@@ -153,7 +153,7 @@ describe('storage.addDetectorLog (no key)', () => {
 });
 
 // =============================================================================
-// Detector Logs — bulk append
+// Detector Logs, bulk append
 // =============================================================================
 describe('storage.addDetectorLogs (bulk)', () => {
     it('appends many logs in a single write', async () => {
@@ -169,7 +169,7 @@ describe('storage.addDetectorLogs (bulk)', () => {
 });
 
 // =============================================================================
-// Detector Logs — encrypted path
+// Detector Logs, encrypted path
 // =============================================================================
 describe('storage.addDetectorLog (with key)', () => {
     it('stores encrypted ciphertext and buffers when vault locked', async () => {
@@ -216,7 +216,7 @@ describe('storage.addDetectorLog (with key)', () => {
 });
 
 // =============================================================================
-// Notifications — unencrypted path
+// Notifications, unencrypted path
 // =============================================================================
 describe('storage.addNotification (no key)', () => {
     it('adds a notification and returns its id', async () => {
@@ -349,7 +349,7 @@ describe('storage notifications (encrypted)', () => {
 });
 
 // =============================================================================
-// Cross-Site Exposure — unencrypted path
+// Cross-Site Exposure, unencrypted path
 // =============================================================================
 describe('storage.addExposure (no key)', () => {
     it('records a domain for a PII type', async () => {
@@ -382,7 +382,7 @@ describe('storage.addExposure (no key)', () => {
 });
 
 // =============================================================================
-// Cross-Site Exposure — encrypted path
+// Cross-Site Exposure, encrypted path
 // =============================================================================
 describe('storage.addExposure (with key)', () => {
     it('stores encrypted ciphertext when key is provided', async () => {

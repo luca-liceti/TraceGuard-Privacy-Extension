@@ -134,7 +134,7 @@ src/
 |----------|---------|-----------|----------|
 | `https://api.tosdr.org/search/v4/?query={domain}` | Policy detection | Base domain only (e.g. "google") | [tosdr-api.ts:L138](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/tosdr-api.ts#L138) |
 | `https://api.tosdr.org/service/v2/?id={id}` | ToS;DR detail fetch | Service ID | [tosdr-api.ts:L189](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/tosdr-api.ts#L189) |
-| `https://urlhaus-api.abuse.ch/v1/host/` | Reputation check | `{ host: hostname }` — hostname only | [reputation.ts:L133](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts#L133) |
+| `https://urlhaus-api.abuse.ch/v1/host/` | Reputation check | `{ host: hostname }`, hostname only | [reputation.ts:L133](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts#L133) |
 | `chrome.runtime.getURL('assets/blacklist.json')` | Reputation init | (local file, no network) | [reputation.ts:L83](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts#L83) |
 
 **No other outbound calls exist. No analytics/telemetry endpoints.**
@@ -147,7 +147,7 @@ src/
 - ✅ **UPS penalty/recovery**: Penalty scales with site risk context; recovery only on safe site visits (WSS≥70); streak bonus. [pii.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/pii.ts)
 - ✅ **Cookie detector**: Parses `document.cookie`, classifies by known patterns, computes logarithmic score. Never stores cookie values. [cookie.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/cookie.ts)
 - ✅ **Tracking detector**: Scans `<script>`, `<img>`, URL params; matches 70+ known tracker domains; logarithmic score. [tracking.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/tracking.ts)
-- ✅ **Input field detector**: Reads only `type`, `name`, `id`, `placeholder`, `autocomplete` — never `element.value`. [input.ts:L88–L90](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/input.ts#L88-L90)
+- ✅ **Input field detector**: Reads only `type`, `name`, `id`, `placeholder`, `autocomplete`, never `element.value`. [input.ts:L88–L90](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/input.ts#L88-L90)
 - ✅ **Fingerprinting detector**: Scans script content for canvas/WebGL/audio/font APIs. [fingerprinting.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/fingerprinting.ts)
 - ✅ **ToS;DR integration**: Rate-limited (10/min), session-cached, sends only base domain. [tosdr-api.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/tosdr-api.ts)
 - ✅ **Header analyzer**: Grades CSP, HSTS, referrer-policy, X-Frame-Options, X-Content-Type-Options. [header-analyzer.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/header-analyzer.ts)
@@ -182,11 +182,11 @@ But `breakdown.tracking` is 0–100 **higher = safer** (100 = no trackers, 0 = m
 
 ### 3b. "Trackers Blocked" Label
 
-In [section-cards.tsx:L125](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/section-cards.tsx#L125), the card is titled **"Trackers Blocked"** but the extension does not block any trackers — it only *detects* them. The value shown (`appState.trackersDetected`) is a detection count, not a block count. The label misleads users into thinking active protection is happening.
+In [section-cards.tsx:L125](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/section-cards.tsx#L125), the card is titled **"Trackers Blocked"** but the extension does not block any trackers, it only *detects* them. The value shown (`appState.trackersDetected`) is a detection count, not a block count. The label misleads users into thinking active protection is happening.
 
 ### 3c. Hardcoded Reputation Placeholder in Content Script
 
-In [analyzer.ts:L73](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/analyzer.ts#L73), the reputation score is hardcoded to `100` as a "placeholder" that the background is supposed to overwrite. The comment says the background will overwrite it — need to verify that the background actually replaces this value in the final `siteCache` write. If the background's reputation check fails or is slow, this `100` (maximum safety) leaks into the WSS as the reputation component.
+In [analyzer.ts:L73](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/analyzer.ts#L73), the reputation score is hardcoded to `100` as a "placeholder" that the background is supposed to overwrite. The comment says the background will overwrite it, need to verify that the background actually replaces this value in the final `siteCache` write. If the background's reputation check fails or is slow, this `100` (maximum safety) leaks into the WSS as the reputation component.
 
 ### 3d. Profile Component Uses Permanent Hardcoded Defaults
 
@@ -234,7 +234,7 @@ The fingerprinting detector runs and produces results, but `fingerprinting` has 
 
 ### 4g. `enrichedDetails` Often Empty
 
-The `enrichedDetails` field (cookies with organizations, trackers with prevalence, network request breakdown, header grades, fingerprinting details) requires the background enrichment pipeline to fully populate. Multiple dashboard columns ([data-table.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx)) show "—" fallbacks when this data is missing, which appears common.
+The `enrichedDetails` field (cookies with organizations, trackers with prevalence, network request breakdown, header grades, fingerprinting details) requires the background enrichment pipeline to fully populate. Multiple dashboard columns ([data-table.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx)) show ", " fallbacks when this data is missing, which appears common.
 
 ---
 
@@ -251,7 +251,7 @@ Every content-script detector that touches form fields reads **only metadata**:
 
 Verified in:
 - [input.ts:L88–L90](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/detectors/input.ts#L88-L90)
-- [pii-detector.ts:L101](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/pii-detector.ts#L101) — reads `target.value.length > 0` (boolean check only, not the value itself)
+- [pii-detector.ts:L101](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/pii-detector.ts#L101), reads `target.value.length > 0` (boolean check only, not the value itself)
 
 ### ✅ PASS: Cookie Values Never Stored or Transmitted
 
@@ -293,13 +293,13 @@ No analytics SDK, no telemetry endpoint, no user tracking. Zero outbound calls e
 | `storage` | ✅ | Core data persistence |
 | `sidePanel` | ✅ | Side panel UI |
 | `tabs` | ✅ | Active tab detection, URL extraction |
-| `notifications` | ⚠️ Partially | Notification infrastructure exists but notifications are created locally only. The `chrome.notifications` API itself doesn't appear to be called directly — notifications use an in-UI dropdown. Permission may be unnecessary. |
+| `notifications` | ⚠️ Partially | Notification infrastructure exists but notifications are created locally only. The `chrome.notifications` API itself doesn't appear to be called directly, notifications use an in-UI dropdown. Permission may be unnecessary. |
 | `alarms` | ✅ | Periodic database update checks / log cleanup |
 | `cookies` | ✅ | Cookie enricher uses `chrome.cookies.getAll()` |
 | `webRequest` | ✅ | Network monitor for header capture and tracker detection |
 | `<all_urls>` (host) | ✅ | Content scripts and webRequest need to run on all pages |
 
-**Flag:** The `notifications` permission should be verified — if only in-app notifications are used (not OS-level `chrome.notifications`), drop it.
+**Flag:** The `notifications` permission should be verified, if only in-app notifications are used (not OS-level `chrome.notifications`), drop it.
 
 ### 6b. XSS Surface
 
@@ -325,7 +325,7 @@ No `message-validator.ts` module exists despite being referenced in planning doc
 - **Encryption at rest**: Implemented via AES-GCM for `scoreHistory`, `piiDetections`, and `siteCache` when vault is locked. Uses PBKDF2 with 600K iterations. ✅
 - **Quota monitoring**: `getStorageUsage()` reports usage with 5MB default quota. ✅
 - **Write batching/debouncing**: Not implemented. Every state update writes immediately to `chrome.storage.local.set()`. Under heavy browsing, this could cause excessive writes.
-- **Unbounded growth**: `detectorLogs` capped at 1000 entries ✅. `notifications` capped at 100 ✅. `siteCache` has **no cap** — grows with every unique domain visited. Over months of heavy use, this could approach the 5MB quota.
+- **Unbounded growth**: `detectorLogs` capped at 1000 entries ✅. `notifications` capped at 100 ✅. `siteCache` has **no cap**, grows with every unique domain visited. Over months of heavy use, this could approach the 5MB quota.
 
 ### 6f. Privacy Policy
 
@@ -438,7 +438,7 @@ If a page's CSP blocks the content script, no analysis occurs and the sidepanel 
 
 20. **Add offline indicator** to sidepanel when ToS;DR and URLhaus are unreachable, so users understand why scores may be less complete.
 
-21. **Clean up `calculateWRS` legacy function** in scoring.ts — it's deprecated but still exported.
+21. **Clean up `calculateWRS` legacy function** in scoring.ts, it's deprecated but still exported.
 
 22. **Enable remote database updates** in database-loader.ts or document that databases are static.
 

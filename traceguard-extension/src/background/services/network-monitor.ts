@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * NETWORK MONITOR — Observes web requests to detect blocked trackers & headers
+ * NETWORK MONITOR, Observes web requests to detect blocked trackers & headers
  * =============================================================================
  *
  * WHAT THIS FILE DOES:
@@ -46,7 +46,7 @@ export function initNetworkMonitor() {
     // 1. Log every attempted request
     chrome.webRequest.onBeforeRequest.addListener(
         (details): undefined => {
-            if (!monitorEnabled) return; // Paused — observe nothing
+            if (!monitorEnabled) return; // Paused, observe nothing
             if (details.tabId < 0) return; // Ignore background requests
             
             // Initialize tab data on main_frame navigation
@@ -81,7 +81,7 @@ export function initNetworkMonitor() {
                 const isThirdParty = reqUrl.hostname !== mainUrl.hostname && !reqUrl.hostname.endsWith('.' + mainUrl.hostname);
 
                 data.requests[details.url] = {
-                    url: reqUrl.origin, // Origin only — never store the request path
+                    url: reqUrl.origin, // Origin only, never store the request path
                     domain: reqUrl.hostname,
                     resourceType: details.type,
                     organization: null, // Populated during enrichment

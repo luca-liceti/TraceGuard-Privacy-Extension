@@ -15,14 +15,14 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 ### Key Features
 - **Real-Time Tracker Detection**: Identifies third-party trackers using a curated list plus bundled databases (DuckDuckGo Tracker Radar, EasyPrivacy, Disconnect).
 - **PII Monitoring**: Detects sensitive form inputs and warns you before you submit data to low-trust sites.
-- **Cookie Auditing**: Detects tracking cookies from `Set-Cookie` headers and the DOM — cookie names and metadata only, never values (no `cookies` permission required).
-- **Policy Grading**: A hybrid ToS;DR integration — a bundled database by default, with an optional (off-by-default) live lookup for unrated sites.
+- **Cookie Auditing**: Detects tracking cookies from `Set-Cookie` headers and the DOM, cookie names and metadata only, never values (no `cookies` permission required).
+- **Policy Grading**: A hybrid ToS;DR integration, a bundled database by default, with an optional (off-by-default) live lookup for unrated sites.
 - **Modern Dashboard**: An interactive, responsive control center built with React, Vite, Tailwind CSS, and shadcn/ui.
-- **Local-First**: Everything runs on-device — no accounts, no telemetry, and sensitive data is encrypted behind a master password (the "vault").
+- **Local-First**: Everything runs on-device, no accounts, no telemetry, and sensitive data is encrypted behind a master password (the "vault").
 
 ## Threat Feed & Signed Updates
 
-The malware/phishing blocklist is built locally from public, no-account feeds ([OpenPhish](https://openphish.com/feed.txt) and [phishunt](https://phishunt.io)) — matching is done entirely on-device, so your browsing is never sent to a third party.
+The malware/phishing blocklist is built locally from public, no-account feeds ([OpenPhish](https://openphish.com/feed.txt) and [phishunt](https://phishunt.io)), matching is done entirely on-device, so your browsing is never sent to a third party.
 
 To keep that blocklist fresh between extension releases, the background worker periodically fetches a **signed** update (`phishlist.signed.json`) and only accepts it when its Ed25519 signature verifies against an embedded public key, it is fresher than the last accepted feed, and it is newer than what is already stored. Any failure falls back to the bundled snapshot.
 
@@ -34,7 +34,7 @@ npm run build:phishlist        # rebuild src/assets/phishlist.json from the feed
 npm run sign:phishlist         # sign it -> src/assets/phishlist.signed.json (commit this)
 ```
 
-The private key must **never** be committed. Store it as a GitHub Actions secret named `THREAT_SIGNING_KEY` so the release workflow can sign fresh feeds. Rotating the key invalidates all previously signed feeds — regenerate, re-sign, and redeploy the public key (`THREAT_FEED_PUBLIC_KEY_HEX` in `src/background/services/threat-feed.ts`) together.
+The private key must **never** be committed. Store it as a GitHub Actions secret named `THREAT_SIGNING_KEY` so the release workflow can sign fresh feeds. Rotating the key invalidates all previously signed feeds, regenerate, re-sign, and redeploy the public key (`THREAT_FEED_PUBLIC_KEY_HEX` in `src/background/services/threat-feed.ts`) together.
 
 ## Getting Started
 
@@ -82,7 +82,7 @@ If you encounter issues or have questions, please use the following resources:
 
 **TraceGuard** is actively maintained by [@luca-liceti](https://github.com/luca-liceti) and the open-source privacy community.
 
-We welcome contributions of all kinds—from bug fixes to new detectors! To get started:
+We welcome contributions of all kinds, from bug fixes to new detectors! To get started:
 1. Please read our contribution guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
 2. Run `npm run typecheck` and `npm run test:run` (or `npm run build`) to verify your changes before submitting a pull request.
 

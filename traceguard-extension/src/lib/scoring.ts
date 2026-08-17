@@ -48,7 +48,7 @@ const FINGERPRINTING_WEIGHTS: Record<string, number> = {
     webrtc: 3, screen: 1, battery: 1,
 };
 
-/** Converts observed fingerprinting techniques into a 0–100 safety score. */
+/** Converts observed fingerprinting techniques into a 0-100 safety score. */
 export function calculateFingerprintingScore(techniques: readonly string[]): number {
     const weightedTechniques = [...new Set(techniques)].reduce(
         (total, technique) => total + (FINGERPRINTING_WEIGHTS[technique] ?? 1), 0,

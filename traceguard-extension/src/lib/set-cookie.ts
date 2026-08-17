@@ -1,10 +1,10 @@
 /**
  * =============================================================================
- * SET-COOKIE PARSER — Cookie metadata without the `cookies` permission
+ * SET-COOKIE PARSER, Cookie metadata without the `cookies` permission
  * =============================================================================
  *
  * TraceGuard only ever needs a cookie's NAME and METADATA (domain, HttpOnly,
- * Secure, SameSite, expiry) — never its value. A `Set-Cookie` response header
+ * Secure, SameSite, expiry), never its value. A `Set-Cookie` response header
  * carries all of that, so the `cookies` permission (which grants read access
  * to every cookie value across the web) is unnecessary. The network monitor
  * observes `Set-Cookie` headers via `webRequest` and this parser extracts the

@@ -255,7 +255,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
     header: t("Headers"),
     cell: ({ row }) => {
       const grade = row.getValue("headersGrade") as string | undefined
-      if (!grade) return <div className="text-muted-foreground text-xs">—</div>
+      if (!grade) return <div className="text-muted-foreground text-xs">, </div>
       return <div className={`font-semibold ${getGradeTextColor(grade)}`}>{grade}</div>
     },
   },
@@ -264,7 +264,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
     header: t("Fingerprinting"),
     cell: ({ row }) => {
       const count = row.getValue("fingerprintingAttempts") as number | undefined
-      if (count === undefined || count === null) return <div className="text-muted-foreground text-xs">—</div>
+      if (count === undefined || count === null) return <div className="text-muted-foreground text-xs">, </div>
       if (count === 0) return <div>0</div>
       return (
         <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border-transparent">
@@ -449,14 +449,14 @@ function GroupedTableBody({
               <TableCell>
                 {s.headersGrade
                   ? <div className={`font-semibold ${getGradeTextColor(s.headersGrade)}`}>{s.headersGrade}</div>
-                  : <div className="text-muted-foreground text-xs">—</div>
+                  : <div className="text-muted-foreground text-xs">, </div>
                 }
               </TableCell>
 
               {/* Fingerprinting: max */}
               <TableCell>
                 {s.fingerprintingAttempts === undefined || s.fingerprintingAttempts === null
-                  ? <div className="text-muted-foreground text-xs">—</div>
+                  ? <div className="text-muted-foreground text-xs">, </div>
                   : s.fingerprintingAttempts === 0
                     ? <div>0</div>
                     : (
@@ -557,14 +557,14 @@ function GroupedTableBody({
                 <TableCell>
                   {visit.headersGrade
                     ? <div className={`font-semibold text-sm ${getGradeTextColor(visit.headersGrade)}`}>{visit.headersGrade}</div>
-                    : <div className="text-muted-foreground text-xs">—</div>
+                    : <div className="text-muted-foreground text-xs">, </div>
                   }
                 </TableCell>
 
                 {/* Fingerprinting */}
                 <TableCell>
                   {visit.fingerprintingAttempts === undefined || visit.fingerprintingAttempts === null
-                    ? <div className="text-muted-foreground text-xs">—</div>
+                    ? <div className="text-muted-foreground text-xs">, </div>
                     : visit.fingerprintingAttempts === 0
                       ? <div className="text-sm">0</div>
                       : (
@@ -634,7 +634,7 @@ export function DataTable({
     return domainGroups ?? buildDomainGroups(data)
   }, [domainGroups, data])
 
-  // Filter state — we filter groups by domain name
+  // Filter state, we filter groups by domain name
   const [domainFilter, setDomainFilter] = React.useState("")
   const filteredGroups = React.useMemo(() => {
     if (!domainFilter) return groups
@@ -801,7 +801,7 @@ export function DataTable({
             onChange={(e) => setDomainFilter(e.target.value)}
             className="h-8 w-[150px] lg:w-[250px]"
           />
-          {/* Expand / Collapse All — only shown when there are multi-visit groups */}
+          {/* Expand / Collapse All, only shown when there are multi-visit groups */}
           {allExpandable.length > 0 && (
             <Button
               variant="outline"

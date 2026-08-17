@@ -35,7 +35,7 @@ intentionally NOT requested because TraceGuard only needs cookie names/metadata,
 `Set-Cookie` headers already provide.)
 
 When the extension's master on/off toggle is disabled, the network monitor stops observing
-traffic entirely — no requests, cookies, or headers are recorded while paused.
+traffic entirely, no requests, cookies, or headers are recorded while paused.
 
 ## Host Permissions
 

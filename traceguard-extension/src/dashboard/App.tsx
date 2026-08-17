@@ -56,7 +56,7 @@ function AppContent() {
     useEffect(() => {
         const handleQuotaExceeded = () => {
             toast.error(t("Storage Full"), {
-                description: t("Couldn't save data — local storage is full. Clear some logs or sites to continue.")
+                description: t("Couldn't save data, local storage is full. Clear some logs or sites to continue.")
             })
         }
         window.addEventListener('QUOTA_EXCEEDED', handleQuotaExceeded)

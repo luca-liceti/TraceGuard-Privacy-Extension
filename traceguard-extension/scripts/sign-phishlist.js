@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * SIGN PHISHLIST — Produce a signed remote threat-feed artifact
+ * SIGN PHISHLIST, Produce a signed remote threat-feed artifact
  * =============================================================================
  *
  * Reads src/assets/phishlist.json (built by build-phishlist.js) and emits
@@ -8,8 +8,8 @@
  * signature over the canonical payload `{ version, updated, domains }`.
  *
  * The private key is read from, in order:
- *   1. The THREAT_SIGNING_KEY environment variable (PEM string) — used in CI.
- *   2. scripts/keys/threat-signing-key.pem — used locally.
+ *   1. The THREAT_SIGNING_KEY environment variable (PEM string), used in CI.
+ *   2. scripts/keys/threat-signing-key.pem, used locally.
  *
  * Run: node scripts/sign-phishlist.js
  * =============================================================================
@@ -40,7 +40,7 @@ function main() {
   const { version, updated, domains } = data;
 
   if (!Array.isArray(domains) || domains.length === 0) {
-    throw new Error('[sign-phishlist] phishlist.json has no domains — refusing to sign an empty feed.');
+    throw new Error('[sign-phishlist] phishlist.json has no domains, refusing to sign an empty feed.');
   }
 
   const canonical = canonicalPayload(version, updated, domains);

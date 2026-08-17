@@ -40,7 +40,7 @@
  * document.cookie only shows cookies accessible to JavaScript (not HttpOnly).
  * Full cookie attributes (HttpOnly, Secure, SameSite, expiry, third-party
  * domain) are captured by the background network monitor from `Set-Cookie`
- * response headers — no `cookies` permission is required.
+ * response headers, no `cookies` permission is required.
  * =============================================================================
  */
 

@@ -143,7 +143,7 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
         const currentState = await storage.getState();
         
         // Only update if it actually changed to avoid unnecessary re-renders.
-        // Persist only non-sensitive fields to plaintext state — the full
+        // Persist only non-sensitive fields to plaintext state, the full
         // analysis lives in the encrypted siteCache.
         if (currentState.currentSite?.domain !== siteData?.domain || currentState.currentSite?.lastAnalyzed !== siteData?.lastAnalyzed) {
             await storage.updateState({ currentSite: siteData ? slimSiteData(siteData) : undefined });
@@ -496,7 +496,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return;
     }
 
-    // Any message from the extension counts as activity — reset the idle timer.
+    // Any message from the extension counts as activity, reset the idle timer.
     armAutoLock();
 
     // -------------------------------------------------------------------------
@@ -526,7 +526,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             // Fail CLOSED on uncertainty: match checkReputation's own error
             // contract (50 = uncertain), never report a domain as safe (100).
             console.warn('Reputation check failed:', error);
-            sendResponse({ isBlacklisted: false, score: 50, checks: ['Reputation check failed — score uncertain'] });
+            sendResponse({ isBlacklisted: false, score: 50, checks: ['Reputation check failed, score uncertain'] });
         });
 
         return true;  // This tells Chrome to wait for our async response
@@ -684,7 +684,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // history, logs, counters, or notifications.
     const isNewNavigation = message.isInitialLoad !== false;
 
-    // Honor the master on/off toggle — ignore analysis while paused.
+    // Honor the master on/off toggle, ignore analysis while paused.
     const preSettings = await storage.getSettings();
     if (!preSettings.enabled) return;
 
@@ -887,7 +887,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     const newTrackersCount = enrichedDetails ? enrichedDetails.trackers.items.length : 0;
     
     // Only update currentSite if the analysis is from the active tab.
-    // Persist only non-sensitive fields to plaintext state — the full analysis
+    // Persist only non-sensitive fields to plaintext state, the full analysis
     // lives (encrypted) in siteCache.
     const newCurrentSite = isActiveTab ? slimSiteData(siteData) : state.currentSite;
     
@@ -1036,7 +1036,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Check if this site is dangerous enough to warn the user
     // WSS is a safety score: lower = more dangerous
 
-    // Notify on each genuine navigation — SPA re-analyses must not spam alerts.
+    // Notify on each genuine navigation, SPA re-analyses must not spam alerts.
     if (isNewNavigation && wss <= 20) {
         // CRITICAL RISK: Score is 20 or below - this site is very dangerous!
         await createNotification({

@@ -1,4 +1,4 @@
-# 🔒 TraceGuard Privacy Extension — Elite Production Readiness Audit
+# 🔒 TraceGuard Privacy Extension, Elite Production Readiness Audit
 
 **Date:** 2026-08-09  
 **Version Audited:** 1.3.0  
@@ -14,11 +14,11 @@
 TraceGuard is a Chrome Extension (Manifest V3) that provides real-time privacy scoring and analysis. While the core concept and scoring algorithms are sound, the project suffers from **critical security misconfiguration**, **near-zero test coverage**, **missing CI/CD and linting infrastructure**, **data integrity race conditions**, and **over-permissioned manifest declarations** that would result in Chrome Web Store rejection.
 
 ### Biggest Business Risks
-1. **Chrome Web Store Rejection** — `<all_urls>` host permissions and `unlimitedStorage` with `cookies` + `webRequest` will trigger manual review and likely rejection without strong justification.
-2. **User Data Loss** — Concurrent storage writes with encrypted vault can corrupt the site cache, score history, and PII detection records with no backup or recovery mechanism.
-3. **Silent Feature Failures** — The "Add Manual Log" form in the data table silently drops user data. Error boundaries exist but are unused — a single React crash shows a blank white screen.
-4. **Supply Chain Vulnerability** — Build scripts fetch databases from third-party GitHub repos without integrity verification. A compromised upstream could whitelist malware domains.
-5. **Zero CI/CD** — No automated tests, type-checking, or linting run on commits. Regressions ship directly to users.
+1. **Chrome Web Store Rejection**, `<all_urls>` host permissions and `unlimitedStorage` with `cookies` + `webRequest` will trigger manual review and likely rejection without strong justification.
+2. **User Data Loss**, Concurrent storage writes with encrypted vault can corrupt the site cache, score history, and PII detection records with no backup or recovery mechanism.
+3. **Silent Feature Failures**, The "Add Manual Log" form in the data table silently drops user data. Error boundaries exist but are unused, a single React crash shows a blank white screen.
+4. **Supply Chain Vulnerability**, Build scripts fetch databases from third-party GitHub repos without integrity verification. A compromised upstream could whitelist malware domains.
+5. **Zero CI/CD**, No automated tests, type-checking, or linting run on commits. Regressions ship directly to users.
 
 ---
 
@@ -26,7 +26,7 @@ TraceGuard is a Chrome Extension (Manifest V3) that provides real-time privacy s
 
 ---
 
-### FINDING 001 — Overly Broad Permissions Will Cause Chrome Web Store Rejection
+### FINDING 001, Overly Broad Permissions Will Cause Chrome Web Store Rejection
 
 **File:** [manifest.json](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/manifest.json#L21-L33)  
 **Function/Class:** permissions + host_permissions  
@@ -58,7 +58,7 @@ If an attacker finds any XSS or code injection in the extension, the `<all_urls>
 
 ---
 
-### FINDING 002 — Whitelist/Blacklist Matching is Exploitable via Substring Attacks
+### FINDING 002, Whitelist/Blacklist Matching is Exploitable via Substring Attacks
 
 **File:** [reputation.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts#L121-L128)  
 **Function/Class:** `checkReputation()`  
@@ -95,7 +95,7 @@ if (userWhitelist.some(w => domainMatches(domain, w))) { ... }
 
 ---
 
-### FINDING 003 — web_accessible_resources Exposes Internal Pages to All Origins
+### FINDING 003, web_accessible_resources Exposes Internal Pages to All Origins
 
 **File:** [manifest.json](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/manifest.json#L34-L43)  
 **Function/Class:** web_accessible_resources  
@@ -126,7 +126,7 @@ Remove `web_accessible_resources` entirely unless there's a specific cross-origi
 
 ---
 
-### FINDING 004 — Crypto Key Stored in Session Storage as Hex String
+### FINDING 004, Crypto Key Stored in Session Storage as Hex String
 
 **File:** [index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts#L161-L167) and [crypto.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/crypto.ts#L116-L134)  
 **Function/Class:** `getCryptoKey()`, `exportKey()`, `importKey()`  
@@ -138,10 +138,10 @@ The AES-256-GCM key is exported as a raw hex string and stored in `chrome.storag
 
 **Evidence:**
 ```typescript
-// crypto.ts line 17 — key is extractable
+// crypto.ts line 17, key is extractable
 export async function deriveKeyFromPassword(password: string, salt: Uint8Array, extractable = true)
 
-// crypto.ts line 119 — exported as raw hex
+// crypto.ts line 119, exported as raw hex
 export async function exportKey(key: CryptoKey): Promise<string> {
     const exported = await crypto.subtle.exportKey('raw', key);
     return Array.from(new Uint8Array(exported)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -158,7 +158,7 @@ The encryption that protects PII detection history, score history, and site cach
 
 ---
 
-### FINDING 005 — Silent Data Loss: "Add Manual Log" Form is a No-Op
+### FINDING 005, Silent Data Loss: "Add Manual Log" Form is a No-Op
 
 **File:** [data-table.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx)  
 **Function/Class:** `handleAddLogSubmit`  
@@ -166,7 +166,7 @@ The encryption that protects PII detection history, score history, and site cach
 **Category:** Reliability / Data Loss
 
 **Problem:**  
-The "Add Manual Log" dialog's submit handler calls `e.preventDefault()`, closes the dialog, and shows a success toast — but **never reads the form values or persists anything to storage**. Users believe they've successfully logged data, but nothing is saved.
+The "Add Manual Log" dialog's submit handler calls `e.preventDefault()`, closes the dialog, and shows a success toast, but **never reads the form values or persists anything to storage**. Users believe they've successfully logged data, but nothing is saved.
 
 **Evidence:**  
 The handler closes the dialog and toasts "success" without any `chrome.storage` call.
@@ -179,7 +179,7 @@ Implement the actual form submission: read form values via `FormData` or React r
 
 ---
 
-### FINDING 006 — ErrorBoundary Exists But Is Never Used
+### FINDING 006, ErrorBoundary Exists But Is Never Used
 
 **File:** [ErrorBoundary.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/ErrorBoundary.tsx)  
 **Function/Class:** `ErrorBoundary`  
@@ -200,7 +200,7 @@ Wrap each entry point's component tree with `<ErrorBoundary>`.
 
 ---
 
-### FINDING 007 — Storage Race Conditions in Encrypted Vault
+### FINDING 007, Storage Race Conditions in Encrypted Vault
 
 **File:** [useStorage.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/useStorage.ts#L57-L68)  
 **Function/Class:** `decryptIfNeeded()` in storage change listeners  
@@ -213,7 +213,7 @@ The storage hooks perform async decryption when `chrome.storage.onChanged` fires
 **Evidence:**
 ```typescript
 async function decryptIfNeeded(data: any): Promise<any> {
-    // This is async — no ordering guarantee when called from onChanged listeners
+    // This is async, no ordering guarantee when called from onChanged listeners
     const session = await chrome.storage.session.get('cryptoKeyHex');
     const key = await importKey(session.cryptoKeyHex);
     return await decryptData(key, data);
@@ -228,7 +228,7 @@ Implement a version counter or timestamp check. Ignore decryption results if a n
 
 ---
 
-### FINDING 008 — Theme State Desynchronization Across Extension Contexts
+### FINDING 008, Theme State Desynchronization Across Extension Contexts
 
 **File:** [theme-toggle.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/theme-toggle.tsx) and [dashboard/App.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/dashboard/App.tsx)  
 **Function/Class:** Theme system  
@@ -246,7 +246,7 @@ Create a unified theme wrapper that syncs `next-themes` state with `chrome.stora
 
 ---
 
-### FINDING 009 — 70+ Console.log Statements Ship to Production
+### FINDING 009-70+ Console.log Statements Ship to Production
 
 **File:** Multiple files across `src/background/`, `src/content/`, `src/lib/`  
 **Severity:** 🟠 Major  
@@ -281,7 +281,7 @@ const log = {
 
 ---
 
-### FINDING 010 — Supply Chain Risk: Build Scripts Fetch Without Integrity Checks
+### FINDING 010, Supply Chain Risk: Build Scripts Fetch Without Integrity Checks
 
 **File:** [build-databases.js](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/scripts/build-databases.js)  
 **Function/Class:** `fetchJson()`, `fetchText()`  
@@ -297,7 +297,7 @@ The build script downloads privacy databases from 4 third-party GitHub repositor
 
 **Evidence:**
 ```javascript
-// Line 75-77 — Fetching from unpinned `main` branch
+// Line 75-77, Fetching from unpinned `main` branch
 const entitiesUrl = 'https://raw.githubusercontent.com/duckduckgo/tracker-radar/main/build-data/generated/entity_map.json';
 const domainsUrl = 'https://raw.githubusercontent.com/duckduckgo/tracker-radar/main/build-data/generated/domain_summary.json';
 ```
@@ -318,7 +318,7 @@ Complete compromise of the extension's core privacy detection capability.
 
 ---
 
-### FINDING 011 — Runtime Database Refresh Has Same Supply Chain Vulnerability
+### FINDING 011, Runtime Database Refresh Has Same Supply Chain Vulnerability
 
 **File:** [database-loader.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/database-loader.ts#L241-L270)  
 **Function/Class:** `refreshDatabases()`  
@@ -349,7 +349,7 @@ Same as FINDING 010, plus add response size limits and a mechanism to validate d
 
 ---
 
-### FINDING 012 — No CI/CD Pipeline
+### FINDING 012, No CI/CD Pipeline
 
 **File:** None (missing)  
 **Severity:** 🟠 Major  
@@ -375,7 +375,7 @@ Create a GitHub Actions workflow that runs on every PR:
 
 ---
 
-### FINDING 013 — No ESLint or Linting Configuration
+### FINDING 013, No ESLint or Linting Configuration
 
 **File:** None (missing)  
 **Severity:** 🟠 Major  
@@ -396,7 +396,7 @@ Install and configure ESLint with `@typescript-eslint/recommended` and `no-conso
 
 ---
 
-### FINDING 014 — Near-Zero Test Coverage on Critical Paths
+### FINDING 014, Near-Zero Test Coverage on Critical Paths
 
 **File:** [App.test.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/App.test.tsx)  
 **Severity:** 🟠 Major  
@@ -404,15 +404,15 @@ Install and configure ESLint with `@typescript-eslint/recommended` and `no-conso
 
 **Problem:**  
 The only component test is a trivial render smoke test (8 lines). Critical untested paths:
-- Background service worker (1068 lines) — the core "brain" of the extension
-- Crypto module — encryption/decryption
-- Content script detectors — the code that runs on every page
-- Storage hooks — the primary data flow mechanism
+- Background service worker (1068 lines), the core "brain" of the extension
+- Crypto module, encryption/decryption
+- Content script detectors, the code that runs on every page
+- Storage hooks, the primary data flow mechanism
 - All React UI components except a trivial render test
 
 **Evidence:**
 ```tsx
-// The ONLY component test — 8 lines total
+// The ONLY component test, 8 lines total
 test('renders App', () => {
     render(<App />)
 })
@@ -426,7 +426,7 @@ Prioritize tests for: crypto roundtrip, WSS calculation edge cases, message hand
 
 ---
 
-### FINDING 015 — Reputation Check Fails Open (Defaults to "Safe")
+### FINDING 015, Reputation Check Fails Open (Defaults to "Safe")
 
 **File:** [reputation.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/services/reputation.ts#L142-L145)  
 **Function/Class:** `checkReputation()`  
@@ -452,12 +452,12 @@ If storage is corrupted, or the blacklist fails to load, all sites are treated a
 **Recommended Fix:**  
 Fail to a neutral score (50) or a "unknown" status, not "safe":
 ```typescript
-return { score: 50, checks: ['Reputation check failed — score uncertain'] };
+return { score: 50, checks: ['Reputation check failed, score uncertain'] };
 ```
 
 ---
 
-### FINDING 016 — Rate Limiter Exists But Is Never Used
+### FINDING 016, Rate Limiter Exists But Is Never Used
 
 **File:** [rate-limiter.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/rate-limiter.ts#L199-L203)  
 **Function/Class:** `rateLimiters`  
@@ -480,7 +480,7 @@ Either integrate the rate limiter into `tosdr-api.ts` or remove the dead code.
 
 ---
 
-### FINDING 017 — Duplicate Interface Definitions
+### FINDING 017, Duplicate Interface Definitions
 
 **File:** [rate-limiter.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/rate-limiter.ts#L35-L60)  
 **Severity:** 🟡 Minor  
@@ -491,7 +491,7 @@ Either integrate the rate limiter into `tosdr-api.ts` or remove the dead code.
 
 ---
 
-### FINDING 018 — Duplicate Hook Files
+### FINDING 018, Duplicate Hook Files
 
 **File:** [use-mobile.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/hooks/use-mobile.ts) and [use-mobile.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/hooks/use-mobile.tsx)  
 **Severity:** 🟡 Minor  
@@ -502,7 +502,7 @@ Two identical files provide the same `useIsMobile` hook. Updates to one won't pr
 
 ---
 
-### FINDING 019 — Accessibility Violations in Data Table
+### FINDING 019, Accessibility Violations in Data Table
 
 **File:** [data-table.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/components/data-table.tsx)  
 **Severity:** 🟠 Major  
@@ -516,7 +516,7 @@ Fails WCAG 2.1 Level A compliance. Potential legal liability and Chrome Web Stor
 
 ---
 
-### FINDING 020 — MutationObserver Performance Risk on Complex Pages
+### FINDING 020, MutationObserver Performance Risk on Complex Pages
 
 **File:** [content/index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/index.ts#L99-L132)  
 **Function/Class:** MutationObserver  
@@ -534,7 +534,7 @@ Add a maximum re-analysis limit per page load (e.g., 3 re-analyses max), or use 
 
 ---
 
-### FINDING 021 — Dead Scratch Files Committed to Repository
+### FINDING 021, Dead Scratch Files Committed to Repository
 
 **File:** `test-angles.js`, `test-custom-shape.js`, `test-props.js`, `test-math.js`, `patch.js`, `patch-shadow.js`, `fix-colors.js`  
 **Severity:** 🟡 Minor  
@@ -545,7 +545,7 @@ Multiple one-off test and patch scripts are committed to the repository. These a
 
 ---
 
-### FINDING 022 — PII Detector Reads `target.value.length` — Indirect Data Access
+### FINDING 022, PII Detector Reads `target.value.length`, Indirect Data Access
 
 **File:** [pii-detector.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/pii-detector.ts#L101)  
 **Function/Class:** Input handler  
@@ -565,7 +565,7 @@ Minor trust issue if disclosed in a security audit. The value itself isn't logge
 
 ---
 
-### FINDING 023 — Godly Sidepanel Component (34KB, 519 Lines)
+### FINDING 023, Godly Sidepanel Component (34KB, 519 Lines)
 
 **File:** [sidepanel/App.tsx](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/sidepanel/App.tsx)  
 **Severity:** 🟠 Major  
@@ -576,7 +576,7 @@ The sidepanel's `App.tsx` is a single 519-line god component mixing UI rendering
 
 ---
 
-### FINDING 024 — Content Script Sends Unvalidated Message Data to Background
+### FINDING 024, Content Script Sends Unvalidated Message Data to Background
 
 **File:** [content/index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/content/index.ts#L79-L87)  
 **Function/Class:** `runAnalysis()`  
@@ -589,7 +589,7 @@ The `handlePageAnalysis()` function in the background script accepts `message: a
 **Evidence:**
 ```typescript
 async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSender) {
-    // message.url used directly in new URL() — could crash on malformed input
+    // message.url used directly in new URL(), could crash on malformed input
     const domain = new URL(message.url).hostname;
 ```
 
@@ -598,7 +598,7 @@ Validate messages with Zod (already a dependency) before processing.
 
 ---
 
-### FINDING 025 — No Backup or Data Export for User Data
+### FINDING 025, No Backup or Data Export for User Data
 
 **File:** None (missing feature)  
 **Severity:** 🟠 Major  
@@ -609,7 +609,7 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 
 ---
 
-### FINDING 026 — README Displays a Hardcoded "Build Status: Passing" Badge Without Any CI
+### FINDING 026, README Displays a Hardcoded "Build Status: Passing" Badge Without Any CI
 
 **File:** [README.md](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/README.md)  
 **Function/Class:** Badge image  
@@ -617,7 +617,7 @@ All user data (privacy scores, PII detection history, site cache, settings) is s
 **Category:** Trust / Infrastructure
 
 **Problem:**  
-The README displays a static `build-passing-brightgreen` badge rendered from a hardcoded shields.io URL. It is not wired to any CI pipeline — FINDING 012 confirms none exists. The badge is permanently green regardless of whether the code builds or tests pass.
+The README displays a static `build-passing-brightgreen` badge rendered from a hardcoded shields.io URL. It is not wired to any CI pipeline, FINDING 012 confirms none exists. The badge is permanently green regardless of whether the code builds or tests pass.
 
 **Evidence:**
 ```markdown
@@ -634,7 +634,7 @@ Remove the static badge immediately. Replace it with a real GitHub Actions workf
 
 ---
 
-### FINDING 027 — Crypto Key Derivation Does Not Verify Salt Uniqueness
+### FINDING 027, Crypto Key Derivation Does Not Verify Salt Uniqueness
 
 **File:** [crypto.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/crypto.ts) and [background/index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts#L161-L167)  
 **Function/Class:** `deriveKeyFromPassword()`  
@@ -642,11 +642,11 @@ Remove the static badge immediately. Replace it with a real GitHub Actions workf
 **Category:** Security / Cryptography
 
 **Problem:**  
-FINDING 004 covers the extractable-key risk, but the salt used in key derivation requires independent scrutiny. If the salt passed to `deriveKeyFromPassword()` is static, hardcoded, or reused across sessions — rather than freshly generated via `crypto.getRandomValues()` for each new vault — the AES-256-GCM key derivation is effectively deterministic. A static salt means that two users with the same password produce the same encryption key, and an attacker with access to the ciphertext and the fixed salt can run an offline dictionary attack against the password with no per-user cost.
+FINDING 004 covers the extractable-key risk, but the salt used in key derivation requires independent scrutiny. If the salt passed to `deriveKeyFromPassword()` is static, hardcoded, or reused across sessions, rather than freshly generated via `crypto.getRandomValues()` for each new vault, the AES-256-GCM key derivation is effectively deterministic. A static salt means that two users with the same password produce the same encryption key, and an attacker with access to the ciphertext and the fixed salt can run an offline dictionary attack against the password with no per-user cost.
 
 **Evidence:**
 ```typescript
-// crypto.ts — salt is a parameter, not generated internally
+// crypto.ts, salt is a parameter, not generated internally
 export async function deriveKeyFromPassword(
     password: string,
     salt: Uint8Array,    // caller controls whether this is random or constant
@@ -658,7 +658,7 @@ The audit has not verified whether the call site in `index.ts` generates the sal
 **Attack Scenario:**  
 1. Attacker exfiltrates `chrome.storage.local` data (possible via a compromised co-installed extension)  
 2. Salt is static or stored alongside the ciphertext without per-session uniqueness  
-3. Attacker runs an offline PBKDF2 dictionary attack — no per-user salt means all users share the same attack surface  
+3. Attacker runs an offline PBKDF2 dictionary attack, no per-user salt means all users share the same attack surface  
 4. Entire encrypted vault (PII history, score history, site cache) is decrypted
 
 **Impact:**  
@@ -672,7 +672,7 @@ If the salt is reused, encryption strength degrades from AES-256-GCM to a passwo
 
 ---
 
-### FINDING 028 — chrome.storage Quota Exhaustion Silently Drops Writes
+### FINDING 028, chrome.storage Quota Exhaustion Silently Drops Writes
 
 **File:** [useStorage.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/lib/useStorage.ts) and [background/index.ts](file:///home/luca/Documents/Github%20Projects/TraceGuard-Privacy-Extension/traceguard-extension/src/background/index.ts)  
 **Function/Class:** Storage write operations  
@@ -680,7 +680,7 @@ If the salt is reused, encryption strength degrades from AES-256-GCM to a passwo
 **Category:** Reliability / Data Loss
 
 **Problem:**  
-The scalability section of this audit notes the 5MB `chrome.storage.local` quota ceiling, but does not identify the runtime consequence: when the quota is exceeded, calls to `chrome.storage.local.set()` reject with a `QUOTA_BYTES quota exceeded` error. If this rejection is not caught and surfaced, writes silently fail. The user's privacy event records, PII detection logs, and score history are dropped without indication — the same silent data loss pattern as FINDING 005, but triggered by storage pressure rather than a missing call.
+The scalability section of this audit notes the 5MB `chrome.storage.local` quota ceiling, but does not identify the runtime consequence: when the quota is exceeded, calls to `chrome.storage.local.set()` reject with a `QUOTA_BYTES quota exceeded` error. If this rejection is not caught and surfaced, writes silently fail. The user's privacy event records, PII detection logs, and score history are dropped without indication, the same silent data loss pattern as FINDING 005, but triggered by storage pressure rather than a missing call.
 
 **Evidence:**  
 Chrome's API enforces a hard quota of approximately 5MB for `chrome.storage.local`. A power user who visits many distinct sites and accumulates enriched site cache entries, tracker records, and encrypted vault data will hit this ceiling. The current codebase does not appear to check `chrome.storage.local.getBytesInUse()` before writes or handle the quota exceeded rejection in write paths.
@@ -688,7 +688,7 @@ Chrome's API enforces a hard quota of approximately 5MB for `chrome.storage.loca
 **Impact:**  
 - Users who visit a large number of distinct sites will silently lose all subsequent PII detection logs and score history with no UI warning
 - Storage writes fail without any error toast, making the product appear functional while discarding data
-- Identical in user-visible effect to FINDING 005 — a success state that hides a failure
+- Identical in user-visible effect to FINDING 005, a success state that hides a failure
 
 **Recommended Fix:**  
 - Add a proactive `chrome.storage.local.getBytesInUse()` check before large writes and emit a warning toast when usage exceeds 80% of quota
@@ -696,7 +696,7 @@ Chrome's API enforces a hard quota of approximately 5MB for `chrome.storage.loca
 ```typescript
 chrome.storage.local.set(data, () => {
     if (chrome.runtime.lastError?.message?.includes('QUOTA_BYTES')) {
-        showToast('Storage limit reached — oldest records will be pruned', 'warning');
+        showToast('Storage limit reached, oldest records will be pruned', 'warning');
     }
 });
 ```
@@ -714,7 +714,7 @@ chrome.storage.local.set(data, () => {
 | **Database** | 5/10 | Reasonable cache eviction (5000 LRU), but no backup, silent corruption recovery, 5MB storage ceiling |
 | **Infrastructure** | 1/10 | Zero CI/CD, zero linting, no deployment pipeline, no automated testing |
 | **Reliability** | 3/10 | Silent data loss in form, race conditions in encrypted storage, fail-open security |
-| **Scalability** | 6/10 | Chrome extension — single-user by nature, but IndexedDB for large databases is appropriate |
+| **Scalability** | 6/10 | Chrome extension, single-user by nature, but IndexedDB for large databases is appropriate |
 | **Testing** | 1/10 | ~2% code coverage. 3 test files, 2 are utility-only. Zero integration tests. |
 | **Observability** | 2/10 | 70+ production console.logs (bad), no structured logging, no telemetry, no crash reporting |
 | **AI Safety** | N/A | No AI/LLM features detected in codebase |
@@ -725,8 +725,8 @@ chrome.storage.local.set(data, () => {
 
 | # | Finding | Severity | Exploitability | Business Impact |
 |---|---|---|---|---|
-| 002 | Whitelist substring bypass | 🔴 Critical | Easy — register a subdomain | Phishing sites bypass all warnings |
-| 003 | web_accessible_resources exposure | 🔴 Critical | Trivial — any website | Extension fingerprinting undermines privacy promise |
+| 002 | Whitelist substring bypass | 🔴 Critical | Easy, register a subdomain | Phishing sites bypass all warnings |
+| 003 | web_accessible_resources exposure | 🔴 Critical | Trivial, any website | Extension fingerprinting undermines privacy promise |
 | 001 | Over-broad manifest permissions | 🔴 Critical | N/A (policy) | Chrome Web Store rejection |
 | 005 | Silent data loss in form | 🔴 Critical | User action | Users lose trust in data integrity |
 | 004 | Extractable crypto key in session | 🟠 Major | Requires malicious extension | Encrypted vault compromised |
@@ -763,7 +763,7 @@ chrome.storage.local.set(data, () => {
 |---|---|
 | **100 sites cached** | No issues. Storage well within limits. |
 | **1,000 sites cached** | LRU eviction kicks in at 5,000. Encrypted cache decrypt/encrypt may take 50-100ms. |
-| **10,000 sites visited** | Only 5,000 retained (LRU). Score history capped at 100 entries — user loses historical data. Storage approaching 5MB limit with enriched details. |
+| **10,000 sites visited** | Only 5,000 retained (LRU). Score history capped at 100 entries, user loses historical data. Storage approaching 5MB limit with enriched details. |
 | **100,000 sites** | 5MB `chrome.storage.local` quota will be hit. IndexedDB databases (tracker radar: several MB) are fine. Encrypted vault encrypt/decrypt becomes slow (~500ms). |
 | **1,000,000 sites** | Not relevant for single-user extension. |
 
@@ -827,14 +827,14 @@ chrome.storage.local.set(data, () => {
 | 1 | **Overly broad permissions** | Chrome Web Store will reject the extension |
 | 2 | **Whitelist substring bypass** | Phishing sites can bypass all safety warnings |
 | 3 | **web_accessible_resources exposure** | A privacy extension that enables fingerprinting destroys credibility |
-| 4 | **Silent data loss in "Add Manual Log"** | Broken core feature — users lose trust |
+| 4 | **Silent data loss in "Add Manual Log"** | Broken core feature, users lose trust |
 | 5 | **No ErrorBoundary usage** | Any React crash = blank white screen |
 | 6 | **70+ console.log statements** | Leaks browsing data for a privacy product |
 | 7 | **No CI/CD pipeline** | No way to prevent regressions from shipping |
 | 8 | **Near-zero test coverage** | Cannot verify any change is safe |
 | 9 | **Reputation system fails open** | Errors cause dangerous sites to be marked safe |
 | 10 | **No ESLint** | 60+ `any` types mean TypeScript provides no safety |
-| 11 | **Uncaught storage quota failures** | Power users silently lose data — same effect as FINDING 005, triggered by storage pressure |
+| 11 | **Uncaught storage quota failures** | Power users silently lose data, same effect as FINDING 005, triggered by storage pressure |
 
 ---
 
@@ -890,14 +890,14 @@ chrome.storage.local.set(data, () => {
 
 **Justification:**
 
-1. **Chrome Web Store will reject it** — The `<all_urls>` host permissions combined with `cookies` and `webRequest` require detailed justification and are routinely rejected for new extensions.
+1. **Chrome Web Store will reject it**, The `<all_urls>` host permissions combined with `cookies` and `webRequest` require detailed justification and are routinely rejected for new extensions.
 
-2. **Critical security vulnerabilities** — The whitelist substring bypass (FINDING 002) allows phishing sites to inherit trusted status. The fail-open reputation check (FINDING 015) marks error-state sites as safe. These are both exploitable attack vectors against a **privacy** product.
+2. **Critical security vulnerabilities**, The whitelist substring bypass (FINDING 002) allows phishing sites to inherit trusted status. The fail-open reputation check (FINDING 015) marks error-state sites as safe. These are both exploitable attack vectors against a **privacy** product.
 
-3. **Zero quality infrastructure** — No CI/CD, no linting, no meaningful test coverage. There is literally no automated safety net preventing broken code from shipping to users.
+3. **Zero quality infrastructure**, No CI/CD, no linting, no meaningful test coverage. There is literally no automated safety net preventing broken code from shipping to users.
 
-4. **A privacy extension that leaks data** — 70+ console.log statements expose browsing behavior, internal state, and API responses to the browser console. The `web_accessible_resources` configuration enables the very fingerprinting the extension claims to detect.
+4. **A privacy extension that leaks data**, 70+ console.log statements expose browsing behavior, internal state, and API responses to the browser console. The `web_accessible_resources` configuration enables the very fingerprinting the extension claims to detect.
 
-5. **Silent data loss** — The "Add Manual Log" feature silently drops user data while showing a success message. This is unacceptable for any product, doubly so for a privacy/security tool.
+5. **Silent data loss**, The "Add Manual Log" feature silently drops user data while showing a success message. This is unacceptable for any product, doubly so for a privacy/security tool.
 
 The core concept, scoring algorithms, and detection logic are sound. With 2-4 weeks of focused remediation following the plan above, this extension could reach a **READY WITH MINOR CHANGES** state. In its current form, shipping it to paying customers would create significant legal liability, reputational damage, and user trust erosion.

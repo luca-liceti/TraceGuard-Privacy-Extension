@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * FINGERPRINTING DETECTOR — Detects browser fingerprinting attempts
+ * FINGERPRINTING DETECTOR, Detects browser fingerprinting attempts
  * =============================================================================
  *
  * DETECTION STRATEGY (content-script / ISOLATED world):
@@ -8,12 +8,12 @@
  * Since we cannot wrap page-world APIs from the ISOLATED world, we combine
  * multiple heuristics that can be observed from the DOM:
  *
- * 1. KNOWN FINGERPRINTING SCRIPTS — check external `<script src>` domains
+ * 1. KNOWN FINGERPRINTING SCRIPTS, check external `<script src>` domains
  *    against a curated list of known fingerprinting services.
- * 2. INLINE SCRIPT ANALYSIS — search inline script text for realistic API
+ * 2. INLINE SCRIPT ANALYSIS, search inline script text for realistic API
  *    call patterns using broad regexes that survive minification.
- * 3. DOM EVIDENCE — look for hidden canvases, off-screen iframes, etc.
- * 4. KNOWN LIBRARY GLOBALS — check for well-known fingerprinting library
+ * 3. DOM EVIDENCE, look for hidden canvases, off-screen iframes, etc.
+ * 4. KNOWN LIBRARY GLOBALS, check for well-known fingerprinting library
  *    markers injected into the DOM (e.g. FingerprintJS result attributes).
  * =============================================================================
  */
@@ -87,7 +87,7 @@ const AUDIO_PATTERNS = [
 
 const FONT_PATTERNS = [
     /measureText\s*\(/i,
-    // Font enumeration through width probing — detect characteristic loops
+    // Font enumeration through width probing, detect characteristic loops
     /offsetWidth|offsetHeight/i,
 ];
 
@@ -154,7 +154,7 @@ export function detectFingerprintingAttempts(): RawFingerprintingAttempt[] {
             try {
                 const url = new URL(script.src, window.location.href);
                 if (url.hostname !== currentHost && isKnownFPDomain(url.hostname)) {
-                    // Known fingerprinting service — count as canvas+navigator (typical bundle)
+                    // Known fingerprinting service, count as canvas+navigator (typical bundle)
                     add('canvas', script.src);
                     add('navigator', script.src);
                 }

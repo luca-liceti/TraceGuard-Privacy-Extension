@@ -1,11 +1,11 @@
 /**
  * =============================================================================
- * LOCAL ERROR LOG — On-device diagnostics (zero telemetry)
+ * LOCAL ERROR LOG, On-device diagnostics (zero telemetry)
  * =============================================================================
  *
  * Persists a small ring buffer of recent errors in chrome.storage.local so the
  * user can review/export them when reporting a bug. Nothing ever leaves the
- * device — this exists precisely so we do NOT need remote error reporting.
+ * device, this exists precisely so we do NOT need remote error reporting.
  */
 
 export interface ErrorLogEntry {

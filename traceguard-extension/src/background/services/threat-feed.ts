@@ -2,7 +2,7 @@ import { fetchWithTimeout } from '../../lib/utils';
 
 /**
  * =============================================================================
- * THREAT FEED — Signed remote refresh for the phishing/malware blocklist
+ * THREAT FEED, Signed remote refresh for the phishing/malware blocklist
  * =============================================================================
  *
  * The bundled snapshot (assets/phishlist.json) is trusted because it ships
@@ -15,7 +15,7 @@ import { fetchWithTimeout } from '../../lib/utils';
  *   3. The feed is newer than the last accepted one (anti-rollback).
  *
  * On any failure the bundled snapshot remains in effect. The private key is
- * held only by the developer (as a GitHub Actions secret) — it never ships in
+ * held only by the developer (as a GitHub Actions secret), it never ships in
  * the extension.
  * =============================================================================
  */

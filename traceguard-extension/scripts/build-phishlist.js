@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * BUILD PHISHLIST — Generate phishing-domain blocklist from public feeds
+ * BUILD PHISHLIST, Generate phishing-domain blocklist from public feeds
  * =============================================================================
  *
  * Fetches full phishing-domain lists from public, no-auth sources and emits
