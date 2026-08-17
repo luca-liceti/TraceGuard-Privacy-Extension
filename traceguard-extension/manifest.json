@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "TraceGuard Privacy Extension",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1htz1yebbrUMxPn7mLUR+g2uOowfmdxXNnVORpgVJgQG8xYXVaTGygRAt54xu5h5eYGfjILTr5yQ/ICaONRAVmih0XnPVrrb9oZVgH2J/AyCkoXiOw9rKsAomq6Zpz0R58ChF2Ha1ezdUCUj7OxzQq9IyQJQM20GhAByT7UJv916C9soi8DQsYq1JWDcE80L11J609Na9bBbErLDqata1ZE/hUtzuRTeBVp8ObG/OGh7tUvgVETgmdd+yL/nG1VCzl/07RLN4GLY65xJQXNqmN+xPE9Isb8LZEEhsqltoIRobBTk41YjZPJDt8JtWpKzP5/r9r7GOv2IzLFgqo+mxwIDAQAB",
     "description": "Real-time privacy scoring and protection.",
     "icons": {
@@ -26,12 +26,12 @@
         "tabs",
         "notifications",
         "alarms",
+        "downloads",
         "webRequest"
     ],
     "host_permissions": [
         "*://*/*"
     ],
-
     "content_scripts": [
         {
             "matches": [

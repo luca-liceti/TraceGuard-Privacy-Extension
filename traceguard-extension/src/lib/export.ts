@@ -36,14 +36,53 @@ const VAULT_FIELDS: Array<[string, 'object' | 'array']> = [
     ['notifications', 'array'],
 ];
 
-function triggerDownload(json: string, passwordProtected: boolean): void {
+/**
+ * Reliably saves a JSON payload to the user's machine and resolves only when
+ * the browser has actually finished writing the file (or rejects when the
+ * save was cancelled or interrupted). Uses the `downloads` API when available
+ * so the caller never shows a false "exported" toast for a save that did not
+ * happen.
+ */
+export async function downloadJson(json: string, filename: string): Promise<void> {
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
+
+    if (typeof chrome.downloads?.download === 'function') {
+        const id = await chrome.downloads.download({ url, filename, saveAs: false });
+        await new Promise<void>((resolve, reject) => {
+            const listener = (delta: chrome.downloads.DownloadDelta) => {
+                if (delta.id !== id || !delta.state) return;
+                chrome.downloads.onChanged.removeListener(listener);
+                URL.revokeObjectURL(url);
+                if (delta.state.current === 'complete') {
+                    resolve();
+                } else {
+                    reject(new Error(`Download ended with state '${delta.state.current}'`));
+                }
+            };
+            chrome.downloads.onChanged.addListener(listener);
+        });
+        return;
+    }
+
+    // Fallback for contexts without the downloads permission: anchor click.
+    // The blob URL must outlive the save, so revoke it late instead of
+    // immediately — an immediate revoke can abort a download that is waiting
+    // on the OS "save as" dialog.
     const a = document.createElement('a');
     a.href = url;
-    a.download = `traceguard-backup${passwordProtected ? '-encrypted' : ''}-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = filename;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
+async function triggerDownload(json: string, passwordProtected: boolean): Promise<void> {
+    await downloadJson(
+        json,
+        `traceguard-backup${passwordProtected ? '-encrypted' : ''}-${new Date().toISOString().split('T')[0]}.json`
+    );
 }
 
 /**
@@ -107,8 +146,8 @@ export async function exportAllData(password: string | null): Promise<void> {
             },
             payload,
         };
-        triggerDownload(JSON.stringify(envelope, null, 2), true);
+        await triggerDownload(JSON.stringify(envelope, null, 2), true);
     } else {
-        triggerDownload(JSON.stringify(allData, null, 2), false);
+        await triggerDownload(JSON.stringify(allData, null, 2), false);
     }
 }

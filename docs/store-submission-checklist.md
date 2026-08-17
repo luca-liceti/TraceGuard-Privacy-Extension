@@ -55,6 +55,7 @@ The store asks you to justify every permission. Draft these:
 - [ ] `tabs` — reading the active tab's URL to score the current site
 - [ ] `notifications` — alerting you to critical privacy/security findings
 - [ ] `alarms` — scheduled background tasks (e.g. threat feed refresh)
+- [ ] `downloads` — saving JSON exports (activity logs, data backups) to your device; the file is written locally and never sent anywhere
 - [ ] `webRequest` — observing network requests to detect trackers
 - [ ] `host_permissions` (`*://*/*`) — "Read and change all your data on all
       websites" — required to scan page content and detect trackers/PII in

@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label"
 import { getGradeTextColor, getSafetyBgColor, getSafetyTextColor } from "@/lib/theme-utils"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { storage } from "@/lib/storage"
+import { downloadJson } from "@/lib/export"
 
 import {
   DropdownMenu,
@@ -671,6 +672,7 @@ export function DataTable({
   }
 
   const [isAddLogOpen, setIsAddLogOpen] = React.useState(false)
+  const [exportOpen, setExportOpen] = React.useState(false)
   const [selectedVisit, setSelectedVisit] = React.useState<SiteVisit | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -732,18 +734,14 @@ export function DataTable({
   }
 
   const handleExport = async () => {
+    setExportOpen(false)
     try {
       const key = await storage.getVaultKey()
       const logs = await storage.getDetectorLogs(key)
-      const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `traceguard-logs-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await downloadJson(
+        JSON.stringify(logs, null, 2),
+        `traceguard-logs-${new Date().toISOString().split('T')[0]}.json`
+      )
       toast.success(t("Logs exported successfully"))
     } catch (e) {
       console.error(e)
@@ -751,17 +749,12 @@ export function DataTable({
     }
   }
 
-  const handleExportSingleLog = (visit: SiteVisit) => {
+  const handleExportSingleLog = async (visit: SiteVisit) => {
     try {
-      const blob = new Blob([JSON.stringify(visit, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `traceguard-log-${visit.domain}-${visit.timestamp}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await downloadJson(
+        JSON.stringify(visit, null, 2),
+        `traceguard-log-${visit.domain}-${visit.timestamp}.json`
+      )
       toast.success(t("Log exported successfully"))
     } catch (e) {
       console.error(e)
@@ -817,7 +810,7 @@ export function DataTable({
           )}
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
             <DownloadIcon />
             <span className="hidden lg:inline">{t("Export")}</span>
           </Button>
@@ -903,6 +896,26 @@ export function DataTable({
                   <Button type="submit">{t("Save log")}</Button>
                 </DialogFooter>
               </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* ── Export Logs confirmation ─────────────────────────────────── */}
+          <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{t("Export Logs")}</DialogTitle>
+                <DialogDescription>
+                  {t("Download your activity logs as a JSON file to your device.")}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setExportOpen(false)}>
+                  {t("Cancel")}
+                </Button>
+                <Button onClick={handleExport}>
+                  {t("Export")}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
