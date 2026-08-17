@@ -51,12 +51,12 @@ export function getSafetyTextColor(level: string | undefined | null): string {
  */
 export function getSafetyBgColor(level: string | undefined | null): string {
     switch (level?.toLowerCase()) {
-        case "excellent": return "bg-success/10 border-transparent"
-        case "good":      return "bg-success/10 border-transparent"
-        case "fair":      return "bg-warning/10 border-transparent"
-        case "poor":      return "bg-alert/10 border-transparent"
-        case "critical":  return "bg-destructive/10 border-transparent"
-        default: return "bg-muted/20 border-transparent"
+        case "excellent": return "bg-success/15 border-success/30"
+        case "good":      return "bg-success/15 border-success/30"
+        case "fair":      return "bg-warning/15 border-warning/30"
+        case "poor":      return "bg-alert/15 border-alert/30"
+        case "critical":  return "bg-destructive/15 border-destructive/30"
+        default: return "bg-muted/25 border-muted-foreground/20"
     }
 }
 

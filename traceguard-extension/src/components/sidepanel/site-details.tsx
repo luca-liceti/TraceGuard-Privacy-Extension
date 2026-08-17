@@ -100,7 +100,7 @@ export function SiteDetails({ currentSite }: SiteDetailsProps) {
             <CardHeader className="p-4 pb-4 border-b">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium text-muted-foreground">{t("Website Safety")}</CardTitle>
-                    <Badge className={`${getSafetyConfig(currentSiteWSS).bgColor} ${getSafetyConfig(currentSiteWSS).color} hover:${getSafetyConfig(currentSiteWSS).bgColor} border-transparent shadow-none font-medium`}>
+                    <Badge className={`${getSafetyConfig(currentSiteWSS).bgColor} ${getSafetyConfig(currentSiteWSS).borderColor} ${getSafetyConfig(currentSiteWSS).color} hover:${getSafetyConfig(currentSiteWSS).bgColor} shadow-none font-medium`}>
                         {t(getSafetyConfig(currentSiteWSS).label)}
                     </Badge>
                 </div>

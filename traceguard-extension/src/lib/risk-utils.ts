@@ -89,7 +89,7 @@ export const SAFETY_CONFIGS: Record<SafetyLevel, SafetyConfig> = {
         label: 'Excellent',
         description: 'Very safe and trustworthy site',
         color: 'text-success',
-        bgColor: 'bg-success/10',
+        bgColor: 'bg-success/15',
         borderColor: 'border-success/30',
     },
     good: {
@@ -97,7 +97,7 @@ export const SAFETY_CONFIGS: Record<SafetyLevel, SafetyConfig> = {
         label: 'Good',
         description: 'Generally safe browsing',
         color: 'text-success',
-        bgColor: 'bg-success/10',
+        bgColor: 'bg-success/15',
         borderColor: 'border-success/30',
     },
     fair: {
@@ -105,7 +105,7 @@ export const SAFETY_CONFIGS: Record<SafetyLevel, SafetyConfig> = {
         label: 'Fair',
         description: 'Some concerns found - be cautious',
         color: 'text-warning',
-        bgColor: 'bg-warning/10',
+        bgColor: 'bg-warning/15',
         borderColor: 'border-warning/30',
     },
     poor: {
@@ -113,7 +113,7 @@ export const SAFETY_CONFIGS: Record<SafetyLevel, SafetyConfig> = {
         label: 'Poor',
         description: 'Significant risks detected - proceed with caution',
         color: 'text-alert',
-        bgColor: 'bg-alert/10',
+        bgColor: 'bg-alert/15',
         borderColor: 'border-alert/30',
     },
     critical: {
@@ -121,7 +121,7 @@ export const SAFETY_CONFIGS: Record<SafetyLevel, SafetyConfig> = {
         label: 'Critical',
         description: 'Major security concerns - avoid entering personal information',
         color: 'text-destructive',
-        bgColor: 'bg-destructive/10',
+        bgColor: 'bg-destructive/15',
         borderColor: 'border-destructive/30',
     },
 };

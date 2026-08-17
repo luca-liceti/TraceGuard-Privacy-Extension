@@ -58,7 +58,7 @@ module.exports = {
     				foreground: 'var(--popover-foreground)'
     			},
     			primary: {
-    				DEFAULT: 'var(--primary)',
+    				DEFAULT: 'oklch(var(--primary-ch) / <alpha-value>)',
     				foreground: 'var(--primary-foreground)'
     			},
     			secondary: {
@@ -66,7 +66,7 @@ module.exports = {
     				foreground: 'var(--secondary-foreground)'
     			},
     			muted: {
-    				DEFAULT: 'var(--muted)',
+    				DEFAULT: 'oklch(var(--muted-ch) / <alpha-value>)',
     				foreground: 'var(--muted-foreground)'
     			},
     			accent: {
@@ -74,19 +74,19 @@ module.exports = {
     				foreground: 'var(--accent-foreground)'
     			},
     			destructive: {
-    				DEFAULT: 'var(--destructive)',
+    				DEFAULT: 'oklch(var(--destructive-ch) / <alpha-value>)',
     				foreground: 'var(--destructive-foreground)'
     			},
     			success: {
-    				DEFAULT: 'var(--success)',
+    				DEFAULT: 'oklch(var(--success-ch) / <alpha-value>)',
     				foreground: 'var(--success-foreground)'
     			},
     			warning: {
-    				DEFAULT: 'var(--warning)',
+    				DEFAULT: 'oklch(var(--warning-ch) / <alpha-value>)',
     				foreground: 'var(--warning-foreground)'
     			},
     			alert: {
-    				DEFAULT: 'var(--alert)',
+    				DEFAULT: 'oklch(var(--alert-ch) / <alpha-value>)',
     				foreground: 'var(--alert-foreground)'
     			},
     			border: 'var(--border)',
