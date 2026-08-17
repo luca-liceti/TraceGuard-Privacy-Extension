@@ -43,6 +43,24 @@ describe('detectSensitiveInputs', () => {
         expect(result.fields.high[0].type).toBe('credit card');
     });
 
+    it('classifies address fields from visible placeholders', () => {
+        addInput({ type: 'text', placeholder: 'Street number and name *' });
+        addInput({ type: 'text', placeholder: 'Apt./Unit #' });
+        addInput({ type: 'text', placeholder: 'City *' });
+        addInput({ type: 'text', placeholder: 'ZIP Code *' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.medium).toHaveLength(4);
+        expect(result.fields.medium.every(field => field.type === 'address')).toBe(true);
+    });
+
+    it('classifies address fields from autocomplete tokens with scope prefixes', () => {
+        addInput({ type: 'text', autocomplete: 'shipping address-line1' });
+        addInput({ type: 'text', autocomplete: 'shipping postal-code' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.medium).toHaveLength(2);
+        expect(result.fields.medium.map(field => field.type)).toEqual(['address', 'address']);
+    });
+
     it('ignores spoofable name/id attributes (no PII fabrication)', () => {
         addInput({ type: 'text', name: 'password', id: 'card-number' });
         const result = detectSensitiveInputs();
