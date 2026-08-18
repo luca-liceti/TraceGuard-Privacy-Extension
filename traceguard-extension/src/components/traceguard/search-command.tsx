@@ -292,9 +292,9 @@ export function SearchCommand() {
               <ShieldUser className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{t("PII Detection")}</span>
             </CommandItem>
-            <CommandItem value="enhanced policy analysis cloud tosdr ratings rating privacy policy" onSelect={() => openSettings("privacy")}>
+            <CommandItem value="live rating updates tosdr ratings privacy policy fresh online" onSelect={() => openSettings("privacy")}>
               <Cloud className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-              <span>{t("Enhanced Policy Analysis (Cloud)")}</span>
+              <span>{t("Live rating updates")}</span>
             </CommandItem>
             <CommandItem value="vault auto-lock auto lock timeout" onSelect={() => openSettings("privacy")}>
               <Lock className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />

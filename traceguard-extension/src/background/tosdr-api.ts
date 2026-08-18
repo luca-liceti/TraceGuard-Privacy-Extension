@@ -138,8 +138,8 @@ async function maybePromptCloudOptIn() {
     const key = await storage.getVaultKey();
     const id = await storage.addNotification({
         type: 'info',
-        title: 'Enhanced Policy Analysis is off',
-        message: 'Enable it to get privacy-policy ratings for more sites. It sends the visited domain to tosdr.org.',
+        title: 'Live rating updates are off',
+        message: 'Turn it on to fetch the latest ratings from tosdr.org when our local data is stale. Sends the current site\'s domain to tosdr.org.',
         severity: 'info',
         actionUrl: '/overview?openSettings=privacy'
     }, key);

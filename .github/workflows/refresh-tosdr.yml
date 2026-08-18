@@ -1,0 +1,40 @@
+name: Refresh ToS;DR ratings
+
+# Rebuilds the bundled ToS;DR catalog (src/assets/tosdr-data.json) weekly so the
+# extension ships with fresh privacy-policy ratings for A–E graded services.
+# The build script validates the output and aborts (rather than degrading) if the
+# fetch returns malformed or empty data, so a broken run never reaches this commit.
+on:
+  schedule:
+    - cron: '0 4 * * 3' # Wednesdays 04:00 UTC (offset from the Monday threat-feed run)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20.x'
+
+      - name: Rebuild ToS;DR catalog
+        working-directory: ./traceguard-extension
+        run: FORCE_TOSDR_BUILD=1 npm run build:tosdr
+
+      - name: Commit refreshed catalog
+        working-directory: ./traceguard-extension
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet src/assets/tosdr-data.json; then
+            git add src/assets/tosdr-data.json
+            git commit -m "chore(tosdr): refresh bundled privacy-policy ratings"
+            git push
+          else
+            echo "ToS;DR catalog already up to date."
+          fi
