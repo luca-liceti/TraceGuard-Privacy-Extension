@@ -5,7 +5,7 @@
  */
 
 import { TrackerDetail, NetworkRequestDetail } from '../../lib/types';
-import { lookupTrackerDomain, getDisconnectCategory } from './database-loader';
+import { lookupTrackerDomain, getDisconnectCategory, getDisconnectEntity, isTrackerDomain } from './database-loader';
 
 export async function enrichTrackers(
     url: string,
@@ -25,8 +25,17 @@ export async function enrichTrackers(
             return;
         }
         
+        // Only list domains our databases actually recognize as trackers.
+        // The raw DOM list (detectTrackersRaw) contains EVERY third-party
+        // script/image/iframe (CDNs, fonts, APIs) - without this filter those
+        // would flood the tracker table as "unknown org" non-trackers.
+        if (!(await isTrackerDomain(domain))) {
+            return;
+        }
+        
         const radar = await lookupTrackerDomain(domain);
         const disconnectCat = await getDisconnectCategory(domain);
+        const disconnectEntity = await getDisconnectEntity(domain);
         
         // Fallback categorization
         let category: TrackerDetail['category'] = 'unknown';
@@ -50,7 +59,10 @@ export async function enrichTrackers(
         enriched.push({
             url: reqUrl,
             domain,
-            organization: radar?.owner || null,
+            // Org fallback chain: Tracker Radar owner, then Radar display name,
+            // then Disconnect entity name - so recognized trackers rarely show
+            // as "Unknown org" even when one database lacks the entry.
+            organization: radar?.owner || radar?.displayName || disconnectEntity || null,
             category,
             type: safeType,
             status,

@@ -14,7 +14,7 @@
 
 import { NetworkRequestDetail } from '../../lib/types';
 import { isLocalUrl } from '../../lib/utils';
-import { isTrackerDomain, lookupTrackerDomain } from './database-loader';
+import { isTrackerDomain, lookupTrackerDomain, getDisconnectEntity } from './database-loader';
 import { parseSetCookie, SetCookieRecord } from '../../lib/set-cookie';
 
 interface TabNetworkData {
@@ -173,9 +173,8 @@ export async function getAndClearNetworkData(tabId: number): Promise<TabNetworkD
     await Promise.all(Object.values(data.requests).map(async (req) => {
         req.isTracker = await isTrackerDomain(req.domain);
         const radar = await lookupTrackerDomain(req.domain);
-        if (radar && radar.owner) {
-            req.organization = radar.owner;
-        }
+        const disconnectEntity = await getDisconnectEntity(req.domain);
+        req.organization = radar?.owner || radar?.displayName || disconnectEntity || null;
     }));
     
     // We don't delete it immediately in case multiple analysis events fire,

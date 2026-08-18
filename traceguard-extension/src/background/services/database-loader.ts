@@ -236,6 +236,18 @@ export async function isTrackerDomain(domain: string): Promise<boolean> {
 }
 
 /**
+ * Gets the Disconnect entity (owner company) for a domain.
+ * Falls back to the parent domain like getDisconnectCategory does.
+ */
+export async function getDisconnectEntity(domain: string): Promise<string | null> {
+    const map = await getDisconnectMap();
+    const lower = domain.toLowerCase();
+
+    const entry = map[lower] || (domain.split('.').length > 2 ? map[domain.split('.').slice(1).join('.').toLowerCase()] : null);
+    return entry?.entityName || null;
+}
+
+/**
  * Gets the Disconnect category for a domain.
  * Maps Disconnect category names to our internal category strings.
  */

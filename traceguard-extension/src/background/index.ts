@@ -746,7 +746,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             if (f.scriptUrl) {
                 try {
                     const radar = await lookupTrackerDomain(new URL(f.scriptUrl).hostname);
-                    org = radar?.owner || null;
+                    org = radar?.owner || radar?.displayName || null;
                 } catch (e) {
                     console.warn('[Enrichment] Fingerprint script lookup failed:', e);
                 }

@@ -24,7 +24,7 @@ describe('content script loads and analyzes', () => {
 
     it('pii-confirm module loads and renders a card without throwing', async () => {
         const { showPIIConfirmCard, hidePIIConfirmCard } = await import('./pii-confirm');
-        showPIIConfirmCard({
+        await showPIIConfirmCard({
             domain: 'example.com',
             fieldType: 'password',
             reason: 'risky',
