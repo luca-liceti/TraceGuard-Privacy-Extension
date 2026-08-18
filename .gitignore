@@ -13,6 +13,9 @@ out/
 *.tsbuildinfo
 _site/
 
+# Documentation (screenshots/store-listing are regenerated locally)
+docs/
+
 # Extension build artifacts
 traceguard-extension/dist/
 traceguard-extension/build/
