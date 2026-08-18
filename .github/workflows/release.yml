@@ -81,13 +81,17 @@ jobs:
         cd dist
         zip -r ../traceguard-extension-${{ github.ref_name }}.zip ./*
         
+    - name: Extract release notes
+      run: awk '/^## /{n++} n==1' CHANGELOG.md > release-notes.md
+
     - name: Create Release
       uses: softprops/action-gh-release@26994186c0ac3ef5cae75ac16aa32e8153525f77 # v1
       with:
+        name: ${{ github.ref_name }}
+        body_path: release-notes.md
         files: |
           traceguard-extension/traceguard-extension-${{ github.ref_name }}.zip
           traceguard-extension/src/assets/phishlist.signed.json
-        generate_release_notes: true
 
     # Store credentials may be unset on forks, so gate the upload on their
     # presence (the secrets context is not allowed in if: conditions).
