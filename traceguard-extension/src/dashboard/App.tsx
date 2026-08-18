@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider, useTheme } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toast"
@@ -6,12 +6,12 @@ import Layout from "@/components/traceguard/layout"
 import { useSettings } from "@/lib/useStorage"
 import { AuthProvider } from "@/components/traceguard/auth-provider"
 
-// Import pages
-import OverviewPage from "@/components/traceguard/pages/overview"
-
-import HelpPage from "@/components/traceguard/pages/help"
-import RankingsPage from "@/components/traceguard/pages/rankings"
-import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
+// Import pages (lazy-loaded so heavy chart/table dependencies only ship when
+// their route is actually opened)
+const OverviewPage = lazy(() => import("@/components/traceguard/pages/overview"))
+const HelpPage = lazy(() => import("@/components/traceguard/pages/help"))
+const RankingsPage = lazy(() => import("@/components/traceguard/pages/rankings"))
+const PrivacyPolicyPage = lazy(() => import("@/components/traceguard/pages/privacy-policy"))
 import { SettingsProvider, useSettingsModal } from "@/components/traceguard/settings-context"
 import { SettingsModal } from "@/components/traceguard/settings-modal"
 
@@ -80,21 +80,23 @@ function AppContent() {
             <Toaster />
             <Router>
                 <DeepLinkHandler />
-                <Routes>
-                    {/* Default route - redirect to Overview */}
-                    <Route path="/" element={<Navigate to="/overview" replace />} />
+                <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">{t("Loading...")}</div>}>
+                    <Routes>
+                        {/* Default route - redirect to Overview */}
+                        <Route path="/" element={<Navigate to="/overview" replace />} />
 
-                    {/* Main Overview (Landing Page) */}
-                    <Route path="/overview" element={<PageWrapper><OverviewPage /></PageWrapper>} />
+                        {/* Main Overview (Landing Page) */}
+                        <Route path="/overview" element={<PageWrapper><OverviewPage /></PageWrapper>} />
 
-                    {/* Legacy dashboard route - redirect to overview */}
-                    <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
+                        {/* Legacy dashboard route - redirect to overview */}
+                        <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
 
-                    {/* Management Pages */}
-                    <Route path="/rankings" element={<PageWrapper><RankingsPage /></PageWrapper>} />
-                    <Route path="/help" element={<PageWrapper><HelpPage /></PageWrapper>} />
-                    <Route path="/privacy-policy" element={<PageWrapper><PrivacyPolicyPage /></PageWrapper>} />
-                </Routes>
+                        {/* Management Pages */}
+                        <Route path="/rankings" element={<PageWrapper><RankingsPage /></PageWrapper>} />
+                        <Route path="/help" element={<PageWrapper><HelpPage /></PageWrapper>} />
+                        <Route path="/privacy-policy" element={<PageWrapper><PrivacyPolicyPage /></PageWrapper>} />
+                    </Routes>
+                </Suspense>
             </Router>
         </>
     )

@@ -26,8 +26,10 @@ export async function enrichCookies(
         // Lookup in Cookie Database
         const dbEntry = await lookupCookie(name);
         
-        // Determine first/third party
-        const isThirdParty = domain !== pageHost && !domain.endsWith('.' + pageHost) && !pageHost.endsWith(domain);
+        // Determine first/third party. Use explicit dot boundaries so a
+        // lookalike domain ("notexample.com") is not treated as the same
+        // party as "example.com".
+        const isThirdParty = domain !== pageHost && !domain.endsWith('.' + pageHost) && !pageHost.endsWith('.' + domain);
         
         // Try to get organization from domain if DB doesn't have it
         let org = dbEntry?.dataController || null;

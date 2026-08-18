@@ -45,18 +45,6 @@ export async function deriveKeyFromPassword(password: string, salt: Uint8Array<A
 }
 
 /**
- * Converts a string to an ArrayBuffer.
- */
-function str2ab(str: string): ArrayBuffer {
-    const buf = new ArrayBuffer(str.length);
-    const bufView = new Uint8Array(buf);
-    for (let i = 0, strLen = str.length; i < strLen; i++) {
-        bufView[i] = str.charCodeAt(i);
-    }
-    return buf;
-}
-
-/**
  * Encrypts arbitrary data (objects, strings) using AES-GCM.
  * Returns a Base64-encoded string containing both IV and ciphertext.
  */

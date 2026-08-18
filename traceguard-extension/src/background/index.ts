@@ -33,7 +33,7 @@ import { storage, readBuffer, writeBuffer } from '../lib/storage';
 import { recordError } from '../lib/error-log';
 import { z } from 'zod';
 import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './services/reputation';
-import { calculateWSS } from '../lib/scoring';
+import { calculateWSS, calculateTrackingScore } from '../lib/scoring';
 import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState } from '../lib/types';
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR } from './tosdr-api';
@@ -246,8 +246,8 @@ async function flushBufferedTelemetry() {
         await chrome.storage.local.set({ crossSiteExposure: await encryptData(key, exposure) });
     }
 
-    // Clear buffers
-    await chrome.storage.local.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure']);
+    // Clear buffers (they now live in session storage, not local)
+    await chrome.storage.session.remove(['bufferedPii', 'bufferedScoreHistory', 'bufferedSiteCache', 'bufferedDetectorLogs', 'bufferedNotifications', 'bufferedExposure']);
     console.log('[Vault] Buffered telemetry flushed to encrypted storage.');
 }
 
@@ -273,8 +273,15 @@ storage.getSettings().then((settings) => setNetworkMonitorEnabled(settings.enabl
 chrome.runtime.onInstalled.addListener(async () => {
     console.log('TraceGuard Extension Installed');
 
-    // Run data migrations before initializing anything else
-    await runDataMigrations();
+    // Run data migrations before initializing anything else. Migrations fail
+    // loudly on a bad step; log and continue so a transient storage error never
+    // bricks the extension's startup path.
+    try {
+        await runDataMigrations();
+    } catch (error) {
+        console.error('[Migrations] Failed on install:', error);
+        recordError('Data migration failed', String(error));
+    }
 
     // Load user settings from storage (or use defaults if this is a fresh install)
     const settings = await storage.getSettings();
@@ -306,7 +313,12 @@ chrome.runtime.onInstalled.addListener(async () => {
  */
 chrome.runtime.onStartup.addListener(async () => {
     // Run data migrations before initializing anything else
-    await runDataMigrations();
+    try {
+        await runDataMigrations();
+    } catch (error) {
+        console.error('[Migrations] Failed on startup:', error);
+        recordError('Data migration failed', String(error));
+    }
 
     // Reload the blacklist in case it was updated
     await loadBlacklist();
@@ -708,7 +720,9 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     const reputationScore = typeof reputationResult === 'number' ? reputationResult : reputationResult.score;
     const reputationChecks = typeof reputationResult === 'number' ? [] : reputationResult.checks;
 
-    // Combine all the individual detector scores into one object
+    // Combine all the individual detector scores into one object (tracking may
+    // be corrected later from the bundled databases, so it stays a `const` with
+    // mutable fields rather than being reassigned).
     const finalScores = { ...message.scores, reputation: reputationScore };
 
     if (!message.detectionDetails) {
@@ -721,7 +735,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
 
     // Step 2: Calculate the Website Safety Score (WSS)
     // This combines all 6 detector scores with different weights
-    const wss = calculateWSS(finalScores);
+    let wss = calculateWSS(finalScores);
 
     // Extract just the domain name from the full URL
     // For example: "https://www.example.com/page" becomes "www.example.com"
@@ -811,6 +825,16 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             },
             capturedAt: Date.now()
         };
+    }
+
+    // The bundled tracker databases (Tracker Radar / EasyPrivacy / Disconnect)
+    // are the authoritative tracker list. When enrichment ran, replace the
+    // content script's small hardcoded-list score with a score derived from the
+    // actual tracked domains, then recompute WSS against that correction.
+    if (enrichedDetails) {
+        const uniqueTrackers = new Set(enrichedDetails.trackers.items.map(t => t.domain));
+        finalScores.tracking = calculateTrackingScore(uniqueTrackers.size);
+        wss = calculateWSS(finalScores);
     }
 
     // Step 3: Create a data object with all the site's information
@@ -903,21 +927,15 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     
     // Only update currentSite if the analysis is from the active tab.
     // Persist only the non-sensitive fields to plaintext state, the full
-    // analysis lives (encrypted) in siteCache. Patch only the fields that
-    // changed: spreading a full stale `state` snapshot here could resurrect
-    // an outdated currentSite or counter after a tab switch.
-    const statePatch: Partial<AppState> = {
-        sitesAnalyzed: state.sitesAnalyzed + (isUniqueDomain ? 1 : 0),           // Increment the counter only for unique sites today
-        trackersDetected: (state.trackersDetected || 0) + (isNewNavigation ? newTrackersCount : 0), // Accumulate once per genuine navigation
-    };
-    if (upsImpact) {
-        statePatch.ups = upsImpact.newUPS;                                       // Your updated privacy score
-        statePatch.safeVisitStreak = upsImpact.newStreak;                        // How many safe sites in a row
-    }
-    if (isActiveTab) {
-        statePatch.currentSite = slimSiteData(siteData);                         // The site you're currently on (if active tab)
-    }
-    await storage.updateState(statePatch);
+    // analysis lives (encrypted) in siteCache. The reducer form recomputes
+    // counters from the freshest state inside the serialized write chain so
+    // concurrent tab analyses can never lose an increment.
+    await storage.updateState((current) => ({
+        sitesAnalyzed: current.sitesAnalyzed + (isUniqueDomain ? 1 : 0),           // Increment the counter only for unique sites today
+        trackersDetected: (current.trackersDetected || 0) + (isNewNavigation ? newTrackersCount : 0), // Accumulate once per genuine navigation
+        ...(upsImpact ? { ups: upsImpact.newUPS, safeVisitStreak: upsImpact.newStreak } : {}),
+        ...(isActiveTab ? { currentSite: slimSiteData(siteData) } : {}),
+    }));
 
     // Step 6: Log the UPS change if there was one (for debugging and history)
     const detectorLogsToWrite: Array<Omit<DetectorLogEntry, 'id' | 'timestamp'>> = [];
@@ -964,26 +982,36 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // Step 7: Log detailed information from each detector
     // This creates activity logs that show up in the "Activity Logs" page
 
-    // Bug fix: message.trackingDetails was never sent by the content script.
-    // The correct data lives at message.detectionDetails.tracking (count/known/suspicious).
-    const trackingDetails = message.detectionDetails?.tracking
+    // Prefer the enriched tracker list (from the bundled databases) when it is
+    // available; otherwise fall back to the content script's hardcoded-list
+    // detection details.
+    const enrichedTrackerDomains = enrichedDetails
+        ? Array.from(new Set(enrichedDetails.trackers.items.map(t => t.domain)))
+        : null;
+    const trackingDetails = enrichedTrackerDomains
         ? {
-            trackerCount: message.detectionDetails.tracking.count || 0,
-            knownTrackers: Array.isArray(message.detectionDetails.tracking.known)
-                ? message.detectionDetails.tracking.known
-                : new Array(message.detectionDetails.tracking.known || 0).fill('unknown'),
-            suspiciousTrackers: Array.isArray(message.detectionDetails.tracking.suspicious)
-                ? message.detectionDetails.tracking.suspicious
-                : new Array(message.detectionDetails.tracking.suspicious || 0).fill('unknown')
+            trackerCount: enrichedTrackerDomains.length,
+            knownTrackers: enrichedTrackerDomains,
+            suspiciousTrackers: [],
           }
-        : { trackerCount: 0, knownTrackers: [], suspiciousTrackers: [] };
+        : (message.detectionDetails?.tracking
+            ? {
+                trackerCount: message.detectionDetails.tracking.count || 0,
+                knownTrackers: Array.isArray(message.detectionDetails.tracking.known)
+                    ? message.detectionDetails.tracking.known
+                    : new Array(message.detectionDetails.tracking.known || 0).fill('unknown'),
+                suspiciousTrackers: Array.isArray(message.detectionDetails.tracking.suspicious)
+                    ? message.detectionDetails.tracking.suspicious
+                    : new Array(message.detectionDetails.tracking.suspicious || 0).fill('unknown')
+              }
+            : { trackerCount: 0, knownTrackers: [], suspiciousTrackers: [] });
     const trackingMessage = trackingDetails.trackerCount === 0
         ? 'No third-party trackers detected'
-        : `${trackingDetails.trackerCount} weighted trackers detected (${trackingDetails.knownTrackers.length} known, ${trackingDetails.suspiciousTrackers.length} suspicious)`;
+        : `${trackingDetails.trackerCount} trackers detected (${trackingDetails.knownTrackers.length} known)`;
 
     // Create human-readable messages for each detector
     const detectorMessages = {
-        reputation: reputationScore === 100 ? 'Domain has good reputation' : reputationScore === 0 ? 'Domain blacklisted!' : `Domain reputation score: ${reputationScore}`,
+        reputation: reputationScore === 100 ? 'Not on any known threat list' : reputationScore === 0 ? 'Domain blacklisted!' : `Domain reputation score: ${reputationScore}`,
         tracking: trackingMessage,
         cookies: finalScores.cookies >= 80 ? 'No tracking cookies detected' : `Tracking cookies detected (safety: ${finalScores.cookies})`,
         inputs: finalScores.input >= 80 ? 'No sensitive input fields' : `Sensitive input fields detected (safety: ${finalScores.input})`,
@@ -1118,6 +1146,31 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
 // Prevents the confirmation popup from spamming on every PII event.
 const promptedPIIConfirmDomains = new Set<string>();
 
+/**
+ * Resolves the safety score and reputation for the domain that emitted a PII
+ * event from the site cache (the authoritative per-domain analysis), rather
+ * than from `state.currentSite` (which tracks the active tab and may point at
+ * a different site). Falls back to 50/unknown when no analysis exists yet.
+ */
+async function resolveSiteScore(domain: string, key: CryptoKey | null): Promise<{ wss: number; reputation: number | undefined }> {
+    try {
+        let siteCache: Record<string, SiteRiskData> = {};
+        if (key) {
+            const result = await chrome.storage.local.get<Record<string, any>>('siteCache');
+            siteCache = typeof result.siteCache === 'string'
+                ? await decryptData(key, result.siteCache) || {}
+                : result.siteCache || {};
+        } else {
+            siteCache = (await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
+        }
+        const site = siteCache[domain];
+        return { wss: site?.wss ?? 50, reputation: site?.breakdown?.reputation };
+    } catch (error) {
+        console.warn('[PII] Failed to resolve site score:', error);
+        return { wss: 50, reputation: undefined };
+    }
+}
+
 async function handlePIIDetection(message: any) {
     const event = message.data;
     console.log('[TraceGuard] PII event:', event);
@@ -1157,8 +1210,10 @@ async function handlePIIDetection(message: any) {
     const state = await storage.getState();
     const settings = await storage.getSettings();
 
-    // Get current site's safety score (default to 50 if unknown)
-    const siteWSS = state.currentSite?.wss || 50;
+    // Resolve the emitting site's safety score from the site cache - the active
+    // tab's state may point at a different site. Use ?? so a genuine WSS of 0
+    // (blacklisted) is never collapsed into the neutral 50 fallback.
+    const { wss: siteWSS, reputation: siteReputation } = await resolveSiteScore(event.site, key);
 
     // Does the user's allow list already vouch for this domain?
     const domainMatches = (dom: string, pattern: string) => dom === pattern || dom.endsWith('.' + pattern);
@@ -1172,7 +1227,7 @@ async function handlePIIDetection(message: any) {
         fieldType: event.fieldType,
         domain: event.site,
         siteWSS,
-        isBlacklisted: state.currentSite?.breakdown?.reputation === 0,
+        isBlacklisted: siteReputation === 0,
         isWhitelisted,
         pageContext: event.pageContext,
     });
@@ -1233,12 +1288,13 @@ async function handlePIIDetection(message: any) {
     // This enables the "Your email is known to X sites" feature in the dashboard
     await storage.addExposure(event.fieldType, event.site, key);
 
-    // Update your privacy state with the new score
-    await storage.updateState({
-        ...state,
-        piiEventsCount: newPiiCount,  // Total times you've shared PII
-        ups: newUPS                    // Your updated privacy score
-    });
+    // Update your privacy state with the new score. The reducer form increments
+    // piiEventsCount against the freshest state so concurrent events never lose
+    // a count.
+    await storage.updateState((current) => ({
+        piiEventsCount: current.piiEventsCount + (isExempt ? 0 : 1),  // Total times you've shared PII
+        ups: newUPS                                                   // Your updated privacy score
+    }));
 
     console.log(isExempt
         ? `[TraceGuard] PII exempted (${decision.reason}): ${event.fieldType} on ${event.site} - UPS unchanged at ${state.ups}`

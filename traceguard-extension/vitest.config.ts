@@ -37,6 +37,15 @@ export default defineConfig({
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
             include: ['src/lib/**/*.ts', 'src/content/detectors/**/*.ts'],
+            // Floor, not a target: CI fails if coverage regresses below today's
+            // level. Raise these as the untested background/content paths gain
+            // coverage.
+            thresholds: {
+                statements: 45,
+                branches: 35,
+                functions: 40,
+                lines: 45,
+            },
         },
     },
     resolve: {

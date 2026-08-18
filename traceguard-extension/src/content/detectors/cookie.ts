@@ -40,16 +40,19 @@
  * document.cookie only shows cookies accessible to JavaScript (not HttpOnly).
  * Full cookie attributes (HttpOnly, Secure, SameSite, expiry, third-party
  * domain) are captured by the background network monitor from `Set-Cookie`
- * response headers, no `cookies` permission is required.
+ * response headers, no `cookies` permission is required.
  * =============================================================================
  */
 
 /**
  * Represents information about a single cookie.
+ *
+ * NOTE: values are deliberately never captured or used. `document.cookie` only
+ * exposes name=value pairs, so the value substring is discarded immediately;
+ * only the name is kept for categorization.
  */
 interface CookieInfo {
     name: string;                 // The cookie's name
-    value: string;                // The cookie's value
     category: 'cross-site-tracker' | 'analytics' | 'third-party' | 'first-party';
     invasivenessWeight: number;   // 3x, 2x, 1x, or 0 depending on category
 }
@@ -144,14 +147,12 @@ function parseCookies(): CookieInfo[] {
         if (equalIndex === -1) continue;
 
         const name = trimmedPair.substring(0, equalIndex).trim();
-        const value = trimmedPair.substring(equalIndex + 1).trim();
 
-        // Categorize cookie and get invasiveness weight
-        const { category, weight } = categorizeCookie(name, value);
+        // Categorize cookie and get invasiveness weight (value is discarded)
+        const { category, weight } = categorizeCookie(name);
 
         cookies.push({
             name,
-            value,
             category,
             invasivenessWeight: weight
         });
@@ -164,7 +165,7 @@ function parseCookies(): CookieInfo[] {
  * Categorize cookie by invasiveness level
  * Returns category and weight multiplier
  */
-function categorizeCookie(name: string, value: string): { category: CookieInfo['category']; weight: number } {
+function categorizeCookie(name: string): { category: CookieInfo['category']; weight: number } {
     const lowerName = name.toLowerCase();
 
     // Check cross-site trackers (most invasive)
@@ -189,7 +190,7 @@ function categorizeCookie(name: string, value: string): { category: CookieInfo['
     }
 
     // Additional heuristics for unknown cookies
-    if (isLikelyThirdPartyCookie(name, value)) {
+    if (isLikelyThirdPartyCookie(name)) {
         return { category: 'third-party', weight: 1 };
     }
 
@@ -199,9 +200,10 @@ function categorizeCookie(name: string, value: string): { category: CookieInfo['
 
 /**
  * Heuristic to detect likely third-party tracking cookies (fallback)
- * Based on common naming patterns and known tracking cookie prefixes
+ * Based on common naming patterns and known tracking cookie prefixes.
+ * Values are intentionally not inspected.
  */
-function isLikelyThirdPartyCookie(name: string, value: string): boolean {
+function isLikelyThirdPartyCookie(name: string): boolean {
     const lowerName = name.toLowerCase();
 
     // Common third-party tracking cookie patterns
@@ -247,11 +249,7 @@ function isLikelyThirdPartyCookie(name: string, value: string): boolean {
     }
 
     // Additional heuristics:
-    // - Very long cookie values often indicate tracking IDs
     // - Cookie names with underscores/dashes often indicate third-party
-    if (value.length > 100) {
-        return true;
-    }
 
     // Check for common tracking cookie naming conventions
     if (lowerName.startsWith('_') || lowerName.startsWith('__')) {
@@ -265,62 +263,6 @@ function isLikelyThirdPartyCookie(name: string, value: string): boolean {
     }
 
     return false;
-}
-
-/**
- * Main cookie detection function with weighted invasiveness scoring
- * Returns risk score: 0 (high risk) to 100 (safe)
- */
-export function detectCookies(): number {
-    try {
-        const cookies = parseCookies();
-
-        // Filter tracking cookies (exclude first-party)
-        const trackingCookies = cookies.filter(c => c.category !== 'first-party');
-
-        // Calculate weighted invasiveness score
-        const totalWeightedScore = trackingCookies.reduce((sum, cookie) => {
-            return sum + cookie.invasivenessWeight;
-        }, 0);
-
-        // Count by category for detailed logging
-        const categoryCounts = {
-            'cross-site-tracker': trackingCookies.filter(c => c.category === 'cross-site-tracker').length,
-            'analytics': trackingCookies.filter(c => c.category === 'analytics').length,
-            'third-party': trackingCookies.filter(c => c.category === 'third-party').length,
-        };
-
-        // Always log detection for debugging (even if no cookies found)
-        console.log(`[Cookie Detector] Total cookies: ${cookies.length}, Tracking cookies: ${trackingCookies.length} (weighted score: ${totalWeightedScore})`, {
-            'Cross-site trackers (3x)': categoryCounts['cross-site-tracker'],
-            'Analytics (2x)': categoryCounts['analytics'],
-            'Other third-party (1x)': categoryCounts['third-party'],
-            'All cookies': cookies.map(c => `${c.name} (${c.category})`),
-            'Raw document.cookie length': document.cookie.length
-        });
-
-        // Logarithmic score calculation (v3.0)
-        // Formula: max(0, 100 - K × log2(weightedScore + 1))
-        // K = 12 for cookies (slightly less sensitive than trackers)
-        //
-        // Examples:
-        // 0 weighted → 100
-        // 4 weighted (2 analytics) → 100 - 12×log2(5) ≈ 72
-        // 10 weighted → 100 - 12×log2(11) ≈ 58
-        const K = 12;
-        const score = totalWeightedScore === 0
-            ? 100
-            : Math.max(0, Math.round(100 - (K * Math.log2(totalWeightedScore + 1))));
-
-        console.log(`[Cookie Detector] Logarithmic calculation: max(0, 100 - 12×log2(${totalWeightedScore}+1)) = ${score}`);
-
-        return score;
-
-    } catch (error) {
-        console.error('[Cookie Detector] Error detecting cookies:', error);
-        // Return safe score on error (assume no cookies detected)
-        return 100;
-    }
 }
 
 /**

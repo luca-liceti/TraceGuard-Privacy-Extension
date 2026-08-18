@@ -56,6 +56,24 @@ export function calculateFingerprintingScore(techniques: readonly string[]): num
     return validateScore(100 - 12 * Math.log2(weightedTechniques + 1));
 }
 
+/**
+ * Converts a count of unique third-party tracker domains into a 0-100 safety
+ * score (higher = fewer trackers). Uses the same logarithmic decay as the
+ * tracking detector so a handful of trackers is penalized sharply while
+ * additional ones contribute a diminishing penalty.
+ *
+ * Examples:
+ * - 0 trackers  -> 100
+ * - 1 tracker   -> ~61
+ * - 5 trackers  -> ~39
+ * - 20 trackers -> ~34
+ */
+export function calculateTrackingScore(trackerCount: number): number {
+    const count = Number.isFinite(trackerCount) ? Math.max(0, Math.floor(trackerCount)) : 0;
+    if (count === 0) return 100;
+    return validateScore(100 - 15 * Math.log2(count + 1));
+}
+
 // =============================================================================
 // SCORE VALIDATION
 // Makes sure scores are always valid numbers between 0 and 100

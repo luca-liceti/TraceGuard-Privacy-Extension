@@ -22,10 +22,9 @@ describe('runDataMigrations', () => {
         expect(chrome.storage.local.set).not.toHaveBeenCalled();
     });
 
-    it('handles errors gracefully without crashing', async () => {
+    it('propagates storage errors so callers can handle them', async () => {
         (chrome.storage.local.get as any).mockRejectedValue(new Error('Storage failure'));
-        
-        // Should not throw
-        await expect(runDataMigrations()).resolves.not.toThrow();
+
+        await expect(runDataMigrations()).rejects.toThrow('Storage failure');
     });
 });

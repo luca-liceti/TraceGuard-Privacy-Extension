@@ -50,7 +50,6 @@ interface PIIEvent {
     timestamp: number;                     // When the event happened
     site: string;                          // The website domain
     fieldType: string;                     // Type of field (password, text, etc.)
-    fieldName: string;                     // Name attribute of the field
     sensitivity: 'HIGH' | 'MEDIUM' | 'LOW'; // How sensitive is this data?
     pageContext: {                         // Page structure, for expected-use exemptions
         isLoginPage: boolean;              // Page has a password field (login/sign-up)
@@ -143,7 +142,6 @@ class PIIDetector {
     private onPIIDetected(element: HTMLInputElement | HTMLTextAreaElement, sensitivity: 'HIGH' | 'MEDIUM' | 'LOW', semanticType: string) {
         const domain = window.location.hostname;
         const fieldType = semanticType;
-        const fieldName = element.name || element.id || 'unknown';
 
         console.warn(`[TraceGuard] PII detected: ${sensitivity} sensitivity field on ${domain}`);
 
@@ -155,7 +153,6 @@ class PIIDetector {
             timestamp: Date.now(),
             site: domain,
             fieldType: fieldType,
-            fieldName: fieldName,
             sensitivity: sensitivity,
             pageContext: this.pageContext
         };

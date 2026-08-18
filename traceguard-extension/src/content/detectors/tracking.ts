@@ -141,34 +141,6 @@ export interface TrackingDetectionResult {
     suspiciousTrackers: string[]; // Domains with suspicious keywords
 }
 
-export function detectTracking(): number {
-    const result = detectTrackingDetailed();
-
-    // Log detailed breakdown to console
-    console.log('[Tracking Detector] Starting analysis...');
-    console.log('[Tracking] Found trackers:', {
-        total: result.trackerCount,
-        known: result.knownTrackers.length,
-        suspicious: result.suspiciousTrackers.length
-    });
-
-    if (result.knownTrackers.length > 0) {
-        console.log('[Tracking] Known trackers detected:', result.knownTrackers);
-    }
-
-    if (result.suspiciousTrackers.length > 0) {
-        console.log('[Tracking] Suspicious third-party domains:', result.suspiciousTrackers);
-    }
-
-    console.log('[Tracking] Score calculation:', {
-        trackerCount: result.trackerCount,
-        score: result.score,
-        formula: getScoreFormula(result.trackerCount)
-    });
-
-    return result.score;
-}
-
 export function detectTrackingDetailed(): TrackingDetectionResult {
     const scripts = document.getElementsByTagName('script');
     const iframes = document.getElementsByTagName('iframe');
@@ -245,12 +217,6 @@ export function detectTrackingDetailed(): TrackingDetectionResult {
         knownTrackers: Array.from(knownTrackers),
         suspiciousTrackers: Array.from(suspiciousTrackers)
     };
-}
-
-function getScoreFormula(trackerCount: number): string {
-    if (trackerCount === 0) return '0 weighted → 100 (safe)';
-    const score = Math.max(0, Math.round(100 - (15 * Math.log2(trackerCount + 1))));
-    return `max(0, 100 - 15×log2(${trackerCount}+1)) = ${score}`;
 }
 
 /**

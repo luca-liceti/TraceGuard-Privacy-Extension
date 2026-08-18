@@ -20,8 +20,10 @@ export async function enrichTrackers(
     const processTracker = async (reqUrl: string, domain: string, type: string, source: 'dom' | 'network' | 'both', status: 'active' | 'blocked') => {
         if (seenDomains.has(domain)) return;
         
-        // Must be third-party to be a tracker
-        if (domain === pageHost || domain.endsWith('.' + pageHost) || pageHost.endsWith(domain)) {
+        // Must be third-party to be a tracker. Compare against explicit dot
+        // boundaries so a lookalike domain (e.g. "notexample.com" vs
+        // "example.com") is never mistaken for the same party.
+        if (domain === pageHost || domain.endsWith('.' + pageHost) || pageHost.endsWith('.' + domain)) {
             return;
         }
         

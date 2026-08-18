@@ -101,11 +101,21 @@ const chromeMock = {
                 return result;
             }),
             set: vi.fn(async (items: Record<string, any>) => {
-                Object.assign(_sessionStore, items);
+                const changes: Record<string, chrome.storage.StorageChange> = {};
+                for (const [k, v] of Object.entries(items)) {
+                    changes[k] = { oldValue: _sessionStore[k], newValue: v };
+                    _sessionStore[k] = v;
+                }
+                notifyChanged(changes, 'session');
             }),
             remove: vi.fn(async (keys: string | string[]) => {
                 const keyArr = Array.isArray(keys) ? keys : [keys];
-                for (const k of keyArr) delete _sessionStore[k];
+                const changes: Record<string, chrome.storage.StorageChange> = {};
+                for (const k of keyArr) {
+                    changes[k] = { oldValue: _sessionStore[k], newValue: undefined };
+                    delete _sessionStore[k];
+                }
+                notifyChanged(changes, 'session');
             }),
         },
         onChanged: {

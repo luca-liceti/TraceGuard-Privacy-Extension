@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateFingerprintingScore, calculateWSS } from './scoring';
+import { calculateFingerprintingScore, calculateTrackingScore, calculateWSS } from './scoring';
 import type { ScoreBreakdown } from './types';
 
 const perfect: ScoreBreakdown = {
@@ -34,5 +34,25 @@ describe('calculateFingerprintingScore', () => {
         expect(calculateFingerprintingScore([])).toBe(100);
         expect(calculateFingerprintingScore(['canvas'])).toBeLessThan(100);
         expect(calculateFingerprintingScore(['canvas', 'webgl', 'audio'])).toBeLessThan(calculateFingerprintingScore(['canvas']));
+    });
+});
+
+describe('calculateTrackingScore', () => {
+    it('scores a clean page at 100', () => {
+        expect(calculateTrackingScore(0)).toBe(100);
+    });
+
+    it('penalizes more tracker domains with diminishing returns', () => {
+        expect(calculateTrackingScore(1)).toBeLessThan(100);
+        expect(calculateTrackingScore(5)).toBeLessThan(calculateTrackingScore(1));
+        expect(calculateTrackingScore(20)).toBeLessThanOrEqual(calculateTrackingScore(5));
+    });
+
+    it('clamps to a valid 0-100 range for extreme inputs', () => {
+        expect(calculateTrackingScore(-5)).toBe(100); // non-positive -> clean
+        expect(calculateTrackingScore(Number.NaN)).toBe(100);
+        const huge = calculateTrackingScore(1_000_000);
+        expect(huge).toBeGreaterThanOrEqual(0);
+        expect(huge).toBeLessThanOrEqual(100);
     });
 });

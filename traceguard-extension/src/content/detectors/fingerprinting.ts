@@ -165,6 +165,9 @@ export function detectFingerprintingAttempts(): RawFingerprintingAttempt[] {
         // --- Inline scripts: regex scan -------------------------------------
         const code = script.textContent;
         if (!code || code.length < 50) continue; // skip trivial scripts
+        // Huge inline bundles (rare) are app code, not fingerprinting snippets;
+        // cap the scan so re-analysis on busy pages stays cheap on the main thread.
+        if (code.length > 200000) continue;
 
         for (const group of PATTERN_GROUPS) {
             const matchCount = group.patterns.filter(p => p.test(code)).length;

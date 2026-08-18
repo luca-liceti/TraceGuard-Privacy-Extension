@@ -151,3 +151,80 @@ export async function exportAllData(password: string | null): Promise<void> {
         await triggerDownload(JSON.stringify(allData, null, 2), false);
     }
 }
+
+// Fields that can be restored from a backup. Vault fields are re-encrypted
+// with the current session key on import; plaintext fields are written as-is.
+// Credential material (cryptoSalt, validator, bufferKeyHex, cryptoKeyHex) is
+// deliberately excluded - importing it would break the current vault.
+const IMPORTABLE_VAULT_KEYS = [
+    'siteCache',
+    'crossSiteExposure',
+    'scoreHistory',
+    'piiDetections',
+    'detectorLogs',
+    'notifications',
+] as const;
+
+const IMPORTABLE_PLAIN_KEYS = ['settings', 'state', 'tosdr_cache'] as const;
+
+/**
+ * Restores a TraceGuard backup (plaintext or password-protected).
+ *
+ * Requires the vault to be unlocked so restored vault fields can be re-encrypted
+ * with the current master-password key. Throws with a human-readable message on
+ * malformed input, a wrong/missing password, or a locked vault.
+ *
+ * @returns The list of storage keys that were restored.
+ */
+export async function importAllData(text: string, password: string | null): Promise<string[]> {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(text);
+    } catch {
+        throw new Error('This file is not valid JSON.');
+    }
+
+    let data: Record<string, unknown>;
+    if (parsed && typeof parsed === 'object' && (parsed as { format?: string }).format === 'traceguard-backup') {
+        const envelope = parsed as { encrypted?: boolean; kdf?: { salt: number[] }; payload?: string };
+        if (envelope.encrypted) {
+            if (!password) throw new Error('This backup is password-protected. Enter its password to import.');
+            if (!Array.isArray(envelope.kdf?.salt) || typeof envelope.payload !== 'string') {
+                throw new Error('This backup is malformed.');
+            }
+            const salt = new Uint8Array(envelope.kdf.salt);
+            const key = await deriveKeyFromPassword(password, salt);
+            const decrypted = await decryptData(key, envelope.payload);
+            if (!decrypted || typeof decrypted !== 'object' || Array.isArray(decrypted)) {
+                throw new Error('Incorrect password, or the backup is corrupt.');
+            }
+            data = decrypted as Record<string, unknown>;
+        } else {
+            throw new Error('This backup is malformed.');
+        }
+    } else if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        data = parsed as Record<string, unknown>;
+    } else {
+        throw new Error('This file is not a TraceGuard backup.');
+    }
+
+    const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
+    if (!session.cryptoKeyHex) throw new Error('Unlock your vault before importing a backup.');
+    const key = await importKey(session.cryptoKeyHex);
+
+    const restored: string[] = [];
+    for (const k of IMPORTABLE_VAULT_KEYS) {
+        if (k in data) {
+            await chrome.storage.local.set({ [k]: await encryptData(key, data[k]) });
+            restored.push(k);
+        }
+    }
+    for (const k of IMPORTABLE_PLAIN_KEYS) {
+        if (k in data) {
+            await chrome.storage.local.set({ [k]: data[k] });
+            restored.push(k);
+        }
+    }
+
+    return restored;
+}

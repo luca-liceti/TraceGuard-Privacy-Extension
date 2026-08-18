@@ -44,6 +44,7 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { ExportDataDialog } from "./export-data-dialog"
+import { ImportDataDialog } from "./import-data-dialog"
 import { storage } from "@/lib/storage"
 import { getErrorLog, clearErrorLog, type ErrorLogEntry } from "@/lib/error-log"
 import { toast } from '@/components/ui/toast'
@@ -58,6 +59,7 @@ import {
     HardDrive,
     Info,
     Download,
+    Upload,
     List,
     ShieldUser,
     OctagonAlert
@@ -207,6 +209,7 @@ export function SettingsModal() {
     const [blacklist, setBlacklist] = useState<string[]>(settings?.blacklist || [])
     const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([])
     const [exportOpen, setExportOpen] = useState(false)
+    const [importOpen, setImportOpen] = useState(false)
 
     // Fetch manifest version
     useEffect(() => {
@@ -569,8 +572,8 @@ export function SettingsModal() {
                         </SettingItem>
 
                         <SettingItem
-                            label={t("Enhanced Policy Analysis (Cloud)")}
-                            description={t("Securely check tosdr.org for privacy ratings of unrated niche websites")}
+                            label={t("Live rating updates")}
+                            description={t("Fetch the latest ratings from tosdr.org when our local data is stale. Sends the current site's domain to tosdr.org.")}
                             controlId="cloud-tosdr-toggle"
                         >
                             <Switch
@@ -850,7 +853,11 @@ export function SettingsModal() {
                                  <Label className="text-base font-medium">{t("Export Data")}</Label>
                                  <p className="text-sm text-muted-foreground break-words">{t("Export a JSON backup of all your data (optionally password-protected)")}</p>
                              </div>
-                             <div className="flex-shrink-0">
+                             <div className="flex-shrink-0 flex flex-wrap gap-2">
+                                 <Button variant="outline" onClick={() => setImportOpen(true)}>
+                                     <Upload className="mr-2 h-4 w-4" />
+                                     {t("Import")}
+                                 </Button>
                                  <Button variant="outline" onClick={exportData}>
                                      <Download className="mr-2 h-4 w-4" />
                                      {t("Export to JSON")}
@@ -961,7 +968,7 @@ export function SettingsModal() {
                         </div>
                         <Separator />
                         <p className="text-sm text-muted-foreground">
-                            {t("TraceGuard keeps a local journal of trackers, cookies, and privacy scores so you can review and improve your browsing habits. Everything stays on your device unless you enable Enhanced Policy Analysis, which checks unrated domains against tosdr.org.")}
+                            {t("TraceGuard keeps a local journal of trackers, cookies, and privacy scores so you can review and improve your browsing habits. Everything stays on your device unless you enable Live rating updates, which checks tosdr.org for fresh ratings when our local data is stale.")}
                         </p>
                     </div>
 
@@ -1006,6 +1013,7 @@ export function SettingsModal() {
             </Dialog>
 
             <ExportDataDialog open={exportOpen} onOpenChange={setExportOpen} />
+            <ImportDataDialog open={importOpen} onOpenChange={setImportOpen} />
         </>
     )
 }

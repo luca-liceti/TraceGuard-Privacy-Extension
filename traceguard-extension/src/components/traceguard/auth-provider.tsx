@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from "react"
+import React, { createContext, useContext, useEffect, useRef, useState } from "react"
 import { Lock, Key, ShieldUser, AlertCircle, OctagonAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
+  const failedAttemptsRef = useRef(0)
 
   const checkAuth = async () => {
     try {
@@ -76,7 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Listen for alarms or messages that might lock the vault
     const listener = (changes: any, namespace: string) => {
-      if (namespace === "session" && changes.cryptoKeyHex === undefined) {
+      // chrome.storage.onChanged reports each key as { oldValue, newValue },
+      // so a removal has newValue === undefined (never the key === undefined).
+      if (namespace === "session" && changes.cryptoKeyHex?.newValue === undefined) {
         // Key was removed from session (e.g. by auto-lock)
         checkAuth()
       }
@@ -182,10 +185,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Notify background to flush buffers
       chrome.runtime.sendMessage({ type: "UNLOCK_VAULT" })
       
+      failedAttemptsRef.current = 0
       setPassword("")
       setAuthState("unlocked")
       return true
     } catch (err: any) {
+      // Progressive backoff: slows down brute-force attempts from the UI.
+      failedAttemptsRef.current += 1
+      await new Promise(r => setTimeout(r, Math.min(30000, 500 * failedAttemptsRef.current)))
       setError(t("Incorrect Master Password"))
       return false
     } finally {

@@ -28,33 +28,46 @@
  * fields are handled by the background service worker which has access to the key.
  * 
  * STORAGE LIMITS:
- * Chrome defaults to 10MB of local storage, but TraceGuard requests
- * `unlimitedStorage`, so there is no practical cap. We still:
+ * Chrome defaults chrome.storage.local to 10MB. The extension requests
+ * `unlimitedStorage` because per-site enriched details (cookies, trackers,
+ * network requests) can make individual siteCache entries large, and a heavy
+ * user can legitimately exceed 10MB. Counts are still bounded:
  * - Clean up old logs based on retention settings
  * - Limit logs to 1000 entries max
  * - Limit notifications to 100 entries max
  * =============================================================================
+ *
+ * Locked-vault telemetry is buffered in chrome.storage.session (in-memory)
+ * rather than chrome.storage.local, so it is never persisted to disk while the
+ * vault is locked.
  */
 
 import { StorageSchema, UserSettings, AppState } from './types';
 import { encryptData, decryptData, generateAesKey, exportKey, importKey } from './crypto';
 
 // =============================================================================
-// PERSISTENT BUFFER (vault locked)
+// IN-MEMORY BUFFER (vault locked)
 // Telemetry recorded while the vault is locked is buffered in
-// chrome.storage.local (encrypted with a persistent buffer key) and flushed
-// into the vault-encrypted store when the vault is unlocked. Unlike the old
-// chrome.storage.session buffer, these entries survive browser restarts.
+// chrome.storage.session (encrypted with an in-memory buffer key) and flushed
+// into the vault-encrypted store when the vault is unlocked. Because the
+// buffer key and the buffered data both live only in session storage, locked
+// entries are cleared when the browser closes - they are never persisted to
+// disk in a form a local attacker could decrypt without the master password.
 // =============================================================================
 
 const BUFFER_KEY = 'bufferKeyHex';
 
-/** Persistent AES key for the locked-vault buffer (stored on disk). */
+/**
+ * AES key for the locked-vault buffer. Stored in chrome.storage.session so it
+ * lives only in memory and is cleared when the browser closes - matching the
+ * PRIVACY.md guarantee that locked-vault entries are temporary and never
+ * persisted to disk.
+ */
 export async function getBufferKey(): Promise<CryptoKey> {
-    const stored = await chrome.storage.local.get<Record<string, any>>(BUFFER_KEY);
+    const stored = await chrome.storage.session.get<Record<string, any>>(BUFFER_KEY);
     if (stored[BUFFER_KEY]) return importKey(stored[BUFFER_KEY]);
     const key = await generateAesKey();
-    await chrome.storage.local.set({ [BUFFER_KEY]: await exportKey(key) });
+    await chrome.storage.session.set({ [BUFFER_KEY]: await exportKey(key) });
     return key;
 }
 
@@ -63,7 +76,7 @@ export async function getBufferKey(): Promise<CryptoKey> {
  * written by older versions in plaintext.
  */
 export async function readBuffer<T = any>(name: string): Promise<T | null> {
-    const stored = await chrome.storage.local.get<Record<string, any>>(name);
+    const stored = await chrome.storage.session.get<Record<string, any>>(name);
     const raw = stored[name];
     if (raw === undefined) return null;
     if (typeof raw === 'string') {
@@ -73,10 +86,10 @@ export async function readBuffer<T = any>(name: string): Promise<T | null> {
     return raw as T;
 }
 
-/** Encrypts and writes a value into the persistent buffer. */
+/** Encrypts and writes a value into the in-memory (session) buffer. */
 export async function writeBuffer(name: string, value: any): Promise<void> {
     const key = await getBufferKey();
-    await chrome.storage.local.set({ [name]: await encryptData(key, value) });
+    await chrome.storage.session.set({ [name]: await encryptData(key, value) });
 }
 
 // =============================================================================
@@ -96,7 +109,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     blacklist: [],                // Sites you've marked as always dangerous
     logRetentionDays: 30,         // Days to keep activity logs before auto-deletion
     databaseRefreshDays: 7,
-    enableCloudTosdr: false       // Enhanced Policy Analysis (Cloud) defaults to false (privacy-first)
+    enableCloudTosdr: false       // Live rating updates defaults to false (privacy-first)
 };
 
 /**
@@ -218,10 +231,14 @@ export const storage = {
     // its timer) and permanently hang the telemetry write queue.
     updateState: (function() {
         let chain: Promise<void> = Promise.resolve();
-        return (state: Partial<AppState>): Promise<void> => {
+        // Accepts either a partial patch or a reducer that computes the patch
+        // from the freshest state inside the serialized chain. Reducers avoid
+        // lost updates when two callers increment a counter concurrently.
+        return (state: Partial<AppState> | ((current: AppState) => Partial<AppState>)): Promise<void> => {
             const run = chain.then(async () => {
                 const current = await storage.getState();
-                await storage.set({ state: { ...current, ...state } });
+                const patch = typeof state === 'function' ? state(current) : state;
+                await storage.set({ state: { ...current, ...patch } });
             });
             // Keep the chain alive even if this write fails, so later writes still run.
             chain = run.catch((error) => console.error('[storage.updateState] Write failed:', error));
@@ -323,9 +340,11 @@ export const storage = {
             'logs',
             'detectorLogs',
             'piiDetections',
+            'errorLog',
+        ]);
+        await chrome.storage.session.remove([
             'bufferedDetectorLogs',
             'bufferedPii',
-            'errorLog',
         ]);
     },
 
@@ -335,6 +354,8 @@ export const storage = {
             'scoreHistory',
             'siteCache',
             'crossSiteExposure',
+        ]);
+        await chrome.storage.session.remove([
             'bufferedScoreHistory',
             'bufferedSiteCache',
             'bufferedExposure',
@@ -358,7 +379,7 @@ export const storage = {
     // Get storage usage info
     getStorageUsage: async (): Promise<{ bytesInUse: number; quota: number }> => {
         const bytesInUse = await chrome.storage.local.getBytesInUse();
-        // The manifest requests `unlimitedStorage`, so there is no real cap.
+        // The manifest requests `unlimitedStorage`, so there is no practical cap.
         // Report quota 0 so the UI shows bytes used only. QUOTA_BYTES still
         // returns 10 MB even under unlimitedStorage, so it must not be shown.
         return { bytesInUse, quota: 0 };

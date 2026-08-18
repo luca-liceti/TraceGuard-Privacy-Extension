@@ -34,6 +34,7 @@
 import { analyzePage } from './analyzer';      // Runs all the privacy detectors
 import { piiDetector } from './pii-detector';  // Monitors sensitive input fields
 import { showPIIConfirmCard } from './pii-confirm';  // "Is this website safe?" popup
+import { showToast } from './toast';                 // In-page toast notifications
 import { isLocalUrl } from '../lib/utils'; // Helps identify local network addresses
 
 // Log that we've started (helpful for debugging)
@@ -105,36 +106,47 @@ const debouncedAnalysis = debounce(runAnalysis, 1000);
 // Run initial analysis (a genuine document load)
 runAnalysis(true);
 
-// Set up MutationObserver for SPAs (React, Vue, etc.)
-const observer = new MutationObserver((mutations) => {
-    let shouldReanalyze = false;
+// Set up MutationObserver for SPAs (React, Vue, etc.).
+//
+// Busy pages can emit thousands of DOM mutations a second; running a full scan
+// on every batch would jank the main thread. We coalesce bursts with a pending
+// flag and defer the actual (already-debounced) re-analysis to idle time, so a
+// storm of mutations schedules at most one scan.
+let pendingReanalysis = false;
+const scheduleReanalysis = () => {
+    if (pendingReanalysis) return;
+    pendingReanalysis = true;
+    const run = () => {
+        pendingReanalysis = false;
+        debouncedAnalysis(false);
+    };
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(run, { timeout: 2000 });
+    } else {
+        setTimeout(run, 250);
+    }
+};
 
+const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
-        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-            for (const node of mutation.addedNodes) {
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    const el = node as HTMLElement;
-                    const tag = el.tagName?.toUpperCase();
-                    
-                    // Re-analyze if forms, inputs, scripts, or iframes are added
-                    if (tag === 'INPUT' || tag === 'FORM' || tag === 'SCRIPT' || tag === 'IFRAME') {
-                        shouldReanalyze = true;
-                        break;
-                    }
-                    
-                    // Also check if any children are inputs/scripts
-                    if (el.querySelector && (el.querySelector('input, form, script, iframe'))) {
-                        shouldReanalyze = true;
-                        break;
-                    }
-                }
+        if (mutation.type !== 'childList' || mutation.addedNodes.length === 0) continue;
+        for (const node of mutation.addedNodes) {
+            if (node.nodeType !== Node.ELEMENT_NODE) continue;
+            const el = node as HTMLElement;
+            const tag = el.tagName?.toUpperCase();
+
+            // Re-analyze if forms, inputs, scripts, or iframes are added
+            if (tag === 'INPUT' || tag === 'FORM' || tag === 'SCRIPT' || tag === 'IFRAME') {
+                scheduleReanalysis();
+                return;
+            }
+
+            // Also check if any children are inputs/scripts
+            if (el.querySelector && el.querySelector('input, form, script, iframe')) {
+                scheduleReanalysis();
+                return;
             }
         }
-        if (shouldReanalyze) break;
-    }
-
-    if (shouldReanalyze) {
-        debouncedAnalysis(false);
     }
 });
 
@@ -176,15 +188,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // Handle toast notification requests from the background
     if (message.type === 'SHOW_TOAST') {
         const { title, message: toastMessage, variant } = message.data;
-
-        // NOTE: Full toast UI would require injecting a React component
-        // For now, we just log to the console
-        // In a future version, we could inject a shadow DOM element with a toast UI
-        console.log(`[TraceGuard ${variant?.toUpperCase() || 'INFO'}] ${title}: ${toastMessage}`);
-
-        // TODO: In a future update, inject a lightweight toast notification
-        // This would create a small popup in the corner of the page
-
+        showToast({ title, message: toastMessage, variant });
         sendResponse({ success: true });
     }
 

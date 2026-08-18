@@ -187,7 +187,5 @@ export class RateLimiter {
  * Pre-configured rate limiters for different APIs
  */
 export const rateLimiters = {
-    tosdr: new RateLimiter({ maxRequestsPerMinute: 10 }),
-    safeBrowsing: new RateLimiter({ maxRequestsPerMinute: 20 }),
-    phishTank: new RateLimiter({ maxRequestsPerMinute: 5 })
+    tosdr: new RateLimiter({ maxRequestsPerMinute: 10 })
 };
