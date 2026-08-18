@@ -184,7 +184,7 @@ async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
                         source: 'tosdr',
                         serviceName: service.name,
                         serviceId: service.id,
-                        points: details.points?.map((p: any) => ({ title: p.title, classification: p.classification })) || [],
+                        points: details.points?.map((p: any) => ({ title: p.title, classification: p.case?.classification || p.classification || 'neutral' })) || [],
                         documents: details.documents?.map((d: any) => ({ name: d.name, url: d.url })) || []
                     };
                 }

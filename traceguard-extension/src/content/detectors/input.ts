@@ -121,6 +121,22 @@ export function detectSensitiveInputs(): InputDetectionResult {
                 .map(label => label.textContent)
         ].filter(Boolean).join(' ').toLowerCase();
         const hasAddressMetadata = /\b(address|street|city|state|province|region|zip|postal|apartment|apt|unit|county)\b/i.test(visibleMetadata);
+
+        // One-time security codes (2FA / OTP) have a dedicated autocomplete
+        // token; fall back to visible metadata for sites that omit it.
+        // These are ephemeral and single-use, so they are LOW sensitivity and
+        // never penalized by the UPS system.
+        const isSecurityCode = hasAutocompleteToken('one-time-code')
+            || /\b(security code|verification code|one[- ]?time( code)?|\botp\b|2fa|two[- ]?factor|authenticator code|sms code|confirmation code|passcode)\b/i.test(visibleMetadata);
+
+        // SSN / government ID has no standardized autocomplete token, so
+        // visible metadata (placeholder, aria-label, name, id, label text) is
+        // the only reliable signal. Unlike password/card, there is no
+        // legitimate reason for a field to be *named* like an SSN field unless
+        // it actually collects one, so spoof risk is minimal.
+        const isSSN = /\b(social security( number)?|ssn|tax ?id|taxpayer ?id|national id|government id|ein)\b/i.test(visibleMetadata)
+            || /\b(social security|ssn|tax ?id|national ?id)\b/i.test(autocomplete);
+
         // Address forms commonly split a physical address across several
         // fields. These are the standardized HTML autocomplete tokens for
         // those components; grouping them as "address" keeps the UI concise
@@ -138,7 +154,7 @@ export function detectSensitiveInputs(): InputDetectionResult {
             'country',
             'country-name'
         ].includes(token));
-        
+
         const isName = autocompleteTokens.some(token => ['name', 'given-name', 'family-name', 'additional-name', 'honorific-prefix', 'honorific-suffix'].includes(token)) || /\b(first name|last name|full name|middle name)\b/i.test(visibleMetadata);
         const isUsername = autocompleteTokens.some(token => ['username'].includes(token)) || /\b(username|user name)\b/i.test(visibleMetadata);
 
@@ -146,6 +162,10 @@ export function detectSensitiveInputs(): InputDetectionResult {
             high.push({ element, type: 'password', sensitivity: 'HIGH' });
         } else if (isCard) {
             high.push({ element, type: 'credit card', sensitivity: 'HIGH' });
+        } else if (isSSN) {
+            high.push({ element, type: 'ssn', sensitivity: 'HIGH' });
+        } else if (isSecurityCode) {
+            low.push({ element, type: 'security code', sensitivity: 'LOW' });
         } else if (isEmail) {
             medium.push({ element, type: 'email', sensitivity: 'MEDIUM' });
         } else if (isPhone) {

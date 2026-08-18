@@ -84,7 +84,18 @@ function fetchJson(url, timeoutMs = 15000) {
 
 async function buildDatabase() {
     console.log('Building local ToS;DR database...');
-    const db = {};
+
+    // Start from any existing DB and merge new results on top, so a flaky API
+    // or rate limit never shrinks coverage: failed fetches keep their old entry.
+    let db = {};
+    if (fs.existsSync(OUTPUT_FILE)) {
+        try {
+            db = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf8'));
+            console.log(`Merging into existing DB (${Object.keys(db).length} records)`);
+        } catch (e) {
+            console.warn('Could not read existing DB, starting fresh:', e.message);
+        }
+    }
 
     for (const domain of topDomains) {
         try {
@@ -93,7 +104,11 @@ async function buildDatabase() {
             const searchData = await fetchJson(`https://api.tosdr.org/search/v4/?query=${domain}`);
             const services = searchData.parameters?.services || searchData.services;
             
-            if (services && services.length > 0) {
+            if (!services || services.length === 0) {
+                console.log(`  Skipped (no service match): ${domain}`);
+                continue;
+            }
+            {
                 const service = services[0];
                 
                 let grade = undefined;
@@ -107,7 +122,7 @@ async function buildDatabase() {
                 
                 const score = gradeToScore(grade);
                 
-                // Fetch details for points
+                // Fetch details for points and reference documents
                 let points = [];
                 let documents = [];
                 try {
@@ -118,8 +133,14 @@ async function buildDatabase() {
                             classification: p.case?.classification || 'neutral'
                         }));
                     }
+                    if (detailsData.parameters?.documents) {
+                        documents = detailsData.parameters.documents.map(d => ({
+                            name: d.name,
+                            url: d.url
+                        }));
+                    }
                 } catch (e) {
-                    console.warn(`  Warning: Failed to fetch points for ${domain}`);
+                    console.warn(`  Warning: Failed to fetch points/documents for ${domain}`);
                 }
 
                 db[domain] = {

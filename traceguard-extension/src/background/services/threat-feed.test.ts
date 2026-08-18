@@ -1,7 +1,10 @@
 /// <reference types="node" />
 import { describe, it, expect, vi } from 'vitest';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { verifySignedFeed, refreshThreatFeed } from './threat-feed';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { verifySignedFeed, refreshThreatFeed, THREAT_FEED_PUBLIC_KEY_HEX } from './threat-feed';
 
 function makeKeypair() {
     const { publicKey, privateKey } = generateKeyPairSync('ed25519');
@@ -53,6 +56,27 @@ describe('verifySignedFeed', () => {
 
         const ok = await verifySignedFeed({ version, updated, domains, signature }, publicKeyHex);
         expect(ok).toBe(false);
+    });
+});
+
+describe('embedded key vs committed signed feed', () => {
+    it('the embedded public key verifies the committed phishlist.signed.json', async () => {
+        // Regression guard: a single transposed byte in THREAT_FEED_PUBLIC_KEY_HEX
+        // silently breaks every feed refresh (Invalid signature). This test
+        // re-verifies the committed artifact against the embedded key, so the
+        // mismatch can never ship again.
+        // Resolve relative to this test file so the check is cwd-independent.
+        const here = path.dirname(fileURLToPath(import.meta.url));
+        const signedPath = path.resolve(here, '../../assets/phishlist.signed.json');
+        const signed = JSON.parse(fs.readFileSync(signedPath, 'utf8')) as {
+            version: string;
+            updated: string;
+            domains: string[];
+            signature: string;
+        };
+        expect(signed.domains.length).toBeGreaterThan(0);
+        const ok = await verifySignedFeed(signed, THREAT_FEED_PUBLIC_KEY_HEX);
+        expect(ok).toBe(true);
     });
 });
 

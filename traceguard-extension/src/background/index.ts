@@ -37,7 +37,7 @@ import { calculateWSS } from '../lib/scoring';
 import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState } from '../lib/types';
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR } from './tosdr-api';
-import { calculateVisitImpact, calculatePIIPenalty } from '../lib/pii';
+import { calculateVisitImpact, calculatePIIPenalty, evaluatePIIEntry } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
 import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
 import { initNetworkMonitor, getAndClearNetworkData, setNetworkMonitorEnabled } from './services/network-monitor';
@@ -593,6 +593,28 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 
     // -------------------------------------------------------------------------
+    // ADD_TO_ALLOWLIST: User vouched for a site in the PII confirmation popup
+    // -------------------------------------------------------------------------
+    if (message.type === 'ADD_TO_ALLOWLIST') {
+        const domain = String(message.domain || '').toLowerCase();
+        if (!domain) {
+            sendResponse({ success: false, error: 'No domain provided' });
+            return true;
+        }
+        storage.getSettings().then(async (settings) => {
+            const whitelist = settings.whitelist || [];
+            if (!whitelist.some(w => w.toLowerCase() === domain)) {
+                await storage.updateSettings({ whitelist: [...whitelist, domain] });
+            }
+            sendResponse({ success: true, domain });
+        }).catch(error => {
+            recordError('Add to allow list failed', String(error));
+            sendResponse({ success: false, error: String(error) });
+        });
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
     // UNLOCK VAULT: Flushes buffered telemetry to disk
     // -------------------------------------------------------------------------
     if (message.type === 'UNLOCK_VAULT') {
@@ -1092,6 +1114,10 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
  * 
  * @param message - Information about the PII event from the content script
  */
+// Domains we've already asked the user to vouch for this browser session.
+// Prevents the confirmation popup from spamming on every PII event.
+const promptedPIIConfirmDomains = new Set<string>();
+
 async function handlePIIDetection(message: any) {
     const event = message.data;
     console.log('[TraceGuard] PII event:', event);
@@ -1129,15 +1155,38 @@ async function handlePIIDetection(message: any) {
 
     // Get the current app state (privacy score, etc.)
     const state = await storage.getState();
+    const settings = await storage.getSettings();
 
-    // Increment the count of PII events (how many times you've shared personal info)
-    const newPiiCount = state.piiEventsCount + 1;
+    // Get current site's safety score (default to 50 if unknown)
+    const siteWSS = state.currentSite?.wss || 50;
+
+    // Does the user's allow list already vouch for this domain?
+    const domainMatches = (dom: string, pattern: string) => dom === pattern || dom.endsWith('.' + pattern);
+    const isWhitelisted = (settings.whitelist || []).some(w => domainMatches(event.site.toLowerCase(), w.toLowerCase()));
+
+    // Decide whether this entry is expected use (exempt) or avoidable risk.
+    // Exemptions are earned by evidence of legitimacy (verified domains, safe
+    // sites, user allow list) - never by page structure alone, because we
+    // cannot verify where a 2FA code or credit card actually goes.
+    const decision = evaluatePIIEntry({
+        fieldType: event.fieldType,
+        domain: event.site,
+        siteWSS,
+        isBlacklisted: state.currentSite?.breakdown?.reputation === 0,
+        isWhitelisted,
+        pageContext: event.pageContext,
+    });
+    const isExempt = !decision.penalize;
+
+    // Only count/penalize avoidable exposures; expected use is logged but free.
+    const newPiiCount = isExempt ? state.piiEventsCount : state.piiEventsCount + 1;
 
     // Calculate the penalty based on:
     // - What type of info you entered (password = bigger penalty than name)
     // - How safe the current website is (risky site = bigger penalty)
-    const siteWSS = state.currentSite?.wss || 50;  // Get current site's safety score (default to 50 if unknown)
-    const { newUPS, penalty } = calculatePIIPenalty(state.ups || 100, event.fieldType, siteWSS);
+    const { newUPS, penalty } = isExempt
+        ? { newUPS: state.ups || 100, penalty: 0 }
+        : calculatePIIPenalty(state.ups || 100, event.fieldType, siteWSS);
     const scoreImpact = -penalty;  // Negative because it's a penalty
 
     // Record this PII detection event
@@ -1148,7 +1197,9 @@ async function handlePIIDetection(message: any) {
         fieldType: event.fieldType,        // What type of field (password, email, etc.)
         sensitivity: event.sensitivity,   // How sensitive (HIGH, MEDIUM, LOW)
         siteWSS: siteWSS,                 // The site's safety score at the time
-        scoreImpact: scoreImpact          // How much this affected your privacy score
+        scoreImpact: scoreImpact,         // How much this affected your privacy score (0 = expected use)
+        exempt: isExempt,                 // True when this was expected use (no penalty)
+        exemptReason: isExempt ? decision.reason : undefined  // Why it was exempt
     });
 
     // Add this event to your score history (for the dashboard graph)
@@ -1156,7 +1207,9 @@ async function handlePIIDetection(message: any) {
         timestamp: Date.now(),
         ups: newUPS,
         avgSiteRisk: state.currentSite?.wss || 0,
-        reason: `PII entered on ${event.site} (${event.sensitivity} sensitivity)`
+        reason: isExempt
+            ? `${event.fieldType} entered on ${event.site} (expected use, no penalty)`
+            : `PII entered on ${event.site} (${event.sensitivity} sensitivity)`
     });
 
     // Keep only the last 100 entries to prevent storage from growing too large
@@ -1187,7 +1240,38 @@ async function handlePIIDetection(message: any) {
         ups: newUPS                    // Your updated privacy score
     });
 
-    console.log(`[TraceGuard] UPS updated: ${state.ups} → ${newUPS} (PII events: ${newPiiCount})`);
+    console.log(isExempt
+        ? `[TraceGuard] PII exempted (${decision.reason}): ${event.fieldType} on ${event.site} - UPS unchanged at ${state.ups}`
+        : `[TraceGuard] UPS updated: ${state.ups} → ${newUPS} (PII events: ${newPiiCount})`);
+
+    // Expected-use entries (login, 2FA codes, gov sites, verified sectors) are
+    // logged and exposed but silent: the user already knows they logged in.
+    if (isExempt) return;
+
+    // Outlier sites: when a non-blacklisted risky site asks for personal info,
+    // offer the user a one-time confirmation to vouch for it (add to allow
+    // list). Blacklisted sites are never offered - they're dangerous, not
+    // debatable.
+    if ((decision.reason === 'risky' || decision.reason === 'unnecessary')
+        && !promptedPIIConfirmDomains.has(event.site)) {
+        promptedPIIConfirmDomains.add(event.site);
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]?.id) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    type: 'SHOW_PII_CONFIRM',
+                    data: {
+                        domain: event.site,
+                        fieldType: event.fieldType,
+                        reason: decision.reason,
+                        message: decision.message,
+                        siteWSS,
+                    }
+                }).catch(() => {
+                    // The page may not have the content script (yet) - ignore.
+                });
+            }
+        });
+    }
 
     // Create a notification to alert you about the PII detection
     // Severity depends on how sensitive the information was
@@ -1199,17 +1283,16 @@ async function handlePIIDetection(message: any) {
         type: 'pii_detected',
         title: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
         titleKey: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
-        message: `${event.fieldType} entered on ${event.site}${scoreImpact !== 0 ? ` (${scoreImpact} pts)` : ''}`,
-        messageKey: scoreImpact !== 0 ? '{{fieldType}} entered on {{site}} ({{scoreImpact}} pts)' : '{{fieldType}} entered on {{site}}',
-        params: { fieldType: event.fieldType, site: event.site, scoreImpact },
+        message: `${event.fieldType} entered on ${event.site} (${scoreImpact} pts). ${decision.message}`,
+        messageKey: '{{fieldType}} entered on {{site}} ({{scoreImpact}} pts). {{reason}}',
+        params: { fieldType: event.fieldType, site: event.site, scoreImpact, reason: decision.message },
         domain: event.site,
         severity: notificationSeverity,
-        actionUrl: `/overview?viewSite=${encodeURIComponent(event.site)}`
+        actionUrl: `/overview?viewSite=${encodeURIComponent(event.site)}&section=inputs`
     }, key);
 
     // Send a toast notification to the webpage (the little popup message in the corner)
     // We only do this if the user has notifications enabled in their settings
-    const settings = await storage.getSettings();
     if (settings.notifications) {
         // Send a message to the active browser tab to show a toast notification
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

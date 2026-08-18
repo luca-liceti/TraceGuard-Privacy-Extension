@@ -41,6 +41,7 @@ import {
     calculateRecovery,
     calculateVisitImpact,
     calculateFocusPenalty,
+    evaluatePIIEntry,
     PII_PATTERNS,
     BASE_PENALTIES,
     getBasePenalty,
@@ -255,6 +256,213 @@ describe('PII Penalty System', () => {
             expect(result.newStreak).toBe(6)
         })
     })
+
+    describe('evaluatePIIEntry (expected-use exemptions)', () => {
+        it('penalizes password entry on a blacklisted login page (override wins)', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'password',
+                domain: 'evil-login.com',
+                siteWSS: 20,
+                isBlacklisted: true,
+                pageContext: { isLoginPage: true },
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('blacklisted');
+        });
+
+        it('exempts one-time security codes on safe sites (ephemeral, single-use)', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'security code',
+                domain: 'example.com',
+                siteWSS: 80,
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('otp');
+        });
+
+        it('penalizes 2FA codes on risky non-blacklisted sites (OTP-scam catch)', () => {
+            // We cannot verify where the code goes, so on a risky site the
+            // OTP exemption does not apply - that's the OTP-scam scenario.
+            const result = evaluatePIIEntry({
+                fieldType: 'security code',
+                domain: 'sketchy-login.xyz',
+                siteWSS: 30,
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('risky');
+        });
+
+        it('still penalizes 2FA codes on blacklisted sites (hard override)', () => {
+            // Fake bank page asking for your 2FA code: the blacklist override
+            // beats every exemption.
+            const result = evaluatePIIEntry({
+                fieldType: 'security code',
+                domain: 'bank-secure-login.xyz',
+                siteWSS: 20,
+                isBlacklisted: true,
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('blacklisted');
+        });
+
+        it('never penalizes PII on government domains', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'ssn',
+                domain: 'dmv.ca.gov',
+                siteWSS: 40,
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('government');
+        });
+
+        it('exempts login on a verified trusted platform (LinkedIn)', () => {
+            // LinkedIn is on the verified trusted list, so logging in is safe
+            // even though its WSS may be mediocre.
+            const result = evaluatePIIEntry({
+                fieldType: 'password',
+                domain: 'linkedin.com',
+                siteWSS: 55,
+                pageContext: { isLoginPage: true },
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('trusted');
+        });
+
+        it('exempts login on a trusted platform subdomain', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'password',
+                domain: 'accounts.google.com',
+                siteWSS: 60,
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('trusted');
+        });
+
+        it('penalizes SSN on a trusted platform that has no business collecting it', () => {
+            // LinkedIn is verified, but it's not a Tier 1 sector - an SSN ask
+            // there is a red flag even though the site is trusted.
+            const result = evaluatePIIEntry({
+                fieldType: 'ssn',
+                domain: 'linkedin.com',
+                siteWSS: 90,
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('unnecessary');
+        });
+
+        it('exempts payment details on a verified store (Amazon)', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'credit card',
+                domain: 'amazon.com',
+                siteWSS: 50,
+                pageContext: { isCheckoutPage: true },
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('trusted');
+        });
+
+        it('penalizes card entry on a risky non-verified checkout (fake storefront)', () => {
+            // We cannot verify the card reaches a safe checkout.
+            const result = evaluatePIIEntry({
+                fieldType: 'credit card',
+                domain: 'shop.example',
+                siteWSS: 45,
+                pageContext: { isCheckoutPage: true },
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('risky');
+        });
+
+        it('exempts PII on user-whitelisted sites', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'address',
+                domain: 'small-local-shop.com',
+                siteWSS: 40,
+                isWhitelisted: true,
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('whitelisted');
+        });
+
+        it('exempts email entry on a safe site (expected use)', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'email',
+                domain: 'newsletter.example',
+                siteWSS: 85,
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('safe-site');
+        });
+
+        it('penalizes SSN entry on a safe site whose sector has no business asking', () => {
+            // "IT website shouldn't need your SSN" - even if the site is safe.
+            const result = evaluatePIIEntry({
+                fieldType: 'ssn',
+                domain: 'acmecoding.example',
+                siteWSS: 90,
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('unnecessary');
+        });
+
+        it('exempts SSN entry on a curated bank even on a risky site', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'ssn',
+                domain: 'chase.com',
+                siteWSS: 55,
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('curated-sector');
+        });
+
+        it('exempts SSN entry on a curated bank subdomain', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'ssn',
+                domain: 'secure.chase.com',
+                siteWSS: 60,
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('curated-sector');
+        });
+
+        it('does not let keyword facades exempt a risky site (fake insurance)', () => {
+            // A sketchy site posing as an insurer: keywords alone are a weak
+            // signal and must not grant an exemption on a risky site.
+            const result = evaluatePIIEntry({
+                fieldType: 'ssn',
+                domain: 'quick-insurance-claims.xyz',
+                siteWSS: 40,
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('risky');
+        });
+
+        it('exempts keyword-matched sectors on safe sites', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'ssn',
+                domain: 'myinsurancesite.com',
+                siteWSS: 80,
+            });
+            expect(result.penalize).toBe(false);
+            expect(result.reason).toBe('keyword-sector');
+        });
+
+        it('penalizes non-expected PII on risky non-blacklisted sites', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'address',
+                domain: 'random-blog.example',
+                siteWSS: 45,
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('risky');
+        });
+
+        it('maps one-time codes to a small base penalty (risky OTP entry costs points)', () => {
+            expect(getBasePenalty('security code')).toBe(3);
+            expect(getBasePenalty('verification code')).toBe(3);
+            expect(getBasePenalty('otp')).toBe(3);
+        });
+    });
 
     describe('calculateFocusPenalty', () => {
         it('should apply 20% of base penalty on focus', () => {

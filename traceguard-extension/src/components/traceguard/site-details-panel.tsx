@@ -65,7 +65,18 @@ interface SiteDetailsPanelProps {
     safetyLevel: string
     open: boolean
     onOpenChange: (open: boolean) => void
+    /**
+     * Optional section to scroll to + highlight when the panel opens,
+     * e.g. "inputs" for a PII alert. Matches the section ids rendered below.
+     */
+    highlightSection?: string
 }
+
+/**
+ * Section keys rendered in this panel (also used as element id suffixes).
+ */
+const SECTION_KEYS = ['trackers', 'cookies', 'network', 'inputs', 'fingerprinting', 'reputation', 'policy', 'headers'] as const
+type SectionKey = typeof SECTION_KEYS[number]
 
 // =============================================================================
 // SHARED HELPER COMPONENTS
@@ -151,30 +162,6 @@ function TechnicalDetails({ children, itemCount }: { children: React.ReactNode; 
     )
 }
 
-/**
- * The unified scrollable table body, applied to all technical detail tables.
- * Any table with more than 5 items gets a fixed-height scroll container.
- */
-function ScrollableTableBody({ children, itemCount }: { children: React.ReactNode; itemCount: number }) {
-    const { t } = useTranslation();
-    if (itemCount > 5) {
-        return (
-            <div className="max-h-[240px] overflow-y-auto">
-                <table className="w-full caption-bottom text-sm">
-                    <tbody className="[&_tr:last-child]:border-0">
-                        {children}
-                    </tbody>
-                </table>
-            </div>
-        )
-    }
-    return (
-        <TableBody>
-            {children}
-        </TableBody>
-    )
-}
-
 // =============================================================================
 // FINGERPRINTING TECHNIQUE DESCRIPTIONS
 // =============================================================================
@@ -257,6 +244,7 @@ export function SiteDetailsPanel({
     safetyLevel,
     open,
     onOpenChange,
+    highlightSection,
 }: SiteDetailsPanelProps) {
     const { t } = useTranslation();
     const pluralize = (count: number, singularKey: string, pluralKey: string) =>
@@ -286,21 +274,54 @@ export function SiteDetailsPanel({
     const hasFingerprinting = enriched?.fingerprinting && enriched.fingerprinting.summary.totalAttempts > 0
     const hasHeaders = enriched?.headers?.items && enriched.headers.items.length > 0
 
+    // ── Deep-link to a specific section (e.g. from a notification) ──────────
+    const [highlightedSection, setHighlightedSection] = React.useState<SectionKey | null>(null)
+    const highlightTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    React.useEffect(() => {
+        if (!open || !highlightSection) return
+        // Wait for the sheet to mount/animate before scrolling into view
+        const timer = setTimeout(() => {
+            const el = document.getElementById(`details-section-${highlightSection}`)
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                setHighlightedSection(highlightSection as SectionKey)
+                if (highlightTimer.current) clearTimeout(highlightTimer.current)
+                highlightTimer.current = setTimeout(() => setHighlightedSection(null), 2600)
+            }
+        }, 350)
+        return () => clearTimeout(timer)
+    }, [open, highlightSection])
+
+    // Clear the highlight whenever the panel closes
+    React.useEffect(() => {
+        if (!open) setHighlightedSection(null)
+    }, [open])
+
+    React.useEffect(() => () => {
+        if (highlightTimer.current) clearTimeout(highlightTimer.current)
+    }, [])
+
+    const sectionClass = (key: SectionKey) =>
+        highlightedSection === key
+            ? "flex flex-col gap-3 rounded-lg ring-2 ring-primary/60 bg-primary/5 p-3 -mx-1 transition-all"
+            : "flex flex-col gap-3"
+
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent className="w-full sm:max-w-[700px] flex flex-col gap-0 p-0">
                 {/* ─── Fixed Header ────────────────────────────────── */}
                 <SheetHeader className="px-6 py-4 border-b">
-                    <SheetTitle className="text-lg font-semibold">{domain}</SheetTitle>
-                    <SheetDescription className="flex items-center gap-3">
-                        <span>{timestamp ? format(new Date(timestamp), "MMM d, yyyy · HH:mm") : t("Recent visit")}</span>
+                    <SheetTitle className="truncate">{domain}</SheetTitle>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                         <span className="flex items-center gap-1.5">
-                            <span className="text-lg font-bold text-foreground">{wss}</span>
+                            <span className="text-lg font-bold leading-none text-foreground">{wss}</span>
                             <Badge variant="outline" className={`px-2.5 py-0.5 ${getSafetyBgColor(safetyLevel)} ${getSafetyTextColor(safetyLevel)}`}>
                                 {safetyLevel}
                             </Badge>
                         </span>
-                    </SheetDescription>
+                        <span className="text-sm">{timestamp ? format(new Date(timestamp), "MMM d, yyyy · HH:mm") : t("Recent visit")}</span>
+                    </div>
                 </SheetHeader>
 
                 {/* ─── Scrollable Content ───────────────────────────── */}
@@ -310,7 +331,7 @@ export function SiteDetailsPanel({
                         {/* ══════════════════════════════════════════════════════
                             TRACKERS
                         ══════════════════════════════════════════════════════ */}
-                        <div className="flex flex-col gap-3">
+                        <div id="details-section-trackers" className={sectionClass('trackers')}>
                             <SectionTitle icon={Activity}>{t("Trackers")}</SectionTitle>
                             <SectionDescription>{t("Companies that follow your activity across websites to build a profile about you.")}</SectionDescription>
 
@@ -362,18 +383,16 @@ export function SiteDetailsPanel({
                                         {/* Collapsible technical table */}
                                         {items.length > 0 && (
                                             <TechnicalDetails itemCount={items.length}>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow className="bg-muted/40">
-                                                            <TableHead className="text-xs w-8" />
-                                                            <TableHead className="text-xs">{t("Domain · Organization")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Category")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Status")}</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                </Table>
                                                 <div className={items.length > 5 ? "max-h-[240px] overflow-y-auto" : undefined}>
                                                     <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-muted/40">
+                                                                <TableHead className="text-xs w-8" />
+                                                                <TableHead className="text-xs">{t("Domain · Organization")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Category")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Status")}</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
                                                         <TableBody>
                                                             {items.map((t: TrackerDetail, idx: number) => {
                                                                 const isBlocked = t.status === 'blocked'
@@ -429,7 +448,7 @@ export function SiteDetailsPanel({
                         {/* ══════════════════════════════════════════════════════
                             COOKIES
                         ══════════════════════════════════════════════════════ */}
-                        <div className="flex flex-col gap-3">
+                        <div id="details-section-cookies" className={sectionClass('cookies')}>
                             <SectionTitle icon={Cookie}>{t("Cookies")}</SectionTitle>
                             <SectionDescription>{t("Small files websites store on your device. Some are necessary, others track you for ads.")}</SectionDescription>
 
@@ -483,18 +502,16 @@ export function SiteDetailsPanel({
                                         {/* Collapsible technical table */}
                                         {items.length > 0 && (
                                             <TechnicalDetails itemCount={items.length}>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow className="bg-muted/40">
-                                                            <TableHead className="text-xs w-8" />
-                                                            <TableHead className="text-xs">{t("Cookie · Domain")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Category")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Status")}</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                </Table>
                                                 <div className={items.length > 5 ? "max-h-[240px] overflow-y-auto" : undefined}>
                                                     <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-muted/40">
+                                                                <TableHead className="text-xs w-8" />
+                                                                <TableHead className="text-xs">{t("Cookie · Domain")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Category")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Status")}</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
                                                         <TableBody>
                                                             {items.map((c: CookieDetail, idx: number) => {
                                                                 const isBlocked = c.status === 'blocked'
@@ -579,7 +596,7 @@ export function SiteDetailsPanel({
                         {/* ══════════════════════════════════════════════════════
                             THIRD-PARTY CONNECTIONS (formerly Network Requests)
                         ══════════════════════════════════════════════════════ */}
-                        <div className="flex flex-col gap-3">
+                        <div id="details-section-network" className={sectionClass('network')}>
                             <SectionTitle icon={Network}>{t("Third-Party Connections")}</SectionTitle>
                             <SectionDescription>{t("Other companies and servers this page shared data with during your visit.")}</SectionDescription>
 
@@ -621,18 +638,16 @@ export function SiteDetailsPanel({
                                         {/* Collapsible technical table, tracker + 3rd party only */}
                                         {networkTableItems.length > 0 && (
                                             <TechnicalDetails itemCount={networkTableItems.length}>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow className="bg-muted/40">
-                                                            <TableHead className="text-xs w-8" />
-                                                            <TableHead className="text-xs">{t("Domain · Organization")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Type")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Status")}</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                </Table>
                                                 <div className={networkTableItems.length > 5 ? "max-h-[240px] overflow-y-auto" : undefined}>
                                                     <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-muted/40">
+                                                                <TableHead className="text-xs w-8" />
+                                                                <TableHead className="text-xs">{t("Domain · Organization")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Type")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Status")}</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
                                                         <TableBody>
                                                             {networkTableItems.map((r: NetworkRequestDetail, idx: number) => {
                                                                 const isBlocked = r.status === 'blocked'
@@ -684,7 +699,7 @@ export function SiteDetailsPanel({
                         {/* ══════════════════════════════════════════════════════
                             PERSONAL DATA FIELDS
                         ══════════════════════════════════════════════════════ */}
-                        <div className="flex flex-col gap-3">
+                        <div id="details-section-inputs" className={sectionClass('inputs')}>
                             <SectionTitle icon={Key}>{t("Personal Data Fields")}</SectionTitle>
                             <SectionDescription>{t("Forms on this page that ask for sensitive info like passwords, emails, or credit cards.")}</SectionDescription>
 
@@ -739,7 +754,7 @@ export function SiteDetailsPanel({
                         {/* ══════════════════════════════════════════════════════
                             FINGERPRINTING
                         ══════════════════════════════════════════════════════ */}
-                        <div className="flex flex-col gap-3">
+                        <div id="details-section-fingerprinting" className={sectionClass('fingerprinting')}>
                             <SectionTitle icon={Fingerprint}>{t("Fingerprinting")}</SectionTitle>
                             <SectionDescription>{t("Techniques used to identify your device without cookies — harder to block and often invisible.")}</SectionDescription>
 
@@ -773,18 +788,16 @@ export function SiteDetailsPanel({
 
                                         {/* Collapsible technical table */}
                                         <TechnicalDetails itemCount={items.length}>
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow className="bg-muted/40">
-                                                        <TableHead className="text-xs w-8" />
-                                                        <TableHead className="text-xs">{t("Technique · Script Domain")}</TableHead>
-                                                        <TableHead className="text-xs">{t("Risk")}</TableHead>
-                                                        <TableHead className="text-xs">{t("Organization")}</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                            </Table>
                                             <div className={items.length > 5 ? "max-h-[240px] overflow-y-auto" : undefined}>
                                                 <Table>
+                                                    <TableHeader>
+                                                        <TableRow className="bg-muted/40">
+                                                            <TableHead className="text-xs w-8" />
+                                                            <TableHead className="text-xs">{t("Technique · Script Domain")}</TableHead>
+                                                            <TableHead className="text-xs">{t("Risk")}</TableHead>
+                                                            <TableHead className="text-xs">{t("Organization")}</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
                                                     <TableBody>
                                                         {items.map((f: FingerprintingDetail, idx: number) => {
                                                             const riskCfg = getRiskLevelBadge(f.risk)
@@ -824,7 +837,7 @@ export function SiteDetailsPanel({
                         {/* ══════════════════════════════════════════════════════
                             REPUTATION
                         ══════════════════════════════════════════════════════ */}
-                        <div className="flex flex-col gap-3">
+                        <div id="details-section-reputation" className={sectionClass('reputation')}>
                             <SectionTitle icon={OctagonAlert}>{t("Reputation")}</SectionTitle>
                             <SectionDescription>{t("Whether this site has been flagged as unsafe, malicious, or deceptive by security databases.")}</SectionDescription>
 
@@ -851,17 +864,15 @@ export function SiteDetailsPanel({
                                         {/* Collapsible technical table */}
                                         {checks.length > 0 && (
                                             <TechnicalDetails itemCount={checks.length}>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow className="bg-muted/40">
-                                                            <TableHead className="text-xs w-8" />
-                                                            <TableHead className="text-xs">{t("Security Check")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Result")}</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                </Table>
                                                 <div className={checks.length > 5 ? "max-h-[240px] overflow-y-auto" : undefined}>
                                                     <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-muted/40">
+                                                                <TableHead className="text-xs w-8" />
+                                                                <TableHead className="text-xs">{t("Security Check")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Result")}</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
                                                         <TableBody>
                                                             {checks.map((check: string, idx: number) => (
                                                                 <TableRow key={idx}>
@@ -895,7 +906,7 @@ export function SiteDetailsPanel({
                         {/* ══════════════════════════════════════════════════════
                             PRIVACY POLICY (unchanged, already works well)
                         ══════════════════════════════════════════════════════ */}
-                        <div className="flex flex-col gap-3">
+                        <div id="details-section-policy" className={sectionClass('policy')}>
                             <SectionTitle icon={FileText}>{t("Privacy Policy")}</SectionTitle>
                             <SectionDescription>{t("How this site says it handles your data, graded by community reviewers.")}</SectionDescription>
                             {policyLegacy ? (
@@ -949,16 +960,14 @@ export function SiteDetailsPanel({
                                             })
                                         return (
                                             <div className="rounded-md border overflow-hidden">
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow className="bg-muted/40">
-                                                            <TableHead className="text-xs w-10" />
-                                                            <TableHead className="text-xs">{t("Classification Point")}</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                </Table>
                                                 <div className={filtered.length > 5 ? "max-h-[240px] overflow-y-auto" : undefined}>
                                                     <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-muted/40">
+                                                                <TableHead className="text-xs w-10" />
+                                                                <TableHead className="text-xs">{t("Classification Point")}</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
                                                         <TableBody>
                                                             {filtered.map((p: any, idx: number) => {
                                                                 let Icon = Info
@@ -1012,7 +1021,7 @@ export function SiteDetailsPanel({
                         {/* ══════════════════════════════════════════════════════
                             CONNECTION SECURITY (formerly Security Headers)
                         ══════════════════════════════════════════════════════ */}
-                        <div className="flex flex-col gap-3">
+                        <div id="details-section-headers" className={sectionClass('headers')}>
                             <SectionTitle icon={ShieldUser}>{t("Connection Security")}</SectionTitle>
                             <SectionDescription>{t("Protections the site uses to keep your connection safe from eavesdropping and tampering.")}</SectionDescription>
 
@@ -1058,19 +1067,17 @@ export function SiteDetailsPanel({
                                         {/* Collapsible technical table */}
                                         <TooltipProvider>
                                             <TechnicalDetails itemCount={items.length}>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow className="bg-muted/40">
-                                                            <TableHead className="text-xs w-8" />
-                                                            <TableHead className="text-xs">{t("Header")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Rating")}</TableHead>
-                                                            <TableHead className="text-xs">{t("Status")}</TableHead>
-                                                            <TableHead className="text-xs w-8" />
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                </Table>
                                                 <div className={items.length > 5 ? "max-h-[240px] overflow-y-auto" : undefined}>
                                                     <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-muted/40">
+                                                                <TableHead className="text-xs w-8" />
+                                                                <TableHead className="text-xs">{t("Header")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Rating")}</TableHead>
+                                                                <TableHead className="text-xs">{t("Status")}</TableHead>
+                                                                <TableHead className="text-xs w-8" />
+                                                            </TableRow>
+                                                        </TableHeader>
                                                         <TableBody>
                                                             {items.map((h: HeaderAnalysisDetail, idx: number) => {
                                                                 const ratingBadge = getHeaderRatingBadge(h.rating)

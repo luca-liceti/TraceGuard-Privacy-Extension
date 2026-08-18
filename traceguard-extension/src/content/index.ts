@@ -33,6 +33,7 @@
 // Import the modules we need
 import { analyzePage } from './analyzer';      // Runs all the privacy detectors
 import { piiDetector } from './pii-detector';  // Monitors sensitive input fields
+import { showPIIConfirmCard } from './pii-confirm';  // "Is this website safe?" popup
 import { isLocalUrl } from '../lib/utils'; // Helps identify local network addresses
 
 // Log that we've started (helpful for debugging)
@@ -78,7 +79,7 @@ async function runAnalysis(isInitialLoad: boolean) {
         // STEP 2: Start monitoring sensitive fields for PII entry (unless disabled)
         // piiDetector.startMonitoring will clear old listeners and attach new ones
         if (settings?.enablePIIDetection !== false) {
-            piiDetector.startMonitoring(result.sensitiveFields);
+            piiDetector.startMonitoring(result.sensitiveFields, result.pageContext);
         } else {
             piiDetector.stopMonitoring();
         }
@@ -165,6 +166,13 @@ window.addEventListener('beforeunload', () => {
  * when something important happens (like PII detection on a risky site).
  */
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    // Handle the "Is this website safe?" confirmation popup from the background
+    if (message.type === 'SHOW_PII_CONFIRM') {
+        showPIIConfirmCard(message.data);
+        sendResponse({ success: true });
+        return true;
+    }
+
     // Handle toast notification requests from the background
     if (message.type === 'SHOW_TOAST') {
         const { title, message: toastMessage, variant } = message.data;

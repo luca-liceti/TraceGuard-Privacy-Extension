@@ -50,9 +50,15 @@ export interface DetectionDetails {
     };
 }
 
+export interface PageContext {
+    isLoginPage: boolean;    // Page has a password field (login / sign-up)
+    isCheckoutPage: boolean; // Page has a payment field (checkout)
+}
+
 export interface PageAnalysisResult {
     scores: ScoreBreakdown;
     sensitiveFields: ReturnType<typeof detectSensitiveInputs>['fields'];
+    pageContext: PageContext;
     detectionDetails: DetectionDetails;
     rawForEnrichment: {
         cookies: { name: string }[];
@@ -76,6 +82,13 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
     // We pass a placeholder here; background will overwrite with actual score
     const reputationScore = 100;
 
+    // Derive the page structure so the PII penalty system can exempt expected
+    // use: a password field means login/sign-up, a payment field means checkout.
+    const pageContext: PageContext = {
+        isLoginPage: inputResult.fields.high.some(field => field.type === 'password'),
+        isCheckoutPage: inputResult.fields.high.some(field => field.type === 'credit card'),
+    };
+
     // Privacy policy check with ToS;DR API (async)
     const policyResult = await detectPrivacyPolicyDetailed();
 
@@ -89,6 +102,7 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
             fingerprinting: calculateFingerprintingScore(fingerprintingAttempts.map(attempt => attempt.technique))
         },
         sensitiveFields: inputResult.fields,
+        pageContext,
         detectionDetails: {
             tracking: {
                 count: trackingResult.trackerCount,

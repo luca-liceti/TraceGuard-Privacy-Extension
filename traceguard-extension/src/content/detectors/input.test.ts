@@ -61,6 +61,38 @@ describe('detectSensitiveInputs', () => {
         expect(result.fields.medium.map(field => field.type)).toEqual(['address', 'address']);
     });
 
+    it('classifies SSN fields from visible metadata as HIGH', () => {
+        addInput({ type: 'text', name: 'ssn' });
+        addInput({ type: 'text', placeholder: 'Social Security Number' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.high).toHaveLength(2);
+        expect(result.fields.high.map(field => field.type)).toEqual(['ssn', 'ssn']);
+        expect(result.score).toBeLessThan(100);
+    });
+
+    it('classifies tax ID fields as SSN (HIGH)', () => {
+        addInput({ type: 'text', name: 'taxpayer_id' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.high).toHaveLength(1);
+        expect(result.fields.high[0].type).toBe('ssn');
+    });
+
+    it('classifies one-time-code autocomplete as a LOW-sensitivity security code', () => {
+        addInput({ type: 'text', autocomplete: 'one-time-code' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.low).toHaveLength(1);
+        expect(result.fields.low[0].type).toBe('security code');
+        expect(result.fields.high).toHaveLength(0);
+    });
+
+    it('classifies 2FA fields from visible metadata as security codes', () => {
+        addInput({ type: 'text', name: 'verification_code' });
+        addInput({ type: 'text', placeholder: 'Enter 2FA code' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.low).toHaveLength(2);
+        expect(result.fields.low.every(field => field.type === 'security code')).toBe(true);
+    });
+
     it('ignores spoofable name/id attributes (no PII fabrication)', () => {
         addInput({ type: 'text', name: 'password', id: 'card-number' });
         const result = detectSensitiveInputs();

@@ -256,8 +256,17 @@
         "classification": "good"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765522369
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://policies.google.com/privacy#"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://policies.google.com/terms#"
+      }
+    ],
+    "lastUpdated": 1787021160414
   },
   "facebook.com": {
     "found": true,
@@ -528,8 +537,37 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765522983
+    "documents": [
+      {
+        "name": "Cookie Policy",
+        "url": "https://mbasic.facebook.com/privacy/policies/cookies/printable/"
+      },
+      {
+        "name": "Privacy Basics",
+        "url": "https://www.facebook.com/about/basics"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://mbasic.facebook.com/privacy/policy/printable/version/25862970456621906/"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://mbasic.facebook.com/legal/terms/plain_text_terms/"
+      },
+      {
+        "name": "What information does Facebook get when I visit a site with the Like button?",
+        "url": "https://www.facebook.com/help/186325668085084"
+      },
+      {
+        "name": "AI Terms of Service",
+        "url": "https://www.facebook.com/legal/ai-terms"
+      },
+      {
+        "name": "EU-U.S. and Swiss-U.S. Data Privacy Frameworks Disclosure for Meta Platforms, Inc.",
+        "url": "https://mbasic.facebook.com/privacy/policies/data_privacy_framework/printable/"
+      }
+    ],
+    "lastUpdated": 1787021161071
   },
   "amazon.com": {
     "found": true,
@@ -692,8 +730,97 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765523596
+    "documents": [
+      {
+        "name": "Kindle Store Terms of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201014950"
+      },
+      {
+        "name": "Amazon Photos Terms of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201376540"
+      },
+      {
+        "name": "Amazon Device Terms of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=202002080"
+      },
+      {
+        "name": "Amazon Privacy Notice",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ"
+      },
+      {
+        "name": "Interest-Based Ads",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=GLVB9XDF9M8MU7UZ"
+      },
+      {
+        "name": "Alexa Terms of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201809740"
+      },
+      {
+        "name": "Amazon Prime Terms & Conditions",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=G2B9L3YR7LR8J4XP"
+      },
+      {
+        "name": "Amazon Appstore Terms of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201485660"
+      },
+      {
+        "name": "Amazon Music Terms of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201380010"
+      },
+      {
+        "name": "Amazon Silk FAQs",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=200775270"
+      },
+      {
+        "name": "EU-US and Swiss-US Privacy Shield",
+        "url": "https://www.amazon.com/gp/help/customer/display.html/ref=hp_left_v4_sib?ie=UTF8&nodeId=202135380"
+      },
+      {
+        "name": "Amazon Australia - Privacy Notice",
+        "url": "https://www.amazon.com.au/gp/help/customer/display.html?nodeId=468496&ref_=footer_privacy"
+      },
+      {
+        "name": "Saving Your Wi-Fi Passwords to Amazon FAQs",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201730860"
+      },
+      {
+        "name": "Conditions of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=GLSBYFE9MGKKQXXM"
+      },
+      {
+        "name": "Monthly Payments Terms & Conditions",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=202095050"
+      },
+      {
+        "name": "Amazon Maps Terms of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201544030"
+      },
+      {
+        "name": "Generative AI Development Disclosure",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?ref_=hp_left_v4_sib&nodeId=TmGoGN3UbFaQ1CAph7"
+      },
+      {
+        "name": "Kindle Unlimited Terms of Use",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201556940"
+      },
+      {
+        "name": "Backup and Restore FAQ",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201604180"
+      },
+      {
+        "name": "Location Services FAQ",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201604200"
+      },
+      {
+        "name": "Firefly FAQ",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=201604140"
+      },
+      {
+        "name": "Kindle and Fire Tablet Terms",
+        "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=200699130"
+      }
+    ],
+    "lastUpdated": 1787021161610
   },
   "apple.com": {
     "found": true,
@@ -948,8 +1075,29 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765524211
+    "documents": [
+      {
+        "name": "Apple Website Terms of Use",
+        "url": "https://www.apple.com/legal/internet-services/terms/site.html"
+      },
+      {
+        "name": "iCloud Terms of Service",
+        "url": "https://www.apple.com/legal/internet-services/icloud/en/terms.html"
+      },
+      {
+        "name": "Apple Media Services Terms and Conditions",
+        "url": "https://www.apple.com/legal/internet-services/itunes/gamecenter/us/terms.html"
+      },
+      {
+        "name": "iTunes Terms of Service",
+        "url": "https://www.apple.com/legal/internet-services/itunes/us/terms.html"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.apple.com/legal/privacy/en-ww/"
+      }
+    ],
+    "lastUpdated": 1787021162158
   },
   "microsoft.com": {
     "found": true,
@@ -1008,8 +1156,21 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765524824
+    "documents": [
+      {
+        "name": "Privacy Statement",
+        "url": "https://privacy.microsoft.com/en-us/privacystatement#"
+      },
+      {
+        "name": "Terms of Use",
+        "url": "https://www.microsoft.com/en-us/legal/intellectualproperty/copyright/default.aspx#"
+      },
+      {
+        "name": "Terms of Sale",
+        "url": "https://www.microsoft.com/en-ca/store/b/terms-of-sale"
+      }
+    ],
+    "lastUpdated": 1787021162811
   },
   "twitter.com": {
     "found": true,
@@ -1428,8 +1589,17 @@
         "classification": "good"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765525442
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://x.com/en/privacy"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://x.com/en/tos"
+      }
+    ],
+    "lastUpdated": 1787021163630
   },
   "instagram.com": {
     "found": true,
@@ -1756,8 +1926,29 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765526029
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://help.instagram.com/581066165581870"
+      },
+      {
+        "name": "Data Policy",
+        "url": "https://help.instagram.com/519522125107875"
+      },
+      {
+        "name": "Law Enforcement",
+        "url": "https://help.instagram.com/494561080557017"
+      },
+      {
+        "name": "About Cookies",
+        "url": "https://help.instagram.com/1896641480634370"
+      },
+      {
+        "name": "Community Guidelines",
+        "url": "https://help.instagram.com/477434105621119"
+      }
+    ],
+    "lastUpdated": 1787021164449
   },
   "linkedin.com": {
     "found": true,
@@ -1848,8 +2039,37 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765526670
+    "documents": [
+      {
+        "name": "California Online Privacy Protection Act Notice",
+        "url": "https://www.linkedin.com/help/linkedin/answer/a1340485/"
+      },
+      {
+        "name": "Cookie Policy",
+        "url": "https://www.linkedin.com/legal/cookie-policy"
+      },
+      {
+        "name": "User Agreement",
+        "url": "https://www.linkedin.com/legal/user-agreement"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.linkedin.com/legal/privacy-policy"
+      },
+      {
+        "name": "Copyright Policy",
+        "url": "https://www.linkedin.com/legal/copyright-policy"
+      },
+      {
+        "name": "Spam",
+        "url": "https://www.linkedin.com/help/linkedin/answer/a1338787/"
+      },
+      {
+        "name": "Professional Community Policies",
+        "url": "https://www.linkedin.com/legal/professional-community-policies"
+      }
+    ],
+    "lastUpdated": 1787021165062
   },
   "netflix.com": {
     "found": true,
@@ -2072,8 +2292,17 @@
         "classification": "good"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765527488
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://help.netflix.com/legal/termsofuse"
+      },
+      {
+        "name": "Privacy Statement",
+        "url": "https://help.netflix.com/legal/privacy"
+      }
+    ],
+    "lastUpdated": 1787021165985
   },
   "reddit.com": {
     "found": true,
@@ -2476,8 +2705,25 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765528248
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.reddit.com/policies/privacy-policy"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "http://www.reddit.com/help/useragreement"
+      },
+      {
+        "name": "User Agreement",
+        "url": "https://www.redditinc.com/policies/user-agreement"
+      },
+      {
+        "name": "Reddit Rules",
+        "url": "https://redditinc.com/policies/reddit-rules"
+      }
+    ],
+    "lastUpdated": 1787021166907
   },
   "wikipedia.org": {
     "found": true,
@@ -2660,8 +2906,21 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765528922
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://foundation.wikimedia.org/wiki/Policy:Privacy_policy"
+      },
+      {
+        "name": "Cookie Statement",
+        "url": "https://foundation.wikimedia.org/wiki/Policy:Cookie_statement"
+      }
+    ],
+    "lastUpdated": 1787021167521
   },
   "yahoo.com": {
     "found": true,
@@ -2840,8 +3099,21 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765529535
+    "documents": [
+      {
+        "name": "Terms of Service",
+        "url": "https://policies.oath.com/us/en/oath/terms/otos/index.html"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://policies.oath.com/us/en/oath/privacy/index.html"
+      },
+      {
+        "name": "Privacy Topic Location",
+        "url": "https://www.verizonmedia.com/policies/us/en/verizonmedia/privacy/topics/location/index.html"
+      }
+    ],
+    "lastUpdated": 1787021168135
   },
   "duckduckgo.com": {
     "found": true,
@@ -2960,8 +3232,17 @@
         "classification": "good"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765530121
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://duckduckgo.com/privacy"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://duckduckgo.com/terms"
+      }
+    ],
+    "lastUpdated": 1787021168749
   },
   "github.com": {
     "found": true,
@@ -3288,8 +3569,21 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765530970
+    "documents": [
+      {
+        "name": "Security",
+        "url": "https://help.github.com/articles/github-security/"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://help.github.com/articles/github-terms-of-service/"
+      },
+      {
+        "name": "GitHub General Privacy Statement",
+        "url": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+      }
+    ],
+    "lastUpdated": 1787021169365
   },
   "tiktok.com": {
     "found": true,
@@ -3612,8 +3906,25 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765536088
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "http://www.nytimes.com/content/help/rights/privacy/policy/privacy-policy.html"
+      },
+      {
+        "name": "Privacy policy",
+        "url": "https://help.nytimes.com/hc/en-us/articles/115014892108-Privacy-policy"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://help.nytimes.com/hc/en-us/articles/115014893428-Terms-of-service"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.nytimes.com/privacy/privacy-policy"
+      }
+    ],
+    "lastUpdated": 1787021172336
   },
   "cnn.com": {
     "found": true,
@@ -3848,8 +4159,17 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765536909
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://edition.cnn.com/terms0"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.wbdprivacy.com/policycenter/b2c/en-us/"
+      }
+    ],
+    "lastUpdated": 1787021173152
   },
   "foxnews.com": {
     "found": true,
@@ -3940,8 +4260,25 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765537932
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "http://www.foxnews.com/terms-use.html"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.foxnews.com/privacy-policy"
+      },
+      {
+        "name": "Do-Not-Sell My Personal Information",
+        "url": "https://www.foxnews.com/donotsell"
+      },
+      {
+        "name": "Closed Captioning Policy",
+        "url": "http://www.foxnews.com/closed-captioning-policy.html"
+      }
+    ],
+    "lastUpdated": 1787021173971
   },
   "ebay.com": {
     "found": true,
@@ -4032,8 +4369,21 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765538547
+    "documents": [
+      {
+        "name": "Cookie Notice",
+        "url": "https://www.ebay.com/help/policies/member-behaviour-policies/user-cookie-notice?id=4267"
+      },
+      {
+        "name": "User Agreement",
+        "url": "https://www.ebay.com/help/policies/member-behaviour-policies/user-agreement?id=4259"
+      },
+      {
+        "name": "User Privacy Notice",
+        "url": "https://www.ebay.com/help/policies/member-behaviour-policies/user-privacy-notice-privacy-policy?id=4260"
+      }
+    ],
+    "lastUpdated": 1787021174518
   },
   "craigslist.org": {
     "found": true,
@@ -4112,8 +4462,17 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765539161
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://www.craigslist.org/about/terms.of.use"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.craigslist.org/about/privacy.policy"
+      }
+    ],
+    "lastUpdated": 1787021175097
   },
   "imdb.com": {
     "found": true,
@@ -4224,8 +4583,17 @@
         "classification": "good"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765539884
+    "documents": [
+      {
+        "name": "Terms of Service",
+        "url": "https://www.imdb.com/conditions"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "http://www.imdb.com/privacy"
+      }
+    ],
+    "lastUpdated": 1787021175816
   },
   "espn.com": {
     "found": true,
@@ -4512,8 +4880,17 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765540685
+    "documents": [
+      {
+        "name": "Disney Terms of Use",
+        "url": "https://disneytermsofuse.com/english/"
+      },
+      {
+        "name": "Walt Disney Privacy Policy",
+        "url": "https://privacy.thewaltdisneycompany.com/en/current-privacy-policy/"
+      }
+    ],
+    "lastUpdated": 1787021176532
   },
   "chase.com": {
     "found": true,
@@ -4532,8 +4909,13 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765541240
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://www.chase.com/digital/resources/terms-of-use"
+      }
+    ],
+    "lastUpdated": 1787021177146
   },
   "wellsfargo.com": {
     "found": true,
@@ -4543,8 +4925,13 @@
     "serviceName": "Wells Fargo",
     "serviceId": "3752",
     "points": [],
-    "documents": [],
-    "lastUpdated": 1786765542338
+    "documents": [
+      {
+        "name": "terms of service",
+        "url": "https://www.wellsfargo.com/privacy-security/terms"
+      }
+    ],
+    "lastUpdated": 1787021177931
   },
   "paypal.com": {
     "found": true,
@@ -4803,8 +5190,65 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765543095
+    "documents": [
+      {
+        "name": "PayPal Receive Funds and Automatic Transfer Agreement",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/recpymt-full"
+      },
+      {
+        "name": "COMMERCIAL ENTITY AGREEMENT FOR PAYPAL PAYMENT CARD FUNDED PROCESSING SERVICES",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/ceagreement-full"
+      },
+      {
+        "name": "PayPal Shops Policy ",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/paypalshops-full"
+      },
+      {
+        "name": "PayPal Local Payment Methods Terms",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/lpm-tnc"
+      },
+      {
+        "name": "PayPal Privacy Statement",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/privacy-full"
+      },
+      {
+        "name": "Notice of Amendment(s) to the Asia Pacific, certain European and Latin American countries, Middle East and Africa PayPal Agreement(s)",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/upcoming-policies-full"
+      },
+      {
+        "name": "PayPal User Agreement (US)",
+        "url": "https://www.paypal.com/us/webapps/mpp/ua/useragreement-full"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.paypal.com/us/webapps/mpp/ua/privacy-full"
+      },
+      {
+        "name": "Cookie Policy",
+        "url": "https://www.paypal.com/us/webapps/mpp/ua/cookie-full"
+      },
+      {
+        "name": "Infringement Report Policy ",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/infringementrpt-full"
+      },
+      {
+        "name": "PayPal User Agreement",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/useragreement-full"
+      },
+      {
+        "name": "PayPal Acceptable Use Policy",
+        "url": "https://www.paypal.com/sg/webapps/mpp/ua/acceptableuse-full"
+      },
+      {
+        "name": "PayPal User Agreement (EU)",
+        "url": "https://www.paypal.com/nl/webapps/mpp/ua/useragreement-full?locale.x=en_NL"
+      },
+      {
+        "name": "EBay Billing Agreement ",
+        "url": "https://www.paypal.com/sg/legalhub/paypal/ebaybilling-full"
+      }
+    ],
+    "lastUpdated": 1787021178784
   },
   "walmart.com": {
     "found": true,
@@ -4855,8 +5299,21 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765543774
+    "documents": [
+      {
+        "name": "California Privacy Rights",
+        "url": "https://corporate.walmart.com/privacy-security/california-privacy-rights"
+      },
+      {
+        "name": "Terms of Use",
+        "url": "https://www.walmart.com/help/article/walmart-com-terms-of-use/f25b207926d84d79b57e6ae2327bbf12"
+      },
+      {
+        "name": "Privacy & Security",
+        "url": "https://corporate.walmart.com/privacy-security"
+      }
+    ],
+    "lastUpdated": 1787021179366
   },
   "target.com": {
     "found": true,
@@ -5150,8 +5607,17 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765549164
+    "documents": [
+      {
+        "name": "Terms of Service",
+        "url": "https://help.doordash.com/consumers/s/terms-and-conditions-us?language=en_US"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://help.doordash.com/consumers/s/privacy-policy-us?language=en_US"
+      }
+    ],
+    "lastUpdated": 1787021183089
   },
   "instacart.com": {
     "found": true,
@@ -5202,8 +5668,17 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765549810
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.instacart.com/privacy"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://www.instacart.com/terms"
+      }
+    ],
+    "lastUpdated": 1787021183694
   },
   "grubhub.com": {
     "found": true,
@@ -5282,8 +5757,25 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765550424
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://grubhub.com/legal"
+      },
+      {
+        "name": "CA Privacy Notice",
+        "url": "https://grubhub.com/legal/ca-privacy-notice"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://grubhub.com/help/privacy/opt-out"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://grubhub.com/legal/terms-of-use"
+      }
+    ],
+    "lastUpdated": 1787021184314
   },
   "hulu.com": {
     "found": true,
@@ -5398,8 +5890,17 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765550973
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://secure.hulu.com/privacy"
+      },
+      {
+        "name": "Terms of Use",
+        "url": "https://secure.hulu.com/terms"
+      }
+    ],
+    "lastUpdated": 1787021184929
   },
   "disneyplus.com": {
     "found": true,
@@ -5582,8 +6083,25 @@
         "classification": "blocker"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765551529
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.disneyplus.com/en-gb/legal/privacy-policy"
+      },
+      {
+        "name": "Subscriber Agreement",
+        "url": "https://www.disneyplus.com/en-gb/legal/subscriber-agreement"
+      },
+      {
+        "name": "Cookie Policy",
+        "url": "https://www.disneyplus.com/en-gb/legal/cookies-policy"
+      },
+      {
+        "name": "Uk and EU privacy rights",
+        "url": "https://www.disneyplus.com/en-gb/legal/uk-&-eu-privacy-rights"
+      }
+    ],
+    "lastUpdated": 1787021185722
   },
   "hbo.com": {
     "found": true,
@@ -5742,8 +6260,17 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765552165
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.hbo.com/privacy-policy"
+      },
+      {
+        "name": "Terms of Use",
+        "url": "https://www.hbo.com/terms-of-use"
+      }
+    ],
+    "lastUpdated": 1787021186362
   },
   "peacocktv.com": {
     "found": true,
@@ -5758,8 +6285,17 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765553159
+    "documents": [
+      {
+        "name": "Privacy Policy ",
+        "url": "https://www.nbcuniversal.com/privacy?brandA=Peacock&intake=Peacock"
+      },
+      {
+        "name": "Terms of Use ",
+        "url": "https://www.peacocktv.com/terms"
+      }
+    ],
+    "lastUpdated": 1787021187180
   },
   "adobe.com": {
     "found": true,
@@ -6038,8 +6574,21 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765554009
+    "documents": [
+      {
+        "name": "General Terms of Use",
+        "url": "https://www.adobe.com/legal/terms.html"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.adobe.com/privacy/policy.html"
+      },
+      {
+        "name": "Cookies and Similar Technologies Notice",
+        "url": "https://www.adobe.com/privacy/cookies.html"
+      }
+    ],
+    "lastUpdated": 1787021187961
   },
   "salesforce.com": {
     "found": true,
@@ -6049,8 +6598,25 @@
     "serviceName": "salesforce",
     "serviceId": "216",
     "points": [],
-    "documents": [],
-    "lastUpdated": 1786765554623
+    "documents": [
+      {
+        "name": "Intellectual Property",
+        "url": "https://www.salesforce.com/company/legal/intellectual/"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://www.salesforce.com/company/legal/sfdc-website-terms-of-service/"
+      },
+      {
+        "name": "Privacy Statement",
+        "url": "https://www.salesforce.com/company/legal/privacy/"
+      },
+      {
+        "name": "Data Processing Addendum",
+        "url": "https://www.salesforce.com/content/dam/web/en_us/www/documents/legal/Agreements/data-processing-addendum.pdf"
+      }
+    ],
+    "lastUpdated": 1787021188614
   },
   "intuit.com": {
     "found": true,
@@ -6077,8 +6643,13 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765555213
+    "documents": [
+      {
+        "name": "Website Terms of Service",
+        "url": "https://www.intuit.com/legal/terms/en-us/website/"
+      }
+    ],
+    "lastUpdated": 1787021189229
   },
   "zoom.us": {
     "found": true,
@@ -6317,8 +6888,25 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765555954
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://zoom.us/privacy"
+      },
+      {
+        "name": "Cookie Policy",
+        "url": "https://zoom.us/cookie-policy"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://zoom.us/terms"
+      },
+      {
+        "name": " Digital Millennium Copyright Act (DMCA) Notice Policy",
+        "url": "https://zoom.us/docs/en-us/dmca-policy.html"
+      }
+    ],
+    "lastUpdated": 1787021190049
   },
   "webex.com": {
     "found": true,
@@ -6569,8 +7157,29 @@
         "classification": "good"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765556530
+    "documents": [
+      {
+        "name": "Copyright Use and Policies",
+        "url": "https://www.cisco.com/c/en/us/about/brand-center/copyright-use.html"
+      },
+      {
+        "name": "Guidelines",
+        "url": "https://www.cisco.com/c/en/us/about/brand-center/copyright-use/copyright-material-guidelines.html"
+      },
+      {
+        "name": "Online Privacy Statement",
+        "url": "https://www.cisco.com/c/en/us/about/legal/privacy-full.html"
+      },
+      {
+        "name": "Website Terms of Use",
+        "url": "https://www.cisco.com/c/en/us/about/legal/terms-conditions.html"
+      },
+      {
+        "name": "End User License Agreement",
+        "url": "https://www.cisco.com/c/en/us/about/legal/cloud-and-software/end_user_license_agreement.html"
+      }
+    ],
+    "lastUpdated": 1787021190868
   },
   "dropbox.com": {
     "found": true,
@@ -6957,8 +7566,17 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765561020
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://www.reuters.com/terms-of-use"
+      },
+      {
+        "name": "Privacy Statement and Cookie Policy",
+        "url": "https://www.thomsonreuters.com/en/privacy-statement.html"
+      }
+    ],
+    "lastUpdated": 1787021194452
   },
   "wsj.com": {
     "found": true,
@@ -7009,8 +7627,37 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765561565
+    "documents": [
+      {
+        "name": "Dow Jones Cookie Notice",
+        "url": "https://www.dowjones.com/cookie-notice/?mod=WSJ"
+      },
+      {
+        "name": "Dow Jones Privacy Notice",
+        "url": "https://www.dowjones.com/privacy-notice/"
+      },
+      {
+        "name": "Subscriber Agreement",
+        "url": "https://www.wsj.com/policy/subscriber-agreement"
+      },
+      {
+        "name": "Data Policy",
+        "url": "https://www.wsj.com/policy/data-policy"
+      },
+      {
+        "name": "Copyright Policy",
+        "url": "https://www.wsj.com/policy/copyright-policy"
+      },
+      {
+        "name": "CA Residents Notice",
+        "url": "https://www.dowjones.com/notice-ca-residents/"
+      },
+      {
+        "name": "Additional Terms",
+        "url": "https://www.wsj.com/policy/additional-terms-conditions"
+      }
+    ],
+    "lastUpdated": 1787021195040
   },
   "usatoday.com": {
     "found": true,
@@ -7049,8 +7696,21 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765562115
+    "documents": [
+      {
+        "name": "California Privacy Policy",
+        "url": "https://cm.usatoday.com/privacy-policy"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://cm.usatoday.com/privacy/?hidebanner=false"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://cm.usatoday.com/terms/"
+      }
+    ],
+    "lastUpdated": 1787021195681
   },
   "bloomberg.com": {
     "found": true,
@@ -7085,8 +7745,17 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765562665
+    "documents": [
+      {
+        "name": "Terms of Service",
+        "url": "https://www.bloomberg.com/notices/tos/"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.bloomberg.com/notices/privacy/"
+      }
+    ],
+    "lastUpdated": 1787021196294
   },
   "cnbc.com": {
     "found": true,
@@ -7249,8 +7918,33 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765563211
+    "documents": [
+      {
+        "name": "Refinitiv Terms of Use",
+        "url": "https://www.cnbc.com/market-data-terms-of-service/"
+      },
+      {
+        "name": "California Consumer Privacy Act",
+        "url": "https://www.nbcuniversal.com/privacy/california-consumer-privacy-act"
+      },
+      {
+        "name": "NBC Universal Cookie Policy",
+        "url": "https://www.nbcuniversal.com/privacy/cookies"
+      },
+      {
+        "name": "NBC Universal Privacy Policy",
+        "url": "https://www.nbcuniversal.com/privacy"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://www.cnbc.com/nbcuniversal-terms-of-service/"
+      },
+      {
+        "name": "Do not sell my personal information",
+        "url": "https://www.nbcuniversal.com/privacy/notrtoo"
+      }
+    ],
+    "lastUpdated": 1787021196910
   },
   "forbes.com": {
     "found": true,
@@ -7489,8 +8183,17 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765563935
+    "documents": [
+      {
+        "name": "Terms and Conditions",
+        "url": "https://www.forbes.com/terms-and-conditions/"
+      },
+      {
+        "name": "Privacy Statement",
+        "url": "https://www.forbes.com/privacy/english/"
+      }
+    ],
+    "lastUpdated": 1787021197728
   },
   "businessinsider.com": {
     "found": true,
@@ -7500,8 +8203,13 @@
     "serviceName": "businessinsider ",
     "serviceId": "4246",
     "points": [],
-    "documents": [],
-    "lastUpdated": 1786765564483
+    "documents": [
+      {
+        "name": "Terms",
+        "url": "https://www.insider-inc.com/terms"
+      }
+    ],
+    "lastUpdated": 1787021198343
   },
   "theverge.com": {
     "found": true,
@@ -7532,8 +8240,13 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765565028
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.voxmedia.com/legal/privacy-policy"
+      }
+    ],
+    "lastUpdated": 1787021198956
   },
   "wired.com": {
     "found": true,
@@ -8004,8 +8717,17 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765565756
+    "documents": [
+      {
+        "name": "Privacy Notice Overview",
+        "url": "https://www.condenast.com/privacy-policy"
+      },
+      {
+        "name": "User Agreement",
+        "url": "https://www.condenast.com/user-agreement"
+      }
+    ],
+    "lastUpdated": 1787021199982
   },
   "techcrunch.com": {
     "found": true,
@@ -8024,8 +8746,25 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765566301
+    "documents": [
+      {
+        "name": "Additional Terms of Service",
+        "url": "https://www.verizonmedia.com/policies/xw/en/extracrunch/index.html"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.verizonmedia.com/policies/us/en/verizonmedia/privacy/index.html"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://www.verizonmedia.com/policies/us/en/verizonmedia/terms/otos/index.html"
+      },
+      {
+        "name": "Code of Conduct",
+        "url": "https://techcrunch.com/pages/code-of-conduct/"
+      }
+    ],
+    "lastUpdated": 1787021200597
   },
   "cnet.com": {
     "found": true,
@@ -8132,8 +8871,29 @@
         "classification": "bad"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765566875
+    "documents": [
+      {
+        "name": "LLC Terms of Use",
+        "url": "https://www.ziffdavis.com/terms-of-use"
+      },
+      {
+        "name": "LLC PRIVACY POLICY",
+        "url": "https://www.ziffdavis.com/privacy-policy"
+      },
+      {
+        "name": "LLC Cookie Policy",
+        "url": "https://www.ziffdavis.com/cookie-policy"
+      },
+      {
+        "name": "PRIVACY POLICY",
+        "url": "https://www.ziffdavis.com/privacy"
+      },
+      {
+        "name": "Legal and Patent Notices",
+        "url": "https://www.ziffdavis.com/legal"
+      }
+    ],
+    "lastUpdated": 1787021201210
   },
   "stackoverflow.com": {
     "found": true,
@@ -8464,8 +9224,33 @@
         "classification": "neutral"
       }
     ],
-    "documents": [],
-    "lastUpdated": 1786765567621
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://stackoverflow.com/legal/privacy-policy"
+      },
+      {
+        "name": "Public Network Terms of Service",
+        "url": "https://stackoverflow.com/legal/terms-of-service/public"
+      },
+      {
+        "name": "Stackoverflow Terms of services",
+        "url": "https://stackoverflow.com/legal/terms-of-service/public"
+      },
+      {
+        "name": "Acceptable Use Policy",
+        "url": "https://stackoverflow.com/legal/acceptable-use-policy"
+      },
+      {
+        "name": "Cookie Policy",
+        "url": "https://policies.stackoverflow.co/stack-overflow/cookie-policy"
+      },
+      {
+        "name": "Privacy Policy for Collectives",
+        "url": "https://stackoverflow.com/legal/privacy-policy/collectives"
+      }
+    ],
+    "lastUpdated": 1787021202030
   },
   "quora.com": {
     "found": true,
@@ -8788,7 +9573,7 @@
     "serviceId": "1786",
     "points": [],
     "documents": [],
-    "lastUpdated": 1786765572122
+    "lastUpdated": 1787021205203
   },
   "example.com": {
     "found": true,
@@ -8798,5 +9583,1043 @@
     "serviceName": "Example Domain",
     "serviceId": 999999,
     "points": []
+  },
+  "discord.com": {
+    "found": true,
+    "grade": "E",
+    "score": 20,
+    "source": "tosdr-local",
+    "serviceName": "Discord",
+    "serviceId": "536",
+    "points": [
+      {
+        "title": "Instead of asking directly, this Service will assume your consent merely from your usage.",
+        "classification": "bad"
+      },
+      {
+        "title": "Your account can be suspended for several reasons",
+        "classification": "neutral"
+      },
+      {
+        "title": "You can delete your content from this service",
+        "classification": "good"
+      },
+      {
+        "title": "Your account can be deleted without prior notice and without a reason",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is gathered about you through third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "Extra data may be collected about you through promotions",
+        "classification": "bad"
+      },
+      {
+        "title": "This service is only available to users over 13 years old",
+        "classification": "neutral"
+      },
+      {
+        "title": "You authorise the service to charge a credit card supplied on re-occurring basis",
+        "classification": "neutral"
+      },
+      {
+        "title": "Some personal data may be kept for business interests or legal obligations",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data may be sold or otherwise transferred as part of a bankruptcy proceeding or other type of financial transaction",
+        "classification": "bad"
+      },
+      {
+        "title": " A list of all cookies set by the website is provided",
+        "classification": "good"
+      },
+      {
+        "title": "Changes in policies are applied retroactively.",
+        "classification": "blocker"
+      },
+      {
+        "title": "You agree not to use the service for illegal purposes",
+        "classification": "neutral"
+      },
+      {
+        "title": "First-party cookies are used",
+        "classification": "neutral"
+      },
+      {
+        "title": "Two factor authentication is provided for your account",
+        "classification": "good"
+      },
+      {
+        "title": "Your IP address is collected, which can be used to view your approximate location",
+        "classification": "neutral"
+      },
+      {
+        "title": " You are being tracked via social media cookies/pixels",
+        "classification": "bad"
+      },
+      {
+        "title": "Third parties are involved in operating the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "App required for this service requires broad device permissions",
+        "classification": "bad"
+      },
+      {
+        "title": "This service tracks which web page referred you to it",
+        "classification": "bad"
+      },
+      {
+        "title": "Minors must have the authorization of their legal guardians to use the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your provided identifiable information is actively checked by the service",
+        "classification": "bad"
+      },
+      {
+        "title": "Harming minors in any ways is prohibited",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are prohibited from sending chain letters, junk mail, spam or any unsolicited messages",
+        "classification": "neutral"
+      },
+      {
+        "title": "Users who have been permanently banned from this service are not allowed to re-register under a new account",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data is not sold",
+        "classification": "good"
+      },
+      {
+        "title": "Information is provided about what kind of information they collect",
+        "classification": "good"
+      },
+      {
+        "title": "You can limit how your information is used by third-parties and the service",
+        "classification": "good"
+      },
+      {
+        "title": "Many different types of personal data are collected",
+        "classification": "bad"
+      },
+      {
+        "title": "This service shares your personal data with third parties that are not essential to its operation",
+        "classification": "bad"
+      },
+      {
+        "title": "They store data on you even if you did not interact with the service",
+        "classification": "blocker"
+      },
+      {
+        "title": "First-party cookies are used",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your profile is combined across various products",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is provided about how your personal data is used",
+        "classification": "good"
+      },
+      {
+        "title": "The service claims to be GDPR compliant for European users",
+        "classification": "good"
+      },
+      {
+        "title": "Your personal data is used for automated decision-making, profiling or AI training",
+        "classification": "blocker"
+      },
+      {
+        "title": "Your personal data may be used for marketing purposes",
+        "classification": "bad"
+      },
+      {
+        "title": "You can opt out of promotional communications",
+        "classification": "good"
+      },
+      {
+        "title": "The service may inform and/or notify you regarding government inquiries that may involve your personal data",
+        "classification": "good"
+      },
+      {
+        "title": "Your personal data is aggregated into statistics",
+        "classification": "neutral"
+      },
+      {
+        "title": "Information is provided about security practices",
+        "classification": "good"
+      },
+      {
+        "title": "You can request access, correction and/or deletion of your data",
+        "classification": "good"
+      },
+      {
+        "title": "This service claims certain user-generated content like voice and video calls is encrypted, and they can not decrypt it",
+        "classification": "good"
+      },
+      {
+        "title": "Minors must have the authorization of their legal guardians to use the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "They may stop providing the service at any time",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service provider makes no warranty regarding uninterrupted, timely, secure or error-free service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You must create an account to use this service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You must provide your identifiable information",
+        "classification": "bad"
+      },
+      {
+        "title": "You are responsible for maintaining the security of your account and for the activities on your account",
+        "classification": "neutral"
+      },
+      {
+        "title": "You must report to the service any unauthorized use of your account or any breach of security",
+        "classification": "neutral"
+      },
+      {
+        "title": "You cannot distribute or disclose your account to third parties",
+        "classification": "neutral"
+      },
+      {
+        "title": "Usernames can be rejected or changed for any reason",
+        "classification": "bad"
+      },
+      {
+        "title": "You maintain ownership of your content",
+        "classification": "good"
+      },
+      {
+        "title": "The service has non-exclusive use of your content",
+        "classification": "good"
+      },
+      {
+        "title": "User accounts can be terminated after having been in breach of the terms of service repeatedly",
+        "classification": "good"
+      },
+      {
+        "title": "Your account can be suspended for several reasons",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your content can be licensed to third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "If you offer suggestions to the service, they become the owner of the ideas that you give them",
+        "classification": "bad"
+      },
+      {
+        "title": "This service does not condone any ideas contained in its user-generated contents",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service is not responsible for linked or (clearly) quoted content from third-party content providers",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service informs you that its Terms of Service does not apply to third party websites",
+        "classification": "neutral"
+      },
+      {
+        "title": "You agree to defend, indemnify, and hold the service harmless in case of a claim related to your use of the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service is provided 'as is' and to be used at your sole risk",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service does not guarantee accuracy or reliability of the information provided",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are forced into binding arbitration in case of disputes if living in Canada or the U.S.",
+        "classification": "bad"
+      },
+      {
+        "title": "Spidering, crawling, or accessing the site through any automated means is not allowed",
+        "classification": "neutral"
+      },
+      {
+        "title": "You have the right to leave this service at any time",
+        "classification": "good"
+      },
+      {
+        "title": "No guarantee is given regarding quality",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service assumes no liability for any damages the user incurs",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service assumes no liability for unauthorized access to your personal information",
+        "classification": "bad"
+      },
+      {
+        "title": "You aren’t forced into binding arbitration in case of disputes",
+        "classification": "good"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
+      },
+      {
+        "title": "Other applicable rules, terms, conditions or guidelines",
+        "classification": "neutral"
+      },
+      {
+        "title": "The court of law governing the terms is in a jurisdiction that is friendlier to user privacy protection (California, U.S.A.)",
+        "classification": "good"
+      },
+      {
+        "title": "Any liability on behalf of the service is only limited to the fees you paid as a user",
+        "classification": "bad"
+      },
+      {
+        "title": "You have a reduced time period to take legal action against the service",
+        "classification": "bad"
+      },
+      {
+        "title": "Third-party cookies are used for statistics",
+        "classification": "bad"
+      },
+      {
+        "title": "Third party cookies are employed, but with opt out instructions",
+        "classification": "bad"
+      },
+      {
+        "title": "Defend, indemnify, hold harmless; survives termination",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your provided identifiable information is actively checked by the service",
+        "classification": "bad"
+      },
+      {
+        "title": "You agree not to submit libelous, harassing or threatening content",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are prohibited from posting content which promotes violence or politically or religiously extremist values.",
+        "classification": "neutral"
+      },
+      {
+        "title": "You can retrieve an archive of your data",
+        "classification": "good"
+      },
+      {
+        "title": "Blocking first party cookies may limit your ability to use the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service claims to be LGPD compliant for Brazilian users",
+        "classification": "good"
+      },
+      {
+        "title": "The service claims to be CCPA compliant for California users",
+        "classification": "good"
+      },
+      {
+        "title": "You are prohibited from attempting to gain unauthorized access to other computer systems",
+        "classification": "neutral"
+      }
+    ],
+    "documents": [
+      {
+        "name": "Paid Services Terms",
+        "url": "https://discord.com/terms/paid-services-terms"
+      },
+      {
+        "name": "Community Guidelines",
+        "url": "https://discord.com/guidelines"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://discord.com/privacy"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://discord.com/terms"
+      },
+      {
+        "name": "Cookie Policy",
+        "url": "https://discord.com/terms/cookie-policy"
+      }
+    ],
+    "lastUpdated": 1787021171722
+  },
+  "uber.com": {
+    "found": true,
+    "grade": "E",
+    "score": 20,
+    "source": "tosdr-local",
+    "serviceName": "Uber",
+    "serviceId": "252",
+    "points": [
+      {
+        "title": "The service can delete your account without prior notice and without a reason",
+        "classification": "bad"
+      },
+      {
+        "title": "This service collects your IP address, which can be used to view your approximate location",
+        "classification": "neutral"
+      },
+      {
+        "title": "There is a date of the last update of the agreements",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your biometric data is collected",
+        "classification": "bad"
+      },
+      {
+        "title": "The service can intervene in user disputes",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service is only available to users over a certain age",
+        "classification": "neutral"
+      },
+      {
+        "title": "You must create an account to use this service",
+        "classification": "neutral"
+      },
+      {
+        "title": "Users should revisit the terms periodically, although in case of material changes, the service will notify",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service tracks you on other websites",
+        "classification": "bad"
+      },
+      {
+        "title": "Private messages can be read",
+        "classification": "blocker"
+      },
+      {
+        "title": "Your profile is combined across various products",
+        "classification": "bad"
+      },
+      {
+        "title": "Third-party cookies are used for statistics",
+        "classification": "bad"
+      },
+      {
+        "title": "You are tracked via web beacons, tracking pixels, browser fingerprinting, and/or device fingerprinting",
+        "classification": "bad"
+      },
+      {
+        "title": "This service shares your personal data with third parties that are not involved in its operation",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is provided about how your personal data is used",
+        "classification": "good"
+      },
+      {
+        "title": "Your data may be processed and stored anywhere in the world",
+        "classification": "bad"
+      },
+      {
+        "title": "Many different types of personal data are collected",
+        "classification": "bad"
+      },
+      {
+        "title": "This service gives your personal data to third parties involved in its operation",
+        "classification": "neutral"
+      },
+      {
+        "title": "Sensitive data is collected and shared to target advertising",
+        "classification": "blocker"
+      },
+      {
+        "title": "The service claims to be CCPA compliant for California users",
+        "classification": "good"
+      },
+      {
+        "title": "The service claims to be LGPD compliant for Brazilian users",
+        "classification": "good"
+      },
+      {
+        "title": "The court of law governing the terms is in a jurisdiction that is friendlier to user privacy protection (California, USA)",
+        "classification": "good"
+      },
+      {
+        "title": "You are forced into binding arbitration in case of disputes",
+        "classification": "bad"
+      },
+      {
+        "title": "Uber can transfer the TOS to affiliates and successors without your consent",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data is aggregated into statistics",
+        "classification": "neutral"
+      },
+      {
+        "title": "You can request access, correction and/or deletion of your data",
+        "classification": "good"
+      },
+      {
+        "title": "The service provides information about its attitude towards ethical, social or political problems or controversies",
+        "classification": "good"
+      },
+      {
+        "title": "The service provider makes no warranty regarding uninterrupted, timely, secure or error-free service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You must provide your legal name, pseudonyms are not allowed",
+        "classification": "bad"
+      }
+    ],
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://privacy.uber.com/"
+      },
+      {
+        "name": "U.S. Terms of Use",
+        "url": "https://www.uber.com/legal/en/document/?country=united-states&lang=en&name=general-terms-of-use"
+      },
+      {
+        "name": "Copyright policy - US",
+        "url": "https://www.uber.com/legal/en/document/?country=united-states&lang=en&name=report-copyright-infringement"
+      }
+    ],
+    "lastUpdated": 1787021181653
+  },
+  "lyft.com": {
+    "found": true,
+    "grade": "D",
+    "score": 40,
+    "source": "tosdr-local",
+    "serviceName": "Lyft",
+    "serviceId": "227",
+    "points": [
+      {
+        "title": "Defend, indemnify, hold harmless; survives termination",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service does not guarantee accuracy or reliability of the information provided",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service does not guarantee that software errors will be corrected",
+        "classification": "bad"
+      },
+      {
+        "title": "Your IP address is collected, which can be used to view your approximate location",
+        "classification": "neutral"
+      },
+      {
+        "title": "Instead of asking directly, this Service will assume your consent to changes of terms merely from your usage",
+        "classification": "bad"
+      },
+      {
+        "title": "Alternative accounts are not allowed",
+        "classification": "neutral"
+      },
+      {
+        "title": "You agree not to submit libelous, harassing or threatening content",
+        "classification": "neutral"
+      },
+      {
+        "title": "If you offer suggestions to the service, they become the owner of the ideas that you give them",
+        "classification": "bad"
+      },
+      {
+        "title": "The service has a no refund policy",
+        "classification": "neutral"
+      },
+      {
+        "title": "You can opt out of promotional communications",
+        "classification": "good"
+      },
+      {
+        "title": "The service has non-exclusive use of your content",
+        "classification": "good"
+      },
+      {
+        "title": "Spidering, crawling, or accessing the site through any automated means is not allowed",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your content can be deleted if you violate the terms",
+        "classification": "neutral"
+      },
+      {
+        "title": "You maintain ownership of your content",
+        "classification": "good"
+      },
+      {
+        "title": "Your content can be licensed to third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "The posting of pornographic content is prohibited",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service is provided 'as is' and to be used at your sole risk",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are informed about the risk of publishing personal info online",
+        "classification": "good"
+      },
+      {
+        "title": "You agree to defend, indemnify, and hold the service harmless in case of a claim related to your use of the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "Failure to enforce any provision of the Terms of Service does not constitute a waiver of such provision",
+        "classification": "neutral"
+      },
+      {
+        "title": "The court of law governing the terms is in California, U.S.A.",
+        "classification": "neutral"
+      },
+      {
+        "title": "Invalidity of any portion of the Terms of Service does not entail invalidity of its remainder",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are forced into binding arbitration in case of disputes",
+        "classification": "bad"
+      },
+      {
+        "title": "Minors must have the authorization of their legal guardians to use the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You must report to the service any unauthorized use of your account or any breach of security",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are responsible for maintaining the security of your account and for the activities on your account",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service does not condone any ideas contained in its user-generated contents",
+        "classification": "neutral"
+      },
+      {
+        "title": "You have the right to leave this service at any time",
+        "classification": "good"
+      },
+      {
+        "title": "You can’t close your account if an investigation is ongoing",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service receives your precise location through GPS coordinates",
+        "classification": "bad"
+      },
+      {
+        "title": "You are tracked via web beacons, tracking pixels, browser fingerprinting, and/or device fingerprinting",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is gathered about you through third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "This service tracks which web page referred you to it",
+        "classification": "bad"
+      },
+      {
+        "title": "Information is provided about how your personal data is used",
+        "classification": "good"
+      },
+      {
+        "title": "Your personal data may be used for marketing purposes",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data may be sold or otherwise transferred as part of a bankruptcy proceeding or other type of financial transaction",
+        "classification": "bad"
+      },
+      {
+        "title": "You can opt out of targeted advertising",
+        "classification": "good"
+      },
+      {
+        "title": "Information is provided about what kind of personal information is collected",
+        "classification": "good"
+      },
+      {
+        "title": "You waive your right to a class action",
+        "classification": "bad"
+      },
+      {
+        "title": "The court of law governing the terms is in a jurisdiction that is friendlier to user privacy protection (California, U.S.A.)",
+        "classification": "good"
+      },
+      {
+        "title": "The service will only respond to government requests that are reasonable",
+        "classification": "good"
+      },
+      {
+        "title": "The service claims to be CCPA compliant for California users",
+        "classification": "good"
+      },
+      {
+        "title": "Your personal data is aggregated into statistics",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your biometric data is collected",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data is used to employ targeted third-party advertising",
+        "classification": "bad"
+      },
+      {
+        "title": "Some personal data may be kept for business interests or legal obligations",
+        "classification": "bad"
+      },
+      {
+        "title": "The data retention period is kept to the minimum necessary for fulfilling its purposes",
+        "classification": "good"
+      },
+      {
+        "title": "This service gives your personal data to third parties involved in its operation",
+        "classification": "neutral"
+      },
+      {
+        "title": "Third-party cookies are used for statistics",
+        "classification": "bad"
+      },
+      {
+        "title": "You agree not to use the service for illegal purposes",
+        "classification": "neutral"
+      },
+      {
+        "title": "There is a date of the last update of the agreements",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service assumes no liability for any damages the user incurs",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service provider makes no warranty regarding uninterrupted, timely, secure or error-free service",
+        "classification": "neutral"
+      },
+      {
+        "title": "You cannot distribute or disclose your account to third parties",
+        "classification": "neutral"
+      },
+      {
+        "title": "Private messages can be read",
+        "classification": "blocker"
+      },
+      {
+        "title": "This service is only available to users over 18 years old",
+        "classification": "neutral"
+      },
+      {
+        "title": "Banned users are prohibited from creating a new account",
+        "classification": "neutral"
+      }
+    ],
+    "documents": [
+      {
+        "name": "Terms of Service",
+        "url": "https://www.lyft.com/terms?country=us"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.lyft.com/privacy?lang=en-US"
+      },
+      {
+        "name": "Local Information and Rights",
+        "url": "https://www.lyft.com/privacy/addendum"
+      },
+      {
+        "name": "Lyft Teen Terms and Conditions",
+        "url": "https://www.lyft.com/terms/teen"
+      }
+    ],
+    "lastUpdated": 1787021182429
+  },
+  "wunderground.com": {
+    "found": true,
+    "grade": "N/A",
+    "score": 0,
+    "source": "tosdr-local",
+    "serviceName": "Weather Underground",
+    "serviceId": "2253",
+    "points": [
+      {
+        "title": "The terms may be changed at any time, but you will receive notification of the changes",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service is provided 'as is' and to be used at the users' sole risk",
+        "classification": "neutral"
+      },
+      {
+        "title": "The service does not guarantee accuracy or reliability of the information provided",
+        "classification": "neutral"
+      },
+      {
+        "title": "You agree to indemnify and hold the service harmless in case of a claim related to your use of the service",
+        "classification": "neutral"
+      }
+    ],
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://www.wunderground.com/company/legal"
+      },
+      {
+        "name": "Vendor Privacy Practices and Opt Out",
+        "url": "https://www.wunderground.com/data-vendors"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.wunderground.com/company/privacy-policy"
+      }
+    ],
+    "lastUpdated": 1787021192917
+  },
+  "npr.org": {
+    "found": true,
+    "grade": "D",
+    "score": 40,
+    "source": "tosdr-local",
+    "serviceName": "NPR",
+    "serviceId": "359",
+    "points": [
+      {
+        "title": "This service gives your personal data to third parties involved in its operation",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your personal data may be used for marketing purposes",
+        "classification": "bad"
+      },
+      {
+        "title": "Your IP address is collected, which can be used to view your approximate location",
+        "classification": "neutral"
+      },
+      {
+        "title": "Third-party cookies are used for advertising",
+        "classification": "bad"
+      },
+      {
+        "title": "Third-party cookies are used for statistics",
+        "classification": "bad"
+      },
+      {
+        "title": "This service tracks which web page referred you to it",
+        "classification": "bad"
+      },
+      {
+        "title": "You are tracked via web beacons, tracking pixels, browser fingerprinting, and/or device fingerprinting",
+        "classification": "bad"
+      },
+      {
+        "title": "Content you post may be edited by the service for any reason",
+        "classification": "blocker"
+      },
+      {
+        "title": "Specific content can be deleted without reason and may be removed without prior notice",
+        "classification": "blocker"
+      },
+      {
+        "title": " Terms may be changed any time at their discretion, without notice to you ",
+        "classification": "bad"
+      },
+      {
+        "title": "The service has non-exclusive use of your content",
+        "classification": "good"
+      },
+      {
+        "title": "This service may collect, use, and share location data",
+        "classification": "bad"
+      },
+      {
+        "title": "Political discussions or campaining are prohibited",
+        "classification": "neutral"
+      },
+      {
+        "title": "The posting of pornographic content is prohibited",
+        "classification": "neutral"
+      },
+      {
+        "title": "You agree not to submit libelous, harassing or threatening content",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are prohibited from posting content which promotes violence or politically or religiously extremist values.",
+        "classification": "neutral"
+      },
+      {
+        "title": "Harming minors in any ways is prohibited",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service is only available for use individually and non-commercially.",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service does not condone any ideas contained in its user-generated contents",
+        "classification": "neutral"
+      },
+      {
+        "title": "This service is only available to users over a certain age",
+        "classification": "neutral"
+      },
+      {
+        "title": "You agree not to use the service for illegal purposes",
+        "classification": "neutral"
+      },
+      {
+        "title": "You are prohibited from sending chain letters, junk mail, spam or any unsolicited messages",
+        "classification": "neutral"
+      },
+      {
+        "title": "Your content can be licensed to third parties",
+        "classification": "bad"
+      },
+      {
+        "title": "Do Not Track (DNT) headers are ignored and you are tracked anyway even if you set this header.",
+        "classification": "neutral"
+      },
+      {
+        "title": "Many third parties are involved in operating the service",
+        "classification": "bad"
+      },
+      {
+        "title": "Your personal data is used to employ targeted third-party advertising",
+        "classification": "bad"
+      },
+      {
+        "title": "Many different types of personal data are collected",
+        "classification": "bad"
+      },
+      {
+        "title": "You agree to indemnify and hold the service harmless in case of a claim related to your use of the service",
+        "classification": "neutral"
+      },
+      {
+        "title": "Information is provided about what kind of information they collect",
+        "classification": "good"
+      },
+      {
+        "title": "The service claims to be CCPA compliant for California users",
+        "classification": "good"
+      },
+      {
+        "title": "The service claims to be GDPR compliant for European users",
+        "classification": "good"
+      },
+      {
+        "title": "You can opt out of targeted advertising",
+        "classification": "good"
+      },
+      {
+        "title": "Information is provided about how your personal data is used",
+        "classification": "good"
+      },
+      {
+        "title": "You can opt out of promotional communications",
+        "classification": "good"
+      },
+      {
+        "title": "[California Users] You can request access, correction and/or deletion of your data",
+        "classification": "good"
+      }
+    ],
+    "documents": [
+      {
+        "name": "Terms of Use",
+        "url": "https://www.npr.org/about-npr/179876898/terms-of-use"
+      },
+      {
+        "name": "Conditions of Use",
+        "url": "https://shopnpr.org/conditions-of-use"
+      },
+      {
+        "name": "Shipping and Returns",
+        "url": "https://shopnpr.org/shipping-returns"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://text.npr.org/179878450"
+      }
+    ],
+    "lastUpdated": 1787021193735
+  },
+  "gofundme.com": {
+    "found": true,
+    "grade": "N/A",
+    "score": 0,
+    "source": "tosdr-local",
+    "serviceName": "GoFundMe",
+    "serviceId": "4319",
+    "points": [],
+    "documents": [
+      {
+        "name": "GoFundMe Terms of Service",
+        "url": "https://www.gofundme.com/terms"
+      },
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.gofundme.com/privacy"
+      }
+    ],
+    "lastUpdated": 1787021203974
+  },
+  "eventbrite.com": {
+    "found": true,
+    "grade": "N/A",
+    "score": 0,
+    "source": "tosdr-local",
+    "serviceName": "Eventbrite",
+    "serviceId": "3943",
+    "points": [
+      {
+        "title": "Your content can be deleted if you violate the terms",
+        "classification": "neutral"
+      }
+    ],
+    "documents": [
+      {
+        "name": "Privacy Policy",
+        "url": "https://www.eventbrite.com/support/articles/en_US/Troubleshooting/eventbrite-privacy-policy?lg=en_US"
+      },
+      {
+        "name": "Cookie Statement",
+        "url": "https://www.eventbrite.com/support/articles/en_US/Troubleshooting/eventbrite-cookie-policy?lg=en_US"
+      },
+      {
+        "name": "Terms of Service",
+        "url": "https://www.eventbrite.com/support/articles/en_US/Troubleshooting/eventbrite-terms-of-service?lg=en_US"
+      }
+    ],
+    "lastUpdated": 1787021204589
   }
 }

@@ -48,11 +48,11 @@ import { cn } from "@/lib/utils"
 // ─── Semantic color palette (detector-aware) ───────────────────────────────
 // Using standard shadcn theme colors
 const DETECTOR_COLORS: Record<string, string> = {
-  tracking:    "var(--primary)",
-  cookies:     "var(--primary)",
-  inputs:      "var(--primary)",
-  reputation:  "var(--primary)",
-  policy:      "var(--primary)",
+  tracking:    "var(--chart-1)",
+  cookies:     "var(--chart-2)",
+  inputs:      "var(--chart-3)",
+  reputation:  "var(--chart-4)",
+  policy:      "var(--chart-5)",
 }
 
 const DETECTOR_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -71,20 +71,22 @@ const DETECTOR_LABELS: Record<string, string> = {
   policy:      "Privacy Policy",
 }
 
-// WSS bucket color palette
+// WSS bucket color palette (mirrors the safety badge semantics used
+// elsewhere in the app: excellent/good = success, fair = warning,
+// poor = alert, critical = destructive)
 const WSS_COLORS: Record<string, string> = {
-  Critical:  "var(--primary)",
-  Poor:      "var(--primary)",
-  Fair:      "var(--primary)",
-  Good:      "var(--primary)",
-  Excellent: "var(--primary)",
+  Critical:  "var(--destructive)",
+  Poor:      "var(--alert)",
+  Fair:      "var(--warning)",
+  Good:      "var(--success)",
+  Excellent: "var(--success)",
 }
 
 // PII sensitivity colors
 const PII_COLORS: Record<string, string> = {
-  HIGH:   "var(--primary)",
-  MEDIUM: "var(--primary)",
-  LOW:    "var(--primary)",
+  HIGH:   "var(--destructive)",
+  MEDIUM: "var(--warning)",
+  LOW:    "var(--muted-foreground)",
 }
 
 // Chart configs
@@ -673,7 +675,7 @@ export default function RankingsPage() {
                   />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                     {wssData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill="var(--primary)" fillOpacity={1 - Math.abs(2 - index) * 0.25} />
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                     <LabelList
                       dataKey="count"

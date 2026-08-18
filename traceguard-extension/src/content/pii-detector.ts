@@ -52,6 +52,19 @@ interface PIIEvent {
     fieldType: string;                     // Type of field (password, text, etc.)
     fieldName: string;                     // Name attribute of the field
     sensitivity: 'HIGH' | 'MEDIUM' | 'LOW'; // How sensitive is this data?
+    pageContext: {                         // Page structure, for expected-use exemptions
+        isLoginPage: boolean;              // Page has a password field (login/sign-up)
+        isCheckoutPage: boolean;           // Page has a payment field (checkout)
+    };
+}
+
+/**
+ * Page-structure context computed by the analyzer and used by the background
+ * worker to exempt expected-use PII entry (login, checkout) from penalties.
+ */
+export interface PageContext {
+    isLoginPage: boolean;
+    isCheckoutPage: boolean;
 }
 
 class PIIDetector {
@@ -62,12 +75,19 @@ class PIIDetector {
         triggered: boolean;
     }>;
 
+    private pageContext: PageContext = { isLoginPage: false, isCheckoutPage: false };
+
     constructor() {
         this.monitoredFields = new Map();
     }
 
     // Start monitoring sensitive fields
-    startMonitoring(sensitiveFields: { high: SensitiveField[]; medium: SensitiveField[]; low: SensitiveField[] }) {
+    startMonitoring(
+        sensitiveFields: { high: SensitiveField[]; medium: SensitiveField[]; low: SensitiveField[] },
+        pageContext?: PageContext
+    ) {
+        this.pageContext = pageContext || { isLoginPage: false, isCheckoutPage: false };
+
         // Clear stale listeners first: SPAs re-render fields without firing
         // beforeunload, and a fresh element with a colliding fieldId must not be
         // skipped while its detached predecessor leaks a listener.
@@ -136,7 +156,8 @@ class PIIDetector {
             site: domain,
             fieldType: fieldType,
             fieldName: fieldName,
-            sensitivity: sensitivity
+            sensitivity: sensitivity,
+            pageContext: this.pageContext
         };
 
         // Send to background for UPS calculation

@@ -30,6 +30,7 @@ import { getGradeTextColor, getSafetyBgColor, getSafetyTextColor } from "@/lib/t
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { storage } from "@/lib/storage"
 import { downloadJson } from "@/lib/export"
+import { ExportDataDialog } from "@/components/traceguard/export-data-dialog"
 
 import {
   DropdownMenu,
@@ -672,19 +673,24 @@ export function DataTable({
   }
 
   const [isAddLogOpen, setIsAddLogOpen] = React.useState(false)
-  const [exportOpen, setExportOpen] = React.useState(false)
+  const [exportDataOpen, setExportDataOpen] = React.useState(false)
   const [selectedVisit, setSelectedVisit] = React.useState<SiteVisit | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false)
+  const [highlightSection, setHighlightSection] = React.useState<string | undefined>(undefined)
   const [searchParams, setSearchParams] = useSearchParams()
 
   React.useEffect(() => {
     const domainToView = searchParams.get('viewSite')
+    // Optional deep-link target, e.g. `section=inputs` from a PII notification
+    const sectionToView = searchParams.get('section') ?? undefined
     if (domainToView && data.length > 0) {
       const visit = data.find(v => v.domain === domainToView)
       if (visit) {
         setSelectedVisit(visit)
+        setHighlightSection(sectionToView)
         setIsDetailsOpen(true)
         searchParams.delete('viewSite')
+        searchParams.delete('section')
         setSearchParams(searchParams, { replace: true })
       }
     }
@@ -695,6 +701,7 @@ export function DataTable({
 
   const handleViewDetails = (visit: SiteVisit) => {
     setSelectedVisit(visit)
+    setHighlightSection(undefined)
     setIsDetailsOpen(true)
   }
 
@@ -730,22 +737,6 @@ export function DataTable({
     } catch (err) {
       console.error(err)
       toast.add({ type: "error", title: t("Failed to save manual log"), priority: "high" })
-    }
-  }
-
-  const handleExport = async () => {
-    setExportOpen(false)
-    try {
-      const key = await storage.getVaultKey()
-      const logs = await storage.getDetectorLogs(key)
-      await downloadJson(
-        JSON.stringify(logs, null, 2),
-        `traceguard-logs-${new Date().toISOString().split('T')[0]}.json`
-      )
-      toast.add({ type: "success", title: t("Logs exported successfully") })
-    } catch (e) {
-      console.error(e)
-      toast.add({ type: "error", title: t("Failed to export logs"), priority: "high" })
     }
   }
 
@@ -810,7 +801,7 @@ export function DataTable({
           )}
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setExportDataOpen(true)}>
             <DownloadIcon />
             <span className="hidden lg:inline">{t("Export")}</span>
           </Button>
@@ -899,25 +890,8 @@ export function DataTable({
             </DialogContent>
           </Dialog>
 
-          {/* ── Export Logs confirmation ─────────────────────────────────── */}
-          <Dialog open={exportOpen} onOpenChange={setExportOpen}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{t("Export Logs")}</DialogTitle>
-                <DialogDescription>
-                  {t("Download your activity logs as a JSON file to your device.")}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setExportOpen(false)}>
-                  {t("Cancel")}
-                </Button>
-                <Button onClick={handleExport}>
-                  {t("Export")}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {/* ── Export (shared dialog: full backup, optional encryption) ── */}
+          <ExportDataDialog open={exportDataOpen} onOpenChange={setExportDataOpen} />
         </div>
       </div>
 
@@ -1032,6 +1006,7 @@ export function DataTable({
         safetyLevel={selectedVisit?.safetyLevel ?? ""}
         siteData={selectedVisit ? (siteCache[selectedVisit.domain] ?? null) : null}
         legacyDetails={selectedVisit?.details}
+        highlightSection={highlightSection}
       />
     </div>
     </ErrorBoundary>
