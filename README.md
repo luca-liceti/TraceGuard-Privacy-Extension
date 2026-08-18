@@ -24,9 +24,9 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 
 ## Screenshots
 
-![Dashboard Preview](docs/screenshots/dashboard-preview.png)
+![Dashboard Preview](screenshots/dashboard-preview.png)
 
-![Sidebar on Example Website](docs/screenshots/sidebar-on-example-website.png)
+![Sidebar on Example Website](screenshots/sidebar-on-example-website.png)
 
 ## Threat Feed & Signed Updates
 
