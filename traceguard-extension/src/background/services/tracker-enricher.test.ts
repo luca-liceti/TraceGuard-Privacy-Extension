@@ -27,7 +27,7 @@ const trackerRadarFixture = {
     'cdn.example-fonts.com': { owner: null, displayName: null, category: null, prevalence: 0, fingerprinting: 0 },
 };
 
-const easyPrivacyFixture = ['unknown-pixel.net'];
+const easyPrivacyFixture = ['unknown-pixel.net', 'cloudfront.net'];
 
 const disconnectFixture = {
     // google-analytics.com deliberately NOT here so the Tracker Radar test
@@ -65,6 +65,22 @@ describe('enrichTrackers', () => {
             [
                 { url: 'https://cdn.jsdelivr.net/npm/script.js', type: 'script', domain: 'cdn.jsdelivr.net' },
                 { url: 'https://fonts.example-cdn.com/font.woff2', type: 'script', domain: 'fonts.example-cdn.com' },
+            ],
+            {}
+        );
+        expect(result).toHaveLength(0);
+    });
+
+    it('never counts generic CDN / cloud-hosting domains as trackers, even when a blocklist flags them', async () => {
+        // EasyPrivacy lists cloudfront.net because SOME trackers ride it, but a
+        // legit site serving assets from CloudFront / S3 must not be flagged -
+        // that would drag the WSS down and trigger unfair PII penalties.
+        const { enrichTrackers } = await import('./tracker-enricher');
+        const result = await enrichTrackers(
+            'https://example.com/',
+            [
+                { url: 'https://d1abc.cloudfront.net/img.png', type: 'image', domain: 'd1abc.cloudfront.net' },
+                { url: 'https://s3.amazonaws.com/bucket/file.js', type: 'script', domain: 's3.amazonaws.com' },
             ],
             {}
         );

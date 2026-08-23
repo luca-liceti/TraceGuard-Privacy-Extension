@@ -58,10 +58,14 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
     targetDate.setDate(targetDate.getDate() - days);
   }
 
-  const historyRange = (history || []).filter(h => h.timestamp >= targetDate.getTime())
-  const firstScore = historyRange.length > 0 ? historyRange[0].ups : 100
+  // Anchor the change at the score the user had when the window STARTED (the
+  // last recorded point before it), matching the area chart's series. Using
+  // the first entry INSIDE the window would misattribute mid-window movement
+  // to the window's start (e.g. a drop at 2pm would look like "no change").
+  const beforeWindow = (history || []).filter(h => h.timestamp < targetDate.getTime())
+  const anchorScore = beforeWindow.length > 0 ? beforeWindow[beforeWindow.length - 1].ups : 100
   
-  const scoreChange = currentScore - firstScore
+  const scoreChange = currentScore - anchorScore
   const isUp = scoreChange >= 0
   
   const timeText = timeRange === "1d" ? t("today") : timeRange === "7d" ? t("this week") : t("this month")

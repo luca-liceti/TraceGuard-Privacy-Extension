@@ -100,4 +100,32 @@ describe('detectSensitiveInputs', () => {
         expect(result.fields.medium).toHaveLength(0);
         expect(result.score).toBe(100);
     });
+
+    it('does NOT flag German "ein" as an SSN field (false-positive guard)', () => {
+        // "ein" is the German indefinite article and a common separable verb
+        // prefix ("Geben Sie ein Passwort ein"). It must not turn a German
+        // password field into an SSN field (which would penalize the user).
+        addInput({ type: 'password', placeholder: 'Geben Sie ein Passwort ein' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.high).toHaveLength(1);
+        expect(result.fields.high[0].type).toBe('password');
+        expect(result.fields.high.some(f => f.type === 'ssn')).toBe(false);
+    });
+
+    it('still flags a capitalized EIN as an SSN field', () => {
+        addInput({ type: 'text', placeholder: 'EIN' });
+        addInput({ type: 'text', name: 'ein_number' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.high).toHaveLength(1);
+        expect(result.fields.high[0].type).toBe('ssn');
+    });
+
+    it('does NOT classify an ambiguous "unit" field as an address', () => {
+        // "unit" is a common e-commerce quantity field; only apt/apartment and
+        // explicit address tokens are address signals.
+        addInput({ type: 'number', name: 'unit' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.medium).toHaveLength(0);
+        expect(result.score).toBe(100);
+    });
 });

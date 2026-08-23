@@ -3,8 +3,7 @@
 ![Version](https://img.shields.io/github/package-json/v/luca-liceti/TraceGuard-Privacy-Extension?filename=traceguard-extension/package.json&label=version)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![CI](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/actions/workflows/ci.yml/badge.svg)](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/actions/workflows/ci.yml)
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/REPLACE_WITH_EXTENSION_ID)
-<!-- TODO: replace the Chrome Web Store link above with the live listing URL (https://chromewebstore.google.com/detail/<EXTENSION_ID>) once the extension is published. -->
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/traceguard-privacy-extens/memioiifpdmcllgojjglncadobmhdhlo)
 
 TraceGuard is a powerful, real-time privacy scoring and auditing Chrome Extension. It empowers users with transparent insights into how websites interact with their data, helping them make informed decisions about their digital footprint.
 

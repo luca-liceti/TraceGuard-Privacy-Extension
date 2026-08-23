@@ -162,6 +162,25 @@ function parseCookies(): CookieInfo[] {
 }
 
 /**
+ * Matches a cookie name against a known tracker-cookie pattern without false
+ * positives from substring matches. Most of these cookies are exact names
+ * (Facebook's "fr", DoubleClick's "IDE", Google's "SID"); the rest are
+ * prefixes with a separator ("_ga_<id>", "intercom-session-<id>"). A plain
+ * substring check would flag innocent first-party names - "sessionid"
+ * contains "sid", "refresh" contains "fr" - as trackers, dragging the WSS
+ * down and turning safe sites into "risky" ones that get penalized.
+ */
+function cookieNameMatches(name: string, pattern: string): boolean {
+    const n = name.toLowerCase();
+    const p = pattern.toLowerCase();
+    if (n === p) return true;
+    if (!n.startsWith(p)) return false;
+    const next = n[p.length];
+    // Prefix must continue with a separator, e.g. "_ga_ABC" or "intercom-xyz".
+    return next !== undefined && /[_-]/.test(next);
+}
+
+/**
  * Categorize cookie by invasiveness level
  * Returns category and weight multiplier
  */
@@ -170,21 +189,21 @@ function categorizeCookie(name: string): { category: CookieInfo['category']; wei
 
     // Check cross-site trackers (most invasive)
     for (const pattern of COOKIE_CATEGORIES.CROSS_SITE_TRACKERS.patterns) {
-        if (lowerName.includes(pattern.toLowerCase())) {
+        if (cookieNameMatches(lowerName, pattern)) {
             return { category: 'cross-site-tracker', weight: COOKIE_CATEGORIES.CROSS_SITE_TRACKERS.weight };
         }
     }
 
     // Check analytics cookies (moderately invasive)
     for (const pattern of COOKIE_CATEGORIES.ANALYTICS.patterns) {
-        if (lowerName.includes(pattern.toLowerCase())) {
+        if (cookieNameMatches(lowerName, pattern)) {
             return { category: 'analytics', weight: COOKIE_CATEGORIES.ANALYTICS.weight };
         }
     }
 
     // Check other third-party cookies
     for (const pattern of COOKIE_CATEGORIES.OTHER_THIRD_PARTY.patterns) {
-        if (lowerName.includes(pattern.toLowerCase())) {
+        if (cookieNameMatches(lowerName, pattern)) {
             return { category: 'third-party', weight: COOKIE_CATEGORIES.OTHER_THIRD_PARTY.weight };
         }
     }
@@ -243,7 +262,7 @@ function isLikelyThirdPartyCookie(name: string): boolean {
 
     // Check if cookie name matches known tracking patterns
     for (const pattern of trackingPatterns) {
-        if (lowerName.includes(pattern.toLowerCase())) {
+        if (cookieNameMatches(lowerName, pattern)) {
             return true;
         }
     }

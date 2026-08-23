@@ -394,17 +394,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 </Button>
               </div>
             </form>
-            <div className="mt-4 text-center">
+            <div className="mt-4 text-balance text-center text-xs text-muted-foreground [&_button]:underline [&_button]:underline-offset-4 hover:[&_button]:text-primary">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
+                  <button
+                    type="button"
                     disabled={loading}
                   >
                     {t("Forgot password? Reset vault")}
-                  </Button>
+                  </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>

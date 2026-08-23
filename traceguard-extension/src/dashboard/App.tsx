@@ -1,17 +1,20 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider, useTheme } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toast"
 import Layout from "@/components/traceguard/layout"
 import { useSettings } from "@/lib/useStorage"
 import { AuthProvider } from "@/components/traceguard/auth-provider"
+import { resilientLazy } from "@/lib/resilient-lazy"
 
 // Import pages (lazy-loaded so heavy chart/table dependencies only ship when
-// their route is actually opened)
-const OverviewPage = lazy(() => import("@/components/traceguard/pages/overview"))
-const HelpPage = lazy(() => import("@/components/traceguard/pages/help"))
-const RankingsPage = lazy(() => import("@/components/traceguard/pages/rankings"))
-const PrivacyPolicyPage = lazy(() => import("@/components/traceguard/pages/privacy-policy"))
+// their route is actually opened). resilientLazy self-heals when a chunk goes
+// stale after an extension update — without it, an open dashboard tab crashes
+// with "Failed to fetch dynamically imported module".
+const OverviewPage = resilientLazy(() => import("@/components/traceguard/pages/overview"))
+const HelpPage = resilientLazy(() => import("@/components/traceguard/pages/help"))
+const RankingsPage = resilientLazy(() => import("@/components/traceguard/pages/rankings"))
+const PrivacyPolicyPage = resilientLazy(() => import("@/components/traceguard/pages/privacy-policy"))
 import { SettingsProvider, useSettingsModal } from "@/components/traceguard/settings-context"
 import { SettingsModal } from "@/components/traceguard/settings-modal"
 

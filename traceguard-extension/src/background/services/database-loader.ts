@@ -211,16 +211,31 @@ export async function lookupTrackerDomain(domain: string): Promise<TrackerRadarE
 }
 
 /**
+ * Generic content-delivery / cloud-hosting domains. Blocklists like EasyPrivacy
+ * flag them because SOME trackers ride on them, but countless legitimate sites
+ * serve assets from CloudFront or S3 - counting them as trackers drags the WSS
+ * down and can turn an otherwise-safe site into a "risky" one that gets PII
+ * penalties. They are never trackers themselves.
+ */
+const GENERIC_CDN_DOMAINS: readonly string[] = ['cloudfront.net', 'amazonaws.com'];
+
+/**
  * Checks if a domain is in any of the privacy blocklists.
  */
 export async function isTrackerDomain(domain: string): Promise<boolean> {
+    const lower = domain.toLowerCase();
+
+    // Generic CDN / cloud hosts (and any of their subdomains) are never trackers.
+    if (GENERIC_CDN_DOMAINS.some(d => lower === d || lower.endsWith('.' + d))) {
+        return false;
+    }
+
     const [radar, easyprivacy, disconnect] = await Promise.all([
         getTrackerRadar(),
         getEasyPrivacySet(),
         getDisconnectMap(),
     ]);
 
-    const lower = domain.toLowerCase();
     if (radar[lower]) return true;
     if (easyprivacy.has(lower)) return true;
     if (disconnect[lower]) return true;

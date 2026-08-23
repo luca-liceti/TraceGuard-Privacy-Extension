@@ -37,4 +37,45 @@ describe('content script loads and analyzes', () => {
         hidePIIConfirmCard();
         expect(document.getElementById('traceguard-pii-confirm-host')).toBeNull();
     });
+
+    it('pii-confirm card reports a confirm as safe so the penalty can be waived', async () => {
+        const { showPIIConfirmCard, hidePIIConfirmCard } = await import('./pii-confirm');
+        await showPIIConfirmCard({
+            domain: 'example.com',
+            fieldType: 'ssn',
+            reason: 'risky',
+            message: 'test',
+            siteWSS: 40,
+        });
+        const shadow = document.getElementById('traceguard-pii-confirm-host')!.shadowRoot!;
+        const confirmBtn = Array.from(shadow.querySelectorAll('button')).find(b => b.textContent?.includes('allow list'))!;
+        confirmBtn.click();
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+            type: 'PII_CONFIRM_RESULT',
+            domain: 'example.com',
+            safe: true,
+        });
+        hidePIIConfirmCard();
+    });
+
+    it('pii-confirm card reports a dismiss as not safe so the entry stays penalized', async () => {
+        const { showPIIConfirmCard, hidePIIConfirmCard } = await import('./pii-confirm');
+        await showPIIConfirmCard({
+            domain: 'example.com',
+            fieldType: 'password',
+            reason: 'risky',
+            message: 'test',
+            siteWSS: 40,
+        });
+        const shadow = document.getElementById('traceguard-pii-confirm-host')!.shadowRoot!;
+        const dismissBtn = Array.from(shadow.querySelectorAll('button')).find(b => b.textContent?.includes('Not sure'))!;
+        dismissBtn.click();
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+            type: 'PII_CONFIRM_RESULT',
+            domain: 'example.com',
+            safe: false,
+        });
+        expect(document.getElementById('traceguard-pii-confirm-host')).toBeNull();
+        hidePIIConfirmCard();
+    });
 });

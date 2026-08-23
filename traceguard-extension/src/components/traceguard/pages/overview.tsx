@@ -77,9 +77,17 @@ export default function OverviewPage() {
         ? group.detectors.cookies?.details 
         : cachedDetails.cookies;
       
-      const inputsDetails = Object.keys(group.detectors.inputs?.details || {}).length > 0 
-        ? group.detectors.inputs?.details 
-        : cachedDetails.input;
+      // The activity journal records the page state at navigation time only;
+      // forms rendered later by SPAs (e.g. a multi-step signup that asks for
+      // an SSN on a later step) appear in the site cache's latest analysis
+      // instead. Prefer the fresher cache when it reports sensitive fields the
+      // journal missed, so a site's details stay accurate after a re-analysis.
+      const journalInputs = group.detectors.inputs?.details;
+      const inputsDetails = (journalInputs?.sensitive ?? 0) > 0
+        ? journalInputs
+        : (cachedDetails.input?.sensitive ?? 0) > 0
+          ? cachedDetails.input
+          : journalInputs ?? cachedDetails.input;
 
       const policyDetails = Object.keys(group.detectors.policy?.details || {}).length > 0 
         ? group.detectors.policy?.details 
@@ -131,10 +139,10 @@ export default function OverviewPage() {
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <RadialChartScore timeRange={timeRange} />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 h-full">
           <ChartAreaInteractive timeRange={timeRange} onTimeRangeChange={setTimeRange} />
         </div>
       </div>

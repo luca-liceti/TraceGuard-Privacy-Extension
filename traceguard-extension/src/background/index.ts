@@ -37,7 +37,7 @@ import { calculateWSS, calculateTrackingScore } from '../lib/scoring';
 import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState } from '../lib/types';
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR } from './tosdr-api';
-import { calculateVisitImpact, calculatePIIPenalty, evaluatePIIEntry } from '../lib/pii';
+import { calculateVisitImpact, calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
 import { encryptData, decryptData, importKey } from '../lib/crypto';
 import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
 import { initNetworkMonitor, getAndClearNetworkData, setNetworkMonitorEnabled } from './services/network-monitor';
@@ -47,6 +47,12 @@ import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
 import { isLocalUrl } from '../lib/utils';
 import { runDataMigrations } from './services/migrations';
 import i18n from '../lib/i18n';
+
+// The User Privacy Score chart offers Today / 7-day / 30-day views, so the
+// rolling score history must cover at least a month of visits (one entry is
+// written per page load + per PII event). A 100-entry cap silently truncated
+// the 7/30-day views to a few days of real data.
+const SCORE_HISTORY_LIMIT = 5000;
 
 // Serializes read-modify-write workflows. MV3 can handle messages concurrently;
 // without this queue, two visits can overwrite each other's encrypted cache/history.
@@ -226,7 +232,7 @@ async function flushBufferedTelemetry() {
     };
 
     await mergeArray('piiDetections', bufferedPii, 100);
-    await mergeArray('scoreHistory', bufferedScoreHistory, 100);
+    await mergeArray('scoreHistory', bufferedScoreHistory, SCORE_HISTORY_LIMIT);
     await mergeArray('detectorLogs', bufferedDetectorLogs, 1000);
     await mergeArray('notifications', bufferedNotifications, 100);
 
@@ -436,8 +442,8 @@ async function syncStateWithCache() {
                 });
             }
             
-            // Keep last 100
-            if (newHistory.length > 100) newHistory.splice(0, newHistory.length - 100);
+            // Keep last SCORE_HISTORY_LIMIT
+            if (newHistory.length > SCORE_HISTORY_LIMIT) newHistory.splice(0, newHistory.length - SCORE_HISTORY_LIMIT);
             await chrome.storage.local.set({ scoreHistory: await encryptData(key, newHistory) });
             
             // Update final UPS
@@ -623,6 +629,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             recordError('Add to allow list failed', String(error));
             sendResponse({ success: false, error: String(error) });
         });
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // PII_CONFIRM_RESULT: User answered the "Is this website safe?" card
+    // -------------------------------------------------------------------------
+    if (message.type === 'PII_CONFIRM_RESULT') {
+        const domain = String(message.domain || '').toLowerCase();
+        const pending = pendingPIIConfirms.get(domain);
+        if (pending) {
+            pendingPIIConfirms.delete(domain);
+            if (pending.timer) clearTimeout(pending.timer);
+            pending.resolve(message.safe === true);
+        }
+        sendResponse({ success: true });
         return true;
     }
 
@@ -917,8 +938,11 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     // keeps lowering the score); safe sites recover only on the first visit of
     // the day (isUniqueDomain) so recovery can't be farmed by refreshing.
     // SPA re-analyses of the same page never re-score.
+    // Note: `??` (not `||`) so a genuine UPS of 0 is never replaced by the 100
+    // fallback - otherwise penalties computed from 100 would "refund" a user
+    // who already hit 0 back up toward a full score.
     const upsImpact = isNewNavigation
-        ? calculateVisitImpact(state.ups || 100, wss, state.safeVisitStreak || 0, isUniqueDomain)
+        ? calculateVisitImpact(state.ups ?? 100, wss, state.safeVisitStreak || 0, isUniqueDomain)
         : null;
 
     // Save the updated state
@@ -944,7 +968,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             detector: 'permissions',
             domain: domain,
             score: 0,
-            details: { upsChange: upsImpact.newUPS - (state.ups || 100), newStreak: upsImpact.newStreak },
+            details: { upsChange: upsImpact.newUPS - (state.ups ?? 100), newStreak: upsImpact.newStreak },
             message: upsImpact.message
         });
     }
@@ -969,8 +993,8 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
             reason: upsImpact.message || `Visited ${domain}`
         });
 
-        // Keep only the last 100 entries to save storage space
-        if (history.length > 100) history.splice(0, history.length - 100);
+        // Keep a rolling window large enough for the 30-day chart view
+        if (history.length > SCORE_HISTORY_LIMIT) history.splice(0, history.length - SCORE_HISTORY_LIMIT);
         
         if (key) {
             await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
@@ -1171,10 +1195,144 @@ async function resolveSiteScore(domain: string, key: CryptoKey | null): Promise<
     }
 }
 
+/**
+ * Pending "Is this website safe?" confirmations, keyed by domain. The card is
+ * shown BEFORE the UPS penalty is applied, so the user can vouch for a site
+ * they trust and avoid an unfair penalty; only a dismiss (or a timeout)
+ * actually penalizes.
+ */
+interface PendingPIIConfirm {
+    resolve: (safe: boolean) => void;
+    timer: ReturnType<typeof setTimeout> | null;
+}
+const pendingPIIConfirms = new Map<string, PendingPIIConfirm>();
+const PII_CONFIRM_TIMEOUT_MS = 120_000; // 2 minutes
+
+/**
+ * Shows the confirmation card for an outlier site and waits for the user's
+ * answer. Resolves `true` only when the user confirms the site is safe; a
+ * "Not sure", dismissal, missing content script, or timeout resolves `false`
+ * so the entry is still penalized (fail-safe for risky sites).
+ */
+async function askForSiteConfirmation(
+    event: { site: string; fieldType: string },
+    decision: PIIEntryDecision,
+    siteWSS: number
+): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+        const finish = (safe: boolean) => {
+            const pending = pendingPIIConfirms.get(event.site);
+            if (pending) {
+                pendingPIIConfirms.delete(event.site);
+                if (pending.timer) clearTimeout(pending.timer);
+            }
+            resolve(safe);
+        };
+
+        // Fail-safe: an unanswered card (closed tab, missed card) falls back to
+        // penalizing the entry on a risky site.
+        const timer = setTimeout(() => finish(false), PII_CONFIRM_TIMEOUT_MS);
+        pendingPIIConfirms.set(event.site, { resolve: finish, timer });
+
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]?.id) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    type: 'SHOW_PII_CONFIRM',
+                    data: {
+                        domain: event.site,
+                        fieldType: event.fieldType,
+                        reason: decision.reason,
+                        message: decision.message,
+                        siteWSS,
+                    }
+                }).catch(() => {
+                    // The page may not have the content script (yet) - penalize.
+                    finish(false);
+                });
+            } else {
+                finish(false);
+            }
+        });
+    });
+}
+
 async function handlePIIDetection(message: any) {
     const event = message.data;
     console.log('[TraceGuard] PII event:', event);
 
+    // A confirmation is already pending for this site - the pending event will
+    // cover any further entries, so ignore this duplicate.
+    if (pendingPIIConfirms.has(event.site)) {
+        console.log('[TraceGuard] Confirmation already pending for', event.site, '- ignoring duplicate PII event');
+        return;
+    }
+
+    // Get the settings and site score needed to decide whether this entry
+    // should be gated on the confirmation card. The final UPS decision is made
+    // in finalizePIIDetection against freshly-read state.
+    const key = await getCryptoKey();
+    const settings = await storage.getSettings();
+
+    // Resolve the emitting site's safety score from the site cache - the active
+    // tab's state may point at a different site. Use ?? so a genuine WSS of 0
+    // (blacklisted) is never collapsed into the neutral 50 fallback.
+    const { wss: siteWSS, reputation: siteReputation } = await resolveSiteScore(event.site, key);
+
+    // Does the user's allow list already vouch for this domain?
+    const domainMatches = (dom: string, pattern: string) => dom === pattern || dom.endsWith('.' + pattern);
+    const isWhitelisted = (settings.whitelist || []).some(w => domainMatches(event.site.toLowerCase(), w.toLowerCase()));
+
+    // Decide whether this entry is expected use (exempt) or avoidable risk.
+    // Exemptions are earned by evidence of legitimacy (verified domains, safe
+    // sites, user allow list) - never by page structure alone, because we
+    // cannot verify where a 2FA code or credit card actually goes.
+    const decision = evaluatePIIEntry({
+        fieldType: event.fieldType,
+        domain: event.site,
+        siteWSS,
+        isBlacklisted: siteReputation === 0,
+        isWhitelisted,
+        pageContext: event.pageContext,
+    });
+
+    // Outlier sites (risky WSS or an unnecessary data ask, not blacklisted):
+    // ask the user to vouch for the site BEFORE penalizing. The card is the
+    // risk gate - confirming adds the site to the allow list and exempts this
+    // entry; dismissing (or no answer) applies the penalty. Blacklisted sites
+    // are never offered - they're dangerous, not debatable.
+    if (decision.penalize && siteReputation !== 0
+        && (decision.reason === 'risky' || decision.reason === 'unnecessary')
+        && !promptedPIIConfirmDomains.has(event.site)) {
+        promptedPIIConfirmDomains.add(event.site);
+        // Don't block the telemetry queue while the user reads the card;
+        // finalize the event when they answer (or the timeout fires). The
+        // finalize queue is handled separately so a storage failure there can
+        // never re-trigger a second finalize with a different decision.
+        const finalizeQueued = (safe: boolean) => {
+            queueTelemetryWrite(() => finalizePIIDetection(event, safe)).catch((error) => {
+                recordError('PII finalize failed', String(error));
+            });
+        };
+        askForSiteConfirmation(event, decision, siteWSS)
+            .then(finalizeQueued)
+            .catch((error) => {
+                recordError('PII confirmation failed', String(error));
+                finalizeQueued(false);
+            });
+        return;
+    }
+
+    await finalizePIIDetection(event, false);
+}
+
+/**
+ * Records a PII entry and applies (or waives) the UPS penalty.
+ *
+ * @param confirmedSafe - true when the user vouched for the site via the
+ * confirmation card: the domain is added to the allow list and the entry is
+ * treated as expected use (no penalty).
+ */
+async function finalizePIIDetection(event: any, confirmedSafe: boolean) {
     // Read existing PII detections and score history first so we can dedupe
     // repeated events for the same field type on the same site.
     const key = await getCryptoKey();
@@ -1223,7 +1381,7 @@ async function handlePIIDetection(message: any) {
     // Exemptions are earned by evidence of legitimacy (verified domains, safe
     // sites, user allow list) - never by page structure alone, because we
     // cannot verify where a 2FA code or credit card actually goes.
-    const decision = evaluatePIIEntry({
+    let decision = evaluatePIIEntry({
         fieldType: event.fieldType,
         domain: event.site,
         siteWSS,
@@ -1231,6 +1389,20 @@ async function handlePIIDetection(message: any) {
         isWhitelisted,
         pageContext: event.pageContext,
     });
+
+    // The user vouched for the site from the confirmation card: add it to the
+    // allow list and treat this entry as expected use (no penalty).
+    if (confirmedSafe) {
+        const whitelist = settings.whitelist || [];
+        if (!whitelist.some(w => domainMatches(event.site.toLowerCase(), w.toLowerCase()))) {
+            await storage.updateSettings({ whitelist: [...whitelist, event.site] });
+        }
+        decision = {
+            penalize: false,
+            reason: 'whitelisted',
+            message: 'You confirmed this site is safe - no penalty.',
+        };
+    }
     const isExempt = !decision.penalize;
 
     // Only count/penalize avoidable exposures; expected use is logged but free.
@@ -1239,9 +1411,10 @@ async function handlePIIDetection(message: any) {
     // Calculate the penalty based on:
     // - What type of info you entered (password = bigger penalty than name)
     // - How safe the current website is (risky site = bigger penalty)
+    // `??` (not `||`): a genuine UPS of 0 must stay 0, never flip back to 100.
     const { newUPS, penalty } = isExempt
-        ? { newUPS: state.ups || 100, penalty: 0 }
-        : calculatePIIPenalty(state.ups || 100, event.fieldType, siteWSS);
+        ? { newUPS: state.ups ?? 100, penalty: 0 }
+        : calculatePIIPenalty(state.ups ?? 100, event.fieldType, siteWSS);
     const scoreImpact = -penalty;  // Negative because it's a penalty
 
     // Record this PII detection event
@@ -1267,9 +1440,10 @@ async function handlePIIDetection(message: any) {
             : `PII entered on ${event.site} (${event.sensitivity} sensitivity)`
     });
 
-    // Keep only the last 100 entries to prevent storage from growing too large
+    // Keep only the last 100 PII events, and a score-history window large
+    // enough for the 30-day chart view.
     if (piiDetections.length > 100) piiDetections.splice(0, piiDetections.length - 100);
-    if (scoreHistory.length > 100) scoreHistory.splice(0, scoreHistory.length - 100);
+    if (scoreHistory.length > SCORE_HISTORY_LIMIT) scoreHistory.splice(0, scoreHistory.length - SCORE_HISTORY_LIMIT);
 
     // Save the updated data
     if (key) {
@@ -1300,34 +1474,10 @@ async function handlePIIDetection(message: any) {
         ? `[TraceGuard] PII exempted (${decision.reason}): ${event.fieldType} on ${event.site} - UPS unchanged at ${state.ups}`
         : `[TraceGuard] UPS updated: ${state.ups} → ${newUPS} (PII events: ${newPiiCount})`);
 
-    // Expected-use entries (login, 2FA codes, gov sites, verified sectors) are
-    // logged and exposed but silent: the user already knows they logged in.
+    // Expected-use entries (login, 2FA codes, gov sites, verified sectors, or
+    // sites the user vouched for via the confirmation card) are logged and
+    // exposed but silent: the user already knows they logged in.
     if (isExempt) return;
-
-    // Outlier sites: when a non-blacklisted risky site asks for personal info,
-    // offer the user a one-time confirmation to vouch for it (add to allow
-    // list). Blacklisted sites are never offered - they're dangerous, not
-    // debatable.
-    if ((decision.reason === 'risky' || decision.reason === 'unnecessary')
-        && !promptedPIIConfirmDomains.has(event.site)) {
-        promptedPIIConfirmDomains.add(event.site);
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0]?.id) {
-                chrome.tabs.sendMessage(tabs[0].id, {
-                    type: 'SHOW_PII_CONFIRM',
-                    data: {
-                        domain: event.site,
-                        fieldType: event.fieldType,
-                        reason: decision.reason,
-                        message: decision.message,
-                        siteWSS,
-                    }
-                }).catch(() => {
-                    // The page may not have the content script (yet) - ignore.
-                });
-            }
-        });
-    }
 
     // Create a notification to alert you about the PII detection
     // Severity depends on how sensitive the information was

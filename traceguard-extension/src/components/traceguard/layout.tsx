@@ -36,6 +36,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
+import { useAutoCollapseSidebar } from "@/hooks/use-auto-collapse-sidebar"
 
 interface LayoutProps {
   children: ReactNode
@@ -44,6 +45,9 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  // Auto-collapse the sidebar when the window gets too small, expand when it
+  // returns to a normal size (see useAutoCollapseSidebar).
+  const [sidebarOpen, setSidebarOpen] = useAutoCollapseSidebar()
 
   useEffect(() => {
     setMounted(true)
@@ -54,7 +58,7 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <div className={`flex min-h-screen w-full ${theme === "dark" ? "dark" : ""}`}>
         <AppSidebar />
         <SidebarInset>

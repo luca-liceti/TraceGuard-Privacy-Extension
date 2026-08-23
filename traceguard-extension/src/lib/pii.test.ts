@@ -152,6 +152,13 @@ describe('PII Penalty System', () => {
             expect(result.newUPS).toBeGreaterThanOrEqual(0)
         })
 
+        it('keeps a user already at UPS 0 at 0 instead of rebounding to a near-full score', () => {
+            // Callers must pass the real UPS (never `|| 100`); a 0 base must
+            // stay 0 after a penalty, not "recover" to ~90 via the fallback.
+            const result = calculatePIIPenalty(0, 'ssn', 0) // Max penalty
+            expect(result.newUPS).toBe(0)
+        })
+
         it('should handle unknown field types with default penalty', () => {
             const currentUPS = 100
             const result = calculatePIIPenalty(currentUPS, 'unknown', 50)

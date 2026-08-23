@@ -27,6 +27,7 @@ import {
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { useScoreHistory } from "@/lib/useStorage"
+import { buildDailySeries, buildRangeSeries, buildTodaySeries, ScoreHistoryLike } from "@/lib/score-history"
 import { useTranslation } from "react-i18next"
 
 const chartConfig = {
@@ -41,6 +42,9 @@ const chartConfig = {
 
 import { Activity, AlertCircle } from "lucide-react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
+
+// Stable reference so chart memos don't recompute while history is loading.
+const EMPTY_HISTORY: ScoreHistoryLike[] = []
 
 // ... (in imports at top)
 
@@ -65,97 +69,19 @@ export function ChartAreaInteractive({
   }, [isMobile])
 
   const history = useScoreHistory()
+  // Stable reference so the memos below only recompute when history changes.
+  const actualHistory = history ?? EMPTY_HISTORY
 
-  const { dailyData, todayData } = React.useMemo(() => {
-    const isLoading = history === null;
-    const actualHistory = history || [];
-    if (!isLoading && actualHistory.length === 0) return { dailyData: [], todayData: [] };
-    
-    // Group by day
-    const dailyScores = new Map<string, { sum: number; count: number }>();
-    actualHistory.forEach(entry => {
-      const date = new Date(entry.timestamp);
-      // Adjust for local time
-      const dateString = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-      const existing = dailyScores.get(dateString) || { sum: 0, count: 0 };
-      dailyScores.set(dateString, { sum: existing.sum + entry.ups, count: existing.count + 1 });
-    });
-    
-    const dailyData = Array.from(dailyScores.entries()).map(([date, { sum, count }]) => ({
-      date,
-      score: Math.round(sum / count)
-    })).sort((a, b) => a.date.localeCompare(b.date));
-
-    // Today data (Raw history from midnight to now)
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    
-    const beforeToday = actualHistory.filter(entry => entry.timestamp < startOfToday.getTime());
-    const lastScore = isLoading ? 0 : (beforeToday.length > 0 ? beforeToday[beforeToday.length - 1].ups : 100); 
-    
-    const rawToday = actualHistory
-      .filter(entry => entry.timestamp >= startOfToday.getTime())
-      .map(entry => ({
-        date: new Date(entry.timestamp).toISOString(),
-        score: entry.ups
-      }));
-      
-    const todayData = [];
-    if (beforeToday.length > 0) {
-      todayData.push({ date: startOfToday.toISOString(), score: lastScore });
-    }
-    todayData.push(...rawToday);
-    if (rawToday.length > 0 || beforeToday.length > 0) {
-      todayData.push({ 
-        date: new Date().toISOString(), 
-        score: rawToday.length > 0 ? rawToday[rawToday.length - 1].score : lastScore 
-      });
-    }
-
-    return { dailyData, todayData };
-  }, [history]);
+  // Today: the raw score trajectory from midnight to now.
+  const todayData = React.useMemo(() => buildTodaySeries(actualHistory), [actualHistory])
+  // Last 7 / 30 days: one point per day at that day's last (closing) score.
+  const dailyData = React.useMemo(() => buildDailySeries(actualHistory), [actualHistory])
 
   const filteredData = React.useMemo(() => {
     if (timeRange === "1d") return todayData;
-
-    const daysToSubtract = timeRange === "7d" ? 7 : 30;
-    const result = [];
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // dailyData is sorted ascending, so this is the first real data point.
-    const firstDataDate = dailyData.length > 0 ? dailyData[0].date : null;
-
-    for (let i = daysToSubtract - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      // Format as YYYY-MM-DD in local time
-      const dateString = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-
-      // Never fabricate a score for dates before the first recorded entry,
-      // backfilling "100" here implies a history the user never had.
-      if (firstDataDate && dateString < firstDataDate) continue;
-      
-      const existing = dailyData.find(item => item.date === dateString);
-      
-      if (existing) {
-        result.push(existing);
-      } else {
-        // Backfill with the most recent score prior to this date
-        const before = dailyData.filter(item => item.date < dateString);
-        const isLoading = history === null;
-        const lastScore = isLoading ? 0 : (before.length > 0 ? before[before.length - 1].score : 100);
-        
-        result.push({
-          date: dateString,
-          score: lastScore
-        });
-      }
-    }
-    
-    return result;
-  }, [dailyData, todayData, timeRange, history]);
+    const days = timeRange === "7d" ? 7 : 30;
+    return buildRangeSeries(dailyData, days)
+  }, [todayData, dailyData, timeRange])
 
   return (
     <ErrorBoundary fallback={
@@ -169,7 +95,7 @@ export function ChartAreaInteractive({
         <CardTitle>{t("User Privacy Score")}</CardTitle>
         <CardDescription>
           <span className="@[540px]/card:block hidden">
-            {t('Average score for')} {timeRange === '1d' ? t('today') : timeRange === '7d' ? t('the last 7 days') : t('the last 30 days')}
+            {t('Score for')} {timeRange === '1d' ? t('today') : timeRange === '7d' ? t('the last 7 days') : t('the last 30 days')}
           </span>
           <span className="@[540px]/card:hidden">
             {timeRange === '1d' ? t('Today') : timeRange === '7d' ? t('Last 7 days') : t('Last 30 days')}
@@ -215,7 +141,11 @@ export function ChartAreaInteractive({
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        {!history || history.length === 0 ? (
+        {history === null ? (
+          <div className="flex h-64 w-full items-center justify-center text-sm text-muted-foreground pb-6">
+            {t("Loading...")}
+          </div>
+        ) : history.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 w-full gap-3 text-center pb-6">
             <div className="p-3 rounded-full bg-muted/50">
               <Activity className="h-6 w-6 text-muted-foreground" />

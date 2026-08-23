@@ -141,6 +141,7 @@ const chromeMock = {
         query: vi.fn().mockResolvedValue([]),
         sendMessage: vi.fn().mockResolvedValue({}),
         get: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({}),
     },
     action: {
         setPopup: vi.fn().mockResolvedValue(undefined),

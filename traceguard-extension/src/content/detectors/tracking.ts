@@ -166,9 +166,11 @@ export function detectTrackingDetailed(): TrackingDetectionResult {
                 return;
             }
 
-            // Check for partial matches (e.g., subdomain.google-analytics.com)
+            // Check subdomains of known trackers (e.g. s0.2mdn.net). Only match
+            // on an explicit dot boundary: a substring test would flag benign
+            // lookalike hosts like "my-twitter.com" or "notfacebook.com".
             for (const tracker of KNOWN_TRACKERS) {
-                if (hostname.includes(tracker)) {
+                if (hostname.endsWith('.' + tracker)) {
                     knownTrackers.add(hostname);
                     return;
                 }

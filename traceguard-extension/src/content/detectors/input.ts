@@ -110,7 +110,7 @@ export function detectSensitiveInputs(): InputDetectionResult {
         const nameAttr = (element.getAttribute('name') || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_]/g, ' ');
         const idAttr = (element.getAttribute('id') || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_]/g, ' ');
 
-        const visibleMetadata = [
+        const rawMetadata = [
             element.getAttribute('placeholder'),
             element.getAttribute('aria-label'),
             ariaLabelledbyText,
@@ -119,8 +119,12 @@ export function detectSensitiveInputs(): InputDetectionResult {
             ...Array.from(document.querySelectorAll('label'))
                 .filter(label => label.htmlFor === element.id || label.contains(element))
                 .map(label => label.textContent)
-        ].filter(Boolean).join(' ').toLowerCase();
-        const hasAddressMetadata = /\b(address|street|city|state|province|region|zip|postal|apartment|apt|unit|county)\b/i.test(visibleMetadata);
+        ].filter(Boolean).join(' ');
+        const visibleMetadata = rawMetadata.toLowerCase();
+        // "unit" is ambiguous (apartment unit vs. e-commerce quantity), so it is
+        // NOT an address signal on its own; apt/apartment still catch real
+        // apartment-unit fields.
+        const hasAddressMetadata = /\b(address|street|city|state|province|region|zip|postal|apartment|apt|county)\b/i.test(visibleMetadata);
 
         // One-time security codes (2FA / OTP) have a dedicated autocomplete
         // token; fall back to visible metadata for sites that omit it.
@@ -134,7 +138,15 @@ export function detectSensitiveInputs(): InputDetectionResult {
         // the only reliable signal. Unlike password/card, there is no
         // legitimate reason for a field to be *named* like an SSN field unless
         // it actually collects one, so spoof risk is minimal.
-        const isSSN = /\b(social security( number)?|ssn|tax ?id|taxpayer ?id|national id|government id|ein)\b/i.test(visibleMetadata)
+        //
+        // The bare word "ein" is deliberately NOT a signal: it is also the
+        // German indefinite article and a common separable verb prefix (e.g.
+        // "Geben Sie ein Passwort ein" - "enter a password"), so matching it
+        // would flag German-language forms as SSN collectors. "EIN" (the US
+        // business tax ID) is only unambiguous when capitalized, so it is
+        // checked case-sensitively against the raw metadata.
+        const isSSN = /\b(social security( number)?|ssn|tax ?id|taxpayer ?id|national id|government id)\b/i.test(visibleMetadata)
+            || /\bEIN\b/.test(rawMetadata)
             || /\b(social security|ssn|tax ?id|national ?id)\b/i.test(autocomplete);
 
         // Address forms commonly split a physical address across several

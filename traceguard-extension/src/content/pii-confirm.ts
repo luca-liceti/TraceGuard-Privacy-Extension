@@ -282,7 +282,7 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
 
     const note = document.createElement('p');
     note.className = 'tg-note';
-    note.textContent = 'Adding a site to your allow list stops future penalties here. Check the address bar carefully - lookalike domains are a common trick.';
+    note.textContent = 'If this is the real site, confirm to skip the penalty and add it to your allow list. Check the address bar carefully - lookalike domains are a common trick.';
 
     card.append(header, body, actions, note);
 
@@ -290,29 +290,45 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
 
     // --- Wire up the actions -------------------------------------------------
 
+    // Tell the background worker how the user answered the card. The penalty
+    // decision (exempt vs. penalize) is made once this response is received:
+    // confirming vouches for the site, dismissing leaves the entry penalized.
+    const notifyBackground = (safe: boolean) => {
+        try {
+            chrome.runtime.sendMessage({
+                type: 'PII_CONFIRM_RESULT',
+                domain: data.domain,
+                safe,
+            }).catch(() => {
+                // The background may be unavailable (e.g. during unload); its
+                // confirmation timeout then falls back to penalizing.
+            });
+        } catch {
+            // chrome.runtime may be missing (e.g. in unit tests) - ignore.
+        }
+    };
+
     const remove = () => {
         host.remove();
     };
 
-    closeBtn.addEventListener('click', remove);
-    dismissBtn.addEventListener('click', remove);
+    // Dismissing or closing the card counts as "not sure": the site is NOT
+    // vouched for, so the entry is penalized as usual.
+    const decline = () => {
+        notifyBackground(false);
+        remove();
+    };
+
+    closeBtn.addEventListener('click', decline);
+    dismissBtn.addEventListener('click', decline);
 
     confirmBtn.addEventListener('click', () => {
         confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Adding\u2026';
-        chrome.runtime.sendMessage({
-            type: 'ADD_TO_ALLOWLIST',
-            domain: data.domain,
-        }).then(() => {
-            confirmBtn.textContent = '✓ Added';
-            note.textContent = `${data.domain} was added to your allow list. TraceGuard won't penalize personal info here anymore.`;
-            // Keep the confirmation visible briefly, then dismiss.
-            setTimeout(remove, 2000);
-        }).catch(() => {
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = 'It\u2019s safe - add to allow list';
-            note.textContent = 'Could not update the allow list. Please try again.';
-        });
+        notifyBackground(true);
+        confirmBtn.textContent = '✓ Added';
+        note.textContent = `${data.domain} was added to your allow list. TraceGuard won't penalize personal info here anymore.`;
+        // Keep the confirmation visible briefly, then dismiss.
+        setTimeout(remove, 2000);
     });
 
     return host;
