@@ -2,6 +2,24 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.4.3
+
+**What's new**
+
+- First click of the extension icon on a fresh install now opens the dashboard's vault-creation page (in both popup and side-panel mode) instead of squeezing account setup into the popup.
+- The dashboard sidebar automatically collapses to icons when the window gets too small and expands again when it returns to a normal size.
+- Personal-data penalties on risky sites are now gated behind the "Is this website safe?" confirmation card — confirming vouchsafes the site and waives the penalty for that visit.
+- The dashboard now recovers automatically after an extension update instead of showing a crash screen when a stale page chunk can no longer be loaded.
+
+**What was fixed**
+
+- Score graph: the 7-day and 30-day tabs now plot each day's closing score (the real trajectory) instead of an average, with a larger history so those tabs show actual data; the donut's up/down delta now matches the chart, and a proper loading state replaced the "No data yet" flash.
+- Fixed false-positive personal-data detection: German "ein" fields no longer count as SSNs, and "unit" quantity fields no longer count as addresses.
+- Fixed score corruption when a user's score is 0 — penalties and recoveries no longer compute from a baseline of 100.
+- Cookie and tracker detection no longer flags lookalikes via substring matches (e.g. `refresh` containing Facebook's `fr` cookie, `notfacebook.com` containing "facebook"), and generic CDNs (CloudFront, S3, etc.) are no longer counted as trackers.
+- Overview site logs now show sensitive fields that appeared after the initial page analysis.
+- The README badge now links to the live Chrome Web Store listing.
+
 ## v1.4.2
 
 **What's new**
