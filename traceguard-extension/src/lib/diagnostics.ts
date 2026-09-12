@@ -52,7 +52,8 @@ export type DiagnosticArea =
     | 'scoring'
     | 'pii'
     | 'ui'
-    | 'startup';
+    | 'startup'
+    | 'badge';
 
 export interface DiagnosticEvent {
     /** Unique id, used to merge events written by different contexts. */

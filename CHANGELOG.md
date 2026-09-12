@@ -2,7 +2,14 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.9.0
+
+**What's new**
+
+- The extension icon now shows the **Website Safety Score (WSS)** as a live badge on the toolbar icon. The badge updates every time you navigate to a new page and reflects the score for that specific tab, so switching tabs shows the correct score for each one. The badge is color-coded using the same palette as the rest of the extension: green for safe (60-100), yellow for fair (40-59), orange for poor (20-39), and red for critical (0-19). The badge is blank while a page is loading or on browser internal pages.
+
 ## v1.8.0
+
 
 **What's new**
 

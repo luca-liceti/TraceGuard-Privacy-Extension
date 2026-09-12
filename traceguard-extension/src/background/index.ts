@@ -48,6 +48,7 @@ import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
 import { isLocalUrl } from '../lib/utils';
 import { runDataMigrations } from './services/migrations';
 import i18n from '../lib/i18n';
+import { updateTabBadge, clearTabBadge, reapplyTabBadge, evictTabBadge } from './badge-icon';
 
 // The User Privacy Score chart offers Today / 7-day / 30-day views, so the
 // rolling score history must cover at least a month of visits (one entry is
@@ -1127,6 +1128,11 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         ...(isActiveTab ? { currentSite: slimSiteData(siteData) } : {}),
     }));
 
+    // Update the toolbar badge for this tab now that the final WSS is known.
+    if (tabId !== undefined) {
+        await updateTabBadge(tabId, wss);
+    }
+
     // Step 6: Prepare the detector journal for this visit. UPS changes are
     // recorded in scoreHistory (below) with a proper reason - the journal only
     // holds real detector events, so there is no UPS bookkeeping entry here.
@@ -1810,6 +1816,36 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         const key = await getCryptoKey();
         await storage.cleanupOldLogs(key);
     }
+});
+
+// =============================================================================
+// TAB LIFECYCLE LISTENERS - Keep the badge in sync across tab switches
+// =============================================================================
+
+// Reset the badge to an empty state the moment a tab starts loading a new URL.
+// This prevents the previous page's score from lingering during navigation.
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.status === 'loading') {
+        clearTabBadge(tabId).catch((error) => {
+            logEvent('badge', 'warn', 'badge_clear_on_navigate_failed', 'Could not clear badge on navigation', {
+                tabId, error: String(error),
+            });
+        });
+    }
+});
+
+// Re-apply the badge for whichever tab the user just switched to.
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+    reapplyTabBadge(tabId).catch((error) => {
+        logEvent('badge', 'warn', 'badge_reapply_on_activate_failed', 'Could not reapply badge on tab activation', {
+            tabId, error: String(error),
+        });
+    });
+});
+
+// Drop the cached WSS entry when a tab is closed to prevent memory leaks.
+chrome.tabs.onRemoved.addListener((tabId) => {
+    evictTabBadge(tabId);
 });
 
 
