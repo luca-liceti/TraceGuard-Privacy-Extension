@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.10.4
+
+**What was fixed**
+
+- Nothing in the dashboard credits TraceGuard with blocking any more. Cookies, trackers and requests that never loaded were labelled **Blocked**, which read as protection this extension provided. It provides none: it holds no blocking permission, and the status only means Chrome reported the request as blocked by the client, so your browser or a different extension is what stopped it. They are now labelled **Stopped by browser**, and the summary on the network section names the actor outright. Sites you visited before this change still show their counts correctly.
+
 ## v1.10.3
 
 **What was fixed**

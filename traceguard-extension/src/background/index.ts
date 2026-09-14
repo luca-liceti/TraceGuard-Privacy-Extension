@@ -40,6 +40,7 @@ import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
 import { applyVerdict, findRecordIndex, isDuplicate, isPending, settleAbandonedRecords, stageHandover, type PIIJournalRecord } from '../lib/pii-journal';
+import { isStoppedBeforeLoading } from '../lib/tracker-status';
 import { encryptData, decryptData, decryptDataStrict, importKey, DECRYPT_FAILED } from '../lib/crypto';
 import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
 import { initNetworkMonitor, getAndClearNetworkData, setNetworkMonitorEnabled } from './services/network-monitor';
@@ -981,7 +982,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                 summary: {
                     total: cookies.length,
                     active: cookies.filter(c => c.status === 'active').length,
-                    blocked: cookies.filter(c => c.status === 'blocked').length,
+                    blockedByBrowser: cookies.filter(c => isStoppedBeforeLoading(c.status)).length,
                     byCategory: cookies.reduce((acc, c) => { acc[c.category] = (acc[c.category] || 0) + 1; return acc; }, {} as Record<string, number>)
                 }
             },
@@ -990,7 +991,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                 summary: {
                     total: trackers.length,
                     active: trackers.filter(t => t.status === 'active').length,
-                    blocked: trackers.filter(t => t.status === 'blocked').length,
+                    blockedByBrowser: trackers.filter(t => isStoppedBeforeLoading(t.status)).length,
                     byCategory: trackers.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + 1; return acc; }, {} as Record<string, number>)
                 }
             },
@@ -999,7 +1000,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                 summary: {
                     total: networkData ? Object.keys(networkData.requests).length : 0,
                     thirdParty: networkData ? Object.values(networkData.requests).filter(r => r.isThirdParty).length : 0,
-                    blocked: networkData ? Object.values(networkData.requests).filter(r => r.status === 'blocked').length : 0,
+                    blockedByBrowser: networkData ? Object.values(networkData.requests).filter(r => isStoppedBeforeLoading(r.status)).length : 0,
                     trackerRequests: networkData ? Object.values(networkData.requests).filter(r => r.isTracker).length : 0
                 }
             },
@@ -1138,7 +1139,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         : null;
 
     // Save the updated state
-    // Count enriched trackers detected on this visit (both active and blocked)
+    // Count enriched trackers detected on this visit (both loaded and stopped)
     const newTrackersCount = enrichedDetails ? enrichedDetails.trackers.items.length : 0;
     
     // Only update currentSite if the analysis is from the active tab.

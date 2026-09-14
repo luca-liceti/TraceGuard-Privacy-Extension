@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 import { getSafetyConfig, scoreToGrade, SAFETY_CONFIGS } from "@/lib/risk-utils"
 import { SiteRiskData } from "@/lib/types"
+import { stoppedCount } from "@/lib/tracker-status"
 
 function getWSSIcon(wss: number) {
     if (wss >= 60) return <CircleCheck className="h-5 w-5" />;
@@ -338,7 +339,7 @@ export function SiteDetails({ currentSite }: SiteDetailsProps) {
                                     <div className="flex-1 min-w-0">
                                         <div className="text-xs font-medium">{t("Network Requests")}</div>
                                         <div className="text-xs text-muted-foreground">
-                                            {enriched.networkRequests.summary.thirdParty} {t("third-party")} · {enriched.networkRequests.summary.trackerRequests} {t("trackers")} · {enriched.networkRequests.summary.blocked} {t("blocked")}
+                                            {enriched.networkRequests.summary.thirdParty} {t("third-party")} · {enriched.networkRequests.summary.trackerRequests} {t("trackers")} · {stoppedCount(enriched.networkRequests.summary)} {t("stopped by browser")}
                                         </div>
                                     </div>
                                 </div>

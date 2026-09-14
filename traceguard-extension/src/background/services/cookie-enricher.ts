@@ -5,6 +5,7 @@
  */
 
 import { CookieDetail } from '../../lib/types';
+import { type LoadStatus } from '../../lib/tracker-status';
 import { lookupCookie, lookupTrackerDomain } from './database-loader';
 import { SetCookieRecord } from '../../lib/set-cookie';
 import { logEvent } from '../../lib/diagnostics';
@@ -23,7 +24,7 @@ export async function enrichCookies(
     const pageHost = new URL(url).hostname;
     
     // Helper to process a cookie
-    const processCookie = async (name: string, domain: string, httpOnly: boolean, secure: boolean, sameSite: string, expirationDate: number | null, status: 'active' | 'blocked' = 'active') => {
+    const processCookie = async (name: string, domain: string, httpOnly: boolean, secure: boolean, sameSite: string, expirationDate: number | null, status: LoadStatus = 'active') => {
         if (seenNames.has(name)) return;
         seenNames.add(name);
         

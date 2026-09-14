@@ -5,6 +5,7 @@
  */
 
 import { TrackerDetail, NetworkRequestDetail } from '../../lib/types';
+import { isStoppedBeforeLoading, type LoadStatus } from '../../lib/tracker-status';
 import { logEvent } from '../../lib/diagnostics';
 import { lookupTrackerDomain, getDisconnectCategory, getDisconnectEntity, isTrackerDomain } from './database-loader';
 
@@ -21,7 +22,7 @@ export async function enrichTrackers(
     
     const pageHost = new URL(url).hostname;
     
-    const processTracker = async (reqUrl: string, domain: string, type: string, source: 'dom' | 'network' | 'both', status: 'active' | 'blocked') => {
+    const processTracker = async (reqUrl: string, domain: string, type: string, source: 'dom' | 'network' | 'both', status: LoadStatus) => {
         if (seenDomains.has(domain)) return;
         
         // Must be third-party to be a tracker. Compare against explicit dot
@@ -92,7 +93,7 @@ export async function enrichTrackers(
             else if (req.resourceType === 'ping') t = 'beacon';
             else if (req.resourceType === 'stylesheet') t = 'stylesheet';
             
-            await processTracker(req.url, req.domain, t, 'network', req.status === 'blocked' ? 'blocked' : 'active');
+            await processTracker(req.url, req.domain, t, 'network', isStoppedBeforeLoading(req.status) ? 'blockedByBrowser' : 'active');
         }
     }
     

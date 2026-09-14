@@ -67,9 +67,9 @@ function withTrackers(domain: string, items: TrackerDetail[], overrides: Partial
     return {
         ...site,
         enrichedDetails: {
-            cookies: { items: [], summary: { total: 0, active: 0, blocked: 0, byCategory: {} } },
-            trackers: { items, summary: { total: items.length, active: items.length, blocked: 0, byCategory: {} } },
-            networkRequests: { items: [], summary: { total: 0, thirdParty: 0, blocked: 0, trackerRequests: 0 } },
+            cookies: { items: [], summary: { total: 0, active: 0, blockedByBrowser: 0, byCategory: {} } },
+            trackers: { items, summary: { total: items.length, active: items.length, blockedByBrowser: 0, byCategory: {} } },
+            networkRequests: { items: [], summary: { total: 0, thirdParty: 0, blockedByBrowser: 0, trackerRequests: 0 } },
             headers: { items: [], summary: { score: 0, present: 0, missing: 0, grade: 'F' } },
             fingerprinting: { items: [], summary: { totalAttempts: 0, techniques: [], riskLevel: 'none' } },
             capturedAt: NOW,

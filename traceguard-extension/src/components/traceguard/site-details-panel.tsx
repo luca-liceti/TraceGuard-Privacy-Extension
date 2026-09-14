@@ -35,6 +35,7 @@ import {
     NetworkRequestDetail,
 } from "@/lib/types"
 import { sanitizeURL } from "@/lib/sanitize"
+import { isStoppedBeforeLoading, stoppedCount } from "@/lib/tracker-status"
 import { format } from "date-fns"
 import {
     CircleCheck, XCircle, AlertTriangle, ThumbsDown, Info, Globe,
@@ -339,8 +340,8 @@ export function SiteDetailsPanel({
                                 const { items, summary } = enriched.trackers
 
                                 // Build grouped insight rows
-                                const activeItems = items.filter(t => t.status !== 'blocked')
-                                const blockedItems = items.filter(t => t.status === 'blocked')
+                                const activeItems = items.filter(t => !isStoppedBeforeLoading(t.status))
+                                const blockedItems = items.filter(t => isStoppedBeforeLoading(t.status))
 
                                 // Group active by category
                                 const grouped: Record<string, TrackerDetail[]> = {}
@@ -355,7 +356,7 @@ export function SiteDetailsPanel({
                                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                                             <SummaryStat label={t("Total")} value={summary.total} />
                                             <SummaryStat label={t("Active")} value={summary.active} highlight={summary.active > 0} />
-                                            <SummaryStat label={t("Blocked")} value={summary.blocked} />
+                                            <SummaryStat label={t("Stopped by browser")} value={stoppedCount(summary)} />
                                         </div>
 
                                         {/* User-friendly insight rows */}
@@ -395,7 +396,7 @@ export function SiteDetailsPanel({
                                                         </TableHeader>
                                                         <TableBody>
                                                             {items.map((t: TrackerDetail, idx: number) => {
-                                                                const isBlocked = t.status === 'blocked'
+                                                                const isBlocked = isStoppedBeforeLoading(t.status)
                                                                 return (
                                                                     <TableRow key={idx} className={isBlocked ? "opacity-50" : ""}>
                                                                         <TableCell className="w-8 pl-4 pr-2">
@@ -412,7 +413,7 @@ export function SiteDetailsPanel({
                                                                             {(() => { const b = getCategoryBadge(t.category); return <Badge variant={b.variant} className={`text-xs capitalize ${b.extra}`}>{t.category}</Badge> })()}
                                                                         </TableCell>
                                                                         <TableCell className={`text-xs font-medium ${isBlocked ? "text-muted-foreground line-through" : getIndicatorTextColor('warning')}`}>
-                                                                            {isBlocked ? i18n.t("Blocked") : i18n.t("Tracking you")}
+                                                                            {isBlocked ? i18n.t("Stopped by browser") : i18n.t("Tracking you")}
                                                                         </TableCell>
                                                                     </TableRow>
                                                                 )
@@ -454,8 +455,8 @@ export function SiteDetailsPanel({
 
                             {enriched?.cookies ? (() => {
                                 const { items, summary } = enriched.cookies
-                                const activeItems = items.filter(c => c.status !== 'blocked')
-                                const blockedItems = items.filter(c => c.status === 'blocked')
+                                const activeItems = items.filter(c => !isStoppedBeforeLoading(c.status))
+                                const blockedItems = items.filter(c => isStoppedBeforeLoading(c.status))
 
                                 // Group active by category
                                 const grouped: Record<string, CookieDetail[]> = {}
@@ -476,7 +477,7 @@ export function SiteDetailsPanel({
                                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                                             <SummaryStat label={t("Total")} value={summary.total} />
                                             <SummaryStat label={t("Active")} value={summary.active} highlight={summary.active > 0} />
-                                            <SummaryStat label={t("Blocked")} value={summary.blocked} />
+                                            <SummaryStat label={t("Stopped by browser")} value={stoppedCount(summary)} />
                                         </div>
 
                                         <div className="flex flex-col gap-1.5">
@@ -514,7 +515,7 @@ export function SiteDetailsPanel({
                                                         </TableHeader>
                                                         <TableBody>
                                                             {items.map((c: CookieDetail, idx: number) => {
-                                                                const isBlocked = c.status === 'blocked'
+                                                                const isBlocked = isStoppedBeforeLoading(c.status)
                                                                 return (
                                                                     <TableRow key={idx} className={isBlocked ? "opacity-50" : ""}>
                                                                         <TableCell className="w-8 pl-4 pr-2">
@@ -546,7 +547,7 @@ export function SiteDetailsPanel({
                                                                             {(() => { const b = getCategoryBadge(c.category); return <Badge variant={b.variant} className={`text-xs capitalize ${b.extra}`}>{c.category}</Badge> })()}
                                                                         </TableCell>
                                                                         <TableCell className={`text-xs font-medium ${isBlocked ? "text-muted-foreground line-through" : getIndicatorTextColor('success')}`}>
-                                                                            {isBlocked ? t("Blocked") : t("Stored")}
+                                                                            {isBlocked ? t("Stopped by browser") : t("Stored")}
                                                                         </TableCell>
                                                                     </TableRow>
                                                                 )
@@ -609,7 +610,7 @@ export function SiteDetailsPanel({
                                             <SummaryStat label={t("Total connections")} value={summary.total} />
                                             <SummaryStat label={t("Third-party")} value={summary.thirdParty} highlight={summary.thirdParty > 0} />
                                             <SummaryStat label={t("Trackers")} value={summary.trackerRequests} highlight={summary.trackerRequests > 0} />
-                                            <SummaryStat label={t("Blocked")} value={summary.blocked} />
+                                            <SummaryStat label={t("Stopped by browser")} value={stoppedCount(summary)} />
                                         </div>
 
                                         <div className="flex flex-col gap-1.5">
@@ -625,9 +626,9 @@ export function SiteDetailsPanel({
                                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
                                                     <strong>{samesite} × {pluralize(samesite, "connection", "connections")}</strong> — {t("to the site itself — normal page behaviour")}</InsightRow>
                                             )}
-                                            {summary.blocked > 0 && (
+                                            {stoppedCount(summary) > 0 && (
                                                 <InsightRow icon={XCircle} iconClass="text-muted-foreground" faded>
-                                                    <strong>{summary.blocked} × {pluralize(summary.blocked, "request blocked", "requests blocked")}</strong> — {t("before they could load")}</InsightRow>
+                                                    <strong>{stoppedCount(summary)} × {pluralize(stoppedCount(summary), "request stopped", "requests stopped")}</strong> — {t("by your browser or another extension, not TraceGuard")}</InsightRow>
                                             )}
                                             {summary.total === 0 && (
                                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
@@ -650,7 +651,7 @@ export function SiteDetailsPanel({
                                                         </TableHeader>
                                                         <TableBody>
                                                             {networkTableItems.map((r: NetworkRequestDetail, idx: number) => {
-                                                                const isBlocked = r.status === 'blocked'
+                                                                const isBlocked = isStoppedBeforeLoading(r.status)
                                                                 const rowIcon = r.isTracker
                                                                     ? <AlertTriangle className={`h-4 w-4 ${getIndicatorTextColor('error')}`} />
                                                                     : isBlocked
@@ -672,7 +673,7 @@ export function SiteDetailsPanel({
                                                                             </Badge>
                                                                         </TableCell>
                                                                         <TableCell className={`text-xs font-medium ${isBlocked ? "text-muted-foreground line-through" : r.status === 'completed' ? getIndicatorTextColor('success') : getIndicatorTextColor('warning')}`}>
-                                                                            {r.status === 'completed' ? "OK" : r.status === 'blocked' ? t("Blocked") : t("Failed")}
+                                                                            {r.status === 'completed' ? "OK" : isBlocked ? t("Stopped by browser") : t("Failed")}
                                                                         </TableCell>
                                                                     </TableRow>
                                                                 )

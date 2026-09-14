@@ -1,12 +1,12 @@
 /**
  * =============================================================================
- * NETWORK MONITOR, Observes web requests to detect blocked trackers & headers
+ * NETWORK MONITOR, Observes web requests to detect stopped trackers & headers
  * =============================================================================
  *
  * WHAT THIS FILE DOES:
  * Uses chrome.webRequest to observe all network activity per tab.
  * - Records every attempted request (onBeforeRequest)
- * - Detects which requests were blocked by other extensions (onErrorOccurred)
+ * - Detects which requests the browser or another extension stopped (onErrorOccurred)
  * - Captures Set-Cookie and security headers (onHeadersReceived)
  * - Does NOT block anything (observational only)
  * =============================================================================
@@ -98,7 +98,8 @@ export function initNetworkMonitor() {
         { urls: ['*://*/*'] }
     );
 
-    // 2. Detect blocked requests (e.g., by uBlock Origin)
+    // 2. Detect requests the browser or another extension stopped. TraceGuard
+    //    holds no blocking permission, so it can never be the one that did this.
     chrome.webRequest.onErrorOccurred.addListener(
         (details) => {
             if (!monitorEnabled) return;
@@ -108,7 +109,7 @@ export function initNetworkMonitor() {
 
             const req = data.requests[details.url];
             if (req) {
-                req.status = details.error === 'net::ERR_BLOCKED_BY_CLIENT' ? 'blocked' : 'failed';
+                req.status = details.error === 'net::ERR_BLOCKED_BY_CLIENT' ? 'blockedByBrowser' : 'failed';
                 req.blockedReason = details.error;
             }
         },

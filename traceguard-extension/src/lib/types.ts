@@ -22,6 +22,10 @@
  * =============================================================================
  */
 
+// 'blockedByBrowser' rather than 'blocked': the browser or another extension
+// stopped the request, never TraceGuard. See lib/tracker-status.ts.
+import type { LoadStatus, RequestStatus } from './tracker-status';
+
 // =============================================================================
 // ENRICHED DETECTION DETAIL TYPES
 // Rich per-item data for cookies, trackers, network requests, headers, fingerprinting
@@ -46,7 +50,7 @@ export interface CookieDetail {
     expirationDate: number | null;      // Unix timestamp, null = session cookie
     isThirdParty: boolean;
     invasivenessWeight: number;         // 0-3 scoring weight
-    status: 'active' | 'blocked';       // Was this cookie's domain blocked by something?
+    status: LoadStatus;                 // 'blockedByBrowser' = stopped before it loaded, never by TraceGuard
 }
 
 /**
@@ -59,7 +63,7 @@ export interface TrackerDetail {
     organization: string | null;         // Parent company from DDG Tracker Radar
     category: 'advertising' | 'analytics' | 'social' | 'content' | 'cryptomining' | 'fingerprinting' | 'functional' | 'cdn' | 'unknown';
     type: 'script' | 'pixel' | 'iframe' | 'xhr' | 'beacon' | 'stylesheet' | 'image' | 'unknown';
-    status: 'active' | 'blocked';        // Blocked by browser/extension?
+    status: LoadStatus;                  // Stopped before it loaded, by the browser or another extension
     source: 'dom' | 'network' | 'both'; // How we detected it
     prevalence: number | null;           // How common across the web (DDG data, 0-1)
     fingerprinting: number | null;       // Fingerprinting risk score (0-3, DDG data)
@@ -76,8 +80,8 @@ export interface NetworkRequestDetail {
     organization: string | null;         // From DDG Tracker Radar
     isTracker: boolean;                  // Matched against privacy blocklists
     isThirdParty: boolean;
-    status: 'completed' | 'blocked' | 'failed';
-    blockedReason: string | null;        // "net::ERR_BLOCKED_BY_CLIENT" etc.
+    status: RequestStatus;
+    blockedReason: string | null;        // The browser's own error, e.g. "net::ERR_BLOCKED_BY_CLIENT"
     timestamp: number;
 }
 
@@ -116,7 +120,9 @@ export interface EnrichedDetectionDetails {
         summary: {
             total: number;
             active: number;
-            blocked: number;
+            blockedByBrowser: number;
+            /** Pre-1.10.4 spelling. Still present on summaries cached by older builds. */
+            blocked?: number;
             byCategory: Record<string, number>;
         };
     };
@@ -125,7 +131,9 @@ export interface EnrichedDetectionDetails {
         summary: {
             total: number;
             active: number;
-            blocked: number;
+            blockedByBrowser: number;
+            /** Pre-1.10.4 spelling. Still present on summaries cached by older builds. */
+            blocked?: number;
             byCategory: Record<string, number>;
         };
     };
@@ -134,7 +142,9 @@ export interface EnrichedDetectionDetails {
         summary: {
             total: number;
             thirdParty: number;
-            blocked: number;
+            blockedByBrowser: number;
+            /** Pre-1.10.4 spelling. Still present on summaries cached by older builds. */
+            blocked?: number;
             trackerRequests: number;
         };
     };
