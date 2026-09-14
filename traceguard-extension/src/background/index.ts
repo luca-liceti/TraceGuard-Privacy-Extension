@@ -39,6 +39,7 @@ import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, Fingerprinti
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
+import { applyVerdict, findRecordIndex, isDuplicate, isPending, settleAbandonedRecords, stageHandover, type PIIJournalRecord } from '../lib/pii-journal';
 import { encryptData, decryptData, decryptDataStrict, importKey, DECRYPT_FAILED } from '../lib/crypto';
 import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
 import { initNetworkMonitor, getAndClearNetworkData, setNetworkMonitorEnabled } from './services/network-monitor';
@@ -331,6 +332,12 @@ storage.getSettings().then((settings) => {
     logEvent('startup', 'debug', 'service_worker_started', 'Service worker started', {
         enabled: settings.enabled !== false,
         devMode: settings.devMode === true,
+    });
+    // Reconcile handovers left waiting on a confirmation card that a terminated
+    // worker never resolved. No-ops when the vault is locked; the unlock path
+    // runs it again once the key exists.
+    queueTelemetryWrite(() => settleAbandonedPIIConfirmations()).catch(error => {
+        captureError('pii', error, 'abandoned_settle_failed');
     });
 }).catch(error => {
     captureError('startup', error, 'settings_load_failed');
@@ -739,13 +746,25 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // -------------------------------------------------------------------------
     if (message.type === 'PII_CONFIRM_RESULT') {
         const domain = String(message.domain || '').toLowerCase();
+        const safe = message.safe === true;
         const pending = pendingPIIConfirms.get(domain);
         if (pending) {
             pendingPIIConfirms.delete(domain);
             if (pending.timer) clearTimeout(pending.timer);
-            pending.resolve(message.safe === true);
+            pending.resolve(safe);
+            sendResponse({ success: true });
+            return true;
         }
-        sendResponse({ success: true });
+        // Nothing is waiting, which means the worker was replaced while the card
+        // was on screen and the in-memory promise died with it. The handover is
+        // already in the journal, so the answer is applied to that record
+        // instead of being silently discarded.
+        queueTelemetryWrite(() => answerAbandonedPIIConfirmation(domain, safe)).then(() => {
+            sendResponse({ success: true });
+        }).catch(error => {
+            recordError('PII confirmation answer failed', String(error));
+            sendResponse({ success: false, error: String(error) });
+        });
         return true;
     }
 
@@ -754,7 +773,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // -------------------------------------------------------------------------
     if (message.type === 'UNLOCK_VAULT') {
         armAutoLock(true);
-        flushBufferedTelemetry().then(() => sendResponse({ success: true }));
+        flushBufferedTelemetry()
+            // The vault key is only available now, so a handover left waiting on
+            // a card the previous worker took with it is settled from here.
+            .then(() => settleAbandonedPIIConfirmations().catch(error => {
+                captureError('pii', error, 'abandoned_settle_failed');
+            }))
+            .then(() => sendResponse({ success: true }));
         return true;
     }
 
@@ -1479,6 +1504,129 @@ async function askForSiteConfirmation(
     });
 }
 
+/**
+ * Writes the handover itself, at the moment it happens.
+ *
+ * The confirmation card decides whether an entry is penalized. It must not
+ * decide whether the entry exists, and it previously did: the journal write sat
+ * behind a 120-second in-memory timer, so a worker terminated while the card was
+ * on screen took the record down with it and the site never appeared in the
+ * ledger. The handover is durable before the card is shown, and
+ * `finalizePIIDetection` settles only its penalty afterwards.
+ *
+ * Returns 'duplicate' when this site already handed over this field type, so the
+ * one-exposure-per-site-and-type rule lives in one place.
+ */
+async function recordPIIDetection(
+    event: { timestamp?: number; site: string; fieldType: string; sensitivity: 'HIGH' | 'MEDIUM' | 'LOW' },
+    siteWSS: number,
+): Promise<'recorded' | 'duplicate' | 'unreadable'> {
+    const key = await getCryptoKey();
+    let records: PIIJournalRecord[] = [];
+
+    if (key) {
+        const storageData = await chrome.storage.local.get<{ piiDetections?: unknown }>('piiDetections');
+        const storedPii = await readEncryptedArray<PIIJournalRecord>(key, storageData.piiDetections);
+        if (storedPii === READ_FAILED) {
+            captureError('storage', new Error('PII journal could not be decrypted'), 'pii_journal_unreadable');
+            return 'unreadable';
+        }
+        records = storedPii ?? [];
+    } else {
+        records = (await readBuffer<PIIJournalRecord[]>('bufferedPii')) || [];
+    }
+
+    if (isDuplicate(records, event.site, event.fieldType)) {
+        logEvent('pii', 'debug', 'pii_duplicate_skipped', 'Duplicate PII event skipped in the journal', {
+            host: event.site,
+            fieldType: event.fieldType,
+        });
+        return 'duplicate';
+    }
+
+    const staged = stageHandover(records, {
+        timestamp: event.timestamp ?? Date.now(),
+        site: event.site,
+        fieldType: event.fieldType,
+        sensitivity: event.sensitivity,
+        siteWSS,
+    });
+    if (key) {
+        await chrome.storage.local.set({ piiDetections: await encryptData(key, staged) });
+    } else {
+        await writeBuffer('bufferedPii', staged);
+    }
+
+    // Your Footprint reads the exposure map, not the journal, so it is written
+    // here too. Otherwise a pending card would keep the site off that page.
+    await storage.addExposure(event.fieldType, event.site, key);
+    return 'recorded';
+}
+
+/**
+ * Settles handovers whose confirmation card was never answered because the
+ * worker was terminated while the card was on screen.
+ *
+ * The record is already durable; what is missing is only its penalty. An
+ * unanswered card means penalize, which is the fail-safe the in-memory timeout
+ * applies, so these entries are not silently forgiven once the worker is gone.
+ */
+async function settleAbandonedPIIConfirmations(): Promise<void> {
+    const key = await getCryptoKey();
+    if (!key) return;
+
+    const storageData = await chrome.storage.local.get<{ piiDetections?: unknown }>('piiDetections');
+    const storedPii = await readEncryptedArray<PIIJournalRecord>(key, storageData.piiDetections);
+    if (storedPii === READ_FAILED) return;
+
+    const settlement = settleAbandonedRecords(
+        storedPii ?? [],
+        (await storage.getState()).ups ?? 100,
+        Date.now(),
+        PII_CONFIRM_TIMEOUT_MS,
+    );
+    if (settlement.count === 0) return;
+
+    await chrome.storage.local.set({ piiDetections: await encryptData(key, settlement.records) });
+    await storage.updateState((current) => ({
+        piiEventsCount: current.piiEventsCount + settlement.count,
+        ups: settlement.ups,
+    }));
+    logEvent('pii', 'debug', 'pii_abandoned_settled', 'Settled handovers whose confirmation was never answered', {
+        settled: settlement.count,
+    });
+}
+
+/**
+ * Applies a card answer to a handover whose in-memory confirmation was lost when
+ * the worker was replaced. Normally the awaiting handlePIIDetection call applies
+ * the verdict; there is no such call to resume here, so the stored record is
+ * settled with the answer the user actually gave, rather than dropped.
+ */
+async function answerAbandonedPIIConfirmation(domain: string, safe: boolean): Promise<void> {
+    const key = await getCryptoKey();
+    if (!key) return;
+
+    const storageData = await chrome.storage.local.get<{ piiDetections?: unknown }>('piiDetections');
+    const storedPii = await readEncryptedArray<PIIJournalRecord>(key, storageData.piiDetections);
+    if (storedPii === READ_FAILED) return;
+
+    const abandoned = (storedPii ?? []).filter(
+        (record) => record.site === domain && isPending(record)
+    );
+    for (const record of abandoned) {
+        // A neutral page context on purpose: the card is only shown for entries
+        // already judged avoidable, so nothing here should re-earn an exemption.
+        await finalizePIIDetection({
+            timestamp: record.timestamp,
+            site: record.site,
+            fieldType: record.fieldType,
+            sensitivity: record.sensitivity,
+            pageContext: { isLoginPage: false, isCheckoutPage: false },
+        }, safe);
+    }
+}
+
 async function handlePIIDetection(message: any, tabId?: number) {
     const parsed = PiiDetectionSchema.safeParse(message);
     if (!parsed.success) {
@@ -1557,6 +1705,10 @@ async function handlePIIDetection(message: any, tabId?: number) {
     if (decision.penalize && siteReputation !== 0
         && (decision.reason === 'risky' || decision.reason === 'unnecessary')
         && !promptedPIIConfirmDomains.has(event.site)) {
+        // Write the handover before the card, not after. The card decides the
+        // penalty; it must never decide whether the entry exists.
+        const recorded = await recordPIIDetection(event, siteWSS);
+        if (recorded !== 'recorded') return;
         promptedPIIConfirmDomains.add(event.site);
         // Don't block the telemetry queue while the user reads the card;
         // finalize the event when they answer (or the timeout fires). The
@@ -1614,10 +1766,16 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
         scoreHistory = historyBuffer || [];
     }
 
-    // Entering the same PII type on the same site is one exposure, not many.
-    // Skip duplicates (e.g. a form re-rendering mid-typing) so they can't
-    // re-apply penalties or spam notifications.
-    if (piiDetections.some((p: any) => p.site === event.site && p.fieldType === event.fieldType)) {
+    // Entering the same PII type on the same site is one exposure, not many, so
+    // a settled record ends the event here (e.g. a form re-rendering mid-typing)
+    // and it cannot re-apply penalties or spam notifications.
+    //
+    // A record still waiting on its verdict is the one written by
+    // recordPIIDetection before the card was shown. It is settled in place
+    // rather than skipped: the handover is already a fact, and only its penalty
+    // was deferred.
+    const existingIndex = findRecordIndex(piiDetections, event.site, event.fieldType);
+    if (existingIndex !== -1 && !isPending(piiDetections[existingIndex])) {
         logEvent('pii', 'debug', 'pii_duplicate_skipped', 'Duplicate PII event skipped in the journal', {
             host: event.site,
             fieldType: event.fieldType,
@@ -1680,15 +1838,18 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
 
     // Record this PII detection event
     // Note: We only store metadata (field TYPE, site, timestamp) - NOT the actual value you typed!
-    piiDetections.push({
-        timestamp: event.timestamp ?? Date.now(),  // When it happened
+    // When the handover was already staged (the card path), this settles that
+    // entry in place instead of appending a second one for the same exposure.
+    piiDetections = applyVerdict(piiDetections, {
+        timestamp: event.timestamp ?? Date.now(),
         site: event.site,                  // Which website
         fieldType: event.fieldType,        // What type of field (password, email, etc.)
         sensitivity: event.sensitivity,   // How sensitive (HIGH, MEDIUM, LOW)
         siteWSS: siteWSS,                 // The site's safety score at the time
-        scoreImpact: scoreImpact,         // How much this affected your privacy score (0 = expected use)
+    }, {
         exempt: isExempt,                 // True when this was expected use (no penalty)
-        exemptReason: isExempt ? decision.reason : undefined  // Why it was exempt
+        reason: decision.reason,
+        scoreImpact: scoreImpact,         // How much this affected your privacy score (0 = expected use)
     });
 
     // Add this event to your score history (for the dashboard graph)
@@ -1701,9 +1862,8 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
             : `PII entered on ${event.site} (${event.sensitivity} sensitivity)`
     });
 
-    // Keep only the last 100 PII events, and a score-history window large
-    // enough for the 30-day chart view.
-    if (piiDetections.length > 100) piiDetections.splice(0, piiDetections.length - 100);
+    // Keep a score-history window large enough for the 30-day chart view. The
+    // journal cap is applied by applyVerdict and stageHandover.
     if (scoreHistory.length > SCORE_HISTORY_LIMIT) scoreHistory.splice(0, scoreHistory.length - SCORE_HISTORY_LIMIT);
 
     // Save the updated data

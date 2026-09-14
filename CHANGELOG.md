@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.10.3
+
+**What was fixed**
+
+- A handover is now written to **Your Footprint** at the moment it happens, instead of when the follow-up question is answered. When TraceGuard asked "Is this website safe?", the record of what you had already entered waited up to two minutes for your answer, held only in the worker's memory, so if Chrome shut the worker down while the card was on screen the entry vanished and the site never appeared. The card still decides whether that entry costs you score; it no longer decides whether the entry exists.
+- A card left unanswered because the worker was replaced is now settled on the next start, with the penalty an unanswered card always carried, rather than sitting unresolved. If you do answer a card after the worker has been replaced, your answer is now applied instead of being discarded.
+
 ## v1.10.2
 
 **What was fixed**
