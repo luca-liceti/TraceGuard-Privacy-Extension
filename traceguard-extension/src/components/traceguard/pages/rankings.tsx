@@ -95,10 +95,6 @@ const getActivityConfig = (t: any): ChartConfig => ({
   events: { label: t("Events Detected"), color: "var(--primary)" }
 })
 
-const leaderboardConfig = {
-  count: { label: "Threats Blocked", color: "var(--primary)" }
-} satisfies ChartConfig
-
 const getPieChartConfig = (t: any): ChartConfig => ({
   tracking:    { label: t("Tracking"),    color: DETECTOR_COLORS.tracking },
   cookies:     { label: t("Cookies"),     color: DETECTOR_COLORS.cookies },
@@ -332,7 +328,7 @@ export default function RankingsPage() {
       {/* ── Hero KPI Row ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <StatCard
-          title={t("Total Threats Blocked")}
+          title={t("Total Threats Detected")}
           value={heroStats.totalThreats.toLocaleString()}
           subtitle={t("Detected privacy risk events")}
           trend={{

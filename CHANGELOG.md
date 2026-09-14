@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.9.1
+
+**What was fixed**
+
+- The Rankings & Stats card titled "Total Threats Blocked" now reads **Total Threats Detected**. The number counts detector results that flagged a risk, not anything blocked. TraceGuard has no blocking permission and cannot block a request, so the old wording credited it with protection it never provided.
+- Removed an unused `leaderboardConfig` block from the rankings page. It held a second "Threats Blocked" label that was never rendered and no longer described what the code counts.
+
 ## v1.9.0
 
 **What's new**
