@@ -128,4 +128,41 @@ describe('detectSensitiveInputs', () => {
         expect(result.fields.medium).toHaveLength(0);
         expect(result.score).toBe(100);
     });
+
+    it('does NOT read an "email address" label as a physical address (GitHub login)', () => {
+        // GitHub's login field is labelled "Username or email address". The word
+        // "address" there belongs to the email, not to a street address, and
+        // reading it as one recorded a login in the footprint ledger as if the
+        // user had handed over their physical address.
+        const el = addInput({ type: 'text', id: 'login_field', name: 'login', autocomplete: 'username' });
+        const label = document.createElement('label');
+        label.htmlFor = el.id;
+        label.textContent = 'Username or email address';
+        document.body.appendChild(label);
+
+        const result = detectSensitiveInputs();
+        expect(result.fields.medium).toHaveLength(1);
+        expect(result.fields.medium[0].type).toBe('email');
+        expect(result.fields.medium.some(field => field.type === 'address')).toBe(false);
+    });
+
+    it('classifies a plain "Email address" field as email', () => {
+        addInput({ type: 'text', placeholder: 'Email address' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.medium.map(field => field.type)).toEqual(['email']);
+    });
+
+    it('does NOT classify IP or wallet address fields as physical addresses', () => {
+        addInput({ type: 'text', placeholder: 'IP address' });
+        addInput({ type: 'text', placeholder: 'Wallet address' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.medium).toHaveLength(0);
+        expect(result.score).toBe(100);
+    });
+
+    it('still classifies a street address as an address', () => {
+        addInput({ type: 'text', placeholder: 'Street address' });
+        const result = detectSensitiveInputs();
+        expect(result.fields.medium.map(field => field.type)).toEqual(['address']);
+    });
 });

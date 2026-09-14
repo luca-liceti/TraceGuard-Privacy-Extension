@@ -121,7 +121,6 @@ export function detectSensitiveInputs(): InputDetectionResult {
 
         const isPassword = type === 'password' || autocompleteTokens.some(token => token.includes('password'));
         const isCard = autocompleteTokens.some(token => ['cc-number', 'cc-csc', 'cc-exp'].includes(token));
-        const isEmail = type === 'email' || hasAutocompleteToken('email');
         const isPhone = type === 'tel' || hasAutocompleteToken('tel');
         // Some forms omit autocomplete metadata (as in many insurance quote
         // forms), so use the field's placeholder, label, name, or id as a fallback.
@@ -149,7 +148,16 @@ export function detectSensitiveInputs(): InputDetectionResult {
         // "unit" is ambiguous (apartment unit vs. e-commerce quantity), so it is
         // NOT an address signal on its own; apt/apartment still catch real
         // apartment-unit fields.
-        const hasAddressMetadata = /\b(address|street|city|state|province|region|zip|postal|apartment|apt|county)\b/i.test(visibleMetadata);
+        //
+        // "address" also has non-physical senses: an "email address", an "IP
+        // address", or a crypto "wallet address". Reading one of those as a
+        // street address is how a GitHub login (labelled "Username or email
+        // address") was recorded in the footprint ledger as a physical address.
+        // The bare word only counts when no such qualifier precedes it; the
+        // other address keywords stand on their own.
+        const hasNonPhysicalAddress = /\b(e-?mail|ip|web|url|wallet|crypto|bitcoin|ethereum|mac|network)\s+address\b/i.test(visibleMetadata);
+        const hasAddressMetadata = /\b(street|city|state|province|region|zip|postal|apartment|apt|county)\b/i.test(visibleMetadata)
+            || (/\baddress\b/i.test(visibleMetadata) && !hasNonPhysicalAddress);
 
         // One-time security codes (2FA / OTP) have a dedicated autocomplete
         // token; fall back to visible metadata for sites that omit it.
@@ -173,6 +181,12 @@ export function detectSensitiveInputs(): InputDetectionResult {
         const isSSN = /\b(social security( number)?|ssn|tax ?id|taxpayer ?id|national id|government id)\b/i.test(visibleMetadata)
             || /\bEIN\b/.test(rawMetadata)
             || /\b(social security|ssn|tax ?id|national ?id)\b/i.test(autocomplete);
+
+        // `type=email` and `autocomplete=email` are the standardized signals;
+        // fall back to visible metadata, because many forms omit both. GitHub's
+        // login is labelled "Username or email address" and declares neither, so
+        // it used to fall through to the address check below.
+        const isEmail = type === 'email' || hasAutocompleteToken('email') || /\be-?mail\b/i.test(visibleMetadata);
 
         // Address forms commonly split a physical address across several
         // fields. These are the standardized HTML autocomplete tokens for
