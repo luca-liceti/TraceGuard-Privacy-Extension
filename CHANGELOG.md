@@ -2,11 +2,11 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
-## v1.9.2
+## v1.10.2
 
 **What was fixed**
 
-- Logging in no longer shows up in **Your Footprint** as a physical-address handover. A field labelled with an "email address" (GitHub's login is labelled "Username or email address", and many forms label the field "Email address") was classified as a street address, because the address detector matched the word "address" inside that phrase. Such fields are now recorded as email, and other non-physical uses of the word ("IP address", "wallet address") are no longer read as addresses either.
+- A detected handover could be dropped without a trace. When you typed into a sensitive field (a login, a card, an address), the page sent the detection to the extension's background worker and never checked whether it arrived. If the worker happened to be restarting at that moment, the event vanished, and a lost event looks exactly like one that never happened: the site is simply missing from **Your Footprint**. A failed send is now written to the diagnostics log. What gets stored is unchanged; the difference is that a loss is visible instead of silent.
 
 ## v1.10.1
 
@@ -26,6 +26,12 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 - The **Safe Browsing Streak** card is removed. It counted consecutive visits to sites that scored well, which is mostly circumstance rather than a choice, and a single link could reset it to zero. Rewarding visit outcomes teaches people to avoid risk signals instead of risk. A streak will return built on actions you take, once those actions exist.
 - The **Sites Analyzed** card is removed. As a standalone figure it measured the extension's own work rather than your habits, and it grew forever without telling you anything. The count is still recorded and is still shown where it does work, as the denominator in "on 18 of 30 sites".
+
+## v1.9.2
+
+**What was fixed**
+
+- Logging in no longer shows up in **Your Footprint** as a physical-address handover. A field labelled with an "email address" (GitHub's login is labelled "Username or email address", and many forms label the field "Email address") was classified as a street address, because the address detector matched the word "address" inside that phrase. Such fields are now recorded as email, and other non-physical uses of the word ("IP address", "wallet address") are no longer read as addresses either.
 
 ## v1.9.1
 

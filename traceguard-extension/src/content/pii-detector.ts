@@ -29,6 +29,8 @@
  * =============================================================================
  */
 
+import { logEvent } from '../lib/diagnostics';
+
 // =============================================================================
 // TYPE DEFINITIONS
 // =============================================================================
@@ -157,10 +159,24 @@ class PIIDetector {
             pageContext: this.pageContext
         };
 
-        // Send to background for UPS calculation
+        // Send to background for UPS calculation.
+        //
+        // A rejected send used to be an unhandled promise: the record of the
+        // exposure simply vanished, which is indistinguishable from the user
+        // never having entered anything. The worker can be restarting, which
+        // makes the failure transient, so it is logged rather than retried - but
+        // it must not be silent, because this message is the only path by which
+        // a handover reaches the ledger.
         chrome.runtime.sendMessage({
             type: 'PII_DETECTED',
             data: event
+        }).catch((error) => {
+            logEvent('content', 'warn', 'pii_detection_send_failed', 'Could not deliver a PII detection to the background worker', {
+                error: String(error),
+                host: domain,
+                fieldType,
+                sensitivity,
+            });
         });
     }
 
