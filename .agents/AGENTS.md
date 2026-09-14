@@ -11,12 +11,19 @@
 
 - The purpose of every feature is a positive change in the user's browsing habits, with as much friction as that takes and no more. Removing friction entirely is not the goal: a tool that never costs the user anything never changes what they do.
 - **Spend friction only where it changes a decision, and nowhere else.** A warning at the moment of the risky action is worth more than any number on a dashboard.
-- Every user-facing feature must be able to name, in one sentence, the behaviour it is trying to change. Name the behaviour, not the metric: "hand a card to fewer sites", not "increase engagement". If it cannot name one, it is decoration and does not ship.
+- Classify every user-facing element as exactly one of four things, and label it as such when adding **or reviewing** it:
+  - **Persuasion** tries to change a decision. It must name the behaviour, in one sentence, and appear where the decision is made. Name the behaviour, not the metric: "hand a card to fewer sites", not "increase engagement".
+  - **Context** is true information with no claim on behaviour. It does not have to change anything, but it must not pretend to persuade.
+  - **Entitlement** is transparency, control, correctness, or safety: export, delete, the vault lock, permission transparency, detector-failure notices. It is owed to the user regardless of effect and is never justified by behaviour change.
+  - **Decoration** is none of the above. Cut it.
+- The classification applies to what is already shipped, not only to proposals. Most of what fails the test is already on screen.
 - Put the information where the decision is made. If it can only appear on a dashboard the user has to open, call it informing rather than changing, and say so in the pull request or the roadmap entry.
 - The default must be safe. Doing nothing must not be a mistake, and no behaviour change may depend on configuration or setup.
 - Every claim must be true. An overstated warning teaches users to dismiss the tool, which kills the real warning later. Never credit TraceGuard with an effect it does not have.
 - Reward actions the user takes, not outcomes they stumble across. Rewarding a "safe site visit" teaches avoidance of risk signals instead of risk, and the user controls the input, so it is farmable.
-- When proposing a feature, state which of these it satisfies. A feature that cannot name a behaviour does not go on the roadmap. See `adr/0010-behaviour-change-as-the-goal.md`.
+- Never suppress a discouraging truth to protect motivation. If the honest picture demotivates, the user is still owed it.
+- Steering must be visible and reversible. An assistant that quietly optimises the user's behaviour is a dark pattern aimed at a good end.
+- When proposing or reviewing a feature, state its classification and act on it: strengthen a persuasion, label a context, leave an entitlement alone, cut a decoration. A persuasion that cannot name a behaviour does not go on the roadmap. See `adr/0010-behaviour-change-as-the-goal.md` and `adr/0011-behaviour-test-boundary.md`.
 
 ## Commits
 
