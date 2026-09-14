@@ -28,18 +28,15 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { Badge } from "@/components/ui/badge"
-import { useDetectorLogs, useActivityLogs, useSiteCache, useAppState, useSettings } from "@/lib/useStorage"
+import { useDetectorLogs, useActivityLogs, useSiteCache } from "@/lib/useStorage"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatCard } from "@/components/ui/stat-card"
 import {
   ShieldUser,
-  OctagonAlert,
   Target,
   Cookie,
-  Eye,
   FileText,
-  Lock,
   Key,
   Activity,
 } from "lucide-react"
@@ -83,13 +80,6 @@ const WSS_OPACITIES: Record<string, number> = {
   Critical:  0.2,
 }
 
-// PII sensitivity colors
-const PII_COLORS: Record<string, string> = {
-  HIGH:   "var(--destructive)",
-  MEDIUM: "var(--warning)",
-  LOW:    "var(--muted-foreground)",
-}
-
 // Chart configs
 const getActivityConfig = (t: any): ChartConfig => ({
   events: { label: t("Events Detected"), color: "var(--primary)" }
@@ -106,8 +96,6 @@ const getPieChartConfig = (t: any): ChartConfig => ({
 const getWssConfig = (t: any): ChartConfig => ({
   count: { label: t("Sites"), color: "var(--primary)" }
 })
-
-const toLabel = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 // ─── Small helper components ────────────────────────────────────────────────
 
@@ -136,7 +124,6 @@ export default function RankingsPage() {
   const logs = useMemo(() => rawLogs.filter(l => l.detector !== 'permissions' && isThreatLog(l)), [rawLogs])
   const piiLogs = useActivityLogs()
   const { sites } = useSiteCache()
-  const settings = useSettings()
 
   const [timeRange, setTimeRange] = useState("1d")
 
@@ -271,27 +258,7 @@ export default function RankingsPage() {
     })
   }, [logs])
 
-  // ── 6. PII / Sensitive Data ───────────────────────────────────────────
-  const piiData = useMemo(() => {
-    const counts: Record<string, { count: number; sensitivity: string; sites: Set<string> }> = {}
-    piiLogs.forEach(log => {
-      const label = log.fieldType
-      if (!counts[label]) counts[label] = { count: 0, sensitivity: log.sensitivity, sites: new Set() }
-      counts[label].count++
-      counts[label].sites.add(log.site)
-    })
-    return Object.entries(counts)
-      .sort((a, b) => b[1].count - a[1].count)
-      .map(([type, data]) => ({
-        type,
-        count: data.count,
-        sensitivity: data.sensitivity,
-        siteCount: data.sites.size,
-        fill: PII_COLORS[data.sensitivity] ?? PII_COLORS.LOW,
-      }))
-  }, [piiLogs])
-
-  // ── 7. WSS Distribution ───────────────────────────────────────────────
+  // ── 6. WSS Distribution ───────────────────────────────────────────────
   const wssData = useMemo(() => {
     const bins = { Critical: 0, Poor: 0, Fair: 0, Good: 0, Excellent: 0 }
     sites.forEach(([_, data]) => {
@@ -321,7 +288,7 @@ export default function RankingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t("Rankings & Stats")}</h1>
         <p className="text-muted-foreground mt-2">
-          {t("In-depth analytics and gamified rankings of your privacy data.")}
+          {t("In-depth analytics of the sites you visited and what loaded on them.")}
         </p>
       </div>
 
@@ -352,10 +319,10 @@ export default function RankingsPage() {
           value={heroStats.avgWSS !== null ? `${heroStats.avgWSS}/100` : "—"}
           subtitle={
             heroStats.avgWSS !== null
-              ? heroStats.avgWSS >= 80 ? t("Excellent — keep it up!")
-              : heroStats.avgWSS >= 60 ? t("Good — room to improve")
-              : heroStats.avgWSS >= 40 ? t("Fair — some risky sites")
-              : t("Poor — avoid sensitive actions")
+              ? heroStats.avgWSS >= 80 ? t("Mostly safe sites")
+              : heroStats.avgWSS >= 60 ? t("Some risky sites")
+              : heroStats.avgWSS >= 40 ? t("Many risky sites")
+              : t("Mostly risky sites")
               : t("Visit some websites first")
           }
         />
@@ -588,61 +555,10 @@ export default function RankingsPage() {
           </CardContent>
         </Card>
 
-        {/* 5. Sensitive Data Targeted, half width */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("Sensitive Data Targeted")}</CardTitle>
-            <CardDescription>{t("Types of personal info most frequently entered on tracked sites")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {piiData.length === 0 ? (
-              <EmptyState
-                icon={Lock}
-                title={t("No PII detections recorded")}
-                description={
-                  settings?.enablePIIDetection === false
-                    ? t("Enable PII detection in settings to track sensitive form entries.")
-                    : t("No sensitive form entries have been detected yet.")
-                }
-              />
-            ) : (
-              <div className="space-y-3">
-                {piiData.map((entry, index) => (
-                  <div key={entry.type} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2 h-2 rounded-full flex-shrink-0 bg-primary"
-                          style={{ opacity: 1 - index * 0.2 }}
-                        />
-                        <span className="text-sm font-medium">{toLabel(t(entry.type))}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {entry.siteCount} {entry.siteCount === 1 ? t("site") : t("sites")}
-                        </span>
-                        <span className="text-xs text-muted-foreground tabular-nums ml-2">
-                          {entry.count}×
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500 bg-primary"
-                        style={{
-                          width: `${Math.max((entry.count / (piiData[0]?.count || 1)) * 100, 4)}%`,
-                          opacity: 1 - index * 0.2,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 6. WSS Distribution, half width, color-coded bins */}
+        {/* 5. WSS Distribution, half width, color-coded bins. The handover-by-type
+            breakdown this grid used to hold lives on Your Footprint, where the
+            sites behind each type are named; repeating it here said the same
+            thing twice in two shapes. */}
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between">

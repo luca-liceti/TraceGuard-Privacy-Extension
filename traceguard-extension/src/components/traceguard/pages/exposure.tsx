@@ -153,7 +153,7 @@ export default function ExposurePage() {
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">{t("Your Footprint")}</h1>
                 <p className="text-muted-foreground mt-2">
-                    {t("What you have handed over, and who has seen you. Built from your own browsing, stored only on this device.")}
+                    {t("What you have handed over, and which tracker companies loaded on those sites. Built from your own browsing, stored only on this device.")}
                 </p>
             </div>
 
@@ -192,11 +192,13 @@ export default function ExposurePage() {
                         )}
                     </div>
 
-                    {/* Who has seen you */}
+                    {/* Tracker companies on your sites. Titled by what the data is
+                        rather than by "who has seen you", which read as an alarm
+                        about something no reader can act on directly. */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <Eye className="h-4 w-4 text-muted-foreground" />
-                            <h2 className="text-lg font-semibold">{t("Who has seen you")}</h2>
+                            <h2 className="text-lg font-semibold">{t("Tracker companies on your sites")}</h2>
                         </div>
                         <Card>
                             <CardHeader className="p-4 pb-2">

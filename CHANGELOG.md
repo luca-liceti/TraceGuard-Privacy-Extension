@@ -2,6 +2,17 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.11.0
+
+**What was fixed**
+
+- The **Cross-site Network Requests** card is gone from Overview. It measured how much third-party code the pages you happened to open pull in, which is not your choice, and it sat beside cards that do report something you can act on.
+- The **Sensitive Data Targeted** card is gone from Rankings & Stats. It listed the kinds of data you entered, which **Your Footprint** already shows with the sites behind each one. The same data in two shapes made both harder to read.
+- The percentage trends are gone from the remaining Overview cards. A percentage implied a decision you could make about the number, and whether a page loads trackers is mostly the page's choice rather than yours.
+- **Rankings & Stats** no longer describes itself as gamified. A ranking invites comparison; the page reports what happened.
+- The safety bands under **Avg. Site Safety** describe the state ("Mostly risky sites") instead of coaching ("keep it up!"). The average across the sites you visited is not a grade you earned.
+- Your Footprint's second section is titled **Tracker companies on your sites** rather than "Who has seen you", which read as an alarm about something you cannot act on directly.
+
 ## v1.10.6
 
 **What was fixed**
