@@ -8,6 +8,14 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 - Logging in no longer shows up in **Your Footprint** as a physical-address handover. A field labelled with an "email address" (GitHub's login is labelled "Username or email address", and many forms label the field "Email address") was classified as a street address, because the address detector matched the word "address" inside that phrase. Such fields are now recorded as email, and other non-physical uses of the word ("IP address", "wallet address") are no longer read as addresses either.
 
+## v1.10.1
+
+**What was fixed**
+
+- **Add Manual Log is removed.** It let anyone hand-write a site visit, a safety score, a tracker count, a policy grade and more, with no analysis behind it, and it was available to every user rather than only in developer mode. Every figure in the dashboard is derived from that record, so the form could fabricate the very numbers the page exists to report.
+- The **PII Risk Events** card is replaced by **Sites Holding Your Data**. The old card counted risk events, which is a scoreboard you cannot act on. The new card shows how many sites hold something you entered, names the kinds of data underneath, and opens Your Footprint when clicked.
+- The Overview and Rankings pages no longer read the `blocked` flag from network summaries when counting cross-site requests. That flag means the browser or another extension blocked the request, not TraceGuard.
+
 ## v1.10.0
 
 **What's new**

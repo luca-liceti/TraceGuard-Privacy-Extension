@@ -1,15 +1,18 @@
 import { useTranslation } from "react-i18next"
 
 import { StatCard } from "@/components/ui/stat-card"
-import { useAppState, useDetectorLogs, useActivityLogs, useSiteCache } from "@/lib/useStorage"
+import { useAppState, useDetectorLogs, useSiteCache, useExposureReport } from "@/lib/useStorage"
 import { SiteRiskData } from "@/lib/types"
 
 export function SectionCards() {
   const { t } = useTranslation()
   const appState = useAppState()
   const detectorLogs = useDetectorLogs()
-  const piiLogs = useActivityLogs()
   const { siteCache } = useSiteCache()
+  // The footprint report is the mechanism behind the shared-data card. It names
+  // what was handed over and where, which is actionable, instead of counting
+  // risk events, which is not.
+  const { report } = useExposureReport()
 
   // Calculate today and yesterday boundaries
   const now = new Date()
@@ -33,12 +36,6 @@ export function SectionCards() {
     .reduce((sum, log) => sum + (log.details?.trackerCount || 0), 0)
   const trackersTrend = formatTrend(trackersToday, trackersYesterday)
 
-  // 3. PII Risk Events
-  const totalPii = appState?.piiEventsCount || 0
-  const piiToday = piiLogs.filter(log => log.timestamp >= startOfToday).length
-  const piiYesterday = piiLogs.filter(log => log.timestamp >= startOfYesterday && log.timestamp < startOfToday).length
-  const piiTrend = formatTrend(piiToday, piiYesterday)
-
   // ─── Enriched aggregates from site cache ───────────────────────────────────
 
   // Helper: get sites analyzed today (have lastAnalyzed >= startOfToday)
@@ -55,33 +52,20 @@ export function SectionCards() {
     }
   )
 
-  // 5. Network Requests, aggregate third-party + tracker requests from enriched data
-  const netToday = cacheSitesToday.reduce((acc, s) => {
-    const summary = s.enrichedDetails?.networkRequests?.summary
-    if (!summary) return acc
-    return {
-      total: acc.total + summary.total,
-      thirdParty: acc.thirdParty + summary.thirdParty,
-      trackerRequests: acc.trackerRequests + summary.trackerRequests,
-      blocked: acc.blocked + summary.blocked,
-    }
-  }, { total: 0, thirdParty: 0, trackerRequests: 0, blocked: 0 })
-
-  const netYesterday = cacheSitesYesterday.reduce((acc, s) => {
-    const summary = s.enrichedDetails?.networkRequests?.summary
-    if (!summary) return acc
-    return {
-      total: acc.total + summary.total,
-      thirdParty: acc.thirdParty + summary.thirdParty,
-      trackerRequests: acc.trackerRequests + summary.trackerRequests,
-      blocked: acc.blocked + summary.blocked,
-    }
-  }, { total: 0, thirdParty: 0, trackerRequests: 0, blocked: 0 })
+  // 5. Cross-site requests, counted as third-party requests from enriched data.
+  // Only thirdParty is summed. The blocked field is deliberately not read here: a
+  // request recorded as blocked was blocked by the browser or another extension.
+  const netToday = cacheSitesToday.reduce(
+    (sum, s) => sum + (s.enrichedDetails?.networkRequests?.summary.thirdParty ?? 0), 0
+  )
+  const netYesterday = cacheSitesYesterday.reduce(
+    (sum, s) => sum + (s.enrichedDetails?.networkRequests?.summary.thirdParty ?? 0), 0
+  )
 
   const totalNetRequests = Object.values(siteCache as Record<string, SiteRiskData>).reduce(
     (sum, s) => sum + (s.enrichedDetails?.networkRequests?.summary.thirdParty ?? 0), 0
   )
-  const netTrend = formatTrend(netToday.thirdParty, netYesterday.thirdParty)
+  const netTrend = formatTrend(netToday, netYesterday)
 
   // 6. Fingerprinting, aggregate attempts from enriched data
   const fpToday = cacheSitesToday.reduce(
@@ -109,14 +93,14 @@ export function SectionCards() {
       />
       
       <StatCard
-        title={t("PII Risk Events")}
-        value={totalPii.toLocaleString()}
-        subtitle={t("Sensitive info entries")}
-        trend={{
-          direction: piiToday > piiYesterday ? "up" : piiToday < piiYesterday ? "down" : "up",
-          value: piiTrend,
-          isPositive: piiToday <= piiYesterday
-        }}
+        title={t("Sites Holding Your Data")}
+        value={report.totals.domains.toLocaleString()}
+        subtitle={
+          report.handedOver.length === 0
+            ? t("Nothing handed over yet")
+            : report.handedOver.map(group => t(group.fieldType)).join(", ")
+        }
+        href="/exposure"
       />
       
       <StatCard
@@ -124,9 +108,9 @@ export function SectionCards() {
         value={totalNetRequests.toLocaleString()}
         subtitle={t("Cross-site network calls detected")}
         trend={{
-          direction: netToday.thirdParty >= netYesterday.thirdParty ? "up" : "down",
+          direction: netToday >= netYesterday ? "up" : "down",
           value: netTrend,
-          isPositive: netToday.thirdParty < netYesterday.thirdParty
+          isPositive: netToday < netYesterday
         }}
       />
 

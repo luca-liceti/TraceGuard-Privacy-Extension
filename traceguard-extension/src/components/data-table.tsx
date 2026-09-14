@@ -11,7 +11,6 @@ import {
   ChevronsLeftIcon,
   ChevronsRightIcon,
   MoreVerticalIcon,
-  PlusIcon,
   DownloadIcon,
   ChevronsDownUpIcon,
   ChevronsUpDownIcon,
@@ -56,15 +55,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import {
   Sheet,
   SheetContent,
@@ -673,7 +663,6 @@ export function DataTable({
     }
   }
 
-  const [isAddLogOpen, setIsAddLogOpen] = React.useState(false)
   const [exportDataOpen, setExportDataOpen] = React.useState(false)
   const [selectedVisit, setSelectedVisit] = React.useState<SiteVisit | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false)
@@ -737,41 +726,6 @@ export function DataTable({
     setSelectedVisit(visit)
     setHighlightSection(undefined)
     setIsDetailsOpen(true)
-  }
-
-  const handleAddLogSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const form = e.currentTarget
-    const formData = new FormData(form)
-    
-    const domain = formData.get('domain') as string
-    const wss = parseInt(formData.get('wss') as string, 10) || 0
-    const trackers = parseInt(formData.get('trackers') as string, 10) || 0
-    const cookies = parseInt(formData.get('cookies') as string, 10) || 0
-    const reputation = formData.get('reputation') as string || 'Clean'
-    const policy = formData.get('policy') as string || 'N/A'
-    const inputs = formData.get('inputs') as string || 'No'
-
-    // Create individual detector logs for aggregation. Written through the
-    // storage helper so they are encrypted with the vault key like all other
-    // logs (never plaintext).
-    try {
-      const key = await storage.getVaultKey()
-      await storage.addDetectorLogs([
-        { domain, detector: 'reputation', score: reputation === 'Clean' ? 100 : reputation === 'Suspicious' ? 50 : 0, details: { status: reputation }, message: `Reputation: ${reputation}` },
-        { domain, detector: 'policy', score: policy === 'A' ? 100 : policy === 'B' ? 80 : policy === 'C' ? 60 : policy === 'D' ? 40 : policy === 'E' ? 20 : 0, details: { grade: policy }, message: `Policy grade: ${policy}` },
-        { domain, detector: 'inputs', score: inputs === 'Yes' ? 0 : 100, details: { sensitive: inputs === 'Yes' ? 1 : 0 }, message: `Sensitive inputs: ${inputs}` },
-        { domain, detector: 'tracking', score: Math.max(0, 100 - trackers * 10), details: { trackerCount: trackers }, message: `Trackers: ${trackers}` },
-        { domain, detector: 'cookies', score: Math.max(0, 100 - cookies * 5), details: { tracking: cookies }, message: `Tracking cookies: ${cookies}` },
-      ], key)
-
-      setIsAddLogOpen(false)
-      toast.add({ type: "success", title: t("Log added successfully") })
-      form.reset()
-    } catch (err) {
-      console.error(err)
-      toast.add({ type: "error", title: t("Failed to save manual log"), priority: "high" })
-    }
   }
 
   const handleExportSingleLog = async (visit: SiteVisit) => {
@@ -839,91 +793,6 @@ export function DataTable({
             <DownloadIcon />
             <span className="hidden lg:inline">{t("Export")}</span>
           </Button>
-          <Dialog open={isAddLogOpen} onOpenChange={setIsAddLogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <PlusIcon />
-                <span className="hidden lg:inline">{t("Add Log")}</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{t("Add Manual Log")}</DialogTitle>
-                <DialogDescription>
-                  {t("Manually record a site visit and safety metrics.")}
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddLogSubmit} className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="domain">{t("Domain")}</Label>
-                    <Input id="domain" name="domain" placeholder={t("example.com")} required />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="wss">{t("Safety Score")}</Label>
-                    <Input id="wss" name="wss" type="number" placeholder="85" min="0" max="100" required />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="trackers">{t("Trackers Detected")}</Label>
-                    <Input id="trackers" name="trackers" type="number" placeholder="0" min="0" required />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="cookies">{t("Cookies Detected")}</Label>
-                    <Input id="cookies" name="cookies" type="number" placeholder="0" min="0" required />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="reputation">{t("Reputation")}</Label>
-                    <Select required defaultValue="Clean" name="reputation">
-                      <SelectTrigger id="reputation">
-                        <SelectValue placeholder={t("Select")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Clean">{t("Clean")}</SelectItem>
-                        <SelectItem value="Suspicious">{t("Suspicious")}</SelectItem>
-                        <SelectItem value="Blacklisted">{t("Blacklisted")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="policy">{t("Policy Grade")}</Label>
-                    <Select required defaultValue="N/A" name="policy">
-                      <SelectTrigger id="policy">
-                        <SelectValue placeholder={t("Select")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="C">C</SelectItem>
-                        <SelectItem value="D">D</SelectItem>
-                        <SelectItem value="E">E</SelectItem>
-                        <SelectItem value="N/A">N/A</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="inputs">{t("Sensitive Inputs (PII Risk)")}</Label>
-                  <Select required defaultValue="No" name="inputs">
-                    <SelectTrigger id="inputs">
-                      <SelectValue placeholder={t("Select")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Yes">{t("Yes (Risk Detected)")}</SelectItem>
-                      <SelectItem value="No">{t("No (Safe)")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">{t("Save log")}</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
           {/* ── Export (shared dialog: full backup, optional encryption) ── */}
           <ExportDataDialog open={exportDataOpen} onOpenChange={setExportDataOpen} />
         </div>
