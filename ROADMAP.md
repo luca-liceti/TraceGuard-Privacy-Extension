@@ -1,211 +1,214 @@
-# TraceGuard Roadmap: Footprint Assistant
+# TraceGuard Roadmap
 
-**Created:** September 11, 2026
+**Updated:** September 13, 2026
 **Branch:** `dev`
-**Status:** Phase 0 complete (branch + this document). Phase 1 not started.
+
+This file says what is being built next, in what order, and what would make us stop. It is not the
+description of the system: that is [ARCHITECTURE.md](ARCHITECTURE.md), and the reasoning
+behind settled decisions is in [adr/](adr/README.md).
+
+Two independent tracks. They share only plumbing, and neither gates the other.
+
+| Track | Subject | Gate |
+|---|---|---|
+| **A** | The footprint assistant | Does it tell the user something they did not know? |
+| **B** | Policy rating for unrated sites | Does it agree with human ratings where truth is known? |
+
+They are separate because they answer different questions. Track A is about behaviour: does knowing
+your footprint change what you do. Track B is about correctness: ToS;DR does not cover most sites,
+and unrated sites currently score higher than they should. A useful ledger says nothing about
+whether a rating model is accurate, and an accurate model says nothing about whether anyone reads a
+ledger.
 
 ---
 
-## Why this direction
+# Track A: Footprint assistant
 
-TraceGuard currently reports on *websites*: a per-site score and a site-visit table, opened
-on demand. It already stores the user's own footprint data, but only ever displays it as
-counts ("PII Risk Events: 47") or as rows keyed by site visit.
+The goal is to expose the user to their own behaviour, reward good behaviour, and guide them away
+from bad behaviour. That is mostly not an AI problem. It is a memory, timing, and reward-design
+problem, so the language layer comes last.
 
-The goal is to make the product a **footprint assistant**: expose the user to their own
-behaviour, reward good behaviour, and guide them away from bad behaviour in future cases.
+## A1. Footprint ledger, read-only
 
-That goal is mostly **not** an AI problem. It is a memory, timing, and reward-design
-problem. Language is the smallest part, so it comes last.
-
----
-
-## Branch workflow
-
-- `main` is always shippable and is not touched by this work.
-- `dev` is the long-lived integration branch. This roadmap lives here.
-- Feature branches are cut from `dev` and merged back into `dev`.
-- **Merge `main` into `dev` weekly.** A branch that does not absorb `main` diverges fast:
-  merge conflicts accumulate, and until then `dev` is tested against stale code that is
-  missing current fixes.
-- Releases are still cut from `main` (see `AGENTS.md`).
-
----
-
-## Phase 1: Footprint ledger (read-only), start here
-
-**Goal:** put the user's own footprint in front of them, with no AI and no actions, so we can
-find out whether the idea is worth building at all.
-
-### Deliverables
+**Status: built.** Shipped on `dev` as v1.8.0.
 
 | Item | Path |
 |---|---|
-| Pure aggregation, no `chrome.*` calls | `traceguard-extension/src/lib/exposure.ts` |
-| Unit tests for the aggregation | `traceguard-extension/src/lib/exposure.test.ts` |
-| `useExposureReport()` hook | `traceguard-extension/src/lib/useStorage.ts` |
-| Page (read-only) | `traceguard-extension/src/components/traceguard/pages/exposure.tsx` |
-| Route `/exposure` | `traceguard-extension/src/dashboard/App.tsx` |
-| Sidebar entry | `traceguard-extension/src/components/app-sidebar.tsx` |
-| Translations (en/es/fr/de) | `traceguard-extension/src/lib/translations.ts` |
+| Pure aggregation, no `chrome.*`, no React | `traceguard-extension/src/lib/exposure.ts` |
+| Unit tests for the flag rules and counting | `traceguard-extension/src/lib/exposure.test.ts` |
+| `useExposureReport()`, reads and memoizes | `traceguard-extension/src/lib/useStorage.ts` |
+| Page, read-only | `traceguard-extension/src/components/traceguard/pages/exposure.tsx` |
+| Route `/exposure`, sidebar entry, command palette | `src/dashboard/App.tsx`, `src/components/app-sidebar.tsx` |
+| Translations | `src/lib/translations.ts` |
 
-### The report
+Two lists, both deterministic. See record [0004](adr/0004-ledger-as-pure-aggregation.md).
 
-Two lists, both deterministic:
+- **What you handed over.** Per field type: which domains hold it, first and last seen, and whether
+  the entry is surprising. Surprising only fires for a reason the UI can name: visited once, not
+  visited in about 180 days, entered while the site scored under 50, or gone from the site cache.
+- **Who has seen you.** Tracker organisations aggregated across visited sites, ranked by how many
+  of the user's sites each one covered, with company aliases merged.
 
-- **What you handed over**: per field type (email, password, card…): which domains hold it,
-  when it was first and last seen, and whether the entry is *surprising*.
-- **Who has seen you**: tracker `organization` (from DuckDuckGo Tracker Radar) aggregated
-  across visited sites, ranked by how many of the user's sites each organization covered.
+The page is deliberately separate from Overview, and the reasons are in record
+[0005](adr/0005-ledger-own-page-and-gate.md).
 
-Data sources, all already stored and encrypted:
+### Gate A1 to A2: the usefulness test
 
-- `crossSiteExposure`: `{ fieldType: string[] }` (field type to domains)
-- `piiDetections`: `PIIDetectionEvent[]` (capped at 100; also used for dates)
-- `siteCache[domain].enrichedDetails.trackers.items[].organization` (and `networkRequests`)
-- `siteCache[domain]`: `wss`, `visitCount`, `lastVisit`
+Use the ledger on real browsing for **two weeks**. All three must hold:
 
-### Rules
+1. **Surprise.** It names at least **3** holders the user had genuinely forgotten, at least **1** of
+   them a site visited only once.
+2. **Return, unprompted.** The user opened the page on at least **6 of the 14 days** without being
+   reminded.
+3. **Nothing missing.** No holder the user knows about is absent from the list. A wrong list is
+   worse than no list.
 
-- **`surprising` must be an explainable, deterministic rule**: for example `visitCount === 1`, or
-  last visited long ago, or the entry happened on a site below the WSS threshold. If a row
-  cannot be explained, it does not get the flag.
-- **Compute in memory.** Do not introduce a new encrypted storage blob; read through the
-  existing decrypt helpers.
-- **Lead with the unexpected holders**, not with a count. "23 sites" is a scoreboard; "these
-  4 you visited once, and they still have your email" is a finding.
-- **Honest empty state.** On a fresh install the ledger is empty; it must explain that it
-  fills as you browse, not look broken.
-- **No landing-page change.** Overview stays where it is.
+**Kill criterion.** If after two weeks the user cannot name a thing the page told them that they did
+not already know, stop. Delete the page, keep the commit history, do not start A2.
 
-### Out of scope for Phase 1
+The thresholds are agreed now so the decision is not made while invested. "At least one forgotten
+holder" was the original wording and it was too loose: it would pass by noise.
 
-Actions, AI, P2P, landing-page changes, and any change to the scoring model.
+Because the extension sends no telemetry, every threshold is self-reported. That is unavoidable for
+a privacy product, and it is why the numbers are few and blunt.
 
-### Gate: decide before starting
+## A2. Make it actionable
 
-Use the ledger on real browsing for **two weeks**. The gate passes if it names at least one
-holder the user had genuinely forgotten about.
+Only after the gate passes.
 
-- **Pass** → proceed to Phase 2.
-- **Fail** → stop. Do not build Phase 2 or 3. The direction is a receipt, not a tool.
+- **Forget.** `forgetExposure(fieldType, domain)` in `src/lib/storage.ts`. Deletes the local record
+  that a domain holds a field type, from `crossSiteExposure` and the matching `piiDetections`. It
+  must **also purge the matching `bufferedExposure` entry**, or `flushBufferedTelemetry` merges it
+  back on the next unlock and the delete silently reverts. Label it honestly: it erases the user's
+  record, not the site's copy.
+- **Trust.** `trustSite(domain)` using the existing whitelist, surfaced where the record lives
+  instead of only in Settings.
+- **Memory in the PII gate.** The gate currently asks "is this site safe?" with no history. Feed the
+  ledger into it so it can say "you have shared this with 12 sites, 3 of them one-off". This is
+  where behaviour actually changes, because it appears while the user is typing.
 
-The gate is agreed now so the decision is not made while invested.
+**Two things to be honest about in the design.** Forget and gate memory work against each other:
+forgetting erases exactly the evidence the warning depends on, and the UI should say so. And trust
+is the only action here that reduces safety, so it needs to be visible, listable, and one-click
+reversible.
 
-### Estimate
+### Gate A2 to A3
 
-Roughly 1–2 weeks of focused work, mostly aggregation logic, tests, and translations.
+Proceed only if the user hits a question the fixed lists **cannot** answer, and hits it repeatedly,
+roughly weekly. "Which sites have my card?" when no card filter exists is a real gap. "A summary
+card would look nice" is not.
 
-### Verification
+## A3. Optional local AI
 
-`npm run typecheck`, `npm run test:run`, `npm run build`. Per `AGENTS.md`: a `CHANGELOG.md`
-entry and a **MINOR** version bump.
+Off by default, opt-in permission, never a dependency of the core. Scope and providers are set by
+record [0008](adr/0008-gemini-nano-query-box-only.md).
 
----
-
-## Phase 2: Make it actionable *(only if the Phase 1 gate passes)*
-
-- `forgetExposure(fieldType, domain)` in `lib/storage.ts`.
-  **Must also purge the matching `bufferedExposure` entry**, because the background
-  `flushBufferedTelemetry` merges that buffer back in, so a naive delete is silently
-  resurrected on the next flush.
-- `trustSite(domain)` using the existing whitelist.
-- Feed the ledger into the PII confirmation gate so it can warn **with memory**
-  ("you've shared this with N sites") instead of asking "is this site safe?" fresh every time.
-  This is where behaviour actually changes.
-- Only two actions are honest: *forget* (deletes the local record, **not** the site's copy) and
-  *trust*. TraceGuard blocks nothing, so "revoke" or "stop sharing" would be a lie.
-
-**Estimate:** ~1 week.
+- **Query box.** Sits on Overview beside the score ring and the activity chart. Note that grid is
+  currently two columns, so this needs a third column or its own row. The model routes the question
+  to the deterministic data and the answer comes from storage, so it cannot invent facts. Local
+  server preferred, Chrome's built-in Gemini Nano as the zero-setup fallback.
+- **Policy rating** is Track B, not here.
 
 ---
 
-## Phase 3: Optional local AI *(only after Phase 2 shows value)*
+# Track B: Policy rating for unrated sites
 
-One setting, off by default, opt-in permission. Nothing here is ever a dependency of the core
-product, so the deterministic view must work without it.
+Fixes a defect that exists today: when ToS;DR has no rating, the policy detector is excluded and
+its weight is redistributed, which inflates the WSS for unrated sites. Record
+[0006](adr/0006-asymmetric-policy-ratings.md) governs what a generated rating may and may not
+do.
 
-### 3a: Natural-language query box *(small; do this first)*
+## Gate B: measure before building
 
-Sits on the Overview page, beside the UPS ring and the activity line graph (note: that grid is
-currently two columns (the ring and the line graph), so it needs a third column or its own row).
+Nothing here starts until all three are answered from real data.
 
-- The model **routes** the question to the deterministic data; the answer comes from storage,
-  so it cannot invent facts.
-- Providers: the user's local server first, Chrome's built-in **Gemini Nano** as the zero-setup
-  fallback. Both are 100% local: Chrome documents that no data is sent to Google or any third
-  party when the built-in model runs.
-- Gemini Nano is scoped to this job **only**.
+1. **Coverage.** What fraction of the sites the user actually visits have no ToS;DR rating? This is
+   computable now from `siteCache` against the bundled ToS;DR data. If it is 10 percent this is a
+   small feature. If it is 60 percent it is a real one.
+2. **Impact.** For those sites, how much does the excluded policy weight inflate the WSS? The weight
+   is known, so this is arithmetic.
+3. **Calibration, and this decides it.** Run the candidate model against sites that **do** have
+   ToS;DR grades and measure agreement. If it disagrees with human raters where the truth is known,
+   it must not ship, whatever Track A does.
 
-### 3b: Local policy rating *(large; later)*
+A cheaper option to test first: many sites reuse policy templates (Termly, Iubenda and similar), so
+template clustering may cover the long tail deterministically, with no model at all.
 
-Covers the biggest hole in the scoring model: ToS;DR covers roughly 4,000 services, and when it
-has no rating the policy detector is excluded and its weight redistributed, which inflates the
-score for unrated sites.
+## B1. Local policy rating
 
-- Runs only when ToS;DR has nothing for the site.
-- **The user's own local model only.** This result feeds a score, so it needs a real model;
-  Gemini Nano is too weak for rubric-based legal classification.
-- Connect to a user-run local service (Ollama / LM Studio / llama.cpp) via an **optional host
-  permission** for `http://localhost:*`, requested only when the user enables it. Restrict the
-  endpoint to localhost by default.
-- Only the **scraped policy text** is sent. Never the exposure ledger, logs, or anything else.
-- Extract the policy text via the content script while the user is on the policy page, so no new
-  network permission and no CSP change.
-- Cache by a **normalized content hash** (strip dates, whitespace, navigation), not by domain.
-  This also means one analysis covers every site sharing the same policy template.
-- Re-analyse when the text changes (use a similarity threshold, not exact equality).
-- Run inference off the critical path; show the analysis **age** and the **clauses it judged**,
-  with a link to the original text.
-- **Asymmetric by design: a generated rating may lower a score or stay neutral. It may never
-  raise one.** Otherwise a confident wrong "good" inflates the WSS and can suppress a PII
-  warning at the moment of risk.
-- Record which model and prompt version produced each rating, so results can be invalidated.
+The user's own local model only, reached over an optional localhost host permission requested only
+when the feature is enabled. The scrape happens in the content script while the user is on the
+policy page, so no new network permission and no CSP change is needed. Only the policy text is sent,
+never the footprint ledger or logs.
 
-**Estimate:** 3a ~1 week. 3b several weeks (chunking long policies, hash/diff logic, validation,
-two failure modes per provider).
+- Cache by a **normalised content hash** (strip dates, whitespace, navigation), not by domain, so
+  one analysis covers every site sharing a policy. Re-analyse on change using a similarity
+  threshold, not exact equality, or policies with dynamic dates cause re-analysis storms.
+- Run inference off the critical path and show the analysis **age**. A bare grade implies it is
+  current.
+- Show the clauses the rating was based on, with a link to the source text.
+- Record which model and prompt version produced each rating so results can be invalidated.
+- **Asymmetric by design:** may lower a score or stay neutral, never raise one, and never mark a
+  site safe for the PII gate.
+
+**Estimate:** A3 about a week. B1 several weeks, between chunking long policies, hash and diff
+logic, output validation, and two failure modes per provider.
 
 ---
 
-## Later: annotated, not scheduled
+# Later, annotated but not scheduled
 
-- **UPS reward redesign.** The current model is punishment-only: −2 per risky visit, +0.1 per
-  safe one (~13 safe visits to recover from one risky visit, ~160 after a single PII penalty).
-  Gamification cannot work on a score that only falls. Needs its own design document. Reward
-  *actions the user takes*, not "safe site visits", because rewarding visit outcomes is farmable and
-  teaches users to avoid risk *signals* rather than risk.
-- **Promote `/exposure` to the landing page**, once it has proven useful.
-- **Onboarding** for the empty-ledger period.
-- **Sharing analyses.** If ever wanted: contribute to ToS;DR through its reviewed process, or
-  export a file the user shares manually. Not P2P: see below.
+- **UPS reward redesign.** The current model is punishment-only: up to 2 points lost per risky visit,
+  at most 0.1 recovered per distinct safe domain. Gamification cannot work on a score that mostly
+  falls. Needs its own design document, and it must reward actions the user takes rather than safe
+  site visits, because rewarding visit outcomes is farmable and teaches users to avoid risk
+  *signals* instead of risk.
+- **Promote `/exposure` to the landing page**, once it has proven useful, with the current-site
+  summary on top.
+- **Onboarding** for the empty-ledger period, since the page has nothing to show on a fresh
+  install.
+- **Sharing analyses**, if ever wanted: contribute to ToS;DR through its reviewed process, or export
+  a file the user shares manually. Not P2P.
 
 ---
 
-## Explicitly not doing
+# Explicitly not doing
 
-- **P2P / decentralized contribution.** It contradicts the product's defining claim ("nothing
-  leaves your device"), leaks browsing interest through domain metadata, and is a direct attack
-  path: a contributed fake "A" grade inflates the WSS, which can make the PII gate exempt a
-  phishing site. It also creates permanent content-moderation and takedown obligations.
-- **Gemini Nano for policy rating.** Too weak for anything that touches a score.
+- **P2P or decentralized contribution.** Contradicts the local-first claim, leaks browsing interest
+  through domain metadata, and is an attack path: a contributed fake good grade inflates a score,
+  which can make the PII gate exempt a phishing site. Full reasoning in
+  record [0007](adr/0007-no-p2p.md).
+- **Gemini Nano for policy rating.** Too weak for rubric-based legal classification that feeds a
+  score.
 - **Cloud AI.** Sending the visited site to a provider is a category error for a footprint
   assistant.
 
 ---
 
-## Separate fixes, not part of this roadmap
+# Separate work, not on either track
 
-- The dashboard's "blocked" counts credit blocking performed by *other* extensions
-  (`net::ERR_BLOCKED_BY_CLIENT`). TraceGuard blocks nothing, so this overstates its role.
-- The `crossSiteExposure` arrays grow without bound (flagged in `audit_report.md`, M-1). Phase 1
-  reads this data, so a cap may become necessary.
+- **The `blocked` field naming.** `network-monitor.ts:111` marks a request `blocked` only when Chrome
+  reports `net::ERR_BLOCKED_BY_CLIENT`, which means the browser or another extension did it. The
+  `status: 'blocked'` fields in tracker and cookie summaries, and the `blocked` total accumulated in
+  `section-cards.tsx` that no card renders, are named as though TraceGuard did the blocking.
+- **The tracker category cast.** `tracker-enricher.ts:51` casts Disconnect category strings straight
+  into `TrackerDetail['category']`, so arbitrary values can reach the UI. Display normalisation
+  contains it; the type is still wrong.
+- **Organisation name precedence.** `tracker-enricher.ts:73` prefers DuckDuckGo's `radar.owner`,
+  which is inconsistent ("Google" for some domains, "Google LLC" for others), over Disconnect's
+  canonical `entityName`. The ledger's alias table is a display-side workaround for this. Fixing the
+  precedence changes stored data and only affects future analyses.
+- **Cap `crossSiteExposure`.** It is the one collection with no cap, and the ledger reads it.
 
 ---
 
-## Open caveats
+# Open caveats
 
-- "Who has seen you" depends on `enrichedDetails` tracker `organization` being populated. Older
-  site-cache entries will make the early numbers thin.
-- `piiDetections` is capped at 100 entries, so long-run history for the ledger must come from
+- **Who has seen you** depends on `enrichedDetails` tracker `organization` being populated, so early
+  numbers will be thin for sites analysed before that field existed.
+- **`piiDetections` is capped at 100**, so long-run history for the ledger comes from
   `crossSiteExposure`.
-- The ledger is empty on install. Phase 1 ships nothing useful until the user has browsed.
+- **The ledger is empty on install.** Nothing appears until the user types into a sensitive field
+  somewhere, so the page needs an honest empty state rather than looking broken.
+- **An entry means typing, not sending.** The detector fires on the first keystroke
+  (`pii-detector.ts:124`), so abandoned forms are recorded as if the site received the data.

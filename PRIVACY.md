@@ -1,6 +1,6 @@
 # TraceGuard Privacy Policy
 
-Effective date: August 16, 2026
+Effective date: September 13, 2026
 
 TraceGuard is a **local-first privacy journal**. It analyzes the pages you visit on your own
 device to help you understand and change your browsing habits, and stores that analysis locally
@@ -12,10 +12,17 @@ in Chrome extension storage. It has no backend and no user accounts.
 - Tracker domains and cookie **names** with metadata (HttpOnly / Secure / SameSite flags, expiry,
   third-party status). Cookie values are never stored or transmitted - only the name and these
   metadata flags are kept.
-- Third-party request origins and paths (query strings and URL fragments are discarded).
+- Third-party request origins only. Request paths, query strings, and URL fragments are discarded
+  before anything is stored.
 - Browser fingerprinting attempts and HTTP security headers observed on pages.
 - The **type** of sensitive form field you interacted with (e.g. "password", "email"), never the
-  value you typed.
+  value you typed. This is recorded on the first character entered into a field, once per field, so
+  it means you started typing, not that the site received anything. An abandoned form is recorded
+  the same way as a submitted one.
+- A cross-site record grouping those field types by the domains they were entered on: which sites
+  hold an email, a card number, and so on. This is what the Footprint page in the dashboard reads.
+  It is derived from the entries above, stored encrypted alongside them, never transmitted, and
+  removed when you clear your data.
 
 ## What TraceGuard does NOT do
 
@@ -25,6 +32,9 @@ in Chrome extension storage. It has no backend and no user accounts.
 - It never stores cookie values or full request URLs. Cookie values that are transiently exposed
   by `document.cookie` are discarded immediately and never used, stored, or transmitted.
 - It does not use analytics, telemetry, advertising SDKs, or any form of cross-site tracking.
+- It does not block network requests. TraceGuard has no blocking permission, so it cannot prevent a
+  tracker or an advertisement from loading. A request it records as blocked was blocked by your
+  browser or by another extension.
 
 ## External network requests
 

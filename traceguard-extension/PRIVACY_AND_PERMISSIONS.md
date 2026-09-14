@@ -34,8 +34,18 @@ cookies, and never sends cookie data to an external server. (The `cookies` permi
 intentionally NOT requested because TraceGuard only needs cookie names/metadata, which
 `Set-Cookie` headers already provide.)
 
+TraceGuard never blocks, redirects, or modifies a request. It has no `declarativeNetRequest`
+permission and never uses `webRequest` in its blocking form. A request recorded with a `blocked`
+status was blocked by the browser or by another extension, and the field exists so the extension can
+tell a blocked request apart from a failed one.
+
 When the extension's master on/off toggle is disabled, the network monitor stops observing
 traffic entirely, no requests, cookies, or headers are recorded while paused.
+
+### `downloads`
+**Why it is needed:** Used only when the user explicitly exports a data backup from Settings. The
+extension hands Chrome a locally generated file to save and does not enumerate, read, or modify any
+other download. Where the API is unavailable it falls back to a plain anchor click.
 
 ## Host Permissions
 
@@ -54,6 +64,10 @@ and to observe third-party network requests across the web.
   the domain of unrated sites to `api.tosdr.org`. No other browsing data is transmitted. Lookup
   results are cached locally in `tosdr_cache` (a plaintext, domain-only map of domain → policy
   grade); it contains no page URLs, request data, or PII.
+- **Cross-site exposure record:** The extension keeps a local map from the type of personal field
+  the user interacted with (password, email, card, and so on) to the domains it was entered on. This
+  is what the Footprint page reads. It is derived from on-device events, stored encrypted with the
+  rest of the journal, never transmitted, and removed by "Delete All Data".
 - **Data deletion:** Users can review, export, or wipe all local data from the dashboard Settings
   ("Export Data" and "Delete All Data").
 - **Locked-vault buffering:** While the vault is locked, new activity is buffered on disk encrypted

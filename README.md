@@ -15,11 +15,19 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 
 ### Key Features
 - **Real-Time Tracker Detection**: Identifies third-party trackers using a curated list plus bundled databases (DuckDuckGo Tracker Radar, EasyPrivacy, Disconnect).
-- **PII Monitoring**: Detects sensitive form inputs and warns you before you submit data to low-trust sites.
+- **PII Monitoring**: Detects sensitive form inputs and warns you when you start typing into one on a low-trust site. The detector fires on the first character entered into a field, never on the value itself.
 - **Cookie Auditing**: Detects tracking cookies from `Set-Cookie` headers and the DOM, cookie names and metadata only, never values (no `cookies` permission required).
 - **Policy Grading**: A hybrid ToS;DR integration, a bundled database by default, with an optional (off-by-default) live lookup for unrated sites.
+- **Footprint Ledger**: A dashboard page showing what you have handed over, by field type and site, plus which tracker companies covered how much of your browsing. Built entirely from data already stored locally.
 - **Modern Dashboard**: An interactive, responsive control center built with React, Vite, Tailwind CSS, and shadcn/ui.
 - **Local-First**: Everything runs on-device, no accounts, no telemetry, and sensitive data is encrypted behind a master password (the "vault").
+
+## What TraceGuard does not do
+
+- **It does not block anything.** TraceGuard observes and scores. It has no blocking permission, and a request recorded as blocked was blocked by your browser or by another extension.
+- **It never sees what you type.** It records the type of field you interacted with, never the value, and it records on the first keystroke, so an abandoned form looks the same as a submitted one.
+- **It has no account, no backend, and no telemetry.** Nothing about your browsing is sent anywhere.
+- **It cannot see what a site did with your data afterwards**, or whether you reuse passwords.
 
 ## Screenshots
 
@@ -76,7 +84,7 @@ The private key must **never** be committed. Store it as a GitHub Actions secret
    - Select the `dist` folder located inside the `traceguard-extension` directory
 
 ### Usage Example
-Once installed, TraceGuard runs automatically in the background. You can open the side panel by clicking the extension icon or use the Command Palette (`Cmd+K` / `Ctrl+K`) in the dashboard to navigate between your Privacy Score, Rankings, and Settings.
+Once installed, TraceGuard runs automatically in the background. You can open the side panel by clicking the extension icon or use the Command Palette (`Cmd+K` / `Ctrl+K`) in the dashboard to navigate between Overview, Rankings and Stats, Footprint, and Settings.
 
 ## Getting Help
 
@@ -85,6 +93,16 @@ If you encounter issues or have questions, please use the following resources:
 - **Issue Tracker**: [GitHub Issues](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/issues) to report bugs or request features.
 - **Documentation**: Additional setup notes and architectural details are available in the [docs/](docs/) directory.
 - **Privacy Policy**: Read our privacy commitments in [PRIVACY.md](PRIVACY.md).
+
+## Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**: how the extension is put together, its runtime contexts, storage model, the vault, and the scoring rules.
+- **[adr/](adr/README.md)**: the decisions that shape the project, each with its reasoning.
+- **[ROADMAP.md](ROADMAP.md)**: what is being built next, and what would make us stop.
+- **[CHANGELOG.md](CHANGELOG.md)**: release history.
+- **[PRIVACY.md](PRIVACY.md)**: what is stored, what is not, and why.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** and **[VERSIONING.md](VERSIONING.md)**: contributing and releases.
+The `docs/` folder is deliberately not versioned. It holds local working material: the audit reports, store-listing drafts, branding, and screenshots, none of which belong in the repository.
 
 ## Maintainers and Contributing
 

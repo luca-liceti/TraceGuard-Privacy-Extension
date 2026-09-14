@@ -35,18 +35,22 @@ Other references update on their own:
 
 ## Releasing
 
-1. Bump the version from `traceguard-extension/`:
+1. Write the entry at the top of `CHANGELOG.md` first. The release workflow copies the **top
+   section** of that file into the GitHub release body, so tagging without an entry ships an empty
+   release.
+2. Bump the version from `traceguard-extension/`:
    ```bash
    npm version patch     # or minor / major
    ```
    This updates `package.json` and `package-lock.json`, commits, and creates a tag like `v1.3.1`.
-2. Verify it still builds: `npm run build`.
-3. Push both the commit and the tag:
+   Keep the version bump and the changelog entry in the same commit as the change they describe.
+3. Verify it still builds: `npm run build`.
+4. Push both the commit and the tag:
    ```bash
    git push && git push --tags
    ```
-4. The `Release` workflow builds `traceguard-extension-<tag>.zip`, creates a GitHub release with
-   auto-generated notes, and uploads the ZIP to the Chrome Web Store.
+5. The `Release` workflow builds `traceguard-extension-<tag>.zip`, creates a GitHub release whose
+   body is the top section of `CHANGELOG.md`, and uploads the ZIP to the Chrome Web Store.
 
 ## Chrome Web Store publishing
 
