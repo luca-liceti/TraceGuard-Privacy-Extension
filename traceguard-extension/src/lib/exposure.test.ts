@@ -24,13 +24,34 @@ import {
     SINGLE_VISIT_THRESHOLD,
     DORMANT_DAYS,
     LOW_TRUST_WSS,
+    MAX_EXPOSURE_DOMAINS_PER_TYPE,
     MAX_WATCHERS,
+    trimExposureDomains,
 } from './exposure';
 import type { CrossSiteExposure, PIIDetectionEvent, SiteRiskData, TrackerDetail } from './types';
 
 // Deterministic clock: 2026-09-11.
 const NOW = new Date(2026, 8, 11, 12, 0).getTime();
 const DAY = 24 * 60 * 60 * 1000;
+
+describe('trimExposureDomains', () => {
+    it('leaves a list below the cap untouched', () => {
+        const domains = ['a.com', 'b.com'];
+        expect(trimExposureDomains(domains)).toBe(domains);
+    });
+
+    it('keeps the newest entries when the cap is reached', () => {
+        const domains = Array.from({ length: MAX_EXPOSURE_DOMAINS_PER_TYPE + 3 }, (_, i) => `site-${i}.com`);
+
+        const trimmed = trimExposureDomains(domains);
+
+        expect(trimmed).toHaveLength(MAX_EXPOSURE_DOMAINS_PER_TYPE);
+        // The oldest three are the ones dropped, because domains are appended
+        // in the order the handovers happened.
+        expect(trimmed[0]).toBe('site-3.com');
+        expect(trimmed[trimmed.length - 1]).toBe(`site-${MAX_EXPOSURE_DOMAINS_PER_TYPE + 2}.com`);
+    });
+});
 
 function makeSite(domain: string, overrides: Partial<SiteRiskData> = {}): SiteRiskData {
     return {

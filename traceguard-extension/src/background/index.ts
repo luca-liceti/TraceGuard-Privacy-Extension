@@ -41,6 +41,7 @@ import { checkTosDR } from './tosdr-api';
 import { calculateVisitImpact, calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
 import { applyVerdict, findRecordIndex, isDuplicate, isPending, settleAbandonedRecords, stageHandover, type PIIJournalRecord } from '../lib/pii-journal';
 import { isStoppedBeforeLoading } from '../lib/tracker-status';
+import { trimExposureDomains } from '../lib/exposure';
 import { encryptData, decryptData, decryptDataStrict, importKey, DECRYPT_FAILED } from '../lib/crypto';
 import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
 import { initNetworkMonitor, getAndClearNetworkData, setNetworkMonitorEnabled } from './services/network-monitor';
@@ -296,7 +297,11 @@ async function flushBufferedTelemetry() {
         } else {
             const exposure = current || {};
             for (const [fieldType, domains] of Object.entries(bufferedExposure)) {
-                exposure[fieldType] = Array.from(new Set([...(exposure[fieldType] || []), ...(domains || [])]));
+                // Trimmed here too: this union is the other place a type's domain
+                // list can grow past the cap.
+                exposure[fieldType] = trimExposureDomains(
+                    Array.from(new Set([...(exposure[fieldType] || []), ...(domains || [])]))
+                );
             }
             await chrome.storage.local.set({ crossSiteExposure: await encryptData(key, exposure) });
         }

@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.10.6
+
+**What was fixed**
+
+- The record of which sites hold a given piece of your data is now bounded at 500 sites per data type, with the oldest dropped first. It was the only collection with no limit at all, growing with every new site for as long as the extension stayed installed. The cap is far above what normal use reaches, and it is applied both when an entry is written and when buffered entries are merged after the vault is unlocked.
+
 ## v1.10.5
 
 **What was fixed**

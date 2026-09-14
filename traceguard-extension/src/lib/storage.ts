@@ -45,6 +45,7 @@
 import { StorageSchema, UserSettings, AppState } from './types';
 import { encryptData, decryptData, decryptDataStrict, generateAesKey, exportKey, importKey, DECRYPT_FAILED } from './crypto';
 import { captureError, logEvent } from './diagnostics';
+import { MAX_EXPOSURE_DOMAINS_PER_TYPE, trimExposureDomains } from './exposure';
 
 // =============================================================================
 // IN-MEMORY BUFFER (vault locked)
@@ -446,9 +447,12 @@ export const storage = {
             const buffered = (await readBuffer<import('./types').CrossSiteExposure>('bufferedExposure')) || {};
             if (!buffered[fieldType]) buffered[fieldType] = [];
             if (!buffered[fieldType].includes(domain)) {
-                buffered[fieldType].push(domain);
+                buffered[fieldType] = trimExposureDomains([...buffered[fieldType], domain]);
                 await writeBuffer('bufferedExposure', buffered);
-                console.log(`[Cross-Site Exposure] ${fieldType} buffered for ${buffered[fieldType].length} sites (locked)`);
+                logEvent('storage', 'debug', 'exposure_buffered', 'Cross-site exposure buffered while the vault is locked', {
+                    fieldType,
+                    sites: buffered[fieldType].length,
+                });
             }
             return;
         } else {
@@ -462,14 +466,21 @@ export const storage = {
 
         // Add domain if not already tracked
         if (!exposure[fieldType].includes(domain)) {
-            exposure[fieldType].push(domain);
+            const before = exposure[fieldType].length;
+            exposure[fieldType] = trimExposureDomains([...exposure[fieldType], domain]);
 
             if (key) {
                 await storage.set({ crossSiteExposure: await encryptData(key, exposure) as any });
             } else {
                 await storage.set({ crossSiteExposure: exposure });
             }
-            console.log(`[Cross-Site Exposure] ${fieldType} now shared with ${exposure[fieldType].length} sites`);
+            // Trimming silently would look like the ledger lost a site, so the
+            // one case where an entry is ever dropped is stated in the log.
+            logEvent('storage', 'debug', 'exposure_recorded', 'Cross-site exposure recorded', {
+                fieldType,
+                sites: exposure[fieldType].length,
+                trimmed: before + 1 > MAX_EXPOSURE_DOMAINS_PER_TYPE,
+            });
         }
     },
 

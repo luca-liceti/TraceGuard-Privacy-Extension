@@ -56,6 +56,24 @@ export const LOW_TRUST_WSS = 50;
 /** How many watchers to surface. The long tail is not informative. */
 export const MAX_WATCHERS = 25;
 
+/**
+ * How many sites may be recorded per data type in crossSiteExposure.
+ *
+ * It is the only collection with no natural limit: the journal is capped at 100
+ * entries and the site cache is keyed by domain, but the exposure map grows with
+ * every new site that receives a data type, for as long as the extension is
+ * installed. The cap is generous, so it only ever trims pathological growth, and
+ * entries are appended in the order they happened, so the oldest go first.
+ */
+export const MAX_EXPOSURE_DOMAINS_PER_TYPE = 500;
+
+/** Trims a domain list to the cap, dropping the oldest entries. */
+export function trimExposureDomains(domains: string[]): string[] {
+    return domains.length > MAX_EXPOSURE_DOMAINS_PER_TYPE
+        ? domains.slice(-MAX_EXPOSURE_DOMAINS_PER_TYPE)
+        : domains;
+}
+
 // =============================================================================
 // OUTPUT TYPES
 // Derived, not stored - these never touch chrome.storage.
@@ -287,10 +305,15 @@ const CATEGORY_LABELS: Record<string, string> = {
     cdn: 'CDN',
     fingerprinting: 'Fingerprinting',
     fingerprintinggeneral: 'Fingerprinting',
+    consent: 'Consent managers',
     consentmanager: 'Consent managers',
     consentmanagers: 'Consent managers',
     cryptomining: 'Cryptomining',
     email: 'Email',
+    emailaggressive: 'Email',
+    antifraud: 'Anti-fraud',
+    marketing: 'Advertising',
+    functional: 'Functional',
     sso: 'Single sign-on',
     unknown: 'Unknown',
 };
