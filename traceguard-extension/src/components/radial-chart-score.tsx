@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
-import { useAppState, useScoreHistory } from "@/lib/useStorage"
+import { useActivityLogs, useAppState, useScoreHistory } from "@/lib/useStorage"
 
 const chartConfig = {
   visitors: {
@@ -35,6 +35,7 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
   const { t } = useTranslation()
   const state = useAppState()
   const history = useScoreHistory()
+  const piiEvents = useActivityLogs()
   const targetScore = !state ? 0 : (state.ups ?? 100)
   
   const [currentScore, setCurrentScore] = React.useState(0)
@@ -70,11 +71,19 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
   
   const timeText = timeRange === "1d" ? t("today") : timeRange === "7d" ? t("this week") : t("this month")
 
+  // The score is not a mystery number: it moves when personal data is entered on
+  // a risky site, and with the safety of the sites you visit. Naming the most
+  // recent handover that cost points is the attribution the reader needs, and it
+  // is recorded, so it does not have to be inferred.
+  const lastDrop = (piiEvents || [])
+    .filter(event => event.scoreImpact < 0 && event.timestamp >= targetDate.getTime())
+    .sort((a, b) => b.timestamp - a.timestamp)[0]
+
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle>{t("Privacy Score")}</CardTitle>
-        <CardDescription>{t("Overall protection")}</CardDescription>
+        <CardDescription>{t("From the sites you visited and the data you entered")}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0 flex items-center justify-center">
         {history && history.length === 0 ? (
@@ -159,7 +168,13 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
               {isUp ? <TrendingUp className="h-4 w-4 shrink-0" /> : <TrendingDown className="h-4 w-4 shrink-0" />}
           </div>
           <div className="leading-none text-muted-foreground text-center">
-            {t("Showing current privacy score")}
+            {lastDrop
+              ? t("Last drop: {{points}} pts from {{fieldType}} on {{site}}", {
+                  points: Math.abs(lastDrop.scoreImpact),
+                  fieldType: t(lastDrop.fieldType),
+                  site: lastDrop.site,
+                })
+              : t("No drop from data you entered {{period}}", { period: timeText })}
           </div>
         </CardFooter>
       )}

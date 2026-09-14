@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { getSafetyConfig } from "@/lib/risk-utils"
 import { categoryLabelKey } from "@/lib/exposure"
 import type { ExposureSite, HandoverGroup, SurpriseReason, Watcher } from "@/lib/exposure"
-import { Clock, Eye, KeyRound, ShieldCheck } from "lucide-react"
+import { ChevronDown, Clock, Eye, KeyRound, ShieldCheck } from "lucide-react"
 
 /**
  * FOOTPRINT LEDGER - what you handed over, and who has seen you.
@@ -48,45 +48,97 @@ function useReasonLabel() {
     }
 }
 
-function SiteRow({ site, reasonLabel }: { site: ExposureSite; reasonLabel: (r: SurpriseReason) => string }) {
+/**
+ * One site under one kind of data.
+ *
+ * Tapping it answers the question the row raises and cannot: a site that holds
+ * your email usually holds more than that, and the same site reached through a
+ * different card was the only place that was visible before.
+ */
+function SiteRow({
+    site,
+    reasonLabel,
+    alsoHolds,
+}: {
+    site: ExposureSite
+    reasonLabel: (r: SurpriseReason) => string
+    alsoHolds: string[]
+}) {
     const { t } = useTranslation()
+    const [expanded, setExpanded] = React.useState(false)
     const lastSeen = formatDate(site.lastSeen)
 
     return (
-        <div className="flex items-start justify-between gap-3 py-2">
-            <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{site.domain}</div>
-                <div className="mt-1 flex flex-wrap items-center gap-1">
-                    {site.reasons.map(reason => (
-                        <Badge
-                            key={reason}
-                            variant="outline"
-                            className={cn(
-                                "text-[10px] font-medium shadow-none",
-                                "border-warning/30 bg-warning/10 text-warning"
-                            )}
-                        >
-                            {reasonLabel(reason)}
-                        </Badge>
-                    ))}
-                    {lastSeen && (
-                        <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {t("Last seen {{date}}", { date: lastSeen })}
+        <div className="py-2">
+            <button
+                type="button"
+                onClick={() => setExpanded(value => !value)}
+                aria-expanded={expanded}
+                disabled={alsoHolds.length === 0}
+                className={cn(
+                    "flex w-full items-start justify-between gap-3 text-left",
+                    alsoHolds.length > 0 && "cursor-pointer hover:opacity-80"
+                )}
+            >
+                <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{site.domain}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                        {site.reasons.map(reason => (
+                            <Badge
+                                key={reason}
+                                variant="outline"
+                                className={cn(
+                                    "text-[10px] font-medium shadow-none",
+                                    "border-warning/30 bg-warning/10 text-warning"
+                                )}
+                            >
+                                {reasonLabel(reason)}
+                            </Badge>
+                        ))}
+                        {lastSeen && (
+                            <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {t("Last seen {{date}}", { date: lastSeen })}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                    {site.wss !== null && (
+                        <span className={cn("text-sm font-bold", getSafetyConfig(site.wss).color)}>
+                            {site.wss}
                         </span>
                     )}
+                    {alsoHolds.length > 0 && (
+                        <ChevronDown
+                            className={cn(
+                                "h-3.5 w-3.5 text-muted-foreground transition-transform",
+                                expanded && "rotate-180"
+                            )}
+                        />
+                    )}
                 </div>
-            </div>
-            {site.wss !== null && (
-                <span className={cn("text-sm font-bold shrink-0", getSafetyConfig(site.wss).color)}>
-                    {site.wss}
-                </span>
+            </button>
+            {expanded && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                    {t("This site also holds: {{types}}", {
+                        types: alsoHolds.map(fieldType => t(fieldType)).join(", "),
+                    })}
+                </p>
             )}
         </div>
     )
 }
 
-function HandoverCard({ group, reasonLabel }: { group: HandoverGroup; reasonLabel: (r: SurpriseReason) => string }) {
+function HandoverCard({
+    group,
+    reasonLabel,
+    alsoHoldsByDomain,
+}: {
+    group: HandoverGroup
+    reasonLabel: (r: SurpriseReason) => string
+    alsoHoldsByDomain: Record<string, string[]>
+}) {
     const { t } = useTranslation()
     const plural = usePlural()
 
@@ -107,38 +159,92 @@ function HandoverCard({ group, reasonLabel }: { group: HandoverGroup; reasonLabe
             </CardHeader>
             <CardContent className="p-4 pt-0 divide-y">
                 {group.sites.map(site => (
-                    <SiteRow key={site.domain} site={site} reasonLabel={reasonLabel} />
+                    <SiteRow
+                        key={site.domain}
+                        site={site}
+                        reasonLabel={reasonLabel}
+                        alsoHolds={(alsoHoldsByDomain[site.domain] ?? []).filter(
+                            fieldType => fieldType !== group.fieldType
+                        )}
+                    />
                 ))}
             </CardContent>
         </Card>
     )
 }
 
+/**
+ * One tracker company.
+ *
+ * Expanding it names the sites it was seen on. That is the difference between
+ * "Google covers 18 of 30 sites", which you cannot act on, and a list you can
+ * paste into a blocker, which you can.
+ */
 function WatcherRow({ watcher, totalSites }: { watcher: Watcher; totalSites: number }) {
     const { t } = useTranslation()
     const plural = usePlural()
+    const [expanded, setExpanded] = React.useState(false)
+    const hasDomains = watcher.domains.length > 0
 
     return (
-        <div className="flex items-start justify-between gap-3 py-2">
-            <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{watcher.organization}</div>
-                <div className="mt-1 flex flex-wrap items-center gap-1">
-                    <span className="text-xs text-muted-foreground">
-                        {t("On {{count}} of {{total}} sites you visited", {
-                            count: watcher.siteCount,
-                            total: totalSites,
-                        })}
-                    </span>
-                    {watcher.categories.map(category => (
-                        <Badge key={category} variant="outline" className="text-[10px] shadow-none">
-                            {t(categoryLabelKey(category))}
-                        </Badge>
-                    ))}
+        <div className="py-2">
+            <button
+                type="button"
+                onClick={() => setExpanded(value => !value)}
+                aria-expanded={expanded}
+                disabled={!hasDomains}
+                className={cn(
+                    "flex w-full items-start justify-between gap-3 text-left",
+                    hasDomains && "cursor-pointer hover:opacity-80"
+                )}
+            >
+                <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{watcher.organization}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                        <span className="text-xs text-muted-foreground">
+                            {t("On {{count}} of {{total}} sites you visited", {
+                                count: watcher.siteCount,
+                                total: totalSites,
+                            })}
+                        </span>
+                        {watcher.categories.map(category => (
+                            <Badge key={category} variant="outline" className="text-[10px] shadow-none">
+                                {t(categoryLabelKey(category))}
+                            </Badge>
+                        ))}
+                    </div>
                 </div>
-            </div>
-            <span className="text-xs text-muted-foreground shrink-0">
-                {plural(watcher.trackerCount, "{{count}} tracker", "{{count}} trackers")}
-            </span>
+                <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                        {plural(watcher.trackerCount, "{{count}} tracker", "{{count}} trackers")}
+                    </span>
+                    {hasDomains && (
+                        <ChevronDown
+                            className={cn(
+                                "h-3.5 w-3.5 text-muted-foreground transition-transform",
+                                expanded && "rotate-180"
+                            )}
+                        />
+                    )}
+                </div>
+            </button>
+            {expanded && (
+                <div className="mt-2 space-y-1">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {t("Sites it was seen on")}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                        {watcher.domains.map(domain => (
+                            <span
+                                key={domain}
+                                className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                            >
+                                {domain}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -147,6 +253,19 @@ export default function ExposurePage() {
     const { t } = useTranslation()
     const { report, isLoading } = useExposureReport()
     const reasonLabel = useReasonLabel()
+
+    // Domain to every kind of data recorded there, so a site row can say what
+    // else the site holds without a second aggregation pass in the ledger.
+    const alsoHoldsByDomain = React.useMemo(() => {
+        const map: Record<string, string[]> = {}
+        for (const group of report.handedOver) {
+            for (const site of group.sites) {
+                if (!map[site.domain]) map[site.domain] = []
+                map[site.domain].push(group.fieldType)
+            }
+        }
+        return map
+    }, [report.handedOver])
 
     return (
         <>
@@ -187,7 +306,12 @@ export default function ExposurePage() {
                             </Card>
                         ) : (
                             report.handedOver.map(group => (
-                                <HandoverCard key={group.fieldType} group={group} reasonLabel={reasonLabel} />
+                                <HandoverCard
+                                    key={group.fieldType}
+                                    group={group}
+                                    reasonLabel={reasonLabel}
+                                    alsoHoldsByDomain={alsoHoldsByDomain}
+                                />
                             ))
                         )}
                     </div>

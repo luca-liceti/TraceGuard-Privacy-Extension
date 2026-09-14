@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.12.0
+
+**What's new**
+
+- **Your Footprint** is browsable now. Tap a tracker company to see the sites it was seen on, which is a list you can paste into a blocker and actually act on, and tap a site to see the other kinds of data it holds. A site with your email usually has more than that, and the only way to see it before was to read every card.
+- The **Privacy Score** ring says what moved it. Where it only said "Showing current privacy score", it now names the most recent handover that cost points ("Last drop: 8 pts from password on example.com"), and its description states the basis of the number: the sites you visited and the data you entered.
+
 ## v1.11.0
 
 **What was fixed**
