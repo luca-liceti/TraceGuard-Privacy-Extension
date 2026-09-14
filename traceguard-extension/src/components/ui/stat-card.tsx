@@ -29,7 +29,7 @@
  * 
  * With subtitle and link:
  * <StatCard 
- *     title="Sites Analyzed" 
+ *     title="Trackers Detected" 
  *     value={42}
  *     subtitle="3 today"
  *     href="/sites"

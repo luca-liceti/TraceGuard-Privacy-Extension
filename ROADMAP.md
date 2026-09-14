@@ -165,8 +165,12 @@ logic, output validation, and two failure modes per provider.
   *signals* instead of risk.
 - **Promote `/exposure` to the landing page**, once it has proven useful, with the current-site
   summary on top.
-- **Onboarding** for the empty-ledger period, since the page has nothing to show on a fresh
-  install.
+- **A streak over actions.** The Safe Browsing Streak card was removed in v1.10.0 because it counted
+  consecutive visits to well-scoring sites, which is mostly circumstance rather than a choice, and a
+  single link could reset it. A streak is worth building again once A2 ships forget, because "sites
+  where you cleaned up your data" is an action the user takes, and record
+  [0011](adr/0011-behaviour-test-boundary.md) requires the thing being rewarded to be the user's
+  own decision.
 - **Sharing analyses**, if ever wanted: contribute to ToS;DR through its reviewed process, or export
   a file the user shares manually. Not P2P.
 

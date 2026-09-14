@@ -145,6 +145,11 @@ export default function OverviewPage() {
     return visits
   }, [detectorLogs, siteCache, t])
 
+  // The denominator behind every count on this page, stated as provenance rather
+  // than shown as a metric. It lets the reader interpret a small number as "few
+  // sites analyzed" instead of "low risk". Matches sitesVisited in the report.
+  const sitesAnalyzed = Object.keys(siteCache).length
+
   return (
     <>
       {/* Page Header */}
@@ -153,6 +158,13 @@ export default function OverviewPage() {
         <p className="text-muted-foreground mt-2">
           {t("Your privacy score, activity trends, and the sites you have visited.")}
         </p>
+        {sitesAnalyzed > 0 && (
+          <p className="text-muted-foreground/80 mt-1 text-sm">
+            {sitesAnalyzed === 1
+              ? t("Based on one site analyzed on this device.")
+              : t("Based on {{count}} sites analyzed on this device.", { count: sitesAnalyzed })}
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         <div className="lg:col-span-1 h-full">

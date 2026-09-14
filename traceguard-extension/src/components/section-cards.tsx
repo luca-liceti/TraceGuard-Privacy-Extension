@@ -1,4 +1,3 @@
-import { TrendingUpIcon, TrendingDownIcon, ShieldIcon, ActivityIcon, GlobeIcon, NetworkIcon, FingerprintIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import { StatCard } from "@/components/ui/stat-card"
@@ -34,29 +33,11 @@ export function SectionCards() {
     .reduce((sum, log) => sum + (log.details?.trackerCount || 0), 0)
   const trackersTrend = formatTrend(trackersToday, trackersYesterday)
 
-  // 2. Sites Analyzed
-  const totalSites = appState?.sitesAnalyzed || 0
-  const sitesToday = new Set(
-    detectorLogs
-      .filter(log => log.timestamp >= startOfToday)
-      .map(log => log.domain)
-  ).size
-  const sitesYesterday = new Set(
-    detectorLogs
-      .filter(log => log.timestamp >= startOfYesterday && log.timestamp < startOfToday)
-      .map(log => log.domain)
-  ).size
-  const sitesTrend = formatTrend(sitesToday, sitesYesterday)
-
   // 3. PII Risk Events
   const totalPii = appState?.piiEventsCount || 0
   const piiToday = piiLogs.filter(log => log.timestamp >= startOfToday).length
   const piiYesterday = piiLogs.filter(log => log.timestamp >= startOfYesterday && log.timestamp < startOfToday).length
   const piiTrend = formatTrend(piiToday, piiYesterday)
-
-  // 4. Safe Browsing Streak (no trend — streak history isn't tracked, so any
-  // percentage here would be a misleading proxy)
-  const streak = appState?.safeVisitStreak || 0
 
   // ─── Enriched aggregates from site cache ───────────────────────────────────
 
@@ -128,17 +109,6 @@ export function SectionCards() {
       />
       
       <StatCard
-        title={t("Sites Analyzed")}
-        value={totalSites.toLocaleString()}
-        subtitle={t("Unique domains scanned")}
-        trend={{
-          direction: sitesToday >= sitesYesterday ? "up" : "down",
-          value: sitesTrend,
-          isPositive: sitesToday >= sitesYesterday
-        }}
-      />
-      
-      <StatCard
         title={t("PII Risk Events")}
         value={totalPii.toLocaleString()}
         subtitle={t("Sensitive info entries")}
@@ -149,12 +119,6 @@ export function SectionCards() {
         }}
       />
       
-      <StatCard
-        title={t("Safe Browsing Streak")}
-        value={totalSites === 0 ? "—" : streak.toLocaleString()}
-        subtitle={totalSites === 0 ? t("Visit some websites first") : t("Consecutive safe visits")}
-      />
-
       <StatCard
         title={t("Cross-site Network Requests")}
         value={totalNetRequests.toLocaleString()}

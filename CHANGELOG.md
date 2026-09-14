@@ -8,6 +8,17 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 - Logging in no longer shows up in **Your Footprint** as a physical-address handover. A field labelled with an "email address" (GitHub's login is labelled "Username or email address", and many forms label the field "Email address") was classified as a street address, because the address detector matched the word "address" inside that phrase. Such fields are now recorded as email, and other non-physical uses of the word ("IP address", "wallet address") are no longer read as addresses either.
 
+## v1.10.0
+
+**What's new**
+
+- The Overview heading now states the basis of the numbers below it: a line showing how many sites the analysis covers. It is there so a low count reads as "few sites analyzed" rather than "low risk". The same denominator already appears in Your Footprint.
+
+**What was fixed**
+
+- The **Safe Browsing Streak** card is removed. It counted consecutive visits to sites that scored well, which is mostly circumstance rather than a choice, and a single link could reset it to zero. Rewarding visit outcomes teaches people to avoid risk signals instead of risk. A streak will return built on actions you take, once those actions exist.
+- The **Sites Analyzed** card is removed. As a standalone figure it measured the extension's own work rather than your habits, and it grew forever without telling you anything. The count is still recorded and is still shown where it does work, as the denominator in "on 18 of 30 sites".
+
 ## v1.9.1
 
 **What was fixed**
