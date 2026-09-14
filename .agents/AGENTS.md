@@ -7,6 +7,17 @@
 - Never use em dashes in writing: comments, documentation, commit messages, and chat. Use commas, colons, parentheses, or separate sentences instead. This does not apply to product UI strings: translations and dashboard copy may keep em dashes.
 - Be specific and precise in all writing. Name exact files, functions, and values. Avoid vague or filler phrasing.
 
+## Behaviour change
+
+- The purpose of every feature is a positive change in the user's browsing habits, with as much friction as that takes and no more. Removing friction entirely is not the goal: a tool that never costs the user anything never changes what they do.
+- **Spend friction only where it changes a decision, and nowhere else.** A warning at the moment of the risky action is worth more than any number on a dashboard.
+- Every user-facing feature must be able to name, in one sentence, the behaviour it is trying to change. Name the behaviour, not the metric: "hand a card to fewer sites", not "increase engagement". If it cannot name one, it is decoration and does not ship.
+- Put the information where the decision is made. If it can only appear on a dashboard the user has to open, call it informing rather than changing, and say so in the pull request or the roadmap entry.
+- The default must be safe. Doing nothing must not be a mistake, and no behaviour change may depend on configuration or setup.
+- Every claim must be true. An overstated warning teaches users to dismiss the tool, which kills the real warning later. Never credit TraceGuard with an effect it does not have.
+- Reward actions the user takes, not outcomes they stumble across. Rewarding a "safe site visit" teaches avoidance of risk signals instead of risk, and the user controls the input, so it is farmable.
+- When proposing a feature, state which of these it satisfies. A feature that cannot name a behaviour does not go on the roadmap. See `adr/0010-behaviour-change-as-the-goal.md`.
+
 ## Commits
 
 - Commit every change. Do not leave work uncommitted across turns: once a change is done and its typecheck, tests, and build pass, commit it before starting the next thing. You have standing permission to commit without asking each time; commit as the last step of the change, not as a separate request.

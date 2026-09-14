@@ -25,3 +25,4 @@ Format follows Michael Nygard's original ADR shape: status, context, decision, c
 | [0007](0007-no-p2p.md) | No P2P or decentralized contribution |
 | [0008](0008-gemini-nano-query-box-only.md) | Gemini Nano is scoped to the query box |
 | [0009](0009-dev-branch-workflow.md) | Develop on `dev`, merge `main` weekly |
+| [0010](0010-behaviour-change-as-the-goal.md) | Behaviour change is the goal, and friction is the budget |
