@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.10.5
+
+**What was fixed**
+
+- Tracker categories can no longer arrive as raw database strings. The category a tracker is filed under now comes from a fixed list, so a category this build does not recognise reads as Unknown rather than leaking an internal name into the site details. Trackers that fingerprint your device, consent managers and bulk email collectors also get their own accurate categories instead of an unmapped one.
+- A tracker's organisation now prefers Disconnect's curated company name, which names the parent company, over Tracker Radar's owner, which sometimes holds a product name instead. The same tracker could previously be filed under two different organisations depending on which database answered first. This applies to pages analysed from now on.
+
 ## v1.10.4
 
 **What was fixed**

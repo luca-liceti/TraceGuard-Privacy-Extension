@@ -46,16 +46,20 @@ export async function enrichTrackers(
         const disconnectCat = await getDisconnectCategory(domain);
         const disconnectEntity = await getDisconnectEntity(domain);
         
-        // Fallback categorization
+        // Disconnect already returns one of our category names, so it needs no
+        // cast. It is preferred because it names the tracker's purpose, where
+        // Tracker Radar's `category` is a broader grouping (it has no
+        // fingerprinting or consent category at all).
         let category: TrackerDetail['category'] = 'unknown';
         if (disconnectCat) {
-            category = disconnectCat as TrackerDetail['category'];
+            category = disconnectCat;
         } else if (radar?.category) {
             const c = radar.category.toLowerCase();
-            if (c.includes('ad')) category = 'advertising';
+            if (c.includes('marketing') || c.includes('ad')) category = 'advertising';
             else if (c.includes('analytic')) category = 'analytics';
             else if (c.includes('social')) category = 'social';
             else if (c.includes('cdn')) category = 'cdn';
+            else if (c.includes('functional')) category = 'functional';
             else category = 'unknown';
         }
         
@@ -68,10 +72,12 @@ export async function enrichTrackers(
         enriched.push({
             url: reqUrl,
             domain,
-            // Org fallback chain: Tracker Radar owner, then Radar display name,
-            // then Disconnect entity name - so recognized trackers rarely show
-            // as "Unknown org" even when one database lacks the entry.
-            organization: radar?.owner || radar?.displayName || disconnectEntity || null,
+            // Org fallback chain: Disconnect entity name first, because it is
+            // curated per organisation and stable ("Google LLC"), then Tracker
+            // Radar's owner, which sometimes holds a product rather than the
+            // parent and varies between database versions. Radar's display name
+            // is the last resort before null.
+            organization: disconnectEntity || radar?.owner || radar?.displayName || null,
             category,
             type: safeType,
             status,

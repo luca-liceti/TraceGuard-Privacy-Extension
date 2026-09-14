@@ -6,9 +6,11 @@
  * Covers:
  * - DOM trackers are filtered: only domains our databases recognize as actual
  *   trackers make it into the list (CDNs / fonts / APIs are excluded).
- * - Organization resolution: Tracker Radar owner, then Radar display name, then
- *   Disconnect entity name.
- * - Category resolution from Tracker Radar and Disconnect.
+ * - Organization resolution: Disconnect entity name, then Tracker Radar owner,
+ *   then Radar display name.
+ * - Category resolution from Tracker Radar and Disconnect, into our own closed
+ *   vocabulary: a category this build does not know becomes 'unknown' rather
+ *   than leaking the raw database string.
  * - Network requests get the same org fallback chain.
  *
  * The database loader fetches assets via chrome.runtime.getURL + fetch, so we
@@ -25,6 +27,11 @@ const trackerRadarFixture = {
     'google-analytics.com': { owner: 'Google LLC', displayName: 'Google', category: 'Analytics', prevalence: 0.75, fingerprinting: 0 },
     'doubleclick.net': { owner: 'Google LLC', displayName: 'Google Ads', category: 'Advertising', prevalence: 0.6, fingerprinting: 0 },
     'cdn.example-fonts.com': { owner: null, displayName: null, category: null, prevalence: 0, fingerprinting: 0 },
+    // Radar names a product where Disconnect names the parent. This is the case
+    // the precedence rule exists for.
+    'both.example': { owner: 'Brand Product', displayName: 'Brand', category: 'Marketing', prevalence: 0.4, fingerprinting: 0 },
+    // Radar-only, so its broad "Marketing" grouping is the only signal.
+    'radar-marketing.example': { owner: 'Marketing Co', displayName: 'Marketing Co', category: 'Marketing', prevalence: 0.3, fingerprinting: 0 },
 };
 
 const easyPrivacyFixture = ['unknown-pixel.net', 'cloudfront.net'];
@@ -33,6 +40,14 @@ const disconnectFixture = {
     // google-analytics.com deliberately NOT here so the Tracker Radar test
     // exercises the Radar category path without Disconnect overriding it.
     'adnxs.com': { category: 'Advertising', entityName: 'AppNexus' },
+    'both.example': { category: 'Analytics', entityName: 'Both Databases Ltd' },
+    // The categories Disconnect ships that used to fall through as raw strings.
+    'consent.example': { category: 'ConsentManagers', entityName: 'OneTrust' },
+    'antifraud.example': { category: 'Anti-fraud', entityName: 'FraudGuard' },
+    'email.example': { category: 'EmailAggressive', entityName: 'MailCo' },
+    'fp.example': { category: 'FingerprintingGeneral', entityName: 'FingerCo' },
+    // A category from a future database version, which must not reach the UI.
+    'newness.example': { category: 'SomethingNew', entityName: 'Weird Ltd' },
 };
 
 const cookieDbFixture = { exact: {}, wildcards: [] };
@@ -112,6 +127,28 @@ describe('enrichTrackers', () => {
         expect(result[0].category).toBe('advertising');
     });
 
+    it('prefers the Disconnect entity name when both databases know the domain', async () => {
+        const { enrichTrackers } = await import('./tracker-enricher');
+        const result = await enrichTrackers(
+            'https://example.com/',
+            [{ url: 'https://both.example/t.js', type: 'script', domain: 'both.example' }],
+            {}
+        );
+        expect(result).toHaveLength(1);
+        expect(result[0].organization).toBe('Both Databases Ltd');
+        expect(result[0].category).toBe('analytics');
+    });
+
+    it('maps a Radar-only Marketing category to advertising, not unknown', async () => {
+        const { enrichTrackers } = await import('./tracker-enricher');
+        const result = await enrichTrackers(
+            'https://example.com/',
+            [{ url: 'https://radar-marketing.example/t.js', type: 'script', domain: 'radar-marketing.example' }],
+            {}
+        );
+        expect(result[0].category).toBe('advertising');
+    });
+
     it('keeps trackers that only appear in EasyPrivacy (no org, unknown category)', async () => {
         const { enrichTrackers } = await import('./tracker-enricher');
         const result = await enrichTrackers(
@@ -155,6 +192,28 @@ describe('enrichTrackers', () => {
         expect(result[0].domain).toBe('adnxs.com');
         expect(result[0].organization).toBe('AppNexus');
         expect(result[0].source).toBe('network');
+    });
+});
+
+describe('getDisconnectCategory', () => {
+    it.each([
+        ['consent.example', 'consent'],
+        ['antifraud.example', 'anti-fraud'],
+        ['email.example', 'email'],
+        ['fp.example', 'fingerprinting'],
+    ])('maps %s to %s', async (domain, expected) => {
+        const { getDisconnectCategory } = await import('./database-loader');
+        expect(await getDisconnectCategory(domain)).toBe(expected);
+    });
+
+    it('reports unknown rather than leaking a category this build does not know', async () => {
+        const { getDisconnectCategory } = await import('./database-loader');
+        expect(await getDisconnectCategory('newness.example')).toBe('unknown');
+    });
+
+    it('returns null when Disconnect has no entry for the domain', async () => {
+        const { getDisconnectCategory } = await import('./database-loader');
+        expect(await getDisconnectCategory('totally-unknown.example')).toBeNull();
     });
 });
 

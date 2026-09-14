@@ -61,7 +61,7 @@ export interface TrackerDetail {
     url: string;                         // Full URL of the tracker resource
     domain: string;                      // Extracted domain
     organization: string | null;         // Parent company from DDG Tracker Radar
-    category: 'advertising' | 'analytics' | 'social' | 'content' | 'cryptomining' | 'fingerprinting' | 'functional' | 'cdn' | 'unknown';
+    category: 'advertising' | 'analytics' | 'social' | 'content' | 'cryptomining' | 'fingerprinting' | 'functional' | 'cdn' | 'consent' | 'email' | 'anti-fraud' | 'unknown';
     type: 'script' | 'pixel' | 'iframe' | 'xhr' | 'beacon' | 'stylesheet' | 'image' | 'unknown';
     status: LoadStatus;                  // Stopped before it loaded, by the browser or another extension
     source: 'dom' | 'network' | 'both'; // How we detected it

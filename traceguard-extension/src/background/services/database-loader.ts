@@ -17,6 +17,7 @@
  */
 
 import { captureError, logEvent } from '../../lib/diagnostics';
+import type { TrackerDetail } from '../../lib/types';
 
 /**
  * Records a successful database load, including its entry count.
@@ -291,26 +292,43 @@ export async function getDisconnectEntity(domain: string): Promise<string | null
 }
 
 /**
- * Gets the Disconnect category for a domain.
- * Maps Disconnect category names to our internal category strings.
+ * Every category Disconnect actually ships, mapped onto our own vocabulary.
+ *
+ * This used to fall back to the raw lowercased category name, which let values
+ * outside the union reach the UI and made the `TrackerDetail['category']` type a
+ * lie. The list below is the complete set present in disconnect-services.json,
+ * so an unmapped category is now a data change rather than a silent leak.
  */
-export async function getDisconnectCategory(domain: string): Promise<string | null> {
+const DISCONNECT_CATEGORY_MAP: Record<string, TrackerDetail['category']> = {
+    'Advertising': 'advertising',
+    'Analytics': 'analytics',
+    'Anti-fraud': 'anti-fraud',
+    'ConsentManagers': 'consent',
+    'Content': 'content',
+    'Cryptomining': 'cryptomining',
+    'Email': 'email',
+    'EmailAggressive': 'email',
+    'Fingerprinting': 'fingerprinting',
+    'FingerprintingGeneral': 'fingerprinting',
+    'FingerprintingInvasive': 'fingerprinting',
+    'Social': 'social',
+};
+
+/**
+ * Gets the Disconnect category for a domain, as one of our own category names.
+ *
+ * Returns 'unknown' rather than the raw string for a category this build does
+ * not know, so a database update can never push an arbitrary value into a
+ * typed field or into the UI.
+ */
+export async function getDisconnectCategory(domain: string): Promise<TrackerDetail['category'] | null> {
     const map = await getDisconnectMap();
     const lower = domain.toLowerCase();
 
     const entry = map[lower] || (domain.split('.').length > 2 ? map[domain.split('.').slice(1).join('.').toLowerCase()] : null);
     if (!entry) return null;
 
-    const CAT_MAP: Record<string, string> = {
-        'Advertising': 'advertising',
-        'Analytics': 'analytics',
-        'Social': 'social',
-        'Content': 'content',
-        'Cryptomining': 'cryptomining',
-        'Fingerprinting': 'fingerprinting',
-        'FingerprintingInvasive': 'fingerprinting',
-    };
-    return CAT_MAP[entry.category] || entry.category.toLowerCase();
+    return DISCONNECT_CATEGORY_MAP[entry.category] || 'unknown';
 }
 
 /**
