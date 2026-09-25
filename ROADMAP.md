@@ -1,7 +1,7 @@
 # TraceGuard Roadmap
 
-**Updated:** September 13, 2026
-**Branch:** `dev`
+**Updated:** September 25, 2026
+**Branch:** `dev` (identical to `main` between releases)
 
 This file says what is being built next, in what order, and what would make us stop. It is not the
 description of the system: that is [ARCHITECTURE.md](ARCHITECTURE.md), and the reasoning
@@ -30,7 +30,14 @@ problem, so the language layer comes last.
 
 ## A1. Footprint ledger, read-only
 
-**Status: built.** Shipped on `dev` as v1.8.0.
+**Status: built, awaiting the gate.** Released as v1.8.0; the browsing drill-down and the
+attributable score ring followed in v1.12.0.
+
+Two defects were fixed before the gate starts, because either would have failed it for the wrong
+reason: a handover whose send to the worker was rejected vanished silently, indistinguishable from
+having typed nothing (v1.10.2), and a handover was only written after the confirmation card was
+answered, so a worker terminated during that wait lost it (v1.10.3). The record is now written
+before the card, and the card decides only the penalty.
 
 | Item | Path |
 |---|---|
@@ -40,14 +47,17 @@ problem, so the language layer comes last.
 | Page, read-only | `traceguard-extension/src/components/traceguard/pages/exposure.tsx` |
 | Route `/exposure`, sidebar entry, command palette | `src/dashboard/App.tsx`, `src/components/app-sidebar.tsx` |
 | Translations | `src/lib/translations.ts` |
+| Journal rules for the PII record, testable without booting the worker | `traceguard-extension/src/lib/pii-journal.ts` |
 
 Two lists, both deterministic. See record [0004](adr/0004-ledger-as-pure-aggregation.md).
 
 - **What you handed over.** Per field type: which domains hold it, first and last seen, and whether
   the entry is surprising. Surprising only fires for a reason the UI can name: visited once, not
   visited in about 180 days, entered while the site scored under 50, or gone from the site cache.
-- **Who has seen you.** Tracker organisations aggregated across visited sites, ranked by how many
-  of the user's sites each one covered, with company aliases merged.
+- **Tracker companies on your sites.** Tracker organisations aggregated across visited sites, ranked
+  by how many of the user's sites each one covered, with company aliases merged. Titled "Who has seen
+  you" before v1.11.0, when the heading was changed because it read as an alarm about something the
+  user cannot act on directly.
 
 The page is deliberately separate from Overview, and the reasons are in record
 [0005](adr/0005-ledger-own-page-and-gate.md).
@@ -189,30 +199,35 @@ logic, output validation, and two failure modes per provider.
 
 ---
 
-# Separate work, not on either track
+# Recently closed
 
-- **The `blocked` field naming.** `network-monitor.ts:111` marks a request `blocked` only when Chrome
-  reports `net::ERR_BLOCKED_BY_CLIENT`, which means the browser or another extension did it. The
-  `status: 'blocked'` fields in tracker and cookie summaries, and the `blocked` total accumulated in
-  `section-cards.tsx` that no card renders, are named as though TraceGuard did the blocking.
-- **The tracker category cast.** `tracker-enricher.ts:51` casts Disconnect category strings straight
-  into `TrackerDetail['category']`, so arbitrary values can reach the UI. Display normalisation
-  contains it; the type is still wrong.
-- **Organisation name precedence.** `tracker-enricher.ts:73` prefers DuckDuckGo's `radar.owner`,
-  which is inconsistent ("Google" for some domains, "Google LLC" for others), over Disconnect's
-  canonical `entityName`. The ledger's alias table is a display-side workaround for this. Fixing the
-  precedence changes stored data and only affects future analyses.
-- **Cap `crossSiteExposure`.** It is the one collection with no cap, and the ledger reads it.
+Defects that earlier drafts of this file listed as open. Kept only so a reader who remembers them as
+open can see when they were fixed; drop the detail when it stops mattering.
+
+- **The `blocked` field naming** (v1.10.4). Nothing in the dashboard credits TraceGuard with blocking
+  any more. Chrome reporting `net::ERR_BLOCKED_BY_CLIENT` means the browser or another extension did
+  it, so the field is `blockedByBrowser`, the label reads "Stopped by browser", and the network
+  summary names the actor. Legacy cached values still render.
+- **The tracker category cast** (v1.10.5). All 11 Disconnect categories are mapped, anything
+  unrecognised becomes `unknown` instead of leaking a raw database string into the UI type, and the
+  `as` cast is gone.
+- **Organisation name precedence** (v1.10.5). Disconnect's curated `entityName` now wins over
+  DuckDuckGo's inconsistent `owner`. Changes stored data, so it affects future analyses only.
+- **Cap on `crossSiteExposure`** (v1.10.6). Bounded at 500 domains per data type, trimmed on both
+  write paths and logged when it trims.
 
 ---
 
 # Open caveats
 
-- **Who has seen you** depends on `enrichedDetails` tracker `organization` being populated, so early
-  numbers will be thin for sites analysed before that field existed.
+- **Tracker companies on your sites** depends on `enrichedDetails` tracker `organization` being
+  populated, so early numbers will be thin for sites analysed before that field existed.
 - **`piiDetections` is capped at 100**, so long-run history for the ledger comes from
   `crossSiteExposure`.
 - **The ledger is empty on install.** Nothing appears until the user types into a sensitive field
   somewhere, so the page needs an honest empty state rather than looking broken.
-- **An entry means typing, not sending.** The detector fires on the first keystroke
-  (`pii-detector.ts:124`), so abandoned forms are recorded as if the site received the data.
+- **An entry means typing, not sending.** The detector fires on the first character typed into a
+  sensitive field (`pii-detector.ts:122`), before the form is submitted, and the record is now
+  written before the confirmation card is answered. Abandoned forms are therefore recorded as if the
+  site had received the data, which is the safe direction to be wrong in, but it is not evidence
+  that anything was sent.

@@ -129,8 +129,8 @@ All bundled at build time, so analysis works offline:
 
 | Source | Used for |
 |---|---|
-| DuckDuckGo Tracker Radar | Tracker ownership, categories, and organisation names |
-| Disconnect | Canonical entity names per domain |
+| DuckDuckGo Tracker Radar | Tracker detection, prevalence, fingerprinting flags, and a category fallback |
+| Disconnect | Canonical entity names per domain, preferred over Radar's `owner`, and the category vocabulary |
 | EasyPrivacy | Additional tracker matching |
 | ToS;DR | Policy grades for covered services |
 | OpenPhish, phishunt | Phishing and malware domains |
@@ -158,12 +158,14 @@ These are properties of the design, not bugs to be fixed quietly:
   [0003](adr/0003-pii-field-types-only.md).
 - **Typing is not sending.** A footprint entry means the user started typing, on the first
   keystroke. An abandoned form looks identical to a submitted one.
-- **No blocking.** TraceGuard observes. A request recorded as "blocked" was blocked by the browser
-  or by another extension, not by this one.
+- **No blocking.** TraceGuard observes. A request recorded as stopped was stopped by the browser or
+  by another extension, not by this one. The field is named `blockedByBrowser` so the dashboard
+  cannot imply otherwise, and the network summary names the actor.
 - **Cookie coverage is partial.** Names and metadata come from `Set-Cookie` headers, so cookies set
   before install are invisible.
 - **ToS;DR coverage is thin** relative to the number of sites in existence, and the fallback
   redistribution inflates unrated sites.
-- **`crossSiteExposure` grows without bound.** It is the one collection with no cap, and the
-  footprint ledger reads it.
+- **`crossSiteExposure` is capped, so old domains drop off.** It holds at most 500 domains per data
+  type, trimming the oldest and logging when it does. The footprint ledger reads it, so a domain you
+  visited long ago can age out of the record even though the site still holds your data.
 - **The ledger is empty on install** until the user types into a sensitive field somewhere.
