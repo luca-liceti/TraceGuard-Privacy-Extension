@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "node scripts/sync-version.mjs",
-    "build": "npm run typecheck && npm run build:phishlist && npm run build:tosdr && vite build",
+    "build": "npm run typecheck && vite build",
+    "data:refresh": "npm run build:phishlist && npm run build:tosdr",
     "build:phishlist": "node scripts/build-phishlist.js",
     "sign:phishlist": "node scripts/sign-phishlist.js",
     "upload:store": "chrome-webstore-upload upload --source traceguard-extension-v$npm_package_version.zip",
