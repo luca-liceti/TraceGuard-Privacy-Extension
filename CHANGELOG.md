@@ -2,6 +2,16 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.13.0
+
+**What's new**
+
+- System notifications are now rationed. You get at most one warning per site per browser session, and a critical alert about the same site will not repeat within half an hour, so navigating back and forth across a few poor sites no longer produces an alert for each one. A session shows at most five system notifications whatever their severity. Nothing is lost: every alert still appears in the in-app notification list, which is the record rather than an interruption, and a skipped system notification is logged with the rule that skipped it.
+
+**What was fixed**
+
+- The **Safe Streak** card is gone from the side panel, having already been removed from Overview. It counted consecutive visits to sites that scored well, which is mostly circumstance rather than a choice, and it existed to encourage a daily return rather than to change a decision. The score mechanic behind it is unchanged and waits for the reward redesign.
+
 ## v1.12.0
 
 **What's new**

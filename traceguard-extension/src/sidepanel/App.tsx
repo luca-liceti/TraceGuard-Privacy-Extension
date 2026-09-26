@@ -1,12 +1,10 @@
-import { ShieldUser, Flame, Lock } from "lucide-react"
+import { ShieldUser, Lock } from "lucide-react"
 import { useAppState, useCurrentSite } from "@/lib/useStorage"
 import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from "react-i18next"
 import { Toaster } from "@/components/ui/toast"
 
-import { SAFETY_CONFIGS } from "@/lib/risk-utils"
 import { ScoreRing } from "@/components/sidepanel/score-ring"
 import { SiteDetails } from "@/components/sidepanel/site-details"
 import { Actions } from "@/components/sidepanel/actions"
@@ -59,18 +57,6 @@ function App() {
                 <div className="space-y-3 flex-1 overflow-y-auto">
                     <ScoreRing ups={state.ups} />
                     <SiteDetails currentSite={currentSite} />
-
-                    {/* Safe Streak */}
-                    <Card>
-                        <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                            <CardTitle className="text-sm font-medium">{t("Safe Streak")}</CardTitle>
-                            <Flame className={`h-4 w-4 ${SAFETY_CONFIGS.poor.color}`} />
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold">{state.safeVisitStreak}</div>
-                            <CardDescription className="text-xs">{t("Consecutive safe sites")}</CardDescription>
-                        </CardContent>
-                    </Card>
                 </div>
                 <Actions />
             </div>

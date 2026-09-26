@@ -38,6 +38,7 @@ import { calculateWSS, calculateTrackingScore, explainWSS } from '../lib/scoring
 import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState } from '../lib/types';
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR } from './tosdr-api';
+import { evaluateNotificationBudget, readShownNotifications } from '../lib/notification-budget';
 import { calculateVisitImpact, calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
 import { applyVerdict, findRecordIndex, isDuplicate, isPending, settleAbandonedRecords, stageHandover, type PIIJournalRecord } from '../lib/pii-journal';
 import { isStoppedBeforeLoading } from '../lib/tracker-status';
@@ -72,11 +73,30 @@ async function createNotification(
     notification: Parameters<typeof storage.addNotification>[0],
     key?: CryptoKey | null
 ) {
+    // The record is always written. The budget below decides only whether the
+    // user is interrupted, so a rationed notification still appears in the
+    // in-app list and the history stays complete.
     await storage.addNotification(notification, key);
     const settings = await storage.getSettings();
-    if (!settings.notifications || settings.notificationLevel === 'silent') return;
-    if (settings.notificationLevel === 'balanced' && notification.severity === 'info') return;
     try {
+        const session = await chrome.storage.session.get('notificationBudget');
+        const decision = evaluateNotificationBudget({
+            domain: notification.domain ?? null,
+            severity: notification.severity,
+            shown: readShownNotifications(session.notificationBudget),
+            now: Date.now(),
+            settings,
+        });
+
+        if (!decision.show) {
+            logEvent('background', 'debug', 'os_notification_skipped', 'Notification recorded without interrupting the user', {
+                reason: decision.reason,
+                domain: notification.domain ?? null,
+                severity: notification.severity,
+            });
+            return;
+        }
+
         const params = notification.params ? { ...notification.params } : undefined;
         if (params && typeof params.fieldType === 'string') {
             params.fieldType = i18n.t(params.fieldType);
@@ -87,6 +107,10 @@ async function createNotification(
             type: 'basic', iconUrl: 'src/assets/icons/icon-128.png', title,
             message, priority: notification.severity === 'critical' ? 2 : 1,
         });
+
+        // Only a shown notification spends the budget, so a failed create does
+        // not silently consume an interruption the user never received.
+        await chrome.storage.session.set({ notificationBudget: decision.next });
     } catch (error) {
         // An OS notification must never prevent the local event from being saved.
         console.warn('[Notifications] Unable to create OS notification:', error);
