@@ -64,6 +64,19 @@ The page is deliberately separate from Overview, and the reasons are in record
 
 ### Gate A1 to A2: the usefulness test
 
+**Started:** September 25, 2026. **Decide by:** October 9, 2026.
+
+**The capture path was verified before the clock started**, by signing in on sites that had not been
+used during development. The handover appeared on Your Footprint with the right field type and site,
+and the browsing drill-down resolved in both directions: a company listed the sites it was seen on,
+and a site named the other data types it holds. That matters for reading the result, because a thin
+ledger now means little browsing rather than a detector that never fired.
+
+**The baseline on day one** was two handover sites and one tracker-bearing list of nine visited
+sites. The "at least 3 forgotten holders" threshold needs real browsing volume to be meaningful: if
+the two weeks pass with the ledger barely growing, that is an unanswered gate rather than a failed
+one, and the honest move is to extend the clock rather than to judge it.
+
 Use the ledger on real browsing for **two weeks**. All three must hold:
 
 1. **Surprise.** It names at least **3** holders the user had genuinely forgotten, at least **1** of
