@@ -5,6 +5,8 @@ import {
     decayFactor,
     sensitivityBand,
     countByBand,
+    buildHandovers,
+    DECAY_FLOOR,
     DECAY_HALF_LIFE_MS,
     type Handover,
 } from './ups';
@@ -28,8 +30,9 @@ describe('handoverBaseWeight', () => {
         expect(handoverBaseWeight('creditCard', 0)).toBe(18);
     });
 
-    it('treats a missing site score as the middle of the range, not as safe', () => {
+    it('prices an unknown site score as the middle of the range, not as safe', () => {
         expect(handoverBaseWeight('creditCard', null)).toBe(13.5);
+        expect(handoverBaseWeight('creditCard', 50)).toBe(13.5);
     });
 
     it('resolves field type aliases through the shared penalty table', () => {
@@ -52,8 +55,13 @@ describe('decayFactor', () => {
         expect(decayFactor(DECAY_HALF_LIFE_MS)).toBeCloseTo(0.5, 10);
     });
 
-    it('quarters after two', () => {
-        expect(decayFactor(DECAY_HALF_LIFE_MS * 2)).toBeCloseTo(0.25, 10);
+    it('stops falling once it reaches the floor, so an old handover is never free', () => {
+        expect(decayFactor(DECAY_HALF_LIFE_MS * 4)).toBe(DECAY_FLOOR);
+        expect(decayFactor(DECAY_HALF_LIFE_MS * 400)).toBe(DECAY_FLOOR);
+    });
+
+    it('prices an undated handover at the floor', () => {
+        expect(decayFactor(null)).toBe(DECAY_FLOOR);
     });
 
     it('treats a future timestamp as no decay rather than as negative time', () => {
@@ -79,6 +87,7 @@ describe('scoreUps', () => {
         expect(breakdown.score).toBe(100);
         expect(breakdown.total).toBe(0);
         expect(breakdown.contributions).toEqual([]);
+        expect(breakdown.undated).toBe(0);
     });
 
     it('deducts the cost of a single handover', () => {
@@ -95,6 +104,34 @@ describe('scoreUps', () => {
         expect(breakdown.score).toBe(95.5);
     });
 
+    it('still charges a quarter of the cost after four half lives', () => {
+        const breakdown = scoreUps([handover({ lastSeen: NOW - DECAY_HALF_LIFE_MS * 4 })], NOW);
+        expect(breakdown.total).toBe(2.25);
+        expect(breakdown.score).toBe(97.8);
+    });
+
+    it('prices an undated handover at the floor and reports it as undated', () => {
+        const breakdown = scoreUps([handover({ lastSeen: null })], NOW);
+        expect(breakdown.total).toBe(2.25);
+        expect(breakdown.undated).toBe(1);
+        expect(breakdown.contributions[0].undated).toBe(true);
+    });
+
+    it('does not charge for an exempt handover', () => {
+        const breakdown = scoreUps([handover({ exempt: true })], NOW);
+        expect(breakdown.score).toBe(100);
+        expect(breakdown.contributions).toEqual([]);
+    });
+
+    it('lets the most recent verdict decide, so a later exemption is honoured', () => {
+        const breakdown = scoreUps([
+            handover({ lastSeen: NOW - 1000, exempt: false }),
+            handover({ lastSeen: NOW, exempt: true }),
+        ], NOW);
+
+        expect(breakdown.contributions).toEqual([]);
+    });
+
     it('never falls below zero however much was handed over', () => {
         const many = Array.from({ length: 20 }, (_, i) =>
             handover({ domain: `site${i}.com`, wss: 0 }));
@@ -108,6 +145,17 @@ describe('scoreUps', () => {
         ], NOW);
 
         expect(breakdown.contributions).toHaveLength(1);
+        expect(breakdown.score).toBe(91);
+    });
+
+    it('prefers a dated event over an undated one for the same pair', () => {
+        const breakdown = scoreUps([
+            handover({ lastSeen: null }),
+            handover({ lastSeen: NOW }),
+        ], NOW);
+
+        expect(breakdown.contributions).toHaveLength(1);
+        expect(breakdown.contributions[0].undated).toBe(false);
         expect(breakdown.score).toBe(91);
     });
 
@@ -161,5 +209,69 @@ describe('countByBand', () => {
 
     it('counts nothing when nothing is held', () => {
         expect(countByBand(scoreUps([], NOW))).toEqual({ critical: 0, high: 0, medium: 0, low: 0 });
+    });
+});
+
+describe('buildHandovers', () => {
+    it('returns nothing for an empty record', () => {
+        expect(buildHandovers({}, [])).toEqual([]);
+        expect(buildHandovers(null, null)).toEqual([]);
+    });
+
+    it('prices every pair in the exposure map, dated or not', () => {
+        const handovers = buildHandovers(
+            { email: ['a.com', 'b.com'] },
+            [{ fieldType: 'email', site: 'a.com', timestamp: NOW, siteWSS: 88 }]
+        );
+
+        const dated = handovers.find((h) => h.domain === 'a.com');
+        const undated = handovers.find((h) => h.domain === 'b.com');
+
+        expect(dated).toMatchObject({ wss: 88, lastSeen: NOW, exempt: false });
+        expect(undated).toMatchObject({ wss: null, lastSeen: null, exempt: false });
+    });
+
+    it('uses the most recent event for the date and the site score', () => {
+        const handovers = buildHandovers(
+            { email: ['a.com'] },
+            [
+                { fieldType: 'email', site: 'a.com', timestamp: NOW - 1000, siteWSS: 90 },
+                { fieldType: 'email', site: 'a.com', timestamp: NOW, siteWSS: 40 },
+            ]
+        );
+
+        expect(handovers[0]).toMatchObject({ wss: 40, lastSeen: NOW });
+    });
+
+    it('carries the exemption verdict from the event', () => {
+        const handovers = buildHandovers(
+            { password: ['a.com'] },
+            [{ fieldType: 'password', site: 'a.com', timestamp: NOW, siteWSS: 90, exempt: true }]
+        );
+
+        expect(handovers[0].exempt).toBe(true);
+    });
+
+    it('ignores malformed entries instead of inventing handovers', () => {
+        const handovers = buildHandovers(
+            { email: ['a.com', '', 42 as unknown as string] },
+            [null as unknown as { fieldType: string; site: string }]
+        );
+
+        expect(handovers).toEqual([
+            { fieldType: 'email', domain: 'a.com', wss: null, lastSeen: null, exempt: false },
+        ]);
+    });
+
+    it('feeds the score end to end', () => {
+        const handovers = buildHandovers(
+            { email: ['a.com'], creditCard: ['b.com'] },
+            [
+                { fieldType: 'email', site: 'a.com', timestamp: NOW, siteWSS: 100 },
+                { fieldType: 'creditCard', site: 'b.com', timestamp: NOW, siteWSS: 100, exempt: true },
+            ]
+        );
+
+        expect(scoreUps(handovers, NOW).score).toBe(96);
     });
 });
