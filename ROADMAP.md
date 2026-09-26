@@ -179,10 +179,11 @@ logic, output validation, and two failure modes per provider.
 
 # Later, annotated but not scheduled
 
-- **UPS as a derived status score.** In progress. The model becomes a function of the record: each
+- **UPS as a derived status score.** Shipped. The model is a function of the record: each
   handover costs its field sensitivity multiplied by how risky the site was, decayed by age, and
   visits contribute nothing, because which sites appear in someone's browsing is mostly not their
-  choice. There is no reward loop and none is planned, because no honest repeatable action exists to
+  choice. `scoreUps` in `src/lib/ups.ts` derives it; the visit penalty, safe-site recovery, and
+  streak bonus are removed. There is no reward loop and none is planned, because no honest repeatable action exists to
   reward: record [0013](adr/0013-no-forget-action.md) rules out deleting records, and rewarding visit
   outcomes is farmable, which record [0010](adr/0010-behaviour-change-as-the-goal.md) already says.
   The behaviour lever is the PII gate, in A2.

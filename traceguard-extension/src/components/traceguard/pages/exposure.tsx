@@ -291,7 +291,23 @@ export default function ExposurePage() {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
+                <>
+                    {/* Where the data went, stated as a fact about the record.
+                        Labelled as context: it never moves the score, it just
+                        makes the cost of safer browsing visible. */}
+                    {report.totals.highTrustShare !== null && (
+                        <Card>
+                            <CardContent className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
+                                <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                <span>
+                                    {t("{{percent}}% of the data you entered went to sites we could vouch for", {
+                                        percent: report.totals.highTrustShare,
+                                    })}
+                                </span>
+                            </CardContent>
+                        </Card>
+                    )}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
                     {/* What you handed over */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
@@ -347,7 +363,8 @@ export default function ExposurePage() {
                             </CardContent>
                         </Card>
                     </div>
-                </div>
+                    </div>
+                </>
             )}
         </>
     )

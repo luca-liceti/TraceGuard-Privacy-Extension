@@ -35,11 +35,12 @@ import { appendRelayedEvents, captureError, installGlobalErrorHandlers, logEvent
 import { z } from 'zod';
 import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './services/reputation';
 import { calculateWSS, calculateTrackingScore, explainWSS } from '../lib/scoring';
-import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState } from '../lib/types';
+import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState, PIIDetectionEvent } from '../lib/types';
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR } from './tosdr-api';
 import { evaluateNotificationBudget, readShownNotifications } from '../lib/notification-budget';
-import { calculateVisitImpact, calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
+import { calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
+import { scoreUps, buildHandovers, handoverBaseWeight } from '../lib/ups';
 import { applyVerdict, findRecordIndex, isDuplicate, isPending, settleAbandonedRecords, stageHandover, type PIIJournalRecord } from '../lib/pii-journal';
 import { isStoppedBeforeLoading } from '../lib/tracker-status';
 import { trimExposureDomains } from '../lib/exposure';
@@ -340,6 +341,64 @@ async function flushBufferedTelemetry() {
         flushed: cleared.length,
         deferred: unflushed.length,
     });
+
+    // Merging the handovers changes the derived score, so recompute it now.
+    const derived = await deriveUps(key);
+    if (derived !== null) await storage.updateState({ ups: derived });
+}
+
+/**
+ * Derives the User Privacy Score from the stored handover record.
+ *
+ * UPS is not a running total; it is a function of what the user handed over
+ * (see lib/ups.ts). Every path that changes the record derives it again, so the
+ * score and the Footprint ledger cannot disagree. Returns null while the vault
+ * is locked: the encrypted history is unreadable then, so a score built from
+ * the session buffer alone would be wrong, and the unlock path recomputes it.
+ */
+async function deriveUps(key: CryptoKey | null): Promise<number | null> {
+    if (!key) return null;
+    try {
+        const exposure = await storage.getAllExposure(key);
+        const stored = await chrome.storage.local.get<Record<string, any>>('piiDetections');
+        const decrypted = await readEncryptedArray<PIIDetectionEvent>(key, stored.piiDetections);
+        const events = decrypted === READ_FAILED ? [] : (decrypted ?? []);
+        const breakdown = scoreUps(buildHandovers(exposure, events), Date.now());
+        logEvent('pii', 'debug', 'ups_derived', 'User Privacy Score derived from handovers', {
+            score: breakdown.score,
+            total: breakdown.total,
+            handovers: breakdown.contributions.length,
+            undated: breakdown.undated,
+        });
+        return breakdown.score;
+    } catch (error) {
+        captureError('pii', error, 'ups_derive_failed');
+        return null;
+    }
+}
+
+/**
+ * Applies the derived score and records a history point, so the chart shows the
+ * slow rise from decay even when nothing new was handed over. Runs on the daily
+ * cleanup alarm.
+ */
+async function recordUpsSnapshot(key: CryptoKey | null): Promise<void> {
+    if (!key) return;
+    const derived = await deriveUps(key);
+    if (derived === null) return;
+    const stored = await chrome.storage.local.get<Record<string, any>>('scoreHistory');
+    const decrypted = await readEncryptedArray<ScoreHistoryEntry>(key, stored.scoreHistory);
+    if (decrypted === READ_FAILED) return;
+    const history = decrypted ?? [];
+    history.push({
+        timestamp: Date.now(),
+        ups: derived,
+        avgSiteRisk: 0,
+        reason: 'Score recalculated as older handovers decayed',
+    });
+    if (history.length > SCORE_HISTORY_LIMIT) history.splice(0, history.length - SCORE_HISTORY_LIMIT);
+    await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
+    await storage.updateState({ ups: derived });
 }
 
 // Capture uncaught errors and unhandled rejections from the moment the worker
@@ -504,10 +563,9 @@ async function syncStateWithCache() {
         }
 
         const state = await storage.getState();
-        const result = await chrome.storage.local.get<Record<string, any>>(['siteCache', 'scoreHistory']);
+        const result = await chrome.storage.local.get<Record<string, any>>('siteCache');
         
         let siteCacheData = result.siteCache;
-        let historyData = result.scoreHistory;
         
         if (typeof siteCacheData === 'string') {
             const decrypted = await decryptDataStrict<Record<string, SiteRiskData>>(key, siteCacheData);
@@ -517,15 +575,6 @@ async function syncStateWithCache() {
             }
             siteCacheData = decrypted || {};
         }
-        if (typeof historyData === 'string') {
-            const decrypted = await decryptDataStrict<ScoreHistoryEntry[]>(key, historyData);
-            if (decrypted === DECRYPT_FAILED) {
-                captureError('storage', new Error('scoreHistory could not be decrypted'), 'state_sync_decrypt_failed');
-                return;
-            }
-            historyData = decrypted || [];
-        }
-
         // Failsafe healing for corrupted siteCache
         if (siteCacheData && typeof siteCacheData === 'object' && typeof siteCacheData[0] === 'string') {
             console.warn('[Sync] Detected corrupted siteCache. Healing...');
@@ -534,7 +583,6 @@ async function syncStateWithCache() {
         }
 
         const siteCache = (siteCacheData || {}) as Record<string, SiteRiskData>;
-        const history = (historyData || []) as ScoreHistoryEntry[];
         
         const sites = Object.values(siteCache);
         let updated = false;
@@ -549,43 +597,6 @@ async function syncStateWithCache() {
             updated = true;
         }
         
-        // Sync scoreHistory
-        if (sites.length > 0 && history.length === 0) {
-            console.log('[Sync] Rebuilding scoreHistory from siteCache...');
-            // Sort by last analyzed
-            const sortedSites = sites.filter(s => s.lastAnalyzed).sort((a, b) => Number(a.lastAnalyzed) - Number(b.lastAnalyzed));
-            
-            let currentUps = 100;
-            let streak = 0;
-            const newHistory: ScoreHistoryEntry[] = [];
-            
-            // Replay the history
-            for (const site of sortedSites) {
-                const impact = calculateVisitImpact(currentUps, site.wss, streak, true);
-                currentUps = impact.newUPS;
-                streak = impact.newStreak;
-                
-                newHistory.push({
-                    timestamp: Number(site.lastAnalyzed) || Date.now(),
-                    ups: currentUps,
-                    avgSiteRisk: site.wss,
-                    reason: impact.message || `Visited ${site.domain}`
-                });
-            }
-            
-            // Keep last SCORE_HISTORY_LIMIT
-            if (newHistory.length > SCORE_HISTORY_LIMIT) newHistory.splice(0, newHistory.length - SCORE_HISTORY_LIMIT);
-            await chrome.storage.local.set({ scoreHistory: await encryptData(key, newHistory) });
-            
-            // Update final UPS
-            await storage.updateState({
-                ...await storage.getState(),
-                ups: currentUps,
-                safeVisitStreak: streak
-            });
-            updated = true;
-        }
-
         if (updated) {
             console.log('[Sync] Sync complete.');
         }
@@ -1141,7 +1152,6 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     }
 
     // Step 5: Update the user's privacy state
-    const state = await storage.getState();
 
     // Check if the tab that sent this analysis is the currently active tab
     let isActiveTab = true;
@@ -1155,17 +1165,9 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         }
     }
 
-    // Calculate how this visit affects your User Privacy Score (UPS).
-    // Risky sites penalize on EVERY genuine navigation (revisiting a bad site
-    // keeps lowering the score); safe sites recover only on the first visit of
-    // the day (isUniqueDomain) so recovery can't be farmed by refreshing.
-    // SPA re-analyses of the same page never re-score.
-    // Note: `??` (not `||`) so a genuine UPS of 0 is never replaced by the 100
-    // fallback - otherwise penalties computed from 100 would "refund" a user
-    // who already hit 0 back up toward a full score.
-    const upsImpact = isNewNavigation
-        ? calculateVisitImpact(state.ups ?? 100, wss, state.safeVisitStreak || 0, isUniqueDomain)
-        : null;
+    // The User Privacy Score is derived from the handover record, not from
+    // visits (see lib/ups.ts). Visiting a site never moves it: only a handover
+    // does, in finalizePIIDetection. So nothing here scores the navigation.
 
     // Save the updated state
     // Count enriched trackers detected on this visit (both loaded and stopped)
@@ -1179,7 +1181,6 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
     await storage.updateState((current) => ({
         sitesAnalyzed: current.sitesAnalyzed + (isUniqueDomain ? 1 : 0),           // Increment the counter only for unique sites today
         trackersDetected: (current.trackersDetected || 0) + (isNewNavigation ? newTrackersCount : 0), // Accumulate once per genuine navigation
-        ...(upsImpact ? { ups: upsImpact.newUPS, safeVisitStreak: upsImpact.newStreak } : {}),
         ...(isActiveTab ? { currentSite: slimSiteData(siteData) } : {}),
     }));
 
@@ -1188,44 +1189,9 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         await updateTabBadge(tabId, wss);
     }
 
-    // Step 6: Prepare the detector journal for this visit. UPS changes are
-    // recorded in scoreHistory (below) with a proper reason - the journal only
-    // holds real detector events, so there is no UPS bookkeeping entry here.
+    // Step 6: Prepare the detector journal for this visit. The journal holds
+    // real detector events only; the UPS is derived from handovers elsewhere.
     const detectorLogsToWrite: Array<Omit<DetectorLogEntry, 'id' | 'timestamp'>> = [];
-
-    // Append a score-history point only on a genuine navigation; SPA
-    // re-analyses of the same page must not duplicate the chart.
-    if (isNewNavigation && upsImpact) {
-        let history: ScoreHistoryEntry[] | typeof READ_FAILED = [];
-        if (key) {
-            const histResult = await chrome.storage.local.get<Record<string, any>>('scoreHistory');
-            history = (await readEncryptedArray<ScoreHistoryEntry>(key, histResult.scoreHistory)) ?? [];
-        } else {
-            history = (await readBuffer<ScoreHistoryEntry[]>('bufferedScoreHistory')) || [];
-        }
-
-        if (history === READ_FAILED) {
-            // The existing history is present but unreadable. Appending to an
-            // empty array and writing it back would erase it.
-            captureError('storage', new Error('scoreHistory could not be decrypted'), 'score_history_unreadable');
-        } else {
-            history.push({
-                timestamp: Date.now(),
-                ups: upsImpact.newUPS,
-                avgSiteRisk: wss,
-                reason: upsImpact.message || `Visited ${domain}`
-            });
-
-            // Keep a rolling window large enough for the 30-day chart view
-            if (history.length > SCORE_HISTORY_LIMIT) history.splice(0, history.length - SCORE_HISTORY_LIMIT);
-
-            if (key) {
-                await chrome.storage.local.set({ scoreHistory: await encryptData(key, history) });
-            } else {
-                await writeBuffer('bufferedScoreHistory', history);
-            }
-        }
-    }
 
     // Step 7: Log detailed information from each detector
     // This creates activity logs that show up in the "Activity Logs" page
@@ -1499,6 +1465,11 @@ async function askForSiteConfirmation(
             added: i18n.t('Added to allow list'),
             addedNote: i18n.t('{{domain}} was added to your allow list. TraceGuard won\u2019t penalize personal info here anymore.', { domain: event.site }),
         };
+        // Name the price of this handover against the price on a site we could
+        // vouch for, so the lower cost of safer browsing is visible where the
+        // decision is made rather than only on a dashboard.
+        const cost = Math.round(handoverBaseWeight(event.fieldType, siteWSS));
+        const safeCost = Math.round(handoverBaseWeight(event.fieldType, 100));
         const deliver = (id: number) => {
             chrome.tabs.sendMessage(id, {
                 type: 'SHOW_PII_CONFIRM',
@@ -1508,6 +1479,7 @@ async function askForSiteConfirmation(
                     reason: decision.reason,
                     message: decision.message,
                     siteWSS,
+                    costNote: i18n.t('Here it costs {{cost}} points. On a site we could vouch for, {{safeCost}}.', { cost, safeCost }),
                     texts,
                 }
             }).catch((error) => {
@@ -1590,6 +1562,11 @@ async function recordPIIDetection(
     // Your Footprint reads the exposure map, not the journal, so it is written
     // here too. Otherwise a pending card would keep the site off that page.
     await storage.addExposure(event.fieldType, event.site, key);
+
+    // The handover is durable now, so derive the score from it. The card that
+    // follows can only raise it back, by vouching for the site.
+    const derived = await deriveUps(key);
+    if (derived !== null) await storage.updateState({ ups: derived });
     return 'recorded';
 }
 
@@ -1618,9 +1595,10 @@ async function settleAbandonedPIIConfirmations(): Promise<void> {
     if (settlement.count === 0) return;
 
     await chrome.storage.local.set({ piiDetections: await encryptData(key, settlement.records) });
+    const derived = await deriveUps(key);
     await storage.updateState((current) => ({
         piiEventsCount: current.piiEventsCount + settlement.count,
-        ups: settlement.ups,
+        ...(derived !== null ? { ups: derived } : {}),
     }));
     logEvent('pii', 'debug', 'pii_abandoned_settled', 'Settled handovers whose confirmation was never answered', {
         settled: settlement.count,
@@ -1882,10 +1860,29 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
         scoreImpact: scoreImpact,         // How much this affected your privacy score (0 = expected use)
     });
 
+    // Write the settled journal entry first: the derived score reads it back.
+    if (key) {
+        await chrome.storage.local.set({ piiDetections: await encryptData(key, piiDetections) });
+    } else {
+        await writeBuffer('bufferedPii', piiDetections);
+    }
+
+    // Track which sites have received each type of your personal information
+    // This enables the "Your email is known to X sites" feature in the dashboard
+    await storage.addExposure(event.fieldType, event.site, key);
+
+    // The score is a function of the handover record, so derive it now that the
+    // record is written. While the vault is locked the encrypted history cannot
+    // be read, so fall back to the running estimate; the unlock path recomputes
+    // it exactly. This also means an exempted entry costs nothing, as its
+    // handover is recorded with `exempt: true`.
+    const derived = await deriveUps(key);
+    const finalUps = derived ?? newUPS;
+
     // Add this event to your score history (for the dashboard graph)
     scoreHistory.push({
         timestamp: Date.now(),
-        ups: newUPS,
+        ups: finalUps,
         avgSiteRisk: state.currentSite?.wss || 0,
         reason: isExempt
             ? `${event.fieldType} entered on ${event.site} (expected use, no penalty)`
@@ -1896,29 +1893,17 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
     // journal cap is applied by applyVerdict and stageHandover.
     if (scoreHistory.length > SCORE_HISTORY_LIMIT) scoreHistory.splice(0, scoreHistory.length - SCORE_HISTORY_LIMIT);
 
-    // Save the updated data
     if (key) {
-        await chrome.storage.local.set({ 
-            piiDetections: await encryptData(key, piiDetections), 
-            scoreHistory: await encryptData(key, scoreHistory) 
-        });
+        await chrome.storage.local.set({ scoreHistory: await encryptData(key, scoreHistory) });
     } else {
-        await Promise.all([
-            writeBuffer('bufferedPii', piiDetections),
-            writeBuffer('bufferedScoreHistory', scoreHistory),
-        ]);
+        await writeBuffer('bufferedScoreHistory', scoreHistory);
     }
 
-    // Track which sites have received each type of your personal information
-    // This enables the "Your email is known to X sites" feature in the dashboard
-    await storage.addExposure(event.fieldType, event.site, key);
-
-    // Update your privacy state with the new score. The reducer form increments
-    // piiEventsCount against the freshest state so concurrent events never lose
-    // a count.
+    // Update your privacy state. The reducer form increments piiEventsCount
+    // against the freshest state so concurrent events never lose a count.
     await storage.updateState((current) => ({
         piiEventsCount: current.piiEventsCount + (isExempt ? 0 : 1),  // Total times you've shared PII
-        ups: newUPS                                                   // Your updated privacy score
+        ups: finalUps,                                                // Your derived privacy score
     }));
 
     // The outcome of the whole PII path, including the penalty arithmetic, so an
@@ -2005,6 +1990,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     } else if (alarm.name === CLEANUP_ALARM) {
         const key = await getCryptoKey();
         await storage.cleanupOldLogs(key);
+        await recordUpsSnapshot(key);
     }
 });
 

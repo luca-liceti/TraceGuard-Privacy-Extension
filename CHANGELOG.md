@@ -2,6 +2,17 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.14.0
+
+**What's new**
+
+- Your **Privacy Score** is now a status score, not a running tally. It is read from what you have handed over and keeps charging for it: a password or a card entered on a risky site stays expensive for a long time, while an old handover slowly fades. It is recalculated from the same handovers shown on **Your Footprint**, so the two can no longer disagree. Your number will change when you update, because it is derived from the record rather than from a total built up visit by visit.
+- Safer browsing still pays off, just not as points for a visit: a handover on a high-scoring site costs much less than the same handover on a poor one, and expected use (a login, a one-time code, or a checkout on a site we can vouch for) costs nothing.
+
+**What was fixed**
+
+- The score no longer moves when you visit a site. Safe-site recovery and the safe-streak bonus are removed. Both rewarded the sites you happened to land on rather than a choice you made, which is circumstance and was easy to farm by refreshing. Time is now the only thing that raises the score, through the decay of older handovers.
+
 ## v1.13.0
 
 **What's new**

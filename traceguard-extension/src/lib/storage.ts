@@ -123,8 +123,7 @@ const DEFAULT_STATE: AppState = {
     ups: 100,                     // User Privacy Score (starts at 100)
     sitesAnalyzed: 0,             // Number of sites we've analyzed
     trackersDetected: 0,          // Total trackers found across all sites
-    piiEventsCount: 0,            // Times you've entered personal info
-    safeVisitStreak: 0            // Consecutive safe site visits
+    piiEventsCount: 0             // Times you've entered personal info
 };
 
 /**
@@ -372,38 +371,45 @@ export const storage = {
     // when a key is absent.
     // ==========================================================================
 
-    // Removes activity logs (detector logs + PII events) and their buffers.
+    // Removes activity logs (general logs, detector logs, the error log) and
+    // their buffers. It deliberately keeps `piiDetections`: that journal is the
+    // record the User Privacy Score and the Footprint ledger are derived from,
+    // and the Clear Activity Logs dialog promises the score stays intact
+    // (record 0013: the score must not move when records are edited). The PII
+    // journal is cleared only by resetScore, which resets the score as well.
     clearActivityLogs: async (): Promise<void> => {
         await chrome.storage.local.remove([
             'logs',
             'detectorLogs',
-            'piiDetections',
             'errorLog',
         ]);
         await chrome.storage.session.remove([
             'bufferedDetectorLogs',
-            'bufferedPii',
         ]);
     },
 
     // Resets the privacy score and wipes browsing-history-derived data.
     resetScore: async (): Promise<void> => {
+        // The derived score reads crossSiteExposure, the journal, and the PII
+        // events, so all three are cleared together. Removing only some would
+        // leave the score disagreeing with the ledger.
         await chrome.storage.local.remove([
             'scoreHistory',
             'siteCache',
             'crossSiteExposure',
+            'piiDetections',
         ]);
         await chrome.storage.session.remove([
             'bufferedScoreHistory',
             'bufferedSiteCache',
             'bufferedExposure',
+            'bufferedPii',
         ]);
         await storage.updateState({
             ups: DEFAULT_STATE.ups,
             sitesAnalyzed: DEFAULT_STATE.sitesAnalyzed,
             trackersDetected: DEFAULT_STATE.trackersDetected,
             piiEventsCount: DEFAULT_STATE.piiEventsCount,
-            safeVisitStreak: DEFAULT_STATE.safeVisitStreak,
             currentSite: undefined,
         });
     },

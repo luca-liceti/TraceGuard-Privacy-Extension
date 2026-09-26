@@ -46,6 +46,12 @@ export interface PIIConfirmData {
         added: string;
         addedNote: string;
     };
+    /**
+     * What this handover costs here, and what it would cost on a site we could
+     * vouch for, already interpolated by the worker. Shown so the lower cost of
+     * safer browsing is visible at the moment of the decision.
+     */
+    costNote?: string;
 }
 
 const HOST_ID = 'traceguard-pii-confirm-host';
@@ -315,6 +321,13 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
     note.textContent = text.note;
 
     card.append(header, body, actions, note);
+
+    if (data.costNote) {
+        const costNote = document.createElement('p');
+        costNote.className = 'tg-note';
+        costNote.textContent = data.costNote;
+        card.append(costNote);
+    }
 
     shadow.append(style, card);
 

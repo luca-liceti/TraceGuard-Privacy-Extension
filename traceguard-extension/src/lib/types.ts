@@ -342,7 +342,6 @@ export interface AppState {
     trackersDetected: number;    // Total trackers found across all sites
     piiEventsCount: number;      // How many times you've entered personal info
     currentSite?: SiteRiskData;  // The site you're currently on (if analyzed)
-    safeVisitStreak: number;     // Consecutive safe sites visited (for bonus)
 }
 
 // =============================================================================

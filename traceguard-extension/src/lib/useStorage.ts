@@ -15,7 +15,7 @@
  * HOOKS PROVIDED:
  * 
  * useAppState() - Get the extension's main state
- *   Returns: { ups, sitesAnalyzed, trackersDetected, safeVisitStreak, etc. }
+ *   Returns: { ups, sitesAnalyzed, trackersDetected, piiEventsCount, etc. }
  * 
  * useSettings() - Get user preferences
  *   Returns: { theme, notifications, whitelist, blacklist, etc. }

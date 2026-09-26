@@ -104,7 +104,34 @@ describe('buildExposureReport', () => {
         expect(report.hasData).toBe(false);
         expect(report.handedOver).toEqual([]);
         expect(report.watchers).toEqual([]);
-        expect(report.totals).toEqual({ fieldTypes: 0, domains: 0, organizations: 0, surprising: 0, sitesVisited: 0 });
+        expect(report.totals).toEqual({ fieldTypes: 0, domains: 0, organizations: 0, surprising: 0, sitesVisited: 0, highTrustShare: null });
+    });
+
+    it('reports the share of handovers that went to trusted sites, as context', () => {
+        const exposure: CrossSiteExposure = {
+            email: ['trusted.com', 'risky.com'],
+            password: ['trusted.com'],
+        };
+        const piiEvents = [
+            makeEvent('trusted.com', 'email', NOW, 95),
+            makeEvent('risky.com', 'email', NOW, 20),
+            makeEvent('trusted.com', 'password', NOW, 95),
+        ];
+
+        const report = buildExposureReport({ exposure, piiEvents, now: NOW });
+
+        // 3 handovers, 2 on a site scoring at or above the safe threshold (70).
+        expect(report.totals.highTrustShare).toBe(67);
+    });
+
+    it('counts a handover the gate exempted as trusted whatever the site scored', () => {
+        const exposure: CrossSiteExposure = { password: ['gov.example'] };
+        // `exempt` is written by the journal but is not on the public event type.
+        const exempt = { ...makeEvent('gov.example', 'password', NOW, 40), exempt: true } as PIIDetectionEvent;
+
+        const report = buildExposureReport({ exposure, piiEvents: [exempt], now: NOW });
+
+        expect(report.totals.highTrustShare).toBe(100);
     });
 
     it('groups handovers by field type and de-duplicates domains', () => {

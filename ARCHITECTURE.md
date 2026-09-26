@@ -60,7 +60,7 @@ Everything is in `chrome.storage.local` except the two vault keys, which live in
 | Key | Holds | Encrypted |
 |---|---|---|
 | `settings` | Theme, notification preferences, whitelist and blacklist | No |
-| `state` | UPS, sites analyzed, safe streak, PII event count | No |
+| `state` | UPS, sites analyzed, PII event count | No |
 | `siteCache` | Per-domain analysis: WSS, detector details, enriched trackers, cookies, headers | Yes |
 | `detectorLogs` | Per-detector results over time, capped | Yes |
 | `scoreHistory` | UPS changes over time | Yes |
@@ -111,18 +111,26 @@ which record [0006](adr/0006-asymmetric-policy-ratings.md) exists to address.
 
 ### User Privacy Score
 
-Rules live in `src/lib/pii.ts`. `SAFE_WSS_THRESHOLD` is 70.
+The score is derived, not accumulated. `scoreUps` and `buildHandovers` in `src/lib/ups.ts` read the
+handover record (`crossSiteExposure` plus the `piiDetections` journal) and subtract the decayed cost
+of each live handover from 100. Visits contribute nothing, so which sites appear in someone's
+browsing cannot move the number. The worker recomputes it in `deriveUps` on every path that changes
+the record, and the daily cleanup alarm records a history point so the chart shows the rise from
+decay.
 
-- **Visit penalty:** `((100 - WSS) / 100) * 2`, rounded to one decimal. A perfect site costs nothing,
-  the worst site costs 2.
-- **PII penalty:** `round(basePenalty * (1 + (100 - WSS) / 100))`. On a safe site (WSS above 70) the
-  entry is treated as expected use and is not penalized. Base penalties: SSN 10, card 9, password 8,
-  phone 5, email 4, address 3, security code 3, OTP 3, username 2, name 1.
-- **Recovery:** `((WSS - 70) / 30) * 0.1` on the first visit to a distinct safe domain, capped at
-  0.1.
+- **Handover cost:** `handoverBaseWeight` is `basePenalty * (1 + (100 - WSS) / 100)`, so a handover
+  on a flawless site costs its base and one on the worst site costs double. Base penalties: SSN 10,
+  card 9, password 8, phone 5, email 4, address 3, security code 3, OTP 3, username 2, name 1.
+- **Exemption:** `evaluatePIIEntry` in `src/lib/pii.ts` (threshold `SAFE_WSS_THRESHOLD`, 70) marks
+  expected use exempt, so it is recorded but costs nothing. Exemptions are earned by evidence of
+  legitimacy: the allow list, a government TLD, a curated or trusted domain, or a demonstrably safe
+  site. A blacklisted site overrides every exemption.
+- **Decay:** `decayFactor` halves a handover's weight every `DECAY_HALF_LIFE_MS` (90 days) down to
+  `DECAY_FLOOR` (25% of its original cost), because an old exposure is less actionable but never
+  gone.
 
-The arithmetic is deliberately lopsided: one bad visit can cost 2 points while a safe visit returns
-at most 0.1. That is a design problem recorded in `ROADMAP.md`, not an accident.
+The score can only rise with time. Nothing deletes a handover, so it cannot be improved by editing
+the record. See `adr/0013-no-forget-action.md`.
 
 ## Databases and feeds
 

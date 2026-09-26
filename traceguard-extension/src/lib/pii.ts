@@ -4,8 +4,10 @@
  * =============================================================================
  * 
  * WHAT THIS FILE DOES:
- * This file handles your User Privacy Score (UPS) - a number from 0 to 100
- * that represents how well you're protecting your personal information.
+ * This file holds the per-handover cost table and the expected-use exemptions
+ * that decide whether a handover is penalized. The User Privacy Score itself is
+ * derived from the handover record in lib/ups.ts; this file never scores a
+ * visit.
  * 
  * KEY TERMS:
  * - PII = Personally Identifiable Information (email, SSN, credit card, etc.)
@@ -19,15 +21,12 @@
  * 
  * HOW YOUR SCORE CHANGES:
  * 
- * PENALTIES (score goes DOWN):
- * 1. Visiting risky sites: Small penalty based on site's WSS
- * 2. Entering PII: Bigger penalty, especially on unsafe sites
- *    - Password on safe site: -8 points
- *    - Password on risky site: -16 points (2x multiplier!)
- * 
- * RECOVERY (score goes UP):
- * 1. Visiting safe sites (WSS >= 70): Small recovery
- * 2. Safe streak bonus: +2 every 10 consecutive safe sites
+ * HANDOVER COST (only handovers move the derived score):
+ *   cost = base sensitivity x (1 + (100 - WSS) / 100), decayed with age
+ *   - Password on a safe site: base 8, multiplier 1.0
+ *   - Password on a risky site: base 8, multiplier up to 2.0
+ * Expected use (login, 2FA, checkout on a safe or verified site) is exempt.
+ * Visits contribute nothing; there is no visit penalty and no streak bonus.
  * 
  * PENALTY EXAMPLES:
  * | Field Type     | Base Penalty | On Safe Site (WSS 100) | On Risky Site (WSS 0) |
@@ -152,57 +151,6 @@ export function getBasePenalty(fieldType: string): number {
     // Use ?? so a legitimate zero penalty (security codes) isn't replaced by
     // the unknown-type fallback.
     return BASE_PENALTIES[key] ?? BASE_PENALTIES.unknown;
-}
-
-// ============================================================================
-// VISIT PENALTY
-// ============================================================================
-
-export interface VisitPenaltyResult {
-    penalty: number;
-    newUPS: number;
-    message: string;
-}
-
-/**
- * Calculate UPS penalty for visiting a site
- * 
- * Formula: penalty = ((100 - WSS) / 100) * 2
- * - WSS 100 (safe) → 0 penalty
- * - WSS 50 (medium) → 1 penalty
- * - WSS 0 (dangerous) → 2 penalty
- */
-export function calculateVisitPenalty(currentUPS: number, siteWSS: number): VisitPenaltyResult {
-    // Clamp WSS to valid range
-    const clampedWSS = Math.max(0, Math.min(100, siteWSS));
-
-    // Calculate penalty (max 2 per visit)
-    const penalty = ((100 - clampedWSS) / 100) * 2;
-    const roundedPenalty = Math.round(penalty * 10) / 10; // Round to 1 decimal
-
-    // Apply penalty
-    const newUPS = Math.max(0, Math.round((currentUPS - roundedPenalty) * 10) / 10);
-
-    // Generate message
-    let message = '';
-    if (roundedPenalty > 0) {
-        const riskLevel = clampedWSS >= 70 ? 'safe' : clampedWSS >= 40 ? 'medium-risk' : 'risky';
-        message = `Visited ${riskLevel} site (WSS ${clampedWSS}): -${roundedPenalty.toFixed(1)} UPS`;
-    }
-
-    // The full calculation as one structured record. This used to be five
-    // console.log lines drawing a tree, which vanished when devtools closed and
-    // left no way to check the arithmetic after the fact.
-    logEvent('pii', 'debug', 'visit_penalty', 'Visit penalty calculated', {
-        currentUPS,
-        siteWSS,
-        clampedWSS,
-        penalty: roundedPenalty,
-        newUPS,
-        message,
-    });
-
-    return { penalty: roundedPenalty, newUPS, message };
 }
 
 // ============================================================================
@@ -476,195 +424,3 @@ export function evaluatePIIEntry(ctx: PIIEntryContext): PIIEntryDecision {
     };
 }
 
-// ============================================================================
-// FORM FOCUS PENALTY (Intent Tracking)
-// ============================================================================
-
-export interface FocusPenaltyResult {
-    penalty: number;
-    newUPS: number;
-    message: string;
-}
-
-/**
- * Calculate smaller penalty for focusing on a sensitive field (intent tracking)
- * This is 20% of the full PII penalty
- */
-export function calculateFocusPenalty(
-    currentUPS: number,
-    fieldType: string,
-    siteWSS: number
-): FocusPenaltyResult {
-    const basePenalty = getBasePenalty(fieldType);
-    const clampedWSS = Math.max(0, Math.min(100, siteWSS));
-    const contextMultiplier = 1 + ((100 - clampedWSS) / 100);
-
-    // Focus penalty is 20% of full penalty
-    const fullPenalty = basePenalty * contextMultiplier;
-    const penalty = Math.round(fullPenalty * 0.2 * 10) / 10;
-
-    const newUPS = Math.max(0, Math.round((currentUPS - penalty) * 10) / 10);
-    const message = penalty > 0 ? `Focused on ${fieldType} field: -${penalty.toFixed(1)} UPS` : '';
-
-    logEvent('pii', 'debug', 'focus_penalty', 'Focus penalty calculated', {
-        fieldType,
-        basePenalty,
-        clampedWSS,
-        fullPenalty: Math.round(fullPenalty * 100) / 100,
-        penalty,
-        newUPS,
-    });
-
-    return { penalty, newUPS, message };
-}
-
-// ============================================================================
-// RECOVERY SYSTEM
-// ============================================================================
-
-export interface RecoveryResult {
-    recovery: number;
-    newUPS: number;
-    newStreak: number;
-    message: string;
-}
-
-/**
- * Calculate UPS recovery from visiting safe sites
- * 
- * Requirements:
- * - Site must have WSS >= 70 to qualify for recovery
- * - Recovery rate: ((WSS - 70) / 30) × 0.5
- * - Streak bonus: +2 every 10 consecutive safe sites
- * 
- * Examples:
- * - WSS 70: ((70-70)/30) × 0.5 = 0
- * - WSS 85: ((85-70)/30) × 0.5 = 0.25
- * - WSS 100: ((100-70)/30) × 0.5 = 0.5
- */
-export function calculateRecovery(
-    currentUPS: number,
-    siteWSS: number,
-    currentStreak: number,
-    isUniqueDomain: boolean = false
-): RecoveryResult {
-    const clampedWSS = Math.max(0, Math.min(100, siteWSS));
-    let newStreak = currentStreak;
-    let recovery = 0;
-    let message = '';
-
-    // Only recover from safe sites (WSS >= 70)
-    if (clampedWSS >= 70) {
-        if (isUniqueDomain) {
-            // Increment safe streak
-            newStreak = currentStreak + 1;
-
-            // Calculate base recovery (reduced rate)
-            recovery = ((clampedWSS - 70) / 30) * 0.1;
-
-            // Check for streak bonus (every 10 consecutive safe sites)
-            if (newStreak > 0 && newStreak % 10 === 0) {
-                recovery += 0.5;
-                message = `🎉 Safe streak bonus! +0.5 UPS (${newStreak} safe sites in a row)`;
-                logEvent('pii', 'debug', 'streak_bonus', 'Safe streak bonus applied', {
-                    streak: newStreak,
-                    recovery,
-                });
-            }
-
-            // Round recovery
-            recovery = Math.round(recovery * 100) / 100;
-
-            if (recovery > 0 && !message) {
-                message = `Safe browsing recovery: +${recovery.toFixed(2)} UPS`;
-            }
-        }
-    } else {
-        // Risky site breaks the streak
-        if (currentStreak > 0) {
-            message = `Safe streak broken (${currentStreak} → 0) by site with WSS ${clampedWSS}`;
-            logEvent('pii', 'debug', 'streak_broken', 'Safe streak broken by a risky site', {
-                previousStreak: currentStreak,
-                siteWSS: clampedWSS,
-            });
-        }
-        newStreak = 0;
-    }
-
-    // Apply recovery (cap at 100)
-    const newUPS = Math.min(100, Math.round((currentUPS + recovery) * 10) / 10);
-
-    logEvent('pii', 'debug', 'recovery_applied', 'Recovery calculated', {
-        siteWSS: clampedWSS,
-        isUniqueDomain,
-        qualifies: clampedWSS >= 70 && isUniqueDomain,
-        streak: `${currentStreak}->${newStreak}`,
-        recovery,
-        currentUPS,
-        newUPS,
-    });
-
-    return { recovery, newUPS, newStreak, message };
-}
-
-// ============================================================================
-// COMBINED VISIT IMPACT (Penalty OR Recovery)
-// ============================================================================
-
-export interface VisitImpactResult {
-    newUPS: number;
-    newStreak: number;
-    upsChange: number;
-    message?: string;
-}
-
-/**
- * Calculate the full impact of visiting a site
- * Combines visit penalty (for risky sites) with recovery (for safe sites)
- */
-export function calculateVisitImpact(
-    currentUPS: number,
-    siteWSS: number,
-    currentStreak: number,
-    isUniqueDomain: boolean = false
-): VisitImpactResult {
-    const clampedWSS = Math.max(0, Math.min(100, siteWSS));
-
-    // Safe sites (WSS >= 70): Recovery
-    if (clampedWSS >= 70) {
-        const recoveryResult = calculateRecovery(currentUPS, clampedWSS, currentStreak, isUniqueDomain);
-        return {
-            newUPS: recoveryResult.newUPS,
-            newStreak: recoveryResult.newStreak,
-            upsChange: recoveryResult.recovery,
-            message: recoveryResult.message
-        };
-    }
-
-    // Risky sites (WSS < 70): Penalty + break streak
-    const penaltyResult = calculateVisitPenalty(currentUPS, clampedWSS);
-    return {
-        newUPS: penaltyResult.newUPS,
-        newStreak: 0, // Reset streak
-        upsChange: -penaltyResult.penalty,
-        message: penaltyResult.message || (currentStreak > 0 ? `Streak broken by WSS ${clampedWSS} site` : undefined)
-    };
-}
-
-// ============================================================================
-// LEGACY FUNCTION (for backward compatibility)
-// ============================================================================
-
-/**
- * @deprecated Use calculatePIIPenalty or calculateVisitImpact instead
- * Legacy function that calculates UPS based only on PII events count
- */
-export function calculateUPS(piiEventsCount: number): number {
-    console.warn('[Deprecation] calculateUPS is deprecated. Use granular penalty functions instead.');
-
-    const baseScore = 100;
-    const penaltyPerEvent = 5;
-    const score = Math.max(0, baseScore - (piiEventsCount * penaltyPerEvent));
-
-    return Math.round(score);
-}

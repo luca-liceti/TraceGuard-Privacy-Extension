@@ -198,7 +198,6 @@ const AppStateSchema = z.object({
     sitesAnalyzed: z.number().finite().min(0).optional(),
     trackersDetected: z.number().finite().min(0).optional(),
     piiEventsCount: z.number().finite().min(0).optional(),
-    safeVisitStreak: z.number().finite().min(0).optional(),
     currentSite: z.unknown().optional(),
 }).passthrough();
 

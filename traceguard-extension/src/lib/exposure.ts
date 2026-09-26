@@ -36,6 +36,7 @@
  */
 
 import type { CrossSiteExposure, PIIDetectionEvent, SiteRiskData } from './types';
+import { SAFE_WSS_THRESHOLD } from './pii';
 
 // =============================================================================
 // TUNING CONSTANTS
@@ -139,6 +140,14 @@ export interface ExposureReport {
         surprising: number;
         /** Sites with a cached analysis - the denominator for "how much of your browsing". */
         sitesVisited: number;
+        /**
+         * Share of handovers (field type on a site) that happened on a site we
+         * could vouch for: a site scoring at or above SAFE_WSS_THRESHOLD, or an
+         * entry the gate exempted as expected use. Context, not a score: it
+         * reports where the data went, it does not claim the user earned it.
+         * Null when nothing has been handed over yet.
+         */
+        highTrustShare: number | null;
     };
     /** False when there is nothing to show yet (fresh install). */
     hasData: boolean;
@@ -349,7 +358,7 @@ export function buildExposureReport(input: BuildExposureReportInput): ExposureRe
     // -------------------------------------------------------------------------
     // Index the PII events by field type + domain, for dates and entry-time score
     // -------------------------------------------------------------------------
-    const eventsByHandover = new Map<string, { first: number; last: number; minWss: number | null }>();
+    const eventsByHandover = new Map<string, { first: number; last: number; minWss: number | null; exemptAny: boolean }>();
 
     for (const event of piiEvents) {
         if (!event || typeof event.site !== 'string' || typeof event.fieldType !== 'string') continue;
@@ -357,16 +366,20 @@ export function buildExposureReport(input: BuildExposureReportInput): ExposureRe
 
         const key = `${event.fieldType}\u0000${event.site}`;
         const existing = eventsByHandover.get(key);
+        // `exempt` is written by the journal but is not on the public event type.
+        const wasExempt = (event as { exempt?: boolean }).exempt === true;
 
         if (!existing) {
             eventsByHandover.set(key, {
                 first: event.timestamp,
                 last: event.timestamp,
                 minWss: typeof event.siteWSS === 'number' ? event.siteWSS : null,
+                exemptAny: wasExempt,
             });
         } else {
             existing.first = Math.min(existing.first, event.timestamp);
             existing.last = Math.max(existing.last, event.timestamp);
+            existing.exemptAny = existing.exemptAny || wasExempt;
             if (typeof event.siteWSS === 'number') {
                 existing.minWss = existing.minWss === null
                     ? event.siteWSS
@@ -381,6 +394,8 @@ export function buildExposureReport(input: BuildExposureReportInput): ExposureRe
     const handedOver: HandoverGroup[] = [];
     const allDomains = new Set<string>();
     let totalSurprising = 0;
+    let handoversJudged = 0;
+    let handoversHighTrust = 0;
 
     for (const [fieldType, rawDomains] of Object.entries(exposure)) {
         if (!Array.isArray(rawDomains)) continue;
@@ -397,6 +412,14 @@ export function buildExposureReport(input: BuildExposureReportInput): ExposureRe
             const site = siteCache[domain];
             const timing = eventsByHandover.get(`${fieldType}\u0000${domain}`);
             const reasons = judge(domain, site, timing?.minWss ?? null, now);
+
+            // A handover went to a trusted place when the gate exempted it or
+            // every entry happened on a site scoring at or above the safe
+            // threshold. Counted per handover, not per site.
+            const highTrust = timing?.exemptAny === true
+                || (typeof timing?.minWss === 'number' && timing.minWss >= SAFE_WSS_THRESHOLD);
+            handoversJudged += 1;
+            if (highTrust) handoversHighTrust += 1;
 
             sites.push({
                 domain,
@@ -500,6 +523,9 @@ export function buildExposureReport(input: BuildExposureReportInput): ExposureRe
             organizations: watcherMap.size,
             surprising: totalSurprising,
             sitesVisited: Object.keys(siteCache).length,
+            highTrustShare: handoversJudged === 0
+                ? null
+                : Math.round((handoversHighTrust / handoversJudged) * 100),
         },
         hasData: handedOver.length > 0 || watchers.length > 0,
     };
