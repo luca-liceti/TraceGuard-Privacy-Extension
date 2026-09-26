@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 **Date:** 2026-09-13
+**Note:** the forget action this record mentions as a fallback was removed by
+[0013](0013-no-forget-action.md). The decision below is unchanged.
 
 ## Context
 
@@ -12,7 +14,7 @@ what the user typed.
 ## Decision
 
 The content script attaches an `input` listener to fields it classifies as sensitive and reports
-the interaction once `value.length > 0` (`src/content/pii-detector.ts:124`). It never reads the
+the interaction once `value.length > 0` (`src/content/pii-detector.ts:122`). It never reads the
 value. The payload is the field type, the sensitivity, the domain, a timestamp, and page context.
 
 Recording happens on the first character typed into a field, once per field. Submission is not
@@ -22,8 +24,9 @@ observed.
 
 - The extension cannot leak a typed value, because it never holds one.
 - The record means "the user started typing here", not "the site received this". An abandoned form
-  is indistinguishable from a submitted one. This is the known false-positive class, it is why the
-  ledger offers forget, and fixing the trigger is the better long-term fix.
+  is indistinguishable from a submitted one. This is the known false-positive class, and fixing the
+  trigger is the better long-term fix. It cannot be papered over by clearing entries, because the
+  ledger offers no delete action.
 - Product copy must not claim to know what a site received.
 - Anything that reads field values would break the guarantee this record depends on, so it needs a
   new record rather than an edit.

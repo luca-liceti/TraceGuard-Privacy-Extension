@@ -99,21 +99,19 @@ a privacy product, and it is why the numbers are few and blunt.
 
 Only after the gate passes.
 
-- **Forget.** `forgetExposure(fieldType, domain)` in `src/lib/storage.ts`. Deletes the local record
-  that a domain holds a field type, from `crossSiteExposure` and the matching `piiDetections`. It
-  must **also purge the matching `bufferedExposure` entry**, or `flushBufferedTelemetry` merges it
-  back on the next unlock and the delete silently reverts. Label it honestly: it erases the user's
-  record, not the site's copy.
 - **Trust.** `trustSite(domain)` using the existing whitelist, surfaced where the record lives
   instead of only in Settings.
 - **Memory in the PII gate.** The gate currently asks "is this site safe?" with no history. Feed the
   ledger into it so it can say "you have shared this with 12 sites, 3 of them one-off". This is
   where behaviour actually changes, because it appears while the user is typing.
 
-**Two things to be honest about in the design.** Forget and gate memory work against each other:
-forgetting erases exactly the evidence the warning depends on, and the UI should say so. And trust
-is the only action here that reduces safety, so it needs to be visible, listable, and one-click
-reversible.
+**There is deliberately no delete action.** Record [0013](adr/0013-no-forget-action.md) settles it: a
+site does not forget because the user clears a note on their own device, so deleting a record would
+change nothing about the exposure while raising the score, which makes the number improvable by
+bookkeeping instead of behaviour.
+
+**One thing to be honest about in the design.** Trust is the only action here that reduces safety,
+so it needs to be visible, listable, and one-click reversible.
 
 ### Gate A2 to A3
 
@@ -181,19 +179,15 @@ logic, output validation, and two failure modes per provider.
 
 # Later, annotated but not scheduled
 
-- **UPS reward redesign.** The current model is punishment-only: up to 2 points lost per risky visit,
-  at most 0.1 recovered per distinct safe domain. Gamification cannot work on a score that mostly
-  falls. Needs its own design document, and it must reward actions the user takes rather than safe
-  site visits, because rewarding visit outcomes is farmable and teaches users to avoid risk
-  *signals* instead of risk.
+- **UPS as a derived status score.** In progress. The model becomes a function of the record: each
+  handover costs its field sensitivity multiplied by how risky the site was, decayed by age, and
+  visits contribute nothing, because which sites appear in someone's browsing is mostly not their
+  choice. There is no reward loop and none is planned, because no honest repeatable action exists to
+  reward: record [0013](adr/0013-no-forget-action.md) rules out deleting records, and rewarding visit
+  outcomes is farmable, which record [0010](adr/0010-behaviour-change-as-the-goal.md) already says.
+  The behaviour lever is the PII gate, in A2.
 - **Promote `/exposure` to the landing page**, once it has proven useful, with the current-site
   summary on top.
-- **A streak over actions.** The Safe Browsing Streak card was removed in v1.10.0 because it counted
-  consecutive visits to well-scoring sites, which is mostly circumstance rather than a choice, and a
-  single link could reset it. A streak is worth building again once A2 ships forget, because "sites
-  where you cleaned up your data" is an action the user takes, and record
-  [0011](adr/0011-behaviour-test-boundary.md) requires the thing being rewarded to be the user's
-  own decision.
 - **Sharing analyses**, if ever wanted: contribute to ToS;DR through its reviewed process, or export
   a file the user shares manually. Not P2P.
 
@@ -209,6 +203,15 @@ logic, output validation, and two failure modes per provider.
   score.
 - **Cloud AI.** Sending the visited site to a provider is a category error for a footprint
   assistant.
+- **A forget action.** A site does not forget because the user deletes a local note, so the delete
+  would change nothing about the exposure while raising the score. That makes the number improvable
+  by bookkeeping, and it erases the evidence the PII gate warning depends on. Full reasoning in
+  record [0013](adr/0013-no-forget-action.md).
+- **A streak, or any reward loop over local bookkeeping.** The Safe Browsing Streak card was removed
+  in v1.10.0 because it counted consecutive visits to well-scoring sites, which is circumstance
+  rather than a choice. Its replacement was to have been a streak over records the user had cleared,
+  and record [0013](adr/0013-no-forget-action.md) removes that action. Nothing is built until an
+  honest repeatable action exists to count.
 
 ---
 

@@ -15,8 +15,13 @@
  *   outcomes teaches avoidance of risk signals instead of care.
  * - Old events age off, but never to nothing. See DECAY_FLOOR.
  * - It is derived from a record, so it is auditable rather than accumulated.
- * - Clearing an entry returns its full cost immediately, which is the one action
- *   the user can take, and the reason the sum is linear rather than curved.
+ * - It cannot be improved by editing the record. Nothing deletes handovers, so
+ *   the only force that raises the score is decay, which is time passing rather
+ *   than effort. Record 0013 states why there is no forget action.
+ *
+ * The sum is linear rather than curved so the number can be explained by
+ * addition, and so every handover keeps its full share of the total instead of
+ * shrinking as the list grows.
  *
  * Record 0012 classifies this as context: true information with no claim on
  * behaviour. It does not change what the user does at the moment they decide;
@@ -207,7 +212,7 @@ export function scoreUps(handovers: Handover[], now: number): UpsBreakdown {
     };
 }
 
-/** Live exposures counted by band, which is what clearing a record visibly changes. */
+/** Live exposures counted by band, so the record can be described in counts as well as in a number. */
 export function countByBand(breakdown: UpsBreakdown): Record<SensitivityBand, number> {
     const counts: Record<SensitivityBand, number> = { critical: 0, high: 0, medium: 0, low: 0 };
     for (const contribution of breakdown.contributions) counts[contribution.sensitivity] += 1;

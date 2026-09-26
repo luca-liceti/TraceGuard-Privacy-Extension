@@ -85,8 +85,9 @@ creates.
 - `flushBufferedTelemetry` merges the buffer back into the encrypted stores on unlock.
 
 **Consequence worth knowing:** because the buffer is merged in, deleting a record from an encrypted
-store is not permanent unless the matching buffer entry is removed in the same operation. This is
-the trap behind any future "forget" action.
+store is not permanent unless the matching buffer entry is removed in the same operation. Nothing
+deletes records today, and record [0013](adr/0013-no-forget-action.md) says why, so this matters only
+if a delete action is ever reconsidered.
 
 ## Scoring
 

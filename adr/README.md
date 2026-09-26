@@ -28,3 +28,4 @@ Format follows Michael Nygard's original ADR shape: status, context, decision, c
 | [0010](0010-behaviour-change-as-the-goal.md) | Behaviour change is the goal, and friction is the budget |
 | [0011](0011-behaviour-test-boundary.md) | The behaviour test governs persuasion, not entitlements |
 | [0012](0012-engagement-is-salience.md) | Engagement means salience at the decision point, not return visits |
+| [0013](0013-no-forget-action.md) | No forget action; the score cannot rise when records are deleted |
