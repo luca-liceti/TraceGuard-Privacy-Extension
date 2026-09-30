@@ -3,9 +3,9 @@
  * USER PRIVACY SCORE CHART SERIES
  * =============================================================================
  *
- * Turns the raw `scoreHistory` (one entry per page visit / PII event, in
- * chronological order) into the series rendered by the User Privacy Score
- * chart:
+ * Turns the raw `scoreHistory` (one entry per score change, in chronological
+ * order: the baseline written at account creation, each PII handover, and the
+ * daily snapshot) into the series rendered by the Privacy Score History chart:
  *
  * - Today (1d): the raw score trajectory from midnight to now, anchored at the
  *   score the user carried over from before midnight.

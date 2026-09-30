@@ -303,6 +303,24 @@ export const storage = {
         return session.cryptoKeyHex ? importKey(session.cryptoKeyHex) : null;
     },
 
+    // Writes one baseline point into `scoreHistory`, so a brand-new account has a
+    // starting value to chart. The score is derived from handovers and browsing
+    // writes no history of its own (only a handover, the daily snapshot, or this
+    // seed does), so without it the Overview ring and chart would read "No data
+    // yet" until the first handover, which looks like a broken dashboard.
+    // An existing history is never overwritten: an imported backup brings its own.
+    seedScoreHistoryBaseline: async (key: CryptoKey): Promise<void> => {
+        const stored = await chrome.storage.local.get('scoreHistory');
+        if (stored.scoreHistory !== undefined) return;
+        const seed: import('./types').ScoreHistoryEntry[] = [{
+            timestamp: Date.now(),
+            ups: DEFAULT_STATE.ups,
+            avgSiteRisk: 0,
+            reason: 'Account created',
+        }];
+        await storage.set({ scoreHistory: await encryptData(key, seed) as any });
+    },
+
     // Reads detector logs, transparently decrypting them when the vault is
     // unlocked. Returns [] when the vault is locked (data is unreadable).
     getDetectorLogs: async (key?: CryptoKey | null): Promise<any[]> => {

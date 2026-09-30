@@ -92,7 +92,7 @@ export function ChartAreaInteractive({
     }>
     <Card className="@container/card h-full">
       <CardHeader className="relative">
-        <CardTitle>{t("User Privacy Score")}</CardTitle>
+        <CardTitle>{t("Privacy Score History")}</CardTitle>
         <CardDescription>
           <span className="@[540px]/card:block hidden">
             {t('Score for')} {timeRange === '1d' ? t('today') : timeRange === '7d' ? t('the last 7 days') : t('the last 30 days')}

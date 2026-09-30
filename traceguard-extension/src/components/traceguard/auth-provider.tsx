@@ -135,7 +135,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Save key to memory
       await chrome.storage.session.set({ cryptoKeyHex: keyHex })
-      
+
+      // Give the score history a starting point. The score is derived from
+      // handovers and browsing writes no history of its own, so without this a
+      // fresh account shows "No data yet" on Overview until the first handover
+      // or the daily snapshot. The account still works if this write fails, so
+      // report it and carry on rather than blocking setup on a chart's baseline.
+      try {
+        await storage.seedScoreHistoryBaseline(key)
+      } catch (error) {
+        captureError('storage', error, 'score_history_seed_failed')
+      }
+
       setPassword("")
       setConfirmPassword("")
       setAuthState("unlocked")

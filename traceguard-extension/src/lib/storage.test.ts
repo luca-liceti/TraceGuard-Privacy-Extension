@@ -25,7 +25,7 @@ if (typeof crypto === 'undefined' || !crypto.subtle) {
 }
 
 import { storage, readBuffer } from './storage';
-import { deriveKeyFromPassword, generateSalt, exportKey, encryptData } from './crypto';
+import { deriveKeyFromPassword, generateSalt, exportKey, encryptData, decryptData } from './crypto';
 
 // Helper: create a real AES-GCM CryptoKey for tests that need encryption
 async function makeKey(): Promise<CryptoKey> {
@@ -444,5 +444,38 @@ describe('storage clear/reset paths', () => {
         expect(res.scoreHistory).toBeUndefined();
         expect(res.siteCache).toBeUndefined();
         expect(res.crossSiteExposure).toBeUndefined();
+    });
+});
+
+// =============================================================================
+// Score history baseline
+// =============================================================================
+describe('storage.seedScoreHistoryBaseline', () => {
+    it('writes one baseline point when there is no history', async () => {
+        const key = await makeKey();
+        await storage.seedScoreHistoryBaseline(key);
+
+        const { scoreHistory } = await chrome.storage.local.get<{ scoreHistory: string }>('scoreHistory');
+        expect(typeof scoreHistory).toBe('string'); // encrypted at rest
+
+        const history = await decryptData<import('./types').ScoreHistoryEntry[]>(key, scoreHistory);
+        expect(history).toHaveLength(1);
+        expect(history![0].ups).toBe(100);
+        expect(history![0].reason).toBe('Account created');
+    });
+
+    it('never overwrites an existing history', async () => {
+        const key = await makeKey();
+        const existing: import('./types').ScoreHistoryEntry[] = [
+            { timestamp: 1, ups: 42, avgSiteRisk: 0, reason: 'PII entered on a.com' },
+        ];
+        await chrome.storage.local.set({ scoreHistory: await encryptData(key, existing) });
+
+        await storage.seedScoreHistoryBaseline(key);
+
+        const { scoreHistory } = await chrome.storage.local.get<{ scoreHistory: string }>('scoreHistory');
+        const history = await decryptData<import('./types').ScoreHistoryEntry[]>(key, scoreHistory);
+        expect(history).toHaveLength(1);
+        expect(history![0].ups).toBe(42);
     });
 });

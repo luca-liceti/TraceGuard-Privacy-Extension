@@ -2,6 +2,16 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.14.1
+
+**What's new**
+
+- The score chart on **Overview** is now titled **Privacy Score History**, so it reads as the record of how your number changed rather than a second copy of the dial beside it.
+
+**What was fixed**
+
+- **Overview** shows your Privacy Score from your first day instead of **No data yet**. The score is derived from what you have handed over, and browsing on its own writes nothing to the score history, so a fresh account had nothing to chart until the first handover or the next day's automatic snapshot. Creating your account now records the starting point, so the dial reads 100 and the chart has a line from the start.
+
 ## v1.14.0
 
 **What's new**
