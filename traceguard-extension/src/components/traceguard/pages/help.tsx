@@ -68,7 +68,7 @@ export default function HelpPage() {
       items: [
         {
           question: t("What is UPS?"),
-          answer: t("UPS stands for User Privacy Score. It represents your overall privacy health across all your browsing sessions. It starts at 100 and decreases when you visit risky sites or enter sensitive information on them.")
+          answer: t("UPS stands for User Privacy Score. It is calculated from the personal data you have entered and how risky each site was. It starts at 100 and falls when you hand data to a risky site, then rises again slowly as older entries age.")
         },
         {
           question: t("What is WSS?"),
@@ -76,7 +76,7 @@ export default function HelpPage() {
         },
         {
           question: t("Why did my score drop?"),
-          answer: t("Your UPS drops when you visit websites with low WSS scores, especially if you enter sensitive information (like passwords or credit card numbers) on those sites.")
+          answer: t("Your UPS drops when you enter sensitive information (like a password or a card number) on a site that scored poorly. Visiting a site on its own does not change it.")
         }
       ]
     },
@@ -132,7 +132,7 @@ export default function HelpPage() {
     },
     {
       problem: t("My Privacy Score isn't updating"),
-      solution: t("Your score updates after visiting new sites and interacting with them. Try browsing a few different sites and refreshing the dashboard.")
+      solution: t("The score moves when you enter personal data somewhere, and it rises slowly as older entries age. Visiting sites on its own does not change it.")
     },
     {
       problem: t("The extension slowed down my browser"),
@@ -320,7 +320,7 @@ export default function HelpPage() {
                   <div>
                     <h4 className="font-semibold mb-1">{t("Read your browsing history")}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {t("Required to calculate and update your User Privacy Score (UPS) consistently across your browsing sessions.")}
+                      {t("Used to follow the active tab so the badge, the side panel, and the dashboard show the site you are on.")}
                     </p>
                   </div>
                 </div>

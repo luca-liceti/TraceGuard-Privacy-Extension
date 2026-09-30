@@ -44,6 +44,7 @@ export default function OverviewPage() {
       reputation: WSS_WEIGHTS.reputation,
       tracking: WSS_WEIGHTS.tracking,
       cookies: WSS_WEIGHTS.cookies,
+      fingerprinting: WSS_WEIGHTS.fingerprinting,
       inputs: WSS_WEIGHTS.input,
       policy: WSS_WEIGHTS.policy,
       permissions: 0

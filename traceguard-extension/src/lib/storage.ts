@@ -15,7 +15,7 @@
  * 
  * WHAT WE STORE:
  * 1. Settings - Your preferences (theme, notifications, whitelist/blacklist)
- * 2. App State - Your UPS score, sites analyzed count, safe streak
+ * 2. App State - Your UPS score and site counters
  * 3. Detector Logs - History of what we've detected on sites (ENCRYPTED)
  * 4. Notifications - Alerts and warnings we've shown you (ENCRYPTED)
  * 5. Cross-Site Exposure - Which sites know your email, phone, etc. (ENCRYPTED)

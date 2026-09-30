@@ -2,6 +2,14 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.14.3
+
+**What was fixed**
+
+- **Help** no longer describes the old score. It said the Privacy Score falls when you visit risky sites and updates as you browse. It now says what the number is made of: the personal data you have entered, how risky each site was, and the slow recovery as older entries age.
+- The **Read your browsing history** permission note no longer credits the Privacy Score. That permission follows the active tab, so the badge, the side panel and the dashboard show the site you are on.
+- A site whose analysis has aged out of the cache could show a score that disagreed with the popup and the side panel, because the dashboard's fallback weights omitted the fingerprinting detector. The fallback now reads every weight from the same table the score itself uses.
+
 ## v1.14.2
 
 **What was fixed**
