@@ -1097,7 +1097,7 @@
         "url": "https://www.apple.com/legal/privacy/en-ww/"
       }
     ],
-    "lastUpdated": 1788337560696
+    "lastUpdated": 1790763499127
   },
   "microsoft.com": {
     "found": true,
@@ -1948,7 +1948,7 @@
         "url": "https://help.instagram.com/477434105621119"
       }
     ],
-    "lastUpdated": 1790154417735
+    "lastUpdated": 1790763514069
   },
   "linkedin.com": {
     "found": true,
@@ -4915,7 +4915,7 @@
         "url": "https://www.chase.com/digital/resources/terms-of-use"
       }
     ],
-    "lastUpdated": 1790154451348
+    "lastUpdated": 1790763548978
   },
   "paypal.com": {
     "found": true,
@@ -5232,7 +5232,7 @@
         "url": "https://www.paypal.com/sg/legalhub/paypal/ebaybilling-full"
       }
     ],
-    "lastUpdated": 1787114156509
+    "lastUpdated": 1790763509338
   },
   "walmart.com": {
     "found": true,
@@ -7979,7 +7979,7 @@
         "url": "https://cm.usatoday.com/terms/"
       }
     ],
-    "lastUpdated": 1790154505815
+    "lastUpdated": 1790763599191
   },
   "bloomberg.com": {
     "found": true,
@@ -8024,7 +8024,7 @@
         "url": "https://www.bloomberg.com/notices/privacy/"
       }
     ],
-    "lastUpdated": 1790154611106
+    "lastUpdated": 1790763681767
   },
   "cnbc.com": {
     "found": true,
@@ -10827,7 +10827,7 @@
         "url": "https://riseup.net/en/about-us/policy/government-faq"
       }
     ],
-    "lastUpdated": 1790154384955
+    "lastUpdated": 1790763487343
   },
   "nzh3fv6jc6jskki3.onion": {
     "found": true,
@@ -10928,7 +10928,7 @@
         "url": "https://riseup.net/en/about-us/policy/government-faq"
       }
     ],
-    "lastUpdated": 1790154384955
+    "lastUpdated": 1790763487343
   },
   "vww6ybal4bd7szmgncyruucpgfkqahzddi37ktceo3ah7ngmcopnpyyd.onion": {
     "found": true,
@@ -11029,7 +11029,7 @@
         "url": "https://riseup.net/en/about-us/policy/government-faq"
       }
     ],
-    "lastUpdated": 1790154384955
+    "lastUpdated": 1790763487343
   },
   "goguardian.com": {
     "found": true,
@@ -11066,7 +11066,7 @@
         "url": "https://www.goguardian.com/productPrivacy.html"
       }
     ],
-    "lastUpdated": 1790154385379
+    "lastUpdated": 1790763487709
   },
   "billionsinchange.com": {
     "found": true,
@@ -11099,7 +11099,7 @@
         "url": "https://billionsinchange.com/privacy/"
       }
     ],
-    "lastUpdated": 1790154385801
+    "lastUpdated": 1790763488074
   },
   "creditkarma.com": {
     "found": true,
@@ -11264,7 +11264,7 @@
         "url": "https://www.creditkarma.com/about/security"
       }
     ],
-    "lastUpdated": 1790154386385
+    "lastUpdated": 1790763488544
   },
   "airbnb.com": {
     "found": true,
@@ -11311,10 +11311,6 @@
         "classification": "good"
       },
       {
-        "title": "You agree not to use the service for illegal purposes",
-        "classification": "neutral"
-      },
-      {
         "title": "30 days of notice are given before closing your account",
         "classification": "good"
       },
@@ -11337,6 +11333,14 @@
       {
         "title": "Your personal data may be disclosed to comply with government requests without notice to you",
         "classification": "bad"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
+      },
+      {
+        "title": "You agree not to use the service for illegal purposes",
+        "classification": "neutral"
       }
     ],
     "documents": [
@@ -11353,7 +11357,7 @@
         "url": "https://www.airbnb.com/terms/privacy_policy"
       }
     ],
-    "lastUpdated": 1787089171299
+    "lastUpdated": 1790763488899
   },
   "abnb.me": {
     "found": true,
@@ -11400,10 +11404,6 @@
         "classification": "good"
       },
       {
-        "title": "You agree not to use the service for illegal purposes",
-        "classification": "neutral"
-      },
-      {
         "title": "30 days of notice are given before closing your account",
         "classification": "good"
       },
@@ -11426,6 +11426,14 @@
       {
         "title": "Your personal data may be disclosed to comply with government requests without notice to you",
         "classification": "bad"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
+      },
+      {
+        "title": "You agree not to use the service for illegal purposes",
+        "classification": "neutral"
       }
     ],
     "documents": [
@@ -11442,7 +11450,7 @@
         "url": "https://www.airbnb.com/terms/privacy_policy"
       }
     ],
-    "lastUpdated": 1787089171299
+    "lastUpdated": 1790763488899
   },
   "readyplayer.me": {
     "found": true,
@@ -11700,7 +11708,7 @@
         "url": "https://mega.nz/cookie"
       }
     ],
-    "lastUpdated": 1790154395778
+    "lastUpdated": 1790763497359
   },
   "mega.io": {
     "found": true,
@@ -11921,7 +11929,7 @@
         "url": "https://mega.nz/cookie"
       }
     ],
-    "lastUpdated": 1790154395778
+    "lastUpdated": 1790763497359
   },
   "mega.co.nz": {
     "found": true,
@@ -12142,7 +12150,7 @@
         "url": "https://mega.nz/cookie"
       }
     ],
-    "lastUpdated": 1790154395778
+    "lastUpdated": 1790763497359
   },
   "lesoir.be": {
     "found": true,
@@ -12271,7 +12279,7 @@
         "url": "http://www.rossel.be/mentions-legales/rossel-cie-2/cgv-3/"
       }
     ],
-    "lastUpdated": 1790154396359
+    "lastUpdated": 1790763497825
   },
   "rossel.be": {
     "found": true,
@@ -12400,7 +12408,7 @@
         "url": "http://www.rossel.be/mentions-legales/rossel-cie-2/cgv-3/"
       }
     ],
-    "lastUpdated": 1790154396359
+    "lastUpdated": 1790763497825
   },
   "seenthis.net": {
     "found": true,
@@ -12433,7 +12441,7 @@
         "url": "http://seenthis.net/fran%C3%A7ais/mentions/article/propri%C3%A9t%C3%A9-intellectuelle"
       }
     ],
-    "lastUpdated": 1790154396780
+    "lastUpdated": 1790763498188
   },
   "dhakatribune.com": {
     "found": true,
@@ -12494,7 +12502,7 @@
         "url": "https://www.dhakatribune.com/terms-and-conditions"
       }
     ],
-    "lastUpdated": 1790154397199
+    "lastUpdated": 1790763498551
   },
   "ealireza.com": {
     "found": true,
@@ -12820,7 +12828,7 @@
         "url": "https://www.apple.com/legal/privacy/en-ww/"
       }
     ],
-    "lastUpdated": 1788337560696
+    "lastUpdated": 1790763499127
   },
   "webkit.org": {
     "found": true,
@@ -13097,7 +13105,7 @@
         "url": "https://www.apple.com/legal/privacy/en-ww/"
       }
     ],
-    "lastUpdated": 1788337560696
+    "lastUpdated": 1790763499127
   },
   "cdn-apple.com": {
     "found": true,
@@ -13374,7 +13382,7 @@
         "url": "https://www.apple.com/legal/privacy/en-ww/"
       }
     ],
-    "lastUpdated": 1788337560696
+    "lastUpdated": 1790763499127
   },
   "apple.news": {
     "found": true,
@@ -13651,7 +13659,7 @@
         "url": "https://www.apple.com/legal/privacy/en-ww/"
       }
     ],
-    "lastUpdated": 1788337560696
+    "lastUpdated": 1790763499127
   },
   "collegeboard.org": {
     "found": true,
@@ -13890,7 +13898,7 @@
         "url": "https://www.loblaw.ca/en/privacy-policy/"
       }
     ],
-    "lastUpdated": 1790154406433
+    "lastUpdated": 1790763507478
   },
   "rottentomatoes.com": {
     "found": true,
@@ -14303,7 +14311,7 @@
         "url": "https://www.rottentomatoes.com/policies/terms-of-use"
       }
     ],
-    "lastUpdated": 1790154408024
+    "lastUpdated": 1790763508862
   },
   "paypal-corp.com": {
     "found": true,
@@ -14620,7 +14628,7 @@
         "url": "https://www.paypal.com/sg/legalhub/paypal/ebaybilling-full"
       }
     ],
-    "lastUpdated": 1787114156509
+    "lastUpdated": 1790763509338
   },
   "paypal.me": {
     "found": true,
@@ -14937,7 +14945,7 @@
         "url": "https://www.paypal.com/sg/legalhub/paypal/ebaybilling-full"
       }
     ],
-    "lastUpdated": 1787114156509
+    "lastUpdated": 1790763509338
   },
   "paypalobjects.com": {
     "found": true,
@@ -15254,7 +15262,7 @@
         "url": "https://www.paypal.com/sg/legalhub/paypal/ebaybilling-full"
       }
     ],
-    "lastUpdated": 1787114156509
+    "lastUpdated": 1790763509338
   },
   "paypal-gifts.com": {
     "found": true,
@@ -15571,7 +15579,7 @@
         "url": "https://www.paypal.com/sg/legalhub/paypal/ebaybilling-full"
       }
     ],
-    "lastUpdated": 1787114156509
+    "lastUpdated": 1790763509338
   },
   "paypal-communication.com": {
     "found": true,
@@ -15888,7 +15896,7 @@
         "url": "https://www.paypal.com/sg/legalhub/paypal/ebaybilling-full"
       }
     ],
-    "lastUpdated": 1787114156509
+    "lastUpdated": 1790763509338
   },
   "couchsurfing.com": {
     "found": true,
@@ -16583,7 +16591,7 @@
         "url": "https://help.instagram.com/477434105621119"
       }
     ],
-    "lastUpdated": 1790154417735
+    "lastUpdated": 1790763514069
   },
   "cdninstagram.com": {
     "found": true,
@@ -16932,7 +16940,7 @@
         "url": "https://help.instagram.com/477434105621119"
       }
     ],
-    "lastUpdated": 1790154417735
+    "lastUpdated": 1790763514069
   },
   "pure.app": {
     "found": true,
@@ -17217,7 +17225,7 @@
         "url": "https://pure.app/content/en/legal/privacy-policy-for-california"
       }
     ],
-    "lastUpdated": 1790154418321
+    "lastUpdated": 1790763518460
   },
   "thepure.app": {
     "found": true,
@@ -17502,7 +17510,7 @@
         "url": "https://pure.app/content/en/legal/privacy-policy-for-california"
       }
     ],
-    "lastUpdated": 1790154418321
+    "lastUpdated": 1790763518460
   },
   "symbaloo.com": {
     "found": true,
@@ -17675,7 +17683,7 @@
         "url": "https://blog.symbaloo.com/terms/terms_us.html"
       }
     ],
-    "lastUpdated": 1790154418744
+    "lastUpdated": 1790763518828
   },
   "foursquare.com": {
     "found": true,
@@ -17968,7 +17976,7 @@
         "url": "https://foursquare.com/legal/global-data-processing-addendum/"
       }
     ],
-    "lastUpdated": 1790154419330
+    "lastUpdated": 1790763519298
   },
   "zurinstitute.com": {
     "found": true,
@@ -17989,7 +17997,7 @@
         "url": "https://www.zurinstitute.com/privacy-disclaimer-terms-of-use-dmca/"
       }
     ],
-    "lastUpdated": 1787114166613
+    "lastUpdated": 1790763519661
   },
   "coveredca.com": {
     "found": true,
@@ -18126,7 +18134,7 @@
         "url": "https://www.coveredca.com/accessibility/"
       }
     ],
-    "lastUpdated": 1790154428300
+    "lastUpdated": 1790763520130
   },
   "myanimelist.net": {
     "found": true,
@@ -18423,7 +18431,7 @@
         "url": "https://myanimelist.net/about/cookie_policy"
       }
     ],
-    "lastUpdated": 1790154429465
+    "lastUpdated": 1790763528689
   },
   "feedbin.com": {
     "found": true,
@@ -18472,7 +18480,7 @@
         "url": "https://feedbin.com/privacy-policy"
       }
     ],
-    "lastUpdated": 1790154429886
+    "lastUpdated": 1790763529054
   },
   "parler.com": {
     "found": true,
@@ -18597,7 +18605,7 @@
         "url": "https://parler.com/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154430467
+    "lastUpdated": 1790763529521
   },
   "tosdr.org": {
     "found": true,
@@ -18651,14 +18659,14 @@
     "documents": [
       {
         "name": "Terms of Service",
-        "url": "https://tosdr.atlassian.net/wiki/spaces/SP/pages/95354642/edit.tosdr.org+Terms+of+Service"
+        "url": "https://docs.tosdr.org/site-policy/phoenix-policies/edit.tosdr.org-terms-of-service"
       },
       {
         "name": "Privacy Policy",
-        "url": "https://tosdr.atlassian.net/wiki/spaces/SP/pages/95354649/edit.tosdr.org+Privacy+Policy"
+        "url": "https://docs.tosdr.org/site-policy/phoenix-policies/edit.tosdr.org-privacy-policy"
       }
     ],
-    "lastUpdated": 1787719160696
+    "lastUpdated": 1790763529884
   },
   "vox.com": {
     "found": true,
@@ -18735,7 +18743,7 @@
         "url": "https://www.voxmedia.com/legal/cookie-policy"
       }
     ],
-    "lastUpdated": 1790154439277
+    "lastUpdated": 1790763530250
   },
   "i.moscow": {
     "found": true,
@@ -18961,7 +18969,7 @@
         "url": "https://www.washingtonpost.com/privacy-policy/2011/11/18/gIQASIiaiN_story.html"
       }
     ],
-    "lastUpdated": 1790154440276
+    "lastUpdated": 1790763538703
   },
   "blendermarket.com": {
     "found": true,
@@ -18990,7 +18998,7 @@
         "url": "https://blendermarket.com/policies/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154440696
+    "lastUpdated": 1790763539067
   },
   "linecorp.com": {
     "found": true,
@@ -19147,7 +19155,7 @@
         "url": "https://line.me/en/terms/policy/"
       }
     ],
-    "lastUpdated": 1790154441279
+    "lastUpdated": 1790763539538
   },
   "line.me": {
     "found": true,
@@ -19304,7 +19312,7 @@
         "url": "https://line.me/en/terms/policy/"
       }
     ],
-    "lastUpdated": 1790154441279
+    "lastUpdated": 1790763539538
   },
   "epollsurveys.com": {
     "found": true,
@@ -19361,7 +19369,7 @@
         "url": "https://www.epollsurveys.com/epoll/clients/privacy.htm#terms"
       }
     ],
-    "lastUpdated": 1788337613124
+    "lastUpdated": 1790763559722
   },
   "fullcontact.com": {
     "found": true,
@@ -19394,6 +19402,10 @@
       {
         "title": "You have the right to leave this service at any time",
         "classification": "good"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -19418,7 +19430,7 @@
         "url": "https://www.fullcontact.com/privacy/cookie-policy/"
       }
     ],
-    "lastUpdated": 1787719171496
+    "lastUpdated": 1790763539903
   },
   "contactsplus.com": {
     "found": true,
@@ -19451,6 +19463,10 @@
       {
         "title": "You have the right to leave this service at any time",
         "classification": "good"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -19475,7 +19491,7 @@
         "url": "https://www.fullcontact.com/privacy/cookie-policy/"
       }
     ],
-    "lastUpdated": 1787719171496
+    "lastUpdated": 1790763539903
   },
   "statefarm.com": {
     "found": true,
@@ -19528,7 +19544,7 @@
         "url": "https://www.statefarm.com/customer-care/disclosures/terms-of-use"
       }
     ],
-    "lastUpdated": 1790154450083
+    "lastUpdated": 1790763540267
   },
   "dashlane.com": {
     "found": true,
@@ -19642,7 +19658,7 @@
         "url": "https://ritual.com/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154450927
+    "lastUpdated": 1790763548615
   },
   "openbookpublishers.com": {
     "found": true,
@@ -19679,7 +19695,7 @@
         "url": "https://www.openbookpublishers.com/section/6/1"
       }
     ],
-    "lastUpdated": 1790154451769
+    "lastUpdated": 1790763549342
   },
   "digital.com": {
     "found": true,
@@ -19704,7 +19720,7 @@
         "url": "https://digital.com/about/privacy-policy/"
       }
     ],
-    "lastUpdated": 1787719181963
+    "lastUpdated": 1790763549705
   },
   "whoishostingthis.com": {
     "found": true,
@@ -19729,7 +19745,7 @@
         "url": "https://digital.com/about/privacy-policy/"
       }
     ],
-    "lastUpdated": 1787719181963
+    "lastUpdated": 1790763549705
   },
   "kissmetrics.io": {
     "found": true,
@@ -19762,7 +19778,7 @@
         "url": "https://www.kissmetrics.io/privacy/"
       }
     ],
-    "lastUpdated": 1790154460571
+    "lastUpdated": 1790763550075
   },
   "deliberativegames.com": {
     "found": true,
@@ -20009,7 +20025,7 @@
         "url": "https://clario.co/subscription-policy/"
       }
     ],
-    "lastUpdated": 1790154461998
+    "lastUpdated": 1790763558887
   },
   "antispy.me": {
     "found": true,
@@ -20198,7 +20214,7 @@
         "url": "https://clario.co/subscription-policy/"
       }
     ],
-    "lastUpdated": 1790154461998
+    "lastUpdated": 1790763558887
   },
   "clario.tech": {
     "found": true,
@@ -20387,7 +20403,7 @@
         "url": "https://clario.co/subscription-policy/"
       }
     ],
-    "lastUpdated": 1790154461998
+    "lastUpdated": 1790763558887
   },
   "justpark.com": {
     "found": true,
@@ -20636,7 +20652,7 @@
         "url": "https://www.justpark.com/cancellation-policy?section=non-reservable"
       }
     ],
-    "lastUpdated": 1790154462580
+    "lastUpdated": 1790763559358
   },
   "huawei.com": {
     "found": true,
@@ -20753,7 +20769,7 @@
         "url": "https://consumer.huawei.com/en/legal/cookie-policy/"
       }
     ],
-    "lastUpdated": 1790154471547
+    "lastUpdated": 1790763560189
   },
   "huaweimobileservices.com": {
     "found": true,
@@ -20870,7 +20886,7 @@
         "url": "https://consumer.huawei.com/en/legal/cookie-policy/"
       }
     ],
-    "lastUpdated": 1790154471547
+    "lastUpdated": 1790763560189
   },
   "marcopolo.me": {
     "found": true,
@@ -20907,7 +20923,7 @@
         "url": "https://www.marcopolo.me/terms/"
       }
     ],
-    "lastUpdated": 1790154471969
+    "lastUpdated": 1790763560552
   },
   "marcopolovideo.com": {
     "found": true,
@@ -20944,7 +20960,7 @@
         "url": "https://www.marcopolo.me/terms/"
       }
     ],
-    "lastUpdated": 1790154471969
+    "lastUpdated": 1790763560552
   },
   "getjoya.com": {
     "found": true,
@@ -20981,7 +20997,7 @@
         "url": "https://www.marcopolo.me/terms/"
       }
     ],
-    "lastUpdated": 1790154471969
+    "lastUpdated": 1790763560552
   },
   "wikiwand.com": {
     "found": true,
@@ -21119,7 +21135,7 @@
         "url": "https://gab.com/about/privacy"
       }
     ],
-    "lastUpdated": 1790154472811
+    "lastUpdated": 1790763568902
   },
   "dissenter.com": {
     "found": true,
@@ -21188,7 +21204,7 @@
         "url": "https://gab.com/about/privacy"
       }
     ],
-    "lastUpdated": 1790154472811
+    "lastUpdated": 1790763568902
   },
   "humanrights.foundation": {
     "found": true,
@@ -21221,7 +21237,7 @@
         "url": "https://hrf.org/legal/privacy-policy"
       }
     ],
-    "lastUpdated": 1790154473231
+    "lastUpdated": 1790763569263
   },
   "scistarter.com": {
     "found": true,
@@ -21274,7 +21290,7 @@
         "url": "https://scistarter.org/cookies"
       }
     ],
-    "lastUpdated": 1788337622930
+    "lastUpdated": 1790763569627
   },
   "scistarter.org": {
     "found": true,
@@ -21327,7 +21343,7 @@
         "url": "https://scistarter.org/cookies"
       }
     ],
-    "lastUpdated": 1788337622930
+    "lastUpdated": 1790763569627
   },
   "scienceforcitizens.com": {
     "found": true,
@@ -21380,7 +21396,7 @@
         "url": "https://scistarter.org/cookies"
       }
     ],
-    "lastUpdated": 1788337622930
+    "lastUpdated": 1790763569627
   },
   "scientology.org": {
     "found": true,
@@ -21413,7 +21429,7 @@
         "url": "https://www.scientology.org/cookie-policy.html"
       }
     ],
-    "lastUpdated": 1790154482033
+    "lastUpdated": 1790763569990
   },
   "scientology.net": {
     "found": true,
@@ -21446,7 +21462,7 @@
         "url": "https://www.scientology.org/cookie-policy.html"
       }
     ],
-    "lastUpdated": 1790154482033
+    "lastUpdated": 1790763569990
   },
   "volunteerministers.org": {
     "found": true,
@@ -21479,7 +21495,7 @@
         "url": "https://www.scientology.org/cookie-policy.html"
       }
     ],
-    "lastUpdated": 1790154482033
+    "lastUpdated": 1790763569990
   },
   "youthforhumanrights.org": {
     "found": true,
@@ -21512,7 +21528,7 @@
         "url": "https://www.scientology.org/cookie-policy.html"
       }
     ],
-    "lastUpdated": 1790154482033
+    "lastUpdated": 1790763569990
   },
   "cchrint.org": {
     "found": true,
@@ -21545,7 +21561,7 @@
         "url": "https://www.scientology.org/cookie-policy.html"
       }
     ],
-    "lastUpdated": 1790154482033
+    "lastUpdated": 1790763569990
   },
   "cchr.org": {
     "found": true,
@@ -21578,7 +21594,7 @@
         "url": "https://www.scientology.org/cookie-policy.html"
       }
     ],
-    "lastUpdated": 1790154482033
+    "lastUpdated": 1790763569990
   },
   "drugfreeworld.org": {
     "found": true,
@@ -21611,7 +21627,7 @@
         "url": "https://www.scientology.org/cookie-policy.html"
       }
     ],
-    "lastUpdated": 1790154482033
+    "lastUpdated": 1790763569990
   },
   "commonapp.org": {
     "found": true,
@@ -21704,7 +21720,7 @@
         "url": "https://www.commonapp.org/privacy-policy"
       }
     ],
-    "lastUpdated": 1790154482613
+    "lastUpdated": 1790763570457
   },
   "appfluence.com": {
     "found": true,
@@ -21856,7 +21872,7 @@
         "url": "https://www.yubico.com/support/terms-conditions/yubico-website-terms-conditions/"
       }
     ],
-    "lastUpdated": 1790154483873
+    "lastUpdated": 1790763579162
   },
   "chegg.com": {
     "found": true,
@@ -22053,6 +22069,10 @@
       {
         "title": "This service assumes no liability for any losses or damages resulting from any matter relating to the service",
         "classification": "neutral"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -22073,7 +22093,7 @@
         "url": "https://www.chegg.com/termsofuse/"
       }
     ],
-    "lastUpdated": 1788337632831
+    "lastUpdated": 1790763579632
   },
   "citationmachine.net": {
     "found": true,
@@ -22270,6 +22290,10 @@
       {
         "title": "This service assumes no liability for any losses or damages resulting from any matter relating to the service",
         "classification": "neutral"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -22290,7 +22314,7 @@
         "url": "https://www.chegg.com/termsofuse/"
       }
     ],
-    "lastUpdated": 1788337632831
+    "lastUpdated": 1790763579632
   },
   "normasapa.com": {
     "found": true,
@@ -22487,6 +22511,10 @@
       {
         "title": "This service assumes no liability for any losses or damages resulting from any matter relating to the service",
         "classification": "neutral"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -22507,7 +22535,7 @@
         "url": "https://www.chegg.com/termsofuse/"
       }
     ],
-    "lastUpdated": 1788337632831
+    "lastUpdated": 1790763579632
   },
   "easybib.com": {
     "found": true,
@@ -22704,6 +22732,10 @@
       {
         "title": "This service assumes no liability for any losses or damages resulting from any matter relating to the service",
         "classification": "neutral"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -22724,7 +22756,7 @@
         "url": "https://www.chegg.com/termsofuse/"
       }
     ],
-    "lastUpdated": 1788337632831
+    "lastUpdated": 1790763579632
   },
   "internships.com": {
     "found": true,
@@ -22921,6 +22953,10 @@
       {
         "title": "This service assumes no liability for any losses or damages resulting from any matter relating to the service",
         "classification": "neutral"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -22941,7 +22977,7 @@
         "url": "https://www.chegg.com/termsofuse/"
       }
     ],
-    "lastUpdated": 1788337632831
+    "lastUpdated": 1790763579632
   },
   "bibme.org": {
     "found": true,
@@ -23138,6 +23174,10 @@
       {
         "title": "This service assumes no liability for any losses or damages resulting from any matter relating to the service",
         "classification": "neutral"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -23158,7 +23198,7 @@
         "url": "https://www.chegg.com/termsofuse/"
       }
     ],
-    "lastUpdated": 1788337632831
+    "lastUpdated": 1790763579632
   },
   "citethisforme.com": {
     "found": true,
@@ -23355,6 +23395,10 @@
       {
         "title": "This service assumes no liability for any losses or damages resulting from any matter relating to the service",
         "classification": "neutral"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       }
     ],
     "documents": [
@@ -23375,7 +23419,7 @@
         "url": "https://www.chegg.com/termsofuse/"
       }
     ],
-    "lastUpdated": 1788337632831
+    "lastUpdated": 1790763579632
   },
   "rokfin.com": {
     "found": true,
@@ -23528,7 +23572,7 @@
         "url": "https://rokfin.com/privacy"
       }
     ],
-    "lastUpdated": 1790154492837
+    "lastUpdated": 1790763580098
   },
   "billtrack50.com": {
     "found": true,
@@ -23553,7 +23597,7 @@
         "url": "https://www.billtrack50.com/terms-of-use"
       }
     ],
-    "lastUpdated": 1790154493257
+    "lastUpdated": 1790763580461
   },
   "surfaceowl.com": {
     "found": true,
@@ -23634,7 +23678,7 @@
         "url": "https://surfaceowl.com/user-agreement"
       }
     ],
-    "lastUpdated": 1790154493676
+    "lastUpdated": 1790763580824
   },
   "surfaceowl.io": {
     "found": true,
@@ -23715,7 +23759,7 @@
         "url": "https://surfaceowl.com/user-agreement"
       }
     ],
-    "lastUpdated": 1790154493676
+    "lastUpdated": 1790763580824
   },
   "fandango.com": {
     "found": true,
@@ -25560,7 +25604,7 @@
         "url": "https://vivaldi.com/privacy/community-privacy-policy/"
       }
     ],
-    "lastUpdated": 1790154495001
+    "lastUpdated": 1790763589277
   },
   "vivaldi.net": {
     "found": true,
@@ -25765,7 +25809,7 @@
         "url": "https://vivaldi.com/privacy/community-privacy-policy/"
       }
     ],
-    "lastUpdated": 1790154495001
+    "lastUpdated": 1790763589277
   },
   "lulu.com": {
     "found": true,
@@ -25782,6 +25826,10 @@
       {
         "title": "When the service wants to make a material change to its terms, users are notified at least 30 days in advance",
         "classification": "good"
+      },
+      {
+        "title": "You waive your right to a class action.",
+        "classification": "bad"
       },
       {
         "title": "You can access most of the pages on the service's website without revealing any personal information",
@@ -25802,7 +25850,7 @@
         "url": "https://www.lulu.com/privacy-policy"
       }
     ],
-    "lastUpdated": 1788337643048
+    "lastUpdated": 1790763589641
   },
   "boingo.com": {
     "found": true,
@@ -25875,7 +25923,7 @@
         "url": "https://www.boingo.com/legal/end-user-license-agreement-boingo-customer-agreement/"
       }
     ],
-    "lastUpdated": 1790154503810
+    "lastUpdated": 1790763590007
   },
   "addy.io": {
     "found": true,
@@ -25952,7 +26000,7 @@
         "url": "https://addy.io/privacy/"
       }
     ],
-    "lastUpdated": 1790154504232
+    "lastUpdated": 1790763590370
   },
   "bitdefender.com": {
     "found": true,
@@ -26081,7 +26129,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.co.uk": {
     "found": true,
@@ -26210,7 +26258,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.fr": {
     "found": true,
@@ -26339,7 +26387,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.es": {
     "found": true,
@@ -26468,7 +26516,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.ru": {
     "found": true,
@@ -26597,7 +26645,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.de": {
     "found": true,
@@ -26726,7 +26774,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.it": {
     "found": true,
@@ -26855,7 +26903,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.pt": {
     "found": true,
@@ -26984,7 +27032,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.nl": {
     "found": true,
@@ -27113,7 +27161,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.co.jp": {
     "found": true,
@@ -27242,7 +27290,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.com.au": {
     "found": true,
@@ -27371,7 +27419,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.be": {
     "found": true,
@@ -27500,7 +27548,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.com.br": {
     "found": true,
@@ -27629,7 +27677,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.ro": {
     "found": true,
@@ -27758,7 +27806,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.in": {
     "found": true,
@@ -27887,7 +27935,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.pl": {
     "found": true,
@@ -28016,7 +28064,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "com.tw": {
     "found": true,
@@ -28145,7 +28193,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.my": {
     "found": true,
@@ -28274,7 +28322,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "co.th": {
     "found": true,
@@ -28403,7 +28451,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.vn": {
     "found": true,
@@ -28532,7 +28580,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.cz": {
     "found": true,
@@ -28661,7 +28709,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "com.ua": {
     "found": true,
@@ -28790,7 +28838,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "bitdefender.gr": {
     "found": true,
@@ -28919,7 +28967,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "com.hr": {
     "found": true,
@@ -29048,7 +29096,7 @@
         "url": "https://www.bitdefender.com/site/view/legal-intellectual-property.html"
       }
     ],
-    "lastUpdated": 1790154504814
+    "lastUpdated": 1790763590838
   },
   "com.tr": {
     "found": true,
@@ -29081,7 +29129,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "talkingtomandfriends.com": {
     "found": true,
@@ -29251,7 +29299,7 @@
         "url": "https://tcrf.net/The_Cutting_Room_Floor:Privacy_policy"
       }
     ],
-    "lastUpdated": 1788337653064
+    "lastUpdated": 1790763599554
   },
   "mediamarkt.de": {
     "found": true,
@@ -29284,7 +29332,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.com": {
     "found": true,
@@ -29317,7 +29365,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.at": {
     "found": true,
@@ -29350,7 +29398,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.ch": {
     "found": true,
@@ -29383,7 +29431,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.be": {
     "found": true,
@@ -29416,7 +29464,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.hu": {
     "found": true,
@@ -29449,7 +29497,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.gr": {
     "found": true,
@@ -29482,7 +29530,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.nl": {
     "found": true,
@@ -29515,7 +29563,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.it": {
     "found": true,
@@ -29548,7 +29596,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.pt": {
     "found": true,
@@ -29581,7 +29629,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.pl": {
     "found": true,
@@ -29614,7 +29662,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.es": {
     "found": true,
@@ -29647,7 +29695,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "mediamarkt.se": {
     "found": true,
@@ -29680,7 +29728,7 @@
         "url": "https://www.mediamarkt.de/de/shop/datenschutzhinweis_shop.html"
       }
     ],
-    "lastUpdated": 1790154514619
+    "lastUpdated": 1790763599919
   },
   "flipgrid.com": {
     "found": true,
@@ -29761,7 +29809,7 @@
         "url": "https://legal.flipgrid.com/privacy.html"
       }
     ],
-    "lastUpdated": 1790154515462
+    "lastUpdated": 1790763600648
   },
   "cbc.ca": {
     "found": true,
@@ -29985,7 +30033,7 @@
         "url": "https://www.spriters-resource.com/page/privacy/"
       }
     ],
-    "lastUpdated": 1788337662866
+    "lastUpdated": 1790763609356
   },
   "spriters-resource.com": {
     "found": true,
@@ -30030,7 +30078,7 @@
         "url": "https://www.spriters-resource.com/page/privacy/"
       }
     ],
-    "lastUpdated": 1788337662866
+    "lastUpdated": 1790763609356
   },
   "models-resource.com": {
     "found": true,
@@ -30075,7 +30123,7 @@
         "url": "https://www.spriters-resource.com/page/privacy/"
       }
     ],
-    "lastUpdated": 1788337662866
+    "lastUpdated": 1790763609356
   },
   "textures-resource.com": {
     "found": true,
@@ -30120,7 +30168,7 @@
         "url": "https://www.spriters-resource.com/page/privacy/"
       }
     ],
-    "lastUpdated": 1788337662866
+    "lastUpdated": 1790763609356
   },
   "sounds-resource.com": {
     "found": true,
@@ -30165,7 +30213,7 @@
         "url": "https://www.spriters-resource.com/page/privacy/"
       }
     ],
-    "lastUpdated": 1788337662866
+    "lastUpdated": 1790763609356
   },
   "mheducation.com": {
     "found": true,
@@ -30202,7 +30250,7 @@
         "url": "https://www.mheducation.com/terms-use.html"
       }
     ],
-    "lastUpdated": 1790154525118
+    "lastUpdated": 1790763609721
   },
   "macgraw-hill.com": {
     "found": true,
@@ -30239,7 +30287,7 @@
         "url": "https://www.mheducation.com/terms-use.html"
       }
     ],
-    "lastUpdated": 1790154525118
+    "lastUpdated": 1790763609721
   },
   "vrchat.com": {
     "found": true,
@@ -30332,7 +30380,7 @@
         "url": "https://hello.vrchat.com/video-content-guidelines"
       }
     ],
-    "lastUpdated": 1790154525698
+    "lastUpdated": 1790763610188
   },
   "ruhrtalradweg.de": {
     "found": true,
@@ -30369,7 +30417,7 @@
         "url": "https://www.ruhrtalradweg.de/de/Datenschutz"
       }
     ],
-    "lastUpdated": 1790154526117
+    "lastUpdated": 1790763610554
   },
   "goodreads.com": {
     "found": true,
@@ -30530,7 +30578,7 @@
         "url": "https://www.goodreads.com/about/cookies_notice"
       }
     ],
-    "lastUpdated": 1790154526700
+    "lastUpdated": 1790763611024
   },
   "webcompat.com": {
     "found": true,
@@ -30664,7 +30712,7 @@
         "url": "https://becu.org/-/media/Files/PDF/BECUTermsandConditions.pdf"
       }
     ],
-    "lastUpdated": 1788337672768
+    "lastUpdated": 1790763619373
   },
   "aternos.gmbh": {
     "found": true,
@@ -30765,7 +30813,7 @@
         "url": "https://aternos.gmbh/en/aternos/terms"
       }
     ],
-    "lastUpdated": 1790154536086
+    "lastUpdated": 1790763619838
   },
   "aternos.org": {
     "found": true,
@@ -30866,7 +30914,7 @@
         "url": "https://aternos.gmbh/en/aternos/terms"
       }
     ],
-    "lastUpdated": 1790154536086
+    "lastUpdated": 1790763619838
   },
   "vidble.com": {
     "found": true,
@@ -30951,7 +30999,7 @@
         "url": "https://vidble.com/termsofservice"
       }
     ],
-    "lastUpdated": 1790154537091
+    "lastUpdated": 1790763620672
   },
   "lequipe.fr": {
     "found": true,
@@ -31076,7 +31124,7 @@
         "url": "https://www.lequipe.fr/Tous-sports/Actualites/Politique-des-cookies-sur-lequipe-fr/1026073"
       }
     ],
-    "lastUpdated": 1790154537672
+    "lastUpdated": 1790763621141
   },
   "francefootball.fr": {
     "found": true,
@@ -31201,7 +31249,7 @@
         "url": "https://www.lequipe.fr/Tous-sports/Actualites/Politique-des-cookies-sur-lequipe-fr/1026073"
       }
     ],
-    "lastUpdated": 1790154537672
+    "lastUpdated": 1790763621141
   },
   "laurakalbag.com": {
     "found": true,
@@ -31343,7 +31391,7 @@
         "url": "https://www.elmundo.es/registro/privacidad.html"
       }
     ],
-    "lastUpdated": 1788337682990
+    "lastUpdated": 1790763629595
   },
   "staples.com": {
     "found": true,
@@ -31424,7 +31472,7 @@
         "url": "https://www.staples.com/hc?id=dbb94c10-973c-478b-a078-00e58f66ba32"
       }
     ],
-    "lastUpdated": 1790154546901
+    "lastUpdated": 1790763629959
   },
   "staplesconnect.com": {
     "found": true,
@@ -31505,7 +31553,7 @@
         "url": "https://www.staples.com/hc?id=dbb94c10-973c-478b-a078-00e58f66ba32"
       }
     ],
-    "lastUpdated": 1790154546901
+    "lastUpdated": 1790763629959
   },
   "whereby.com": {
     "found": true,
@@ -31566,7 +31614,7 @@
         "url": "https://whereby.com/information/tos/"
       }
     ],
-    "lastUpdated": 1790154547322
+    "lastUpdated": 1790763630325
   },
   "evaluationkit.com": {
     "found": true,
@@ -31643,7 +31691,7 @@
         "url": "https://www.watermarkinsights.com/privacy-policy/"
       }
     ],
-    "lastUpdated": 1790154547743
+    "lastUpdated": 1790763630691
   },
   "watermarkinsights.com": {
     "found": true,
@@ -31720,7 +31768,7 @@
         "url": "https://www.watermarkinsights.com/privacy-policy/"
       }
     ],
-    "lastUpdated": 1790154547743
+    "lastUpdated": 1790763630691
   },
   "kalunga.com.br": {
     "found": true,
@@ -31797,7 +31845,7 @@
         "url": "https://www.kalunga.com.br/hotsite/politica-de-privacidade"
       }
     ],
-    "lastUpdated": 1790154548166
+    "lastUpdated": 1790763631055
   },
   "udemy.com": {
     "found": true,
@@ -31944,7 +31992,7 @@
         "url": "https://www.betternet.co/terms/"
       }
     ],
-    "lastUpdated": 1790154557389
+    "lastUpdated": 1790763639763
   },
   "douban.com": {
     "found": true,
@@ -32069,7 +32117,7 @@
         "url": "https://www.douban.com/about/copyright"
       }
     ],
-    "lastUpdated": 1790154557969
+    "lastUpdated": 1790763640230
   },
   "usps.com": {
     "found": true,
@@ -32230,7 +32278,7 @@
         "url": "https://about.usps.com/who/legal/terms-of-use.htm"
       }
     ],
-    "lastUpdated": 1790154558552
+    "lastUpdated": 1790763640697
   },
   "smartsurveywork.com": {
     "found": true,
@@ -32287,7 +32335,7 @@
         "url": "https://smartsurveywork.com/authTerms.html"
       }
     ],
-    "lastUpdated": 1790154558972
+    "lastUpdated": 1790763641059
   },
   "getsession.org": {
     "found": true,
@@ -32412,7 +32460,7 @@
         "url": "https://getsession.org/privacy-policy/"
       }
     ],
-    "lastUpdated": 1790154559551
+    "lastUpdated": 1790763641525
   },
   "openhab.org": {
     "found": true,
@@ -32562,7 +32610,7 @@
         "url": "https://www.bulletvpn.com/bulletvpn-terms-of-use/"
       }
     ],
-    "lastUpdated": 1790154568357
+    "lastUpdated": 1790763649875
   },
   "copiri.com": {
     "found": true,
@@ -32583,7 +32631,7 @@
         "url": "https://amity.copiri.com/terms.html"
       }
     ],
-    "lastUpdated": 1790154568779
+    "lastUpdated": 1790763650239
   },
   "travelsafely.app": {
     "found": true,
@@ -32604,7 +32652,7 @@
         "url": "https://amity.copiri.com/terms.html"
       }
     ],
-    "lastUpdated": 1790154568779
+    "lastUpdated": 1790763650239
   },
   "aanicca.com": {
     "found": true,
@@ -32641,7 +32689,7 @@
         "url": "https://aanicca.com/privacypolicy"
       }
     ],
-    "lastUpdated": 1790154569200
+    "lastUpdated": 1790763650603
   },
   "lifeinstride.com": {
     "found": true,
@@ -32678,7 +32726,7 @@
         "url": "https://aanicca.com/privacypolicy"
       }
     ],
-    "lastUpdated": 1790154569200
+    "lastUpdated": 1790763650603
   },
   "adcommunal.com": {
     "found": true,
@@ -32715,7 +32763,7 @@
         "url": "https://aanicca.com/privacypolicy"
       }
     ],
-    "lastUpdated": 1790154569200
+    "lastUpdated": 1790763650603
   },
   "affise.com": {
     "found": true,
@@ -32752,7 +32800,7 @@
         "url": "https://aanicca.com/privacypolicy"
       }
     ],
-    "lastUpdated": 1790154569200
+    "lastUpdated": 1790763650603
   },
   "daredrop.com": {
     "found": true,
@@ -32933,7 +32981,7 @@
         "url": "https://daredrop.com/terms"
       }
     ],
-    "lastUpdated": 1790154569783
+    "lastUpdated": 1790763651073
   },
   "leparisien.fr": {
     "found": true,
@@ -33118,7 +33166,7 @@
         "url": "https://www.leparisien.fr/cookies/"
       }
     ],
-    "lastUpdated": 1790154570366
+    "lastUpdated": 1790763651542
   },
   "aujourdhuienfrance.fr": {
     "found": true,
@@ -33303,7 +33351,7 @@
         "url": "https://www.leparisien.fr/cookies/"
       }
     ],
-    "lastUpdated": 1790154570366
+    "lastUpdated": 1790763651542
   },
   "qualified.com": {
     "found": true,
@@ -33364,7 +33412,7 @@
         "url": "https://www.qualified.com/legal/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154579170
+    "lastUpdated": 1790763659889
   },
   "swissinfo.ch": {
     "found": true,
@@ -33421,7 +33469,7 @@
         "url": "https://www.swissinfo.ch/eng/data-privacy-statement/133174"
       }
     ],
-    "lastUpdated": 1790154579590
+    "lastUpdated": 1790763660252
   },
   "tcog.com": {
     "found": true,
@@ -33454,7 +33502,7 @@
         "url": "https://www.tcog.com/privacy-policy/"
       }
     ],
-    "lastUpdated": 1790154580009
+    "lastUpdated": 1790763660615
   },
   "tawk.to": {
     "found": true,
@@ -33523,7 +33571,7 @@
         "url": "https://www.tawk.to/data-protection/"
       }
     ],
-    "lastUpdated": 1790154580430
+    "lastUpdated": 1790763660980
   },
   "streamlabs.com": {
     "found": true,
@@ -33572,7 +33620,7 @@
         "url": "https://streamlabs.com/legal"
       }
     ],
-    "lastUpdated": 1790154580850
+    "lastUpdated": 1790763661344
   },
   "letterboxd.com": {
     "found": true,
@@ -33855,7 +33903,7 @@
         "url": "https://innersloth.com/privacy.php"
       }
     ],
-    "lastUpdated": 1790154590233
+    "lastUpdated": 1790763670047
   },
   "remove.bg": {
     "found": true,
@@ -33896,7 +33944,7 @@
         "url": "https://www.remove.bg/tos"
       }
     ],
-    "lastUpdated": 1790154590654
+    "lastUpdated": 1790763670410
   },
   "skillshare.com": {
     "found": true,
@@ -34009,7 +34057,7 @@
         "url": "https://www.skillshare.com/terms"
       }
     ],
-    "lastUpdated": 1790154591233
+    "lastUpdated": 1790763670880
   },
   "privacymate.com": {
     "found": true,
@@ -34054,7 +34102,7 @@
         "url": "https://privacymate.com/terms-and-conditions"
       }
     ],
-    "lastUpdated": 1790154591653
+    "lastUpdated": 1790763671244
   },
   "thefreedictionary.com": {
     "found": true,
@@ -34095,7 +34143,7 @@
         "url": "https://www.thefreedictionary.com/about.htm"
       }
     ],
-    "lastUpdated": 1787719321445
+    "lastUpdated": 1790763671608
   },
   "freethesaurus.com": {
     "found": true,
@@ -34136,7 +34184,7 @@
         "url": "https://www.thefreedictionary.com/about.htm"
       }
     ],
-    "lastUpdated": 1787719321445
+    "lastUpdated": 1790763671608
   },
   "movistar.es": {
     "found": true,
@@ -34323,7 +34371,7 @@
         "url": "https://www.openttd.org/policy.html"
       }
     ],
-    "lastUpdated": 1790154601459
+    "lastUpdated": 1790763680313
   },
   "rovio.com": {
     "found": true,
@@ -34388,7 +34436,7 @@
         "url": "https://www.rovio.com/terms-of-service/"
       }
     ],
-    "lastUpdated": 1790154601882
+    "lastUpdated": 1790763680677
   },
   "hideipvpn.com": {
     "found": true,
@@ -34453,7 +34501,7 @@
         "url": "https://www.hideipvpn.com/terms-of-service/"
       }
     ],
-    "lastUpdated": 1790154602303
+    "lastUpdated": 1790763681040
   },
   "rubyshore.com": {
     "found": true,
@@ -34494,7 +34542,7 @@
         "url": "https://www.rubyshore.com/privacy-policy/"
       }
     ],
-    "lastUpdated": 1787719331915
+    "lastUpdated": 1790763681403
   },
   "pureguard.com": {
     "found": true,
@@ -34535,7 +34583,7 @@
         "url": "https://www.rubyshore.com/privacy-policy/"
       }
     ],
-    "lastUpdated": 1787719331915
+    "lastUpdated": 1790763681403
   },
   "outfit7.com": {
     "found": true,
@@ -34738,7 +34786,7 @@
         "url": "https://www.restaurant.com/about/privacy"
       }
     ],
-    "lastUpdated": 1790154612370
+    "lastUpdated": 1790763690472
   },
   "how2shout.com": {
     "found": true,
@@ -34763,7 +34811,7 @@
         "url": "https://www.how2shout.com/disclaimer"
       }
     ],
-    "lastUpdated": 1790154612788
+    "lastUpdated": 1790763690834
   },
   "spigotmc.org": {
     "found": true,
@@ -34864,7 +34912,7 @@
         "url": "https://www.spigotmc.org/help/cookies"
       }
     ],
-    "lastUpdated": 1788337744682
+    "lastUpdated": 1790763691301
   },
   "2captcha.com": {
     "found": true,
@@ -34897,7 +34945,7 @@
         "url": "https://2captcha.com/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154621591
+    "lastUpdated": 1790763691665
   },
   "rucaptcha.com": {
     "found": true,
@@ -34930,7 +34978,7 @@
         "url": "https://2captcha.com/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154621591
+    "lastUpdated": 1790763691665
   },
   "weeklytimesnow.com.au": {
     "found": true,
@@ -35059,7 +35107,7 @@
         "url": "https://www.weeklytimesnow.com.au/help/termsconditions"
       }
     ],
-    "lastUpdated": 1790154622170
+    "lastUpdated": 1790763692131
   },
   "xing.com": {
     "found": true,
@@ -35611,7 +35659,7 @@
         "url": "https://kids.youtube.com/t/noticeforchildren"
       }
     ],
-    "lastUpdated": 1790154623174
+    "lastUpdated": 1790763696655
   },
   "fairvote.org": {
     "found": true,
@@ -35644,7 +35692,7 @@
         "url": "https://www.fairvote.org/privacy_policy"
       }
     ],
-    "lastUpdated": 1790154623596
+    "lastUpdated": 1790763700834
   },
   "oxfam.org": {
     "found": true,
@@ -35701,7 +35749,7 @@
         "url": "https://www.oxfam.org/en/terms-and-conditions"
       }
     ],
-    "lastUpdated": 1788337754587
+    "lastUpdated": 1790763701198
   },
   "identityguard.com": {
     "found": true,
@@ -35742,7 +35790,7 @@
         "url": "https://www.identityguard.com/legal/fcra-summary-of-rights"
       }
     ],
-    "lastUpdated": 1790154632402
+    "lastUpdated": 1790763701562
   },
   "usseek.com": {
     "found": true,
@@ -35811,7 +35859,7 @@
         "url": "https://usseek.com/Terms"
       }
     ],
-    "lastUpdated": 1790154632822
+    "lastUpdated": 1790763701926
   },
   "icedrive.net": {
     "found": true,
@@ -35932,7 +35980,7 @@
         "url": "https://icedrive.net/legal/dmca-policy"
       }
     ],
-    "lastUpdated": 1790154633403
+    "lastUpdated": 1790763702393
   },
   "serif.com": {
     "found": true,
@@ -36123,7 +36171,7 @@
         "url": "https://vpn.ac/privacy-policy"
       }
     ],
-    "lastUpdated": 1788943481877
+    "lastUpdated": 1790763711095
   },
   "nerdwallet.com": {
     "found": true,
@@ -36160,7 +36208,7 @@
         "url": "https://www.nerdwallet.com/blog/terms-of-use/"
       }
     ],
-    "lastUpdated": 1790154643046
+    "lastUpdated": 1790763711458
   },
   "binance.com": {
     "found": true,
@@ -36233,7 +36281,7 @@
         "url": "https://www.binance.com/en/terms"
       }
     ],
-    "lastUpdated": 1790154643466
+    "lastUpdated": 1790763711821
   },
   "brubank.com": {
     "found": true,
@@ -36258,7 +36306,7 @@
         "url": "https://www.brubank.com/terms"
       }
     ],
-    "lastUpdated": 1790154643885
+    "lastUpdated": 1790763712184
   },
   "darebee.com": {
     "found": true,
@@ -36303,7 +36351,7 @@
         "url": "https://darebee.com/terms-of-use.html"
       }
     ],
-    "lastUpdated": 1790154644305
+    "lastUpdated": 1790763712547
   },
   "watson.ch": {
     "found": true,
@@ -36490,7 +36538,7 @@
         "url": "https://replika.ai/legal/terms"
       }
     ],
-    "lastUpdated": 1790154653691
+    "lastUpdated": 1790763721358
   },
   "followmyhealth.com": {
     "found": true,
@@ -36579,7 +36627,7 @@
         "url": "https://www.followmyhealth.com/UseDocuments/TermsOfUse"
       }
     ],
-    "lastUpdated": 1790154654112
+    "lastUpdated": 1790763721722
   },
   "clicknupload.co": {
     "found": true,
@@ -36612,7 +36660,7 @@
         "url": "https://clicknupload.co/tos.html"
       }
     ],
-    "lastUpdated": 1790154654532
+    "lastUpdated": 1790763722086
   },
   "wishlist.com": {
     "found": true,
@@ -36721,7 +36769,7 @@
         "url": "https://www.wishlist.com/cookies"
       }
     ],
-    "lastUpdated": 1790154655113
+    "lastUpdated": 1790763722553
   },
   "cloudns.net": {
     "found": true,
@@ -36746,7 +36794,7 @@
         "url": "https://www.cloudns.net/tos/"
       }
     ],
-    "lastUpdated": 1790154655532
+    "lastUpdated": 1790763722916
   },
   "techwiser.com": {
     "found": true,
@@ -36820,7 +36868,7 @@
         "url": "https://www.maxmind.com/en/end-user-license-agreement"
       }
     ],
-    "lastUpdated": 1790154664339
+    "lastUpdated": 1790763731267
   },
   "inoreader.com": {
     "found": true,
@@ -36865,7 +36913,7 @@
         "url": "https://www.inoreader.com/tos"
       }
     ],
-    "lastUpdated": 1790154664759
+    "lastUpdated": 1790763731630
   },
   "chapril.org": {
     "found": true,
@@ -36954,7 +37002,7 @@
         "url": "https://www.chapril.org/Mentions-legales.html"
       }
     ],
-    "lastUpdated": 1790154665179
+    "lastUpdated": 1790763731994
   },
   "nslookup.io": {
     "found": true,
@@ -37051,7 +37099,7 @@
         "url": "https://www.nslookup.io/terms-and-conditions/"
       }
     ],
-    "lastUpdated": 1790154665758
+    "lastUpdated": 1790763732458
   },
   "play-asia.com": {
     "found": true,
@@ -37100,7 +37148,7 @@
         "url": "https://www.play-asia.com/info/tos"
       }
     ],
-    "lastUpdated": 1790154666179
+    "lastUpdated": 1790763732821
   },
   "manscaped.com": {
     "found": true,
@@ -37332,7 +37380,7 @@
         "url": "https://www.pdf24.org/en/terms-of-use"
       }
     ],
-    "lastUpdated": 1790154675402
+    "lastUpdated": 1790763741527
   },
   "search.ch": {
     "found": true,
@@ -37377,7 +37425,7 @@
         "url": "https://www.search.ch/cookiepolicy"
       }
     ],
-    "lastUpdated": 1790154675823
+    "lastUpdated": 1790763741891
   },
   "openweathermap.org": {
     "found": true,
@@ -37438,7 +37486,7 @@
         "url": "https://agromonitoring.com/storage/app/media/Terms/ExtremeElectronics_terms_and_conditions_of_sale.pdf"
       }
     ],
-    "lastUpdated": 1790154676243
+    "lastUpdated": 1790763742257
   },
   "agromonitoring.com": {
     "found": true,
@@ -37499,7 +37547,7 @@
         "url": "https://agromonitoring.com/storage/app/media/Terms/ExtremeElectronics_terms_and_conditions_of_sale.pdf"
       }
     ],
-    "lastUpdated": 1790154676243
+    "lastUpdated": 1790763742257
   },
   "openweather.co.uk": {
     "found": true,
@@ -37560,7 +37608,7 @@
         "url": "https://agromonitoring.com/storage/app/media/Terms/ExtremeElectronics_terms_and_conditions_of_sale.pdf"
       }
     ],
-    "lastUpdated": 1790154676243
+    "lastUpdated": 1790763742257
   },
   "owm.io": {
     "found": true,
@@ -37621,7 +37669,7 @@
         "url": "https://agromonitoring.com/storage/app/media/Terms/ExtremeElectronics_terms_and_conditions_of_sale.pdf"
       }
     ],
-    "lastUpdated": 1790154676243
+    "lastUpdated": 1790763742257
   },
   "jwplayer.com": {
     "found": true,
@@ -37650,7 +37698,7 @@
         "url": "https://www.jwplayer.com/privacy/"
       }
     ],
-    "lastUpdated": 1790154676662
+    "lastUpdated": 1790763742621
   },
   "shortcutworld.com": {
     "found": true,
@@ -37815,7 +37863,7 @@
         "url": "https://shortcutworld.com/Posts/Privacy"
       }
     ],
-    "lastUpdated": 1788943524451
+    "lastUpdated": 1790763743089
   },
   "yr.no": {
     "found": true,
@@ -37994,7 +38042,7 @@
         "url": "https://techmaster.mcafee.com/Terms"
       }
     ],
-    "lastUpdated": 1790154686464
+    "lastUpdated": 1790763751896
   },
   "mcafeesecure.com": {
     "found": true,
@@ -38099,7 +38147,7 @@
         "url": "https://techmaster.mcafee.com/Terms"
       }
     ],
-    "lastUpdated": 1790154686464
+    "lastUpdated": 1790763751896
   },
   "siteadvisor.com": {
     "found": true,
@@ -38204,7 +38252,7 @@
         "url": "https://techmaster.mcafee.com/Terms"
       }
     ],
-    "lastUpdated": 1790154686464
+    "lastUpdated": 1790763751896
   },
   "ourworldindata.org": {
     "found": true,
@@ -38233,7 +38281,7 @@
         "url": "https://ourworldindata.org/privacy-policy"
       }
     ],
-    "lastUpdated": 1790154686884
+    "lastUpdated": 1790763752258
   },
   "steamid.uk": {
     "found": true,
@@ -38298,7 +38346,7 @@
         "url": "https://steamid.uk/privacy/"
       }
     ],
-    "lastUpdated": 1788943535094
+    "lastUpdated": 1790763753087
   },
   "netzero.net": {
     "found": true,
@@ -38335,7 +38383,7 @@
         "url": "https://www.netzero.net/start/landing.do?page=www/legal/accept-use"
       }
     ],
-    "lastUpdated": 1790154696268
+    "lastUpdated": 1790763753450
   },
   "zalando.nl": {
     "found": true,
@@ -38393,7 +38441,7 @@
         "url": "https://trustx.org/opt-out-choices"
       }
     ],
-    "lastUpdated": 1790154697106
+    "lastUpdated": 1790763761799
   },
   "youporn.com": {
     "found": true,
@@ -38882,7 +38930,7 @@
         "url": "https://www.youporn.com/information/dmca/"
       }
     ],
-    "lastUpdated": 1790154697852
+    "lastUpdated": 1790763762376
   },
   "cryptokitties.co": {
     "found": true,
@@ -38943,7 +38991,7 @@
         "url": "https://www.cryptokitties.co/terms-of-use"
       }
     ],
-    "lastUpdated": 1790154698272
+    "lastUpdated": 1790763762740
   },
   "myspace.com": {
     "found": true,
@@ -38992,7 +39040,7 @@
         "url": "https://myspace.com/pages/privacy?page=do-not-sell"
       }
     ],
-    "lastUpdated": 1788943545904
+    "lastUpdated": 1790763763104
   },
   "myspacecdn.com": {
     "found": true,
@@ -39041,7 +39089,7 @@
         "url": "https://myspace.com/pages/privacy?page=do-not-sell"
       }
     ],
-    "lastUpdated": 1788943545904
+    "lastUpdated": 1790763763104
   },
   "synology.com": {
     "found": true,
@@ -39298,7 +39346,7 @@
         "url": "https://www.synology.com/en-us/company/legal/privacy"
       }
     ],
-    "lastUpdated": 1790154707396
+    "lastUpdated": 1790763763677
   },
   "boursorama.com": {
     "found": true,
@@ -39506,7 +39554,7 @@
         "url": "https://countermail.com/?p=terms"
       }
     ],
-    "lastUpdated": 1790154708397
+    "lastUpdated": 1790763772128
   },
   "wesfarmers.com.au": {
     "found": true,
@@ -39539,7 +39587,7 @@
         "url": "https://www.wesfarmers.com.au/terms-of-use"
       }
     ],
-    "lastUpdated": 1790154708817
+    "lastUpdated": 1790763772491
   },
   "omegle.com": {
     "found": true,
@@ -39596,7 +39644,7 @@
         "url": "https://www.omegle.com/"
       }
     ],
-    "lastUpdated": 1790154709237
+    "lastUpdated": 1790763772854
   },
   "newgrounds.com": {
     "found": true,
@@ -39661,7 +39709,7 @@
         "url": "https://www.newgrounds.com/wiki/help-information/privacy-policy"
       }
     ],
-    "lastUpdated": 1788943556867
+    "lastUpdated": 1790763773217
   },
   "anchor.fm": {
     "found": true,
@@ -39722,7 +39770,7 @@
         "url": "https://anchor.fm/dmca"
       }
     ],
-    "lastUpdated": 1790154718042
+    "lastUpdated": 1790763773581
   },
   "amnesty.ch": {
     "found": true,
@@ -39861,7 +39909,7 @@
         "url": "https://www.prageru.com/terms/"
       }
     ],
-    "lastUpdated": 1790154719303
+    "lastUpdated": 1790763782287
   },
   "delivery.com": {
     "found": true,
@@ -39898,7 +39946,7 @@
         "url": "https://www.delivery.com/info/legal/privacy"
       }
     ],
-    "lastUpdated": 1790154719721
+    "lastUpdated": 1790763782649
   },
   "chrisglass.com": {
     "found": true,
@@ -39919,7 +39967,7 @@
         "url": "https://chrisglass.com/privacy/"
       }
     ],
-    "lastUpdated": 1788943567353
+    "lastUpdated": 1790763783011
   },
   "mail.ch": {
     "found": true,
@@ -40008,7 +40056,7 @@
         "url": "https://mail.ch/en/privacy/"
       }
     ],
-    "lastUpdated": 1790154728525
+    "lastUpdated": 1790763783376
   },
   "gamingonlinux.com": {
     "found": true,
@@ -40037,7 +40085,7 @@
         "url": "https://www.gamingonlinux.com/privacy.html"
       }
     ],
-    "lastUpdated": 1790154728945
+    "lastUpdated": 1790763783739
   },
   "magicearth.com": {
     "found": true,
@@ -40164,7 +40212,7 @@
         "url": "https://www.euronews.com/terms-and-conditions"
       }
     ],
-    "lastUpdated": 1790154730204
+    "lastUpdated": 1790763792441
   },
   "ctemplar.com": {
     "found": true,
@@ -40241,7 +40289,7 @@
         "url": "https://ctemplar.com/terms/"
       }
     ],
-    "lastUpdated": 1790154740006
+    "lastUpdated": 1790763794002
   },
   "virtbiz.com": {
     "found": true,
@@ -40274,7 +40322,7 @@
         "url": "http://www.virtbiz.com/wp-content/uploads/Network-Service-Agreement.pdf"
       }
     ],
-    "lastUpdated": 1788943578252
+    "lastUpdated": 1790763792806
   },
   "dnsleaktest.com": {
     "found": true,
@@ -40311,7 +40359,7 @@
         "url": "https://www.dnsleaktest.com/privacy.html"
       }
     ],
-    "lastUpdated": 1790154739004
+    "lastUpdated": 1790763793170
   },
   "cned.fr": {
     "found": true,
@@ -40492,7 +40540,7 @@
         "url": "https://www.cned.fr/sites/cned.fr/files/pdf/cgv/CNED_CGV-CGU_2026_V02_mai.pdf"
       }
     ],
-    "lastUpdated": 1790154739586
+    "lastUpdated": 1790763793638
   },
   "plex.tv": {
     "found": true,
@@ -40573,7 +40621,7 @@
         "url": "https://www.plex.tv/about/privacy-legal/plex-terms-of-service/"
       }
     ],
-    "lastUpdated": 1790154772856
+    "lastUpdated": 1790763824278
   },
   "ko-fi.com": {
     "found": true,
@@ -40804,7 +40852,7 @@
         "url": "https://www.dealdash.com/privacy-policy"
       }
     ],
-    "lastUpdated": 1788943589063
+    "lastUpdated": 1790763802705
   },
   "cookie-script.com": {
     "found": true,
@@ -40829,7 +40877,7 @@
         "url": "https://cookie-script.com/privacy-policy.html"
       }
     ],
-    "lastUpdated": 1790154749808
+    "lastUpdated": 1790763803067
   },
   "urbandictionary.com": {
     "found": true,
@@ -41010,7 +41058,7 @@
         "url": "https://about.urbandictionary.com/privacy"
       }
     ],
-    "lastUpdated": 1790154750390
+    "lastUpdated": 1790763803536
   },
   "urbandictionary.blog": {
     "found": true,
@@ -41191,7 +41239,7 @@
         "url": "https://about.urbandictionary.com/privacy"
       }
     ],
-    "lastUpdated": 1790154750390
+    "lastUpdated": 1790763803536
   },
   "urbandictionary.store": {
     "found": true,
@@ -41372,7 +41420,7 @@
         "url": "https://about.urbandictionary.com/privacy"
       }
     ],
-    "lastUpdated": 1790154750390
+    "lastUpdated": 1790763803536
   },
   "poker-engine.com": {
     "found": true,
@@ -41397,7 +41445,7 @@
         "url": "https://poker-engine.com/privacy"
       }
     ],
-    "lastUpdated": 1790154750809
+    "lastUpdated": 1790763803897
   },
   "donorbox.org": {
     "found": true,
@@ -41430,7 +41478,7 @@
         "url": "https://donorbox.org/privacy"
       }
     ],
-    "lastUpdated": 1790154751229
+    "lastUpdated": 1790763804261
   },
   "hallmarkchannel.com": {
     "found": true,
@@ -41909,7 +41957,7 @@
         "url": "https://www.hidemyass.com/en-us/legal/privacy#cookies-policy"
       }
     ],
-    "lastUpdated": 1790154760617
+    "lastUpdated": 1790763813069
   },
   "discovery.com": {
     "found": true,
@@ -42158,7 +42206,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "foodnetwork.com": {
     "found": true,
@@ -42407,7 +42455,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "asianfoodnetwork.com": {
     "found": true,
@@ -42656,7 +42704,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "foodnetwork.com.br": {
     "found": true,
@@ -42905,7 +42953,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "foodnetwork.ca": {
     "found": true,
@@ -43154,7 +43202,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "foodnetworktv.com": {
     "found": true,
@@ -43403,7 +43451,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "foodnetwork.co.uk": {
     "found": true,
@@ -43652,7 +43700,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "foodnetworklatam.com": {
     "found": true,
@@ -43901,7 +43949,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "animalplanet.com": {
     "found": true,
@@ -44150,7 +44198,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "destinationamerica.com": {
     "found": true,
@@ -44399,7 +44447,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "diynetwork.com": {
     "found": true,
@@ -44648,7 +44696,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "greatamericancountry.com": {
     "found": true,
@@ -44897,7 +44945,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "hgtv.com": {
     "found": true,
@@ -45146,7 +45194,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "hgtv.pl": {
     "found": true,
@@ -45395,7 +45443,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "tlc.com": {
     "found": true,
@@ -45644,7 +45692,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "ahctv.com": {
     "found": true,
@@ -45893,7 +45941,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "tudiscovery.com": {
     "found": true,
@@ -46142,7 +46190,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "investigationdiscovery.com": {
     "found": true,
@@ -46391,7 +46439,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "discoveryplus.co.uk": {
     "found": true,
@@ -46640,7 +46688,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "discoveryplus.com": {
     "found": true,
@@ -46889,7 +46937,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "discoveryplus.fi": {
     "found": true,
@@ -47138,7 +47186,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "discoveryplus.no": {
     "found": true,
@@ -47387,7 +47435,7 @@
         "url": "https://corporate.discovery.com/tracking-technologies-notice/"
       }
     ],
-    "lastUpdated": 1790154761202
+    "lastUpdated": 1790763813538
   },
   "tvmaze.com": {
     "found": true,
@@ -47416,7 +47464,7 @@
         "url": "https://www.tvmaze.com/site/tos"
       }
     ],
-    "lastUpdated": 1790154761621
+    "lastUpdated": 1790763813900
   },
   "community.com": {
     "found": true,
@@ -47441,7 +47489,7 @@
         "url": "https://www.community.com/legal/terms"
       }
     ],
-    "lastUpdated": 1790154762040
+    "lastUpdated": 1790763814262
   },
   "vk.com": {
     "found": true,
@@ -47650,7 +47698,7 @@
         "url": "https://vk.com/privacy"
       }
     ],
-    "lastUpdated": 1790154762622
+    "lastUpdated": 1790763814729
   },
   "vk.ru": {
     "found": true,
@@ -47859,7 +47907,7 @@
         "url": "https://vk.com/privacy"
       }
     ],
-    "lastUpdated": 1790154762622
+    "lastUpdated": 1790763814729
   },
   "etsy.com": {
     "found": true,
@@ -48242,7 +48290,7 @@
         "url": "https://www.venus.com/policies/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154771588
+    "lastUpdated": 1790763823186
   },
   "mix.com": {
     "found": true,
@@ -48275,7 +48323,7 @@
         "url": "https://mix.com/tos"
       }
     ],
-    "lastUpdated": 1790154772010
+    "lastUpdated": 1790763823549
   },
   "stumbleupon.com": {
     "found": true,
@@ -48308,7 +48356,7 @@
         "url": "https://mix.com/tos"
       }
     ],
-    "lastUpdated": 1790154772010
+    "lastUpdated": 1790763823549
   },
   "gfycat.com": {
     "found": true,
@@ -48549,7 +48597,7 @@
         "url": "https://gfycat.com/dmca"
       }
     ],
-    "lastUpdated": 1790154536671
+    "lastUpdated": 1790763620310
   },
   "smartthings.com": {
     "found": true,
@@ -48678,7 +48726,7 @@
         "url": "https://www.smartthings.com/terms"
       }
     ],
-    "lastUpdated": 1790154687464
+    "lastUpdated": 1790763752725
   },
   "flickr.com": {
     "found": true,
@@ -48743,7 +48791,7 @@
         "url": "https://www.flickr.com/help/terms"
       }
     ],
-    "lastUpdated": 1790154406858
+    "lastUpdated": 1790763507844
   },
   "inrupt.com": {
     "found": true,
@@ -48796,7 +48844,7 @@
         "url": "https://inrupt.com/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154515041
+    "lastUpdated": 1790763600283
   },
   "inrupt.net": {
     "found": true,
@@ -48849,7 +48897,7 @@
         "url": "https://inrupt.com/terms-of-service"
       }
     ],
-    "lastUpdated": 1790154515041
+    "lastUpdated": 1790763600283
   },
   "deutschebahn.com": {
     "found": true,
@@ -48996,7 +49044,7 @@
         "url": "https://blog.hayati.net/policies/"
       }
     ],
-    "lastUpdated": 1790154407279
+    "lastUpdated": 1790763508207
   },
   "august.com": {
     "found": true,
@@ -49033,7 +49081,7 @@
         "url": "https://august.com/pages/privacy-policy"
       }
     ],
-    "lastUpdated": 1790154772432
+    "lastUpdated": 1790763823913
   },
   "dev.to": {
     "found": true,
@@ -49066,6 +49114,6 @@
         "url": "https://dev.to/terms"
       }
     ],
-    "lastUpdated": 1790154773278
+    "lastUpdated": 1790763824639
   }
 }
