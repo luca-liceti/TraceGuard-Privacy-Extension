@@ -11,7 +11,7 @@ TraceGuard is a powerful, real-time privacy scoring and auditing Chrome Extensio
 
 Unlike traditional blockers that operate silently, TraceGuard provides transparent, quantified privacy analysis through two innovative metrics:
 - **Website Safety Score (WSS)**: A 0-100 safety rating for every site visited based on reputation, tracking, cookies, input fields, and policy strength.
-- **User Privacy Score (UPS)**: A dynamic behavioral score that reflects your personal privacy health over time.
+- **User Privacy Score (UPS)**: A status score derived from the personal data you have entered and how risky each site was. It falls when you hand data to a risky site, and recovers slowly as older entries age.
 
 ### Key Features
 - **Real-Time Tracker Detection**: Identifies third-party trackers using a curated list plus bundled databases (DuckDuckGo Tracker Radar, EasyPrivacy, Disconnect).
@@ -91,7 +91,6 @@ Once installed, TraceGuard runs automatically in the background. You can open th
 If you encounter issues or have questions, please use the following resources:
 - **Discussions**: [GitHub Discussions](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/discussions) for questions, ideas, and community support.
 - **Issue Tracker**: [GitHub Issues](https://github.com/luca-liceti/TraceGuard-Privacy-Extension/issues) to report bugs or request features.
-- **Documentation**: Additional setup notes and architectural details are available in the [docs/](docs/) directory.
 - **Privacy Policy**: Read our privacy commitments in [PRIVACY.md](PRIVACY.md).
 
 ## Documentation

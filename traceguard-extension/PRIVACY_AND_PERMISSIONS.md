@@ -27,7 +27,7 @@ sensitive input is entered on a risky site. `alarms` schedules periodic backgrou
 ### `webRequest`
 **Why it is needed:** TraceGuard passively observes network requests to detect tracking pixels,
 analytics scripts, and third-party origins. It records only the request **origin** (never the path
-or query string) and whether the request was blocked. It also observes `Set-Cookie` response
+or query string) and whether the browser stopped it. It also observes `Set-Cookie` response
 headers to derive cookie **names** and metadata (HttpOnly, Secure, SameSite flags, expiry date,
 and domain) for tracking-cookie detection. It never reads cookie **values**, never modifies
 cookies, and never sends cookie data to an external server. (The `cookies` permission is
@@ -35,9 +35,9 @@ intentionally NOT requested because TraceGuard only needs cookie names/metadata,
 `Set-Cookie` headers already provide.)
 
 TraceGuard never blocks, redirects, or modifies a request. It has no `declarativeNetRequest`
-permission and never uses `webRequest` in its blocking form. A request recorded with a `blocked`
-status was blocked by the browser or by another extension, and the field exists so the extension can
-tell a blocked request apart from a failed one.
+permission and never uses `webRequest` in its blocking form. The record field is named
+`blockedByBrowser` because a request it reports as stopped was stopped by the browser or by another
+extension, never by TraceGuard.
 
 When the extension's master on/off toggle is disabled, the network monitor stops observing
 traffic entirely, no requests, cookies, or headers are recorded while paused.
@@ -56,21 +56,9 @@ and to observe third-party network requests across the web.
 
 ---
 
-## Privacy Policy Compliance Note
+## Privacy policy
 
-- **Local by default:** TraceGuard does not collect, transmit, or monetize user data. Journal data,
-  logs, and scores are processed and stored locally on the device.
-- **Optional cloud lookup:** The optional "Enhanced Policy Analysis" feature (off by default) sends
-  the domain of unrated sites to `api.tosdr.org`. No other browsing data is transmitted. Lookup
-  results are cached locally in `tosdr_cache` (a plaintext, domain-only map of domain → policy
-  grade); it contains no page URLs, request data, or PII.
-- **Cross-site exposure record:** The extension keeps a local map from the type of personal field
-  the user interacted with (password, email, card, and so on) to the domains it was entered on. This
-  is what the Footprint page reads. It is derived from on-device events, stored encrypted with the
-  rest of the journal, never transmitted, and removed by "Delete All Data".
-- **Data deletion:** Users can review, export, or wipe all local data from the dashboard Settings
-  ("Export Data" and "Delete All Data").
-- **Locked-vault buffering:** While the vault is locked, new activity is buffered on disk encrypted
-  with a dedicated buffer key and is merged into the master-password-encrypted journal the next
-  time the vault is unlocked. This keeps the journal complete across browser restarts without
-  storing plaintext history.
+The user-facing policy is [PRIVACY.md](../PRIVACY.md), which is the single source for what is
+stored, what leaves the device, how long the locked-vault buffer lives, and how data is deleted.
+This file states only why each permission is needed, so the justifications and the policy cannot
+drift apart.

@@ -10,7 +10,7 @@ tracks the user's own footprint over time. It runs entirely on the device: no ba
 no telemetry. Two scores are produced:
 
 - **Website Safety Score (WSS)**, 0 to 100, per site, per analysis.
-- **User Privacy Score (UPS)**, 0 to 100, a rolling behavioural score for the user.
+- **User Privacy Score (UPS)**, 0 to 100, derived from the user's handovers rather than from browsing, and decaying with age.
 
 Code lives in `traceguard-extension/`. Build output is `traceguard-extension/dist/`, which is what
 Chrome loads.
@@ -80,8 +80,8 @@ Sensitive stores are encrypted with AES-256-GCM under a key derived from a maste
 creates.
 
 - While the vault is unlocked, `cryptoKeyHex` is in session storage and the worker encrypts writes.
-- While it is locked, writes cannot be encrypted with the vault key, so activity is buffered on disk
-  under a separate `bufferKeyHex`.
+- While it is locked, writes cannot be encrypted with the vault key, so activity is buffered in
+  `chrome.storage.session`, in memory and never on disk, under a separate `bufferKeyHex`.
 - `flushBufferedTelemetry` merges the buffer back into the encrypted stores on unlock.
 
 **Consequence worth knowing:** because the buffer is merged in, deleting a record from an encrypted

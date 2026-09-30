@@ -1,6 +1,6 @@
 # TraceGuard Privacy Policy
 
-Effective date: September 13, 2026
+Effective date: September 30, 2026
 
 TraceGuard is a **local-first privacy journal**. It analyzes the pages you visit on your own
 device to help you understand and change your browsing habits, and stores that analysis locally
@@ -38,10 +38,11 @@ in Chrome extension storage. It has no backend and no user accounts.
 
 ## External network requests
 
-TraceGuard is 100% local by default. The only optional external request is **Enhanced Policy
-Analysis**, which is **off by default**. If you enable it, TraceGuard sends the domain of unrated
-sites to ToS;DR (`api.tosdr.org`) to look up a privacy-policy rating; no other browsing data is
-included, and you can disable it at any time in Settings.
+TraceGuard is 100% local by default. The only optional external request is **Live rating updates**,
+which is **off by default**. If you enable it, TraceGuard sends the domain of unrated sites to
+ToS;DR (`api.tosdr.org`) to look up a privacy-policy rating; no other browsing data is included, and
+you can disable it at any time in Settings. The rating that comes back is cached locally in
+`tosdr_cache`, a plaintext map of domain to grade that holds no page data.
 
 Threat-intelligence data (phishing/malware domain lists from public feeds such as OpenPhish) is
 bundled at release time and refreshed from the publisher via signed updates. Those update requests

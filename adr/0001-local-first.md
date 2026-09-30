@@ -18,8 +18,8 @@ no backend, no account, and no analytics, telemetry, or crash reporting.
 Two network requests exist, and both carry data rather than browsing history:
 
 1. The signed threat-feed refresh, which downloads a phishing blocklist and sends nothing.
-2. Enhanced Policy Analysis, off by default, which sends only the domain of an unrated site to
-   ToS;DR.
+2. Live rating updates (shipped as "Enhanced Policy Analysis"), off by default, which sends only the
+   domain of an unrated site to ToS;DR.
 
 ## Consequences
 
