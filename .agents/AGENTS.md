@@ -25,6 +25,15 @@
 - Steering must be visible and reversible. An assistant that quietly optimises the user's behaviour is a dark pattern aimed at a good end.
 - When proposing or reviewing a feature, state its classification and act on it: strengthen a persuasion, label a context, leave an entitlement alone, cut a decoration. A persuasion that cannot name a behaviour does not go on the roadmap. See `adr/0010-behaviour-change-as-the-goal.md` and `adr/0011-behaviour-test-boundary.md`.
 
+## Branches
+
+- `main` stays shippable and is never touched by work in progress. Releases are cut from `main` by tagging, so a tag on a commit that exists only on `dev` is not a release.
+- `dev` is the integration branch: feature branches are cut from `dev` and merged back into `dev`, and `main` is merged into `dev` weekly so `dev` is tested against current code.
+- Target by the kind of change, not its size: a fix or a small already-tested change goes to `main`; work in progress, and anything described in `ROADMAP.md`, goes to `dev`.
+- Versions on `dev` run ahead of `main`. That is expected rather than drift, because tagging happens on `main`. Never restore the match by tagging `dev`.
+- CI (`.github/workflows/ci.yml`) runs on pushes and pull requests to `main` only, so code merged to `dev` has not been through CI yet.
+- Full reasoning: record [0009](adr/0009-dev-branch-workflow.md).
+
 ## Commits
 
 - Commit every change. Do not leave work uncommitted across turns: once a change is done and its typecheck, tests, and build pass, commit it before starting the next thing. You have standing permission to commit without asking each time; commit as the last step of the change, not as a separate request.

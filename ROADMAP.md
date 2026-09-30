@@ -1,7 +1,8 @@
 # TraceGuard Roadmap
 
-**Updated:** September 25, 2026
-**Branch:** `dev` (identical to `main` between releases)
+**Updated:** September 30, 2026
+**Branch:** `dev`, the integration branch. Releases are cut from `main` by tagging, so `dev` runs
+ahead of `main` between releases.
 
 This file says what is being built next, in what order, and what would make us stop. It is not the
 description of the system: that is [ARCHITECTURE.md](ARCHITECTURE.md), and the reasoning

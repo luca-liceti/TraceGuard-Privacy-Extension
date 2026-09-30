@@ -35,6 +35,11 @@ Other references update on their own:
 
 ## Releasing
 
+Releases are cut from `main`. `dev` is the integration branch and normally runs ahead of `main`, so
+land `dev` on `main` before tagging: a tag on a commit that exists only on `dev` is not a release.
+See the Branches section of [`.agents/AGENTS.md`](.agents/AGENTS.md) and record
+[0009](adr/0009-dev-branch-workflow.md).
+
 1. Write the entry at the top of `CHANGELOG.md` first. The release workflow copies the **top
    section** of that file into the GitHub release body, so tagging without an entry ships an empty
    release.
