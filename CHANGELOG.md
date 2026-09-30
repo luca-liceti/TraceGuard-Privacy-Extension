@@ -4,48 +4,22 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 ## v1.14.3
 
-**What was fixed**
-
-- **Help** no longer describes the old score. It said the Privacy Score falls when you visit risky sites and updates as you browse. It now says what the number is made of: the personal data you have entered, how risky each site was, and the slow recovery as older entries age.
-- The **Read your browsing history** permission note no longer credits the Privacy Score. That permission follows the active tab, so the badge, the side panel and the dashboard show the site you are on.
-- A site whose analysis has aged out of the cache could show a score that disagreed with the popup and the side panel, because the dashboard's fallback weights omitted the fingerprinting detector. The fallback now reads every weight from the same table the score itself uses.
-
-## v1.14.2
-
-**What was fixed**
-
-- The caption under the **Privacy Score** dial no longer says the score comes from the sites you visited. It does not: since 1.14.0 the score is derived from the personal data you have entered and how risky each site was when you entered it. Only that text changed, the number itself is unaffected.
-
-## v1.14.1
-
-**What's new**
-
-- The score chart on **Overview** is now titled **Privacy Score History**, so it reads as the record of how your number changed rather than a second copy of the dial beside it.
-
-**What was fixed**
-
-- **Overview** shows your Privacy Score from your first day instead of **No data yet**. The score is derived from what you have handed over, and browsing on its own writes nothing to the score history, so a fresh account had nothing to chart until the first handover or the next day's automatic snapshot. Creating your account now records the starting point, so the dial reads 100 and the chart has a line from the start.
-
-## v1.14.0
-
 **What's new**
 
 - Your **Privacy Score** is now a status score, not a running tally. It is read from what you have handed over and keeps charging for it: a password or a card entered on a risky site stays expensive for a long time, while an old handover slowly fades. It is recalculated from the same handovers shown on **Your Footprint**, so the two can no longer disagree. Your number will change when you update, because it is derived from the record rather than from a total built up visit by visit.
 - Safer browsing still pays off, just not as points for a visit: a handover on a high-scoring site costs much less than the same handover on a poor one, and expected use (a login, a one-time code, or a checkout on a site we can vouch for) costs nothing.
+- System notifications are now rationed. You get at most one warning per site per browser session, and a critical alert about the same site will not repeat within half an hour, so navigating back and forth across a few poor sites no longer produces an alert for each one. A session shows at most five system notifications whatever their severity. Nothing is lost: every alert still appears in the in-app notification list, which is the record rather than an interruption, and a skipped system notification is logged with the rule that skipped it.
+- The score chart on **Overview** is now titled **Privacy Score History**, so it reads as the record of how your number changed rather than a second copy of the dial beside it.
 
 **What was fixed**
 
 - The score no longer moves when you visit a site. Safe-site recovery and the safe-streak bonus are removed. Both rewarded the sites you happened to land on rather than a choice you made, which is circumstance and was easy to farm by refreshing. Time is now the only thing that raises the score, through the decay of older handovers.
-
-## v1.13.0
-
-**What's new**
-
-- System notifications are now rationed. You get at most one warning per site per browser session, and a critical alert about the same site will not repeat within half an hour, so navigating back and forth across a few poor sites no longer produces an alert for each one. A session shows at most five system notifications whatever their severity. Nothing is lost: every alert still appears in the in-app notification list, which is the record rather than an interruption, and a skipped system notification is logged with the rule that skipped it.
-
-**What was fixed**
-
-- The **Safe Streak** card is gone from the side panel, having already been removed from Overview. It counted consecutive visits to sites that scored well, which is mostly circumstance rather than a choice, and it existed to encourage a daily return rather than to change a decision. The score mechanic behind it is unchanged and waits for the reward redesign.
+- The **Safe Streak** card is gone from the side panel, having already been removed from Overview. It counted consecutive visits to sites that scored well, which is mostly circumstance rather than a choice.
+- **Overview** shows your Privacy Score from your first day instead of **No data yet**. The score is derived from what you have handed over, and browsing on its own writes nothing to the score history, so a fresh account had nothing to chart until the first handover or the next day's automatic snapshot. Creating your account now records the starting point, so the dial reads 100 and the chart has a line from the start.
+- The caption under the **Privacy Score** dial no longer says the score comes from the sites you visited. It does not: the score is derived from the personal data you have entered and how risky each site was when you entered it.
+- **Help** now describes the same score the rest of the app does. It said the score falls when you visit risky sites and updates as you browse, and it now names what the number is made of: the personal data you have entered, how risky each site was, and the slow recovery as older entries age.
+- The **Read your browsing history** permission note no longer credits the Privacy Score. That permission follows the active tab, so the badge, the side panel and the dashboard show the site you are on.
+- A site whose analysis has aged out of the cache could show a score that disagreed with the popup and the side panel, because the dashboard's fallback weights omitted the fingerprinting detector. The fallback now reads every weight from the same table the score itself uses.
 
 ## v1.12.0
 
