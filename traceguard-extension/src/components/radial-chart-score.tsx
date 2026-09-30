@@ -83,7 +83,7 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle>{t("Privacy Score")}</CardTitle>
-        <CardDescription>{t("From the sites you visited and the data you entered")}</CardDescription>
+        <CardDescription>{t("From the data you entered and how risky each site was")}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0 flex items-center justify-center">
         {history && history.length === 0 ? (

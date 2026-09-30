@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.14.2
+
+**What was fixed**
+
+- The caption under the **Privacy Score** dial no longer says the score comes from the sites you visited. It does not: since 1.14.0 the score is derived from the personal data you have entered and how risky each site was when you entered it. Only that text changed, the number itself is unaffected.
+
 ## v1.14.1
 
 **What's new**
