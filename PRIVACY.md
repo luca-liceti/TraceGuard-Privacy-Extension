@@ -55,6 +55,13 @@ locked, new journal entries are held in temporary in-memory storage (cleared whe
 closes) and encrypted on disk once you unlock. You can review, export, or clear all locally stored
 data from TraceGuard Settings at any time.
 
+## Chrome Web Store Limited Use
+
+The use of information received from Google APIs adheres to the Chrome Web Store User Data
+Policy, including the [Limited Use requirements](https://developer.chrome.com/docs/webstore/program-policies/limited-use/).
+TraceGuard collects no data beyond what is described above, uses it only to provide its single
+purpose, and never sells or transfers it.
+
 ## Contact
 
 For privacy questions, contact us at **traceguardprivacyextension@gmail.com**. You can also reach the publisher through the Chrome Web Store listing.
