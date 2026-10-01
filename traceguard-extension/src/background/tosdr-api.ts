@@ -97,11 +97,28 @@ function extractMainDomain(url: string): string {
 
 
 /**
+ * ToS;DR sends the rating as a plain letter on the list and detail endpoints,
+ * but as an object ({ hex, human, letter }) on the search endpoint. Normalising
+ * both shapes here is what keeps a lookup from throwing on the object form.
+ * Anything that is not an A-E letter, including the string "N/A", is treated as
+ * no rating.
+ */
+function normalizeGrade(rating: unknown): string | undefined {
+    const raw = rating && typeof rating === 'object'
+        ? (rating as { letter?: unknown; human?: unknown }).letter ?? (rating as { human?: unknown }).human
+        : rating;
+    if (typeof raw !== 'string') return undefined;
+    const grade = raw.trim().toUpperCase();
+    return ['A', 'B', 'C', 'D', 'E'].includes(grade) ? grade : undefined;
+}
+
+/**
  * Convert ToS;DR grade to risk score (standard: 0 = dangerous, 100 = safe)
  * A = 100 (excellent), B = 80 (good), C = 60 (fair), D = 40 (poor), E = 20 (bad), None = 0 (no rating = dangerous)
  */
-function gradeToScore(grade: string | undefined): number {
-    if (!grade) return 0;
+function gradeToScore(grade: unknown): number {
+    const normalized = normalizeGrade(grade);
+    if (!normalized) return 0;
 
     const gradeMap: Record<string, number> = {
         'A': 100,
@@ -111,7 +128,7 @@ function gradeToScore(grade: string | undefined): number {
         'E': 20
     };
 
-    return gradeMap[grade.toUpperCase()] ?? 0;
+    return gradeMap[normalized] ?? 0;
 }
 
 import { getTosDRMap } from './services/database-loader';
@@ -178,10 +195,14 @@ async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
                 const details = detailsData?.parameters;
                 
                 if (details) {
+                    // The detail endpoint returns the rating as a letter, while
+                    // the search result carries it as an object. Prefer the
+                    // detail letter and fall back to the search shape.
+                    const grade = normalizeGrade(details.rating) ?? normalizeGrade(service.rating);
                     return {
                         found: true,
-                        grade: service.rating && service.rating !== 'N/A' ? service.rating : undefined,
-                        score: gradeToScore(service.rating),
+                        grade,
+                        score: gradeToScore(grade),
                         source: 'tosdr',
                         serviceName: service.name,
                         serviceId: service.id,

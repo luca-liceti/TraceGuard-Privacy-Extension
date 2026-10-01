@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.15.2
+
+**What was fixed**
+
+- Live rating updates work again. ToS;DR returns a site's grade as a plain letter on its list and detail endpoints, but as an object on its search endpoint. The lookup passed that object to the grade converter, which threw, and the error was swallowed. Every live lookup came back as "not found" even for a site ToS;DR had rated, so sites like Instructure showed no policy rating.
+
 ## v1.15.1
 
 **What was fixed**
