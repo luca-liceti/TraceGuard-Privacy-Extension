@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.14.4
+
+**What was fixed**
+
+- The trust summary at the top of **Your Footprint** is gone. It read "{{percent}}% of the data you entered went to sites we could vouch for" above a page whose job is to list what you handed over and where it went, and a reassurance there did not belong.
+
 ## v1.14.3
 
 **What's new**
