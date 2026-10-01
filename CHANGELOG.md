@@ -2,6 +2,15 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.15.1
+
+**What was fixed**
+
+- The site details panel no longer runs words together. The **Personal Data Fields** row read "This page asks for yourpassword" and the **Reputation** rows read "This site has aclean reputation" and "flagged assuspicious or unsafe", because the sentence and the bolded label were rendered without a space between them.
+- The **Fingerprinting** section no longer claims more than it knows. Where it said "your device identity is safe here", it now says only that no fingerprinting scripts were detected, which is what the scan actually checks.
+- The **Fingerprinting** risk value is now shown in the selected language ("High risk") instead of the raw "high" it stored, matching the label already used on each row below it.
+- The score in the panel header is labelled **Safety score**, with a note that higher scores are safer, so the number reads as a 0 to 100 safety score rather than an unexplained figure.
+
 ## v1.15.0
 
 **What's new**

@@ -320,11 +320,13 @@ export function SiteDetailsPanel({
                     <SheetTitle className="truncate">{domain}</SheetTitle>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                         <span className="flex items-center gap-1.5">
+                            <span className="text-sm text-muted-foreground">{t("Safety score")}</span>
                             <span className="text-lg font-bold leading-none text-foreground">{wss}</span>
                             <Badge variant="outline" className={`px-2.5 py-0.5 ${getSafetyBgColor(safetyLevel)} ${getSafetyTextColor(safetyLevel)}`}>
                                 {t(getSafetyLabel(safetyLevel))}
                             </Badge>
                         </span>
+                        <span className="text-sm text-muted-foreground">{t("Higher scores are safer")}</span>
                         <span className="text-sm">{timestamp ? format(new Date(timestamp), "MMM d, yyyy · HH:mm") : t("Recent visit")}</span>
                     </div>
                 </SheetHeader>
@@ -737,7 +739,7 @@ export function SiteDetailsPanel({
                                                 const label = typeLabels[type.toLowerCase()] ?? type
                                                 return (
                                                     <InsightRow key={idx} icon={AlertTriangle} iconClass={getIndicatorTextColor('warning')}>
-                                                        {t("This page asks for your")}<strong>{label}</strong>
+                                                        {t("This page asks for your")}{" "}<strong>{label}</strong>
                                                     </InsightRow>
                                                 )
                                             })}
@@ -769,7 +771,11 @@ export function SiteDetailsPanel({
                                     <div className="space-y-2">
                                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm items-center">
                                             <SummaryStat label={t("Attempts")} value={summary.totalAttempts} highlight={summary.totalAttempts > 0} />
-                                            <SummaryStat label={t("Risk")} value={summary.riskLevel} highlight={summary.riskLevel !== 'none'} />
+                                            <SummaryStat
+                                                label={t("Risk")}
+                                                value={summary.riskLevel === 'none' ? t("None") : (getFingerprintRiskLabels(t)[summary.riskLevel] ?? summary.riskLevel)}
+                                                highlight={summary.riskLevel !== 'none'}
+                                            />
                                         </div>
 
                                         <div className="flex flex-col gap-1.5">
@@ -833,7 +839,7 @@ export function SiteDetailsPanel({
                                 )
                             })() : (
                                 <InsightRow icon={ShieldUser} iconClass={getIndicatorTextColor('success')}>
-                                    {t("No fingerprinting detected — your device identity is safe here.")}</InsightRow>
+                                    {t("No fingerprinting scripts were detected on this page.")}</InsightRow>
                             )}
                         </div>
 
@@ -859,10 +865,10 @@ export function SiteDetailsPanel({
                                         <div className="flex flex-col gap-1.5">
                                             {isClean ? (
                                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
-                                                    {t("This site has a")}<strong>{t("clean reputation")}</strong> {t("— no safety warnings found in any database")}</InsightRow>
+                                                    {t("This site has a")}{" "}<strong>{t("clean reputation")}</strong> {t("— no safety warnings found in any database")}</InsightRow>
                                             ) : (
                                                 <InsightRow icon={AlertTriangle} iconClass={getIndicatorTextColor('error')}>
-                                                    {t("This site has been flagged as")}<strong>{t("suspicious or unsafe")}</strong> {t("in one or more security databases")}</InsightRow>
+                                                    {t("This site has been flagged as")}{" "}<strong>{t("suspicious or unsafe")}</strong> {t("in one or more security databases")}</InsightRow>
                                             )}
                                         </div>
 
