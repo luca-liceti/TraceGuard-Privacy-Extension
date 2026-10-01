@@ -42,6 +42,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { isThreatLog } from "@/lib/risk-utils"
+import { useSiteDetails } from "@/components/traceguard/site-details-context"
 
 // ─── Semantic color palette (detector-aware) ───────────────────────────────
 // Using standard shadcn theme colors
@@ -118,6 +119,7 @@ function EmptyState({ icon: Icon, title, description }: { icon: React.ComponentT
 
 export default function RankingsPage() {
   const { t } = useTranslation()
+  const { openSiteDetails } = useSiteDetails()
   const rawLogs = useDetectorLogs()
   // Only actual privacy findings count as "threats" — every page visit
   // otherwise produces one routine (often "all clear") log per detector.
@@ -409,11 +411,18 @@ export default function RankingsPage() {
                       <span className="text-sm w-4 text-center text-muted-foreground flex-shrink-0 font-medium">
                         {i + 1}.
                       </span>
-                      {/* Domain */}
+                      {/* Domain. The label opens the site details panel;
+                          the bar and counts stay as they are. */}
                       <div className="flex items-center gap-2 w-40 flex-shrink-0">
-                        <span className="text-sm font-medium truncate" title={entry.domain}>
+                        <button
+                          type="button"
+                          title={entry.domain}
+                          aria-label={`${t("View details")}: ${entry.domain}`}
+                          onClick={() => openSiteDetails(entry.domain)}
+                          className="text-sm font-medium truncate text-left hover:underline focus-visible:underline focus-visible:outline-none"
+                        >
                           {entry.domain.replace(/^www\./, "")}
-                        </span>
+                        </button>
                       </div>
                       {/* Progress bar */}
                       <div className="flex-1 relative">

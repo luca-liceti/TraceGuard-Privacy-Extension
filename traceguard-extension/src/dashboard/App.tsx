@@ -18,6 +18,7 @@ const ExposurePage = resilientLazy(() => import("@/components/traceguard/pages/e
 const PrivacyPolicyPage = resilientLazy(() => import("@/components/traceguard/pages/privacy-policy"))
 import { SettingsProvider, useSettingsModal } from "@/components/traceguard/settings-context"
 import { SettingsModal } from "@/components/traceguard/settings-modal"
+import { SiteDetailsProvider } from "@/components/traceguard/site-details-context"
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
@@ -84,6 +85,7 @@ function AppContent() {
             <Toaster />
             <Router>
                 <DeepLinkHandler />
+                <SiteDetailsProvider>
                 <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">{t("Loading...")}</div>}>
                     <Routes>
                         {/* Default route - redirect to Overview */}
@@ -104,6 +106,7 @@ function AppContent() {
                         <Route path="/privacy-policy" element={<PageWrapper><PrivacyPolicyPage /></PageWrapper>} />
                     </Routes>
                 </Suspense>
+                </SiteDetailsProvider>
             </Router>
         </>
     )

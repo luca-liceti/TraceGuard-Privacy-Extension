@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.15.0
+
+**What's new**
+
+- Domain names across the dashboard are now links to the site details panel. In **Overview**, on the **Rankings & Stats** Top Offenders leaderboard, and on **Your Footprint**, clicking the domain itself opens the same breakdown of trackers, cookies, inputs, connections, and policy that Overview previously hid behind its ⋯ menu. The row still does what it did before: in Overview it expands the visit history, and on Your Footprint it expands the other kinds of data the site holds.
+
 ## v1.14.4
 
 **What was fixed**

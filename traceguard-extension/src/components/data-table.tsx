@@ -26,7 +26,6 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { getGradeTextColor, getSafetyBgColor, getSafetyTextColor } from "@/lib/theme-utils"
-import { getSafetyLevel } from "@/lib/risk-utils"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { storage } from "@/lib/storage"
 import { downloadJson } from "@/lib/export"
@@ -55,15 +54,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { SiteDetailsPanel } from "@/components/traceguard/site-details-panel"
+import { useSiteDetails } from "@/components/traceguard/site-details-context"
 import { SiteRiskData } from "@/lib/types"
 import { DomainGroup } from "@/lib/types"
 
@@ -374,7 +365,22 @@ function GroupedTableBody({
                   ) : (
                     <span className="flex-shrink-0 w-3.5" />
                   )}
-                  <span className="font-medium">{s.domain}</span>
+                  <button
+                    type="button"
+                    title={t("View details")}
+                    aria-label={`${t("View details")}: ${s.domain}`}
+                    onClick={(e) => {
+                      // The row itself toggles the visit list; the domain label
+                      // opens the details panel instead, so keep the click (and
+                      // the key press that fires it) away from the row.
+                      e.stopPropagation()
+                      onViewDetails(s)
+                    }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="font-medium text-left hover:underline focus-visible:underline focus-visible:outline-none"
+                  >
+                    {s.domain}
+                  </button>
                   {isMulti && (
                     <Badge
                       variant="secondary"
@@ -501,9 +507,15 @@ function GroupedTableBody({
                 {/* Domain cell with indent + left border accent */}
                 <TableCell>
                   <div className="flex items-center gap-2 pl-7">
-                    <span className="border-l-2 border-muted-foreground/30 pl-2 text-sm text-muted-foreground">
+                    <button
+                      type="button"
+                      title={t("View details")}
+                      aria-label={`${t("View details")}: ${visit.domain}`}
+                      onClick={() => onViewDetails(visit)}
+                      className="border-l-2 border-muted-foreground/30 pl-2 text-sm text-muted-foreground text-left hover:underline focus-visible:underline focus-visible:outline-none"
+                    >
                       {visit.domain}
-                    </span>
+                    </button>
                     {idx === 0 && (
                       <Badge className="text-[10px] px-1.5 py-0 h-4 font-medium bg-primary/15 text-primary border-primary/30 hover:bg-primary/15">
                         {t("Latest")}
@@ -664,9 +676,7 @@ export function DataTable({
   }
 
   const [exportDataOpen, setExportDataOpen] = React.useState(false)
-  const [selectedVisit, setSelectedVisit] = React.useState<SiteVisit | null>(null)
-  const [isDetailsOpen, setIsDetailsOpen] = React.useState(false)
-  const [highlightSection, setHighlightSection] = React.useState<string | undefined>(undefined)
+  const { openSiteDetails } = useSiteDetails()
   const [searchParams, setSearchParams] = useSearchParams()
 
   React.useEffect(() => {
@@ -677,55 +687,26 @@ export function DataTable({
 
     // Prefer the journal row, then fall back to the site cache (detector logs
     // are capped at ~200 visits, so a notification for an older site would
-    // otherwise silently do nothing).
+    // otherwise silently do nothing). A domain with neither still does nothing,
+    // as before: an empty panel would read as "this site is clean".
     const visit = data.find(v => v.domain === domainToView)
-    let opened = false
     if (visit) {
-      setSelectedVisit(visit)
-      opened = true
+      openSiteDetails(domainToView, { visit, highlightSection: sectionToView })
+    } else if (siteCache[domainToView]) {
+      openSiteDetails(domainToView, { highlightSection: sectionToView })
     } else {
-      const cached = siteCache[domainToView]
-      if (cached) {
-        const levelName = ({
-          excellent: "Excellent",
-          good: "Good",
-          fair: "Fair",
-          poor: "Poor",
-          critical: "Critical",
-        } as const)[getSafetyLevel(cached.wss)]
-        setSelectedVisit({
-          id: `cached-${domainToView}`,
-          domain: domainToView,
-          timestamp: typeof cached.lastAnalyzed === 'number' ? cached.lastAnalyzed : Date.now(),
-          wss: cached.wss,
-          safetyLevel: levelName,
-          trackers: cached.enrichedDetails?.trackers?.summary?.total ?? 0,
-          cookies: cached.enrichedDetails?.cookies?.summary?.total ?? 0,
-          inputs: (cached.detectionDetails?.input?.sensitive ?? 0) > 0 ? "Yes" : "No",
-          reputation: cached.breakdown?.reputation === 100
-            ? "Clean"
-            : cached.breakdown?.reputation === 0 ? "Blacklisted" : "Suspicious",
-          policy: cached.detectionDetails?.policy?.grade ?? "N/A",
-        })
-        opened = true
-      }
+      return
     }
-    if (opened) {
-      setHighlightSection(sectionToView)
-      setIsDetailsOpen(true)
-      searchParams.delete('viewSite')
-      searchParams.delete('section')
-      setSearchParams(searchParams, { replace: true })
-    }
-  }, [searchParams, data, siteCache, setSearchParams])
+    searchParams.delete('viewSite')
+    searchParams.delete('section')
+    setSearchParams(searchParams, { replace: true })
+  }, [searchParams, data, siteCache, openSiteDetails, setSearchParams])
 
   // Reset to first page when filter or page size changes
   React.useEffect(() => { setPageIndex(0) }, [domainFilter, pageSize])
 
   const handleViewDetails = (visit: SiteVisit) => {
-    setSelectedVisit(visit)
-    setHighlightSection(undefined)
-    setIsDetailsOpen(true)
+    openSiteDetails(visit.domain, { visit })
   }
 
   const handleExportSingleLog = async (visit: SiteVisit) => {
@@ -899,18 +880,6 @@ export function DataTable({
           </div>
         </div>
       </div>
-
-      <SiteDetailsPanel
-        open={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
-        domain={selectedVisit?.domain ?? ""}
-        timestamp={selectedVisit?.timestamp ?? 0}
-        wss={selectedVisit?.wss ?? 0}
-        safetyLevel={selectedVisit?.safetyLevel ?? ""}
-        siteData={selectedVisit ? (siteCache[selectedVisit.domain] ?? null) : null}
-        legacyDetails={selectedVisit?.details}
-        highlightSection={highlightSection}
-      />
     </div>
     </ErrorBoundary>
   )

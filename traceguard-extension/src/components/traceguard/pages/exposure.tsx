@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { useExposureReport } from "@/lib/useStorage"
 import { cn } from "@/lib/utils"
 import { getSafetyConfig } from "@/lib/risk-utils"
+import { useSiteDetails } from "@/components/traceguard/site-details-context"
 import { categoryLabelKey } from "@/lib/exposure"
 import type { ExposureSite, HandoverGroup, SurpriseReason, Watcher } from "@/lib/exposure"
 import { ChevronDown, Clock, Eye, KeyRound, ShieldCheck } from "lucide-react"
@@ -65,23 +66,47 @@ function SiteRow({
     alsoHolds: string[]
 }) {
     const { t } = useTranslation()
+    const { openSiteDetails } = useSiteDetails()
     const [expanded, setExpanded] = React.useState(false)
     const lastSeen = formatDate(site.lastSeen)
+    const canExpand = alsoHolds.length > 0
 
     return (
         <div className="py-2">
-            <button
-                type="button"
-                onClick={() => setExpanded(value => !value)}
-                aria-expanded={expanded}
-                disabled={alsoHolds.length === 0}
+            {/* The row expands what else the site holds; the domain label
+                inside it opens the full details panel instead. A div with
+                role="button" (not a button element) so a real button can sit
+                inside without nesting interactive elements. */}
+            <div
+                role={canExpand ? "button" : undefined}
+                tabIndex={canExpand ? 0 : undefined}
+                aria-expanded={canExpand ? expanded : undefined}
+                onClick={() => canExpand && setExpanded(value => !value)}
+                onKeyDown={(e) => {
+                    if (canExpand && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault()
+                        setExpanded(value => !value)
+                    }
+                }}
                 className={cn(
                     "flex w-full items-start justify-between gap-3 text-left",
-                    alsoHolds.length > 0 && "cursor-pointer hover:opacity-80"
+                    canExpand && "cursor-pointer hover:opacity-80"
                 )}
             >
                 <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{site.domain}</div>
+                    <button
+                        type="button"
+                        title={t("View details")}
+                        aria-label={`${t("View details")}: ${site.domain}`}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            openSiteDetails(site.domain)
+                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="block max-w-full truncate text-left text-sm font-medium hover:underline focus-visible:underline focus-visible:outline-none"
+                    >
+                        {site.domain}
+                    </button>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                         {site.reasons.map(reason => (
                             <Badge
@@ -118,7 +143,7 @@ function SiteRow({
                         />
                     )}
                 </div>
-            </button>
+            </div>
             {expanded && (
                 <p className="mt-1 text-xs text-muted-foreground">
                     {t("This site also holds: {{types}}", {
