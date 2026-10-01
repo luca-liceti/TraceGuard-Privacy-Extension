@@ -46,6 +46,13 @@ const OUTPUT_DIR = process.env.TOSDR_OUTPUT_DIR
 const INDEX_FILE = path.join(OUTPUT_DIR, 'tosdr-index.json');
 const DETAIL_DIR = path.join(OUTPUT_DIR, 'tosdr', 'details');
 
+// Resume cache. Every fetched service is appended here as it is processed, so a
+// run that is cancelled keeps its progress and the next run continues from where
+// it stopped instead of repeating the multi-hour detail pass. It is deleted once
+// the dataset is written. Kept outside src/assets so it can never ship.
+const PROGRESS_FILE = process.env.TOSDR_PROGRESS_FILE
+    || path.join(__dirname, '../.cache/tosdr-progress.jsonl');
+
 const LIST_ENDPOINT = 'https://api.tosdr.org/service/v3/';
 const DETAIL_ENDPOINT = 'https://api.tosdr.org/service/v3/';
 const GRADES = ['A', 'B', 'C', 'D', 'E'];
@@ -265,6 +272,44 @@ function loadPrevious() {
 }
 
 /**
+ * Read the resume cache left by a previous, possibly interrupted, run. Returns
+ * a map of service id to its already-fetched record.
+ */
+function loadProgress() {
+    const progress = new Map();
+    if (!fs.existsSync(PROGRESS_FILE)) return progress;
+    try {
+        for (const line of fs.readFileSync(PROGRESS_FILE, 'utf8').split('\n')) {
+            if (!line.trim()) continue;
+            try {
+                const entry = JSON.parse(line);
+                if (entry && entry.id != null) progress.set(String(entry.id), entry);
+            } catch {
+                // A torn final line from a hard kill is expected; ignore it.
+            }
+        }
+    } catch (e) {
+        console.warn('Could not read the resume cache, starting the detail pass fresh:', e.message);
+    }
+    return progress;
+}
+
+/** Append one fetched service to the resume cache. */
+function appendProgress(entry) {
+    fs.mkdirSync(path.dirname(PROGRESS_FILE), { recursive: true });
+    fs.appendFileSync(PROGRESS_FILE, JSON.stringify(entry) + '\n');
+}
+
+/** Remove the resume cache once the dataset has been written. */
+function clearProgress() {
+    try {
+        if (fs.existsSync(PROGRESS_FILE)) fs.unlinkSync(PROGRESS_FILE);
+    } catch (e) {
+        console.warn('Could not remove the resume cache:', e.message);
+    }
+}
+
+/**
  * Validate the freshly built output so a broken build can never ship a degraded
  * dataset. Throws (fails the build) instead of writing something malformed.
  */
@@ -297,6 +342,10 @@ async function buildDatabase() {
     fs.mkdirSync(DETAIL_DIR, { recursive: true });
 
     const { prevServiceUpdated, prevDetails } = loadPrevious();
+    const progress = loadProgress();
+    if (progress.size > 0) {
+        console.log(`Resuming: ${progress.size} services were already fetched in a previous run.`);
+    }
 
     const { services, complete } = await fetchAllServices();
     if (!services.length) {
@@ -343,14 +392,23 @@ async function buildDatabase() {
 
         const serviceId = String(service.id);
         const updatedAt = service.updated_at;
-        const unchanged =
-            prevServiceUpdated.get(serviceId) === updatedAt &&
-            domains.every((d) => prevDetails.has(d));
+
+        const resumed = progress.get(serviceId);
+        const fromProgress = resumed && resumed.updatedAt === updatedAt;
 
         let points;
         let documents;
+        let grade;
 
-        if (unchanged) {
+        if (fromProgress) {
+            // Already fetched in an interrupted run; reuse it without a request.
+            grade = resumed.grade;
+            points = resumed.points || [];
+            documents = resumed.documents || [];
+            reused++;
+        } else if (prevServiceUpdated.get(serviceId) === updatedAt && domains.every((d) => prevDetails.has(d))) {
+            // Unchanged since the last completed build; reuse the dataset on disk.
+            grade = letterGrade(service.rating);
             const prev = prevDetails.get(domains[0]);
             points = prev.points || [];
             documents = prev.documents || [];
@@ -358,7 +416,9 @@ async function buildDatabase() {
         } else {
             await sleep(REQUEST_DELAY_MS);
             const detail = await fetchJson(`${DETAIL_ENDPOINT}?id=${serviceId}`);
+            grade = letterGrade(service.rating);
             if (detail) {
+                grade = letterGrade(detail.rating) ?? grade;
                 points = (detail.points || []).map((p) => ({
                     title: p.title,
                     classification: (p.case && p.case.classification) || 'neutral',
@@ -367,7 +427,7 @@ async function buildDatabase() {
                 fetched++;
             } else if (domains.every((d) => prevDetails.has(d))) {
                 // Merge on failure: keep the previous good entry rather than
-                // dropping a rated service because one request timed out.
+                // dropping a service because one request timed out.
                 const prev = prevDetails.get(domains[0]);
                 points = prev.points || [];
                 documents = prev.documents || [];
@@ -377,9 +437,9 @@ async function buildDatabase() {
                 failed++;
                 continue;
             }
+            // Record the result so a later run resumes past this service.
+            appendProgress({ id: serviceId, updatedAt, grade, points, documents });
         }
-
-        const grade = letterGrade(service.rating);
 
         // A service with no grade and nothing on record is not worth a dataset
         // entry; the panel has nothing to show. It falls through to the local
@@ -429,6 +489,9 @@ async function buildDatabase() {
     for (const file of fs.readdirSync(DETAIL_DIR)) {
         if (!written.has(file)) fs.unlinkSync(path.join(DETAIL_DIR, file));
     }
+
+    // The dataset is safely on disk, so the resume cache is no longer needed.
+    clearProgress();
 
     console.log(`Fetched ${fetched}, reused ${reused}, failed ${failed}, skipped empty ${empty}.`);
     console.log(`Wrote ${index.count} domain entries to ${INDEX_FILE}`);
