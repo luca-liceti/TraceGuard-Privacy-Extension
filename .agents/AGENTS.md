@@ -64,6 +64,7 @@
 ## Communication
 
 - Explain work in plain language, pitched at an entry-level developer. Lead with what the change does for the user, then how it works.
+- Dumb it down by default. When the user asks for a simpler answer, cut jargon, internal names, and API detail that does not change what they should do. A simpler answer is shorter, not the same answer reworded. Keep the facts that matter and drop the rest.
 - Define a term the first time it appears ("the worker, the part that runs with no window"). Avoid unexplained internal shorthand.
 - Keep the precise details. Simple is not vague: name the file, the function, and the exact behaviour, then describe it in words a new developer can follow.
 - When something is only partly done, say which parts are done and which are not, rather than describing it as finished.
