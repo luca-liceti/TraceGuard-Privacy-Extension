@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.18.0
+
+**What's new**
+
+- The values in the activity log now open the site details panel at the section they summarize. Clicking a site's trackers, cookies, PII risk, reputation, policy, headers, or fingerprinting value opens the panel scrolled to that section and highlights it, the same way a PII alert already deep-links into the panel.
+
 ## v1.17.0
 
 **What's new**

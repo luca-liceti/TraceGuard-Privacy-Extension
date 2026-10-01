@@ -296,12 +296,57 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
 
 // ── Grouped row renderer ─────────────────────────────────────────────────────
 
+// ── Clickable log value ──────────────────────────────────────────────────────
+
+/**
+ * A log value that opens the site details panel at the section it summarizes.
+ * The summary row toggles the visit list on a row click, so the button stops
+ * the click, and its activating key press, from reaching the row.
+ */
+function SectionLink({
+  section,
+  label,
+  visit,
+  onViewDetails,
+  variant = "text",
+  children,
+}: {
+  section: string
+  label: string
+  visit: SiteVisit
+  onViewDetails: (visit: SiteVisit, section?: string) => void
+  /** "text" underlines on hover; "pill" shifts the badge background instead. */
+  variant?: "text" | "pill"
+  children: React.ReactNode
+}) {
+  const { t } = useTranslation()
+  return (
+    <button
+      type="button"
+      title={t("View details")}
+      aria-label={`${t("View details")}: ${t(label)}`}
+      onClick={(e) => {
+        e.stopPropagation()
+        onViewDetails(visit, section)
+      }}
+      onKeyDown={(e) => e.stopPropagation()}
+      className={
+        variant === "pill"
+          ? "group inline-flex cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          : "cursor-pointer text-left hover:underline focus-visible:underline focus-visible:outline-none"
+      }
+    >
+      {children}
+    </button>
+  )
+}
+
 interface GroupedTableBodyProps {
   groups: DomainGroup[]
   columns: ColumnDef<SiteVisit>[]
   expandedDomains: Set<string>
   onToggle: (domain: string) => void
-  onViewDetails: (visit: SiteVisit) => void
+  onViewDetails: (visit: SiteVisit, section?: string) => void
   onExportLog: (visit: SiteVisit) => void
   onDeleteLog: (visit: SiteVisit) => void
   t: (key: string, opts?: any) => string
@@ -411,43 +456,57 @@ function GroupedTableBody({
 
               {/* Trackers: max */}
               <TableCell>
-                <div className="flex items-center gap-1">
-                  <span>{s.trackers}</span>
-                  {isMulti && s.trackers > 0 && (
-                    <span className="text-[10px] text-muted-foreground">{t("max")}</span>
-                  )}
-                </div>
+                <SectionLink section="trackers" label="Trackers" visit={s} onViewDetails={onViewDetails}>
+                  <div className="flex items-center gap-1">
+                    <span>{s.trackers}</span>
+                    {isMulti && s.trackers > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{t("max")}</span>
+                    )}
+                  </div>
+                </SectionLink>
               </TableCell>
 
               {/* Cookies: max */}
               <TableCell>
-                <div className="flex items-center gap-1">
-                  <span>{s.cookies}</span>
-                  {isMulti && s.cookies > 0 && (
-                    <span className="text-[10px] text-muted-foreground">{t("max")}</span>
-                  )}
-                </div>
+                <SectionLink section="cookies" label="Cookies" visit={s} onViewDetails={onViewDetails}>
+                  <div className="flex items-center gap-1">
+                    <span>{s.cookies}</span>
+                    {isMulti && s.cookies > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{t("max")}</span>
+                    )}
+                  </div>
+                </SectionLink>
               </TableCell>
 
               {/* PII Risk: any Yes wins */}
               <TableCell>
-                <div>{t(s.inputs)}</div>
+                <SectionLink section="inputs" label="PII Risk" visit={s} onViewDetails={onViewDetails}>
+                  <div>{t(s.inputs)}</div>
+                </SectionLink>
               </TableCell>
 
               {/* Reputation: worst-case */}
               <TableCell>
-                <div>{t(s.reputation)}</div>
+                <SectionLink section="reputation" label="Reputation" visit={s} onViewDetails={onViewDetails}>
+                  <div>{t(s.reputation)}</div>
+                </SectionLink>
               </TableCell>
 
               {/* Policy: most recent */}
               <TableCell>
-                <div className={`font-semibold ${getGradeTextColor(s.policy)}`}>{t(s.policy)}</div>
+                <SectionLink section="policy" label="Policy" visit={s} onViewDetails={onViewDetails}>
+                  <div className={`font-semibold ${getGradeTextColor(s.policy)}`}>{t(s.policy)}</div>
+                </SectionLink>
               </TableCell>
 
               {/* Headers: most recent */}
               <TableCell>
                 {s.headersGrade
-                  ? <div className={`font-semibold ${getGradeTextColor(s.headersGrade)}`}>{s.headersGrade}</div>
+                  ? (
+                    <SectionLink section="headers" label="Headers" visit={s} onViewDetails={onViewDetails}>
+                      <div className={`font-semibold ${getGradeTextColor(s.headersGrade)}`}>{s.headersGrade}</div>
+                    </SectionLink>
+                  )
                   : <div className="text-muted-foreground text-xs">—</div>
                 }
               </TableCell>
@@ -457,11 +516,17 @@ function GroupedTableBody({
                 {s.fingerprintingAttempts === undefined || s.fingerprintingAttempts === null
                   ? <div className="text-muted-foreground text-xs">—</div>
                   : s.fingerprintingAttempts === 0
-                    ? <div>0</div>
+                    ? (
+                      <SectionLink section="fingerprinting" label="Fingerprinting" visit={s} onViewDetails={onViewDetails}>
+                        <div>0</div>
+                      </SectionLink>
+                    )
                     : (
-                      <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border-transparent">
-                        {s.fingerprintingAttempts}
-                      </Badge>
+                      <SectionLink section="fingerprinting" label="Fingerprinting" visit={s} onViewDetails={onViewDetails} variant="pill">
+                        <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border-transparent group-hover:bg-warning/30">
+                          {s.fingerprintingAttempts}
+                        </Badge>
+                      </SectionLink>
                     )
                 }
               </TableCell>
@@ -542,26 +607,48 @@ function GroupedTableBody({
                 </TableCell>
 
                 {/* Trackers */}
-                <TableCell><div className="text-sm">{visit.trackers}</div></TableCell>
+                <TableCell>
+                  <SectionLink section="trackers" label="Trackers" visit={visit} onViewDetails={onViewDetails}>
+                    <div className="text-sm">{visit.trackers}</div>
+                  </SectionLink>
+                </TableCell>
 
                 {/* Cookies */}
-                <TableCell><div className="text-sm">{visit.cookies}</div></TableCell>
+                <TableCell>
+                  <SectionLink section="cookies" label="Cookies" visit={visit} onViewDetails={onViewDetails}>
+                    <div className="text-sm">{visit.cookies}</div>
+                  </SectionLink>
+                </TableCell>
 
                 {/* PII */}
-                <TableCell><div className="text-sm">{t(visit.inputs)}</div></TableCell>
+                <TableCell>
+                  <SectionLink section="inputs" label="PII Risk" visit={visit} onViewDetails={onViewDetails}>
+                    <div className="text-sm">{t(visit.inputs)}</div>
+                  </SectionLink>
+                </TableCell>
 
                 {/* Reputation */}
-                <TableCell><div className="text-sm">{t(visit.reputation)}</div></TableCell>
+                <TableCell>
+                  <SectionLink section="reputation" label="Reputation" visit={visit} onViewDetails={onViewDetails}>
+                    <div className="text-sm">{t(visit.reputation)}</div>
+                  </SectionLink>
+                </TableCell>
 
                 {/* Policy */}
                 <TableCell>
-                  <div className={`font-semibold text-sm ${getGradeTextColor(visit.policy)}`}>{t(visit.policy)}</div>
+                  <SectionLink section="policy" label="Policy" visit={visit} onViewDetails={onViewDetails}>
+                    <div className={`font-semibold text-sm ${getGradeTextColor(visit.policy)}`}>{t(visit.policy)}</div>
+                  </SectionLink>
                 </TableCell>
 
                 {/* Headers */}
                 <TableCell>
                   {visit.headersGrade
-                    ? <div className={`font-semibold text-sm ${getGradeTextColor(visit.headersGrade)}`}>{visit.headersGrade}</div>
+                    ? (
+                      <SectionLink section="headers" label="Headers" visit={visit} onViewDetails={onViewDetails}>
+                        <div className={`font-semibold text-sm ${getGradeTextColor(visit.headersGrade)}`}>{visit.headersGrade}</div>
+                      </SectionLink>
+                    )
                     : <div className="text-muted-foreground text-xs">—</div>
                   }
                 </TableCell>
@@ -571,11 +658,17 @@ function GroupedTableBody({
                   {visit.fingerprintingAttempts === undefined || visit.fingerprintingAttempts === null
                     ? <div className="text-muted-foreground text-xs">—</div>
                     : visit.fingerprintingAttempts === 0
-                      ? <div className="text-sm">0</div>
+                      ? (
+                        <SectionLink section="fingerprinting" label="Fingerprinting" visit={visit} onViewDetails={onViewDetails}>
+                          <div className="text-sm">0</div>
+                        </SectionLink>
+                      )
                       : (
-                        <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border-transparent">
-                          {visit.fingerprintingAttempts}
-                        </Badge>
+                        <SectionLink section="fingerprinting" label="Fingerprinting" visit={visit} onViewDetails={onViewDetails} variant="pill">
+                          <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border-transparent group-hover:bg-warning/30">
+                            {visit.fingerprintingAttempts}
+                          </Badge>
+                        </SectionLink>
                       )
                   }
                 </TableCell>
@@ -705,8 +798,8 @@ export function DataTable({
   // Reset to first page when filter or page size changes
   React.useEffect(() => { setPageIndex(0) }, [domainFilter, pageSize])
 
-  const handleViewDetails = (visit: SiteVisit) => {
-    openSiteDetails(visit.domain, { visit })
+  const handleViewDetails = (visit: SiteVisit, section?: string) => {
+    openSiteDetails(visit.domain, { visit, highlightSection: section })
   }
 
   const handleExportSingleLog = async (visit: SiteVisit) => {
