@@ -50,6 +50,7 @@ import {
     getHeaderRatingBadge, getGradeTextColor, getRiskLevelBadge,
     getIndicatorTextColor
 } from "@/lib/theme-utils"
+import { getSafetyLabel } from "@/lib/risk-utils"
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 
@@ -321,7 +322,7 @@ export function SiteDetailsPanel({
                         <span className="flex items-center gap-1.5">
                             <span className="text-lg font-bold leading-none text-foreground">{wss}</span>
                             <Badge variant="outline" className={`px-2.5 py-0.5 ${getSafetyBgColor(safetyLevel)} ${getSafetyTextColor(safetyLevel)}`}>
-                                {safetyLevel}
+                                {t(getSafetyLabel(safetyLevel))}
                             </Badge>
                         </span>
                         <span className="text-sm">{timestamp ? format(new Date(timestamp), "MMM d, yyyy · HH:mm") : t("Recent visit")}</span>

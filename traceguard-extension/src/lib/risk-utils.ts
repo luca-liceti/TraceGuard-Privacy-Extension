@@ -205,6 +205,22 @@ export function getSafetyConfig(wss: number): SafetyConfig {
 }
 
 /**
+ * Display label for a safety level, whatever casing the caller passes.
+ *
+ * `getSafetyLevel()` returns lowercase keys ('excellent') while the table and
+ * the cache pass capitalised ones ('Excellent'). A badge that printed its input
+ * verbatim showed "excellent" on some paths and "Excellent" on others, so
+ * normalise to the configured label here rather than trusting the caller.
+ *
+ * @param level - A safety level in any casing (e.g. 'excellent' or 'Excellent')
+ * @returns The display label, or the input unchanged if it is not a level
+ */
+export function getSafetyLabel(level: string | null | undefined): string {
+    const key = level?.toLowerCase() as SafetyLevel | undefined;
+    return (key && SAFETY_CONFIGS[key]?.label) || (level ?? '');
+}
+
+/**
  * Get just the color class for a WSS score.
  * Useful when you only need the text color.
  * 
