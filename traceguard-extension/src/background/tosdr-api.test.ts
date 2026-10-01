@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock the bundled seed database so tests control exactly what "known" ratings
 // exist without hitting chrome-extension:// URLs in Node's fetch.
 vi.mock('./services/database-loader', () => ({
-    getTosDRMap: vi.fn().mockResolvedValue({}),
+    getTosDRRecord: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Keep the other utils exports real and stub only the network call the lookup
@@ -19,7 +19,7 @@ vi.mock('../lib/rate-limiter', () => ({
 }));
 
 import { checkTosDR, clearTosDRCache } from './tosdr-api';
-import { getTosDRMap } from './services/database-loader';
+import { getTosDRRecord } from './services/database-loader';
 import { fetchWithTimeout } from '../lib/utils';
 
 describe('checkTosDR', () => {
@@ -27,7 +27,7 @@ describe('checkTosDR', () => {
         // Module-level cache survives between tests; reset so each test reads
         // the storage it seeded.
         clearTosDRCache();
-        vi.mocked(getTosDRMap).mockResolvedValue({});
+        vi.mocked(getTosDRRecord).mockResolvedValue(undefined);
     });
 
     it('returns a local fallback for an unknown domain when cloud is disabled', async () => {
@@ -50,15 +50,13 @@ describe('checkTosDR', () => {
                 },
             },
         });
-        vi.mocked(getTosDRMap).mockResolvedValue({
-            'google.com': {
-                found: true,
-                grade: 'E',
-                score: 20,
-                source: 'tosdr-local',
-                serviceName: 'Google',
-                serviceId: 217,
-            },
+        vi.mocked(getTosDRRecord).mockResolvedValue({
+            found: true,
+            grade: 'E',
+            score: 20,
+            source: 'tosdr-local',
+            serviceName: 'Google',
+            serviceId: 217,
         });
 
         const result = await checkTosDR('https://www.google.com');

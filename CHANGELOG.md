@@ -2,6 +2,14 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.16.0
+
+**What's new**
+
+- The bundled privacy-policy ratings now cover the whole ToS;DR catalog instead of its first 500 services. Sites such as Instructure (Canvas) and Anthropic were outside that cut and showed no policy rating; the build now pages through the full catalog, so any service ToS;DR has rated resolves.
+- Rebuilding the catalog only refetches services whose ToS;DR record has changed. Services that have not moved are reused, so only the first build is slow.
+- The ratings ship as a small always-resident index plus detail shards, so the dataset is no longer held in memory all at once and cannot balloon the extension's memory as it grows.
+
 ## v1.15.2
 
 **What was fixed**

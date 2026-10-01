@@ -83,7 +83,34 @@ let _trackerRadar: Record<string, TrackerRadarEntry> | null = null;
 let _cookieDB: CookieDatabase | null = null;
 let _easyPrivacySet: Set<string> | null = null;
 let _disconnectMap: Record<string, DisconnectEntry> | null = null;
-let _tosdrMap: Record<string, any> | null = null;
+// ToS;DR is stored in two layers: a small always-resident index (grade, score,
+// service, and which shard holds the point list) and detail shards. The index
+// is parsed once; shards are fetched one at a time and only a few are kept, so
+// memory stays flat no matter how many sites are visited.
+interface TosdrIndexEntry {
+    grade: string;
+    score: number;
+    serviceId: string | number;
+    serviceName: string;
+    shard: number;
+    serviceUpdatedAt?: string;
+}
+interface TosdrDetailEntry {
+    points: { title: string; classification: string }[];
+    documents: { name: string; url: string }[];
+}
+interface TosdrIndex {
+    updatedAt: number;
+    shardCount: number;
+    count: number;
+    entries: Record<string, TosdrIndexEntry>;
+}
+
+let _tosdrIndex: TosdrIndex | null = null;
+let _tosdrIndexMissing = false;
+let _tosdrLegacy: Record<string, any> | null = null;
+const _tosdrShards = new Map<number, Record<string, TosdrDetailEntry>>();
+const TOSDR_SHARD_CACHE_LIMIT = 4;
 
 // Compiled wildcard regexes (cached after first load)
 let _compiledWildcards: Array<{ regex: RegExp; entry: CookieDBEntry }> | null = null;
@@ -172,22 +199,107 @@ export async function getDisconnectMap(): Promise<Record<string, DisconnectEntry
 }
 
 /**
- * Load and cache the ToS;DR database.
+ * Load the ToS;DR index, the small always-resident map of domain to grade,
+ * score, and the detail shard holding its point list. Returns null when the
+ * build has not produced an index yet, so the loader can fall back to the older
+ * single-file dataset.
  */
-export async function getTosDRMap(): Promise<Record<string, any>> {
-    if (_tosdrMap) return _tosdrMap;
+async function loadTosdrIndex(): Promise<TosdrIndex | null> {
+    if (_tosdrIndex) return _tosdrIndex;
+    if (_tosdrIndexMissing) return null;
     try {
+        const url = chrome.runtime.getURL('assets/tosdr-index.json');
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`tosdr-index.json responded ${response.status}`);
+        const data = await response.json();
+        const index = (data.default || data) as TosdrIndex;
+        if (!index || typeof index !== 'object' || !index.entries) {
+            throw new Error('tosdr-index.json has no entries');
+        }
+        _tosdrIndex = index;
+        recordDatabaseLoaded('tosdr', Object.keys(index.entries).length);
+        return _tosdrIndex;
+    } catch {
+        // A missing index is expected until the first full build; fall back to
+        // the legacy file without treating it as a broken package.
+        _tosdrIndexMissing = true;
+        logEvent('enrich', 'debug', 'tosdr_index_absent', 'ToS;DR index not found, using the legacy dataset');
+        return null;
+    }
+}
 
+/**
+ * Load one detail shard and keep a small cache of the most recently used ones.
+ * Shards are local files, so evicting one only costs a re-read, never a network
+ * call, and the cap keeps memory flat however many sites are visited.
+ */
+async function loadTosdrShard(shard: number): Promise<Record<string, TosdrDetailEntry> | null> {
+    const cached = _tosdrShards.get(shard);
+    if (cached) {
+        // Refresh recency so the most-used shard is the last evicted.
+        _tosdrShards.delete(shard);
+        _tosdrShards.set(shard, cached);
+        return cached;
+    }
+    try {
+        const url = chrome.runtime.getURL(`assets/tosdr/details/${shard}.json`);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`shard ${shard} responded ${response.status}`);
+        const data = await response.json();
+        const entries = (data.default || data) as Record<string, TosdrDetailEntry>;
+        _tosdrShards.set(shard, entries);
+        if (_tosdrShards.size > TOSDR_SHARD_CACHE_LIMIT) {
+            const oldest = _tosdrShards.keys().next().value;
+            if (oldest !== undefined) _tosdrShards.delete(oldest);
+        }
+        return entries;
+    } catch (e) {
+        recordDatabaseFailed('tosdr-detail', e);
+        return null;
+    }
+}
+
+/** Load the pre-sharding single-file dataset, used only when no index exists. */
+async function loadLegacyTosdr(): Promise<Record<string, any>> {
+    if (_tosdrLegacy) return _tosdrLegacy;
+    try {
         const url = chrome.runtime.getURL('assets/tosdr-data.json');
         const response = await fetch(url);
         const data = await response.json();
-        _tosdrMap = (data.default || data) as Record<string, any>;
-        recordDatabaseLoaded('tosdr', Object.keys(_tosdrMap).length);
+        _tosdrLegacy = (data.default || data) as Record<string, any>;
+        recordDatabaseLoaded('tosdr-legacy', Object.keys(_tosdrLegacy).length);
     } catch (e) {
-        recordDatabaseFailed('tosdr', e);
-        _tosdrMap = {};
+        recordDatabaseFailed('tosdr-legacy', e);
+        _tosdrLegacy = {};
     }
-    return _tosdrMap;
+    return _tosdrLegacy;
+}
+
+/**
+ * Look up one domain's ToS;DR rating. Prefers the sharded index; falls back to
+ * the legacy single-file dataset when the index has not been built yet.
+ */
+export async function getTosDRRecord(domain: string): Promise<any | undefined> {
+    const index = await loadTosdrIndex();
+    if (index) {
+        const entry = index.entries[domain];
+        if (!entry) return undefined;
+        const shard = await loadTosdrShard(entry.shard);
+        const detail = shard ? shard[domain] : undefined;
+        return {
+            found: true,
+            grade: entry.grade,
+            score: entry.score,
+            source: 'tosdr-local',
+            serviceName: entry.serviceName,
+            serviceId: entry.serviceId,
+            points: detail?.points || [],
+            documents: detail?.documents || [],
+            lastUpdated: index.updatedAt,
+        };
+    }
+    const legacy = await loadLegacyTosdr();
+    return Object.prototype.hasOwnProperty.call(legacy, domain) ? legacy[domain] : undefined;
 }
 
 /**

@@ -131,7 +131,7 @@ function gradeToScore(grade: unknown): number {
     return gradeMap[normalized] ?? 0;
 }
 
-import { getTosDRMap } from './services/database-loader';
+import { getTosDRRecord } from './services/database-loader';
 import { captureError, logEvent } from '../lib/diagnostics';
 import { storage } from '../lib/storage';
 import { rateLimiters } from '../lib/rate-limiter';
@@ -266,8 +266,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
         // local data for up to refreshDays. Check the seed first; only trust
         // the cached "not found" when the seed agrees it has no rating.
         if (isNegative) {
-            const seedMap = await getTosDRMap();
-            const seedResult = Object.prototype.hasOwnProperty.call(seedMap, domain) ? seedMap[domain] : undefined;
+            const seedResult = await getTosDRRecord(domain);
             if (seedResult) {
                 logEvent('enrich', 'debug', 'tosdr_seed_overrode_negative', 'Bundled seed rating overrode a cached miss', { host: domain });
                 return seedResult as TosDRResult;
@@ -278,8 +277,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
     }
     
     // 2. Check local seed database
-    const seedMap = await getTosDRMap();
-    const seedResult = Object.prototype.hasOwnProperty.call(seedMap, domain) ? seedMap[domain] : undefined;
+    const seedResult = await getTosDRRecord(domain);
     
     if (seedResult) {
         const seedTimestamp = seedResult.lastUpdated || 0;
