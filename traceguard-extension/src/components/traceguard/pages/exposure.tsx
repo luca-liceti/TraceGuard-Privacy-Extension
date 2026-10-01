@@ -207,6 +207,7 @@ function HandoverCard({
  */
 function WatcherRow({ watcher, totalSites }: { watcher: Watcher; totalSites: number }) {
     const { t } = useTranslation()
+    const { openSiteDetails } = useSiteDetails()
     const plural = usePlural()
     const [expanded, setExpanded] = React.useState(false)
     const hasDomains = watcher.domains.length > 0
@@ -260,12 +261,16 @@ function WatcherRow({ watcher, totalSites }: { watcher: Watcher; totalSites: num
                     </p>
                     <div className="flex flex-wrap gap-1">
                         {watcher.domains.map(domain => (
-                            <span
+                            <button
                                 key={domain}
-                                className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                                type="button"
+                                title={t("View details")}
+                                aria-label={`${t("View details")}: ${domain}`}
+                                onClick={() => openSiteDetails(domain)}
+                                className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground cursor-pointer transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                             >
                                 {domain}
-                            </span>
+                            </button>
                         ))}
                     </div>
                 </div>
