@@ -64,8 +64,16 @@ const UNRATED_SCORE = 50;
 // Politeness: ToS;DR is a free, volunteer-run API. Its gateway caps requests at
 // roughly five per ten seconds, so space calls out and honor Retry-After. A
 // first full build is slow by design; later builds only refetch what changed.
-const REQUEST_DELAY_MS = Number(process.env.TOSDR_REQUEST_DELAY_MS || 250);
+//
+// 2100ms is just under that cap. Pacing this loosely is not optional: at the
+// old 250ms the build sent about 7.6 requests per 10s, was rejected with 429
+// ("You are doing this too much") from the first page, and skipped every
+// service it could not win a retry for.
+const REQUEST_DELAY_MS = Number(process.env.TOSDR_REQUEST_DELAY_MS || 2100);
 const MAX_RETRIES = 4;
+// ToS;DR's 429 carries no Retry-After header, so a rejected request must wait a
+// fixed floor before retrying rather than trusting a header that never arrives.
+const RATE_LIMIT_FLOOR_MS = 8000;
 const USER_AGENT = 'TraceGuard-build/1.0 (+https://github.com)';
 
 // Safety caps and test knobs.
@@ -158,8 +166,9 @@ function bucketFor(domain) {
 
 /**
  * GET a URL with a timeout and limited retries. On 429/5xx it backs off and
- * honors Retry-After when present. Returns null on persistent failure so the
- * caller can keep the previous good entry (merge-on-failure).
+ * honors Retry-After when present. Resolves to `{ data, status }`: `data` is
+ * null on persistent failure, and `status` is the last HTTP status so the
+ * caller can say why (0 means a network error or timeout).
  */
 function fetchJson(url, { retries = MAX_RETRIES, timeoutMs = 20000 } = {}) {
     return new Promise((resolve) => {
@@ -178,9 +187,9 @@ function fetchJson(url, { retries = MAX_RETRIES, timeoutMs = 20000 } = {}) {
 
             if (result.status === 200) {
                 try {
-                    resolve(JSON.parse(result.body));
+                    resolve({ data: JSON.parse(result.body), status: 200 });
                 } catch {
-                    resolve(null);
+                    resolve({ data: null, status: 200 });
                 }
                 return;
             }
@@ -188,6 +197,7 @@ function fetchJson(url, { retries = MAX_RETRIES, timeoutMs = 20000 } = {}) {
             const retriable = result.status === 0 || result.status === 429 || result.status >= 500;
             if (remaining > 0 && retriable) {
                 let waitMs = REQUEST_DELAY_MS * Math.pow(2, MAX_RETRIES - remaining + 1);
+                if (result.status === 429) waitMs = Math.max(waitMs, RATE_LIMIT_FLOOR_MS);
                 if (result.retryAfter) {
                     const s = parseInt(result.retryAfter, 10);
                     if (!isNaN(s)) waitMs = Math.max(waitMs, s * 1000);
@@ -195,7 +205,7 @@ function fetchJson(url, { retries = MAX_RETRIES, timeoutMs = 20000 } = {}) {
                 await sleep(waitMs);
                 return attempt(remaining - 1);
             }
-            resolve(null);
+            resolve({ data: null, status: result.status });
         })(retries);
     });
 }
@@ -210,9 +220,9 @@ async function fetchAllServices() {
     let complete = false;
 
     for (let page = 1; page <= MAX_PAGES; page++) {
-        const data = await fetchJson(`${LIST_ENDPOINT}?page=${page}`);
+        const { data, status } = await fetchJson(`${LIST_ENDPOINT}?page=${page}`);
         if (!data) {
-            console.warn(`  Page ${page} failed to load.`);
+            console.warn(`  Page ${page} failed to load (status ${status}).`);
             return { services, complete: false };
         }
         const batch = data.services || [];
@@ -415,7 +425,7 @@ async function buildDatabase() {
             reused++;
         } else {
             await sleep(REQUEST_DELAY_MS);
-            const detail = await fetchJson(`${DETAIL_ENDPOINT}?id=${serviceId}`);
+            const { data: detail, status: detailStatus } = await fetchJson(`${DETAIL_ENDPOINT}?id=${serviceId}`);
             grade = letterGrade(service.rating);
             if (detail) {
                 grade = letterGrade(detail.rating) ?? grade;
@@ -433,7 +443,7 @@ async function buildDatabase() {
                 documents = prev.documents || [];
                 failed++;
             } else {
-                console.warn(`  Failed to fetch detail for ${service.name} (id ${serviceId}); skipping.`);
+                console.warn(`  Failed to fetch detail for ${service.name} (id ${serviceId}, status ${detailStatus}); skipping.`);
                 failed++;
                 continue;
             }
