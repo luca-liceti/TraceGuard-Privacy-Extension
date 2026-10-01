@@ -50,6 +50,10 @@ const LIST_ENDPOINT = 'https://api.tosdr.org/service/v3/';
 const DETAIL_ENDPOINT = 'https://api.tosdr.org/service/v3/';
 const GRADES = ['A', 'B', 'C', 'D', 'E'];
 
+// Score given to a catalogued service ToS;DR has not graded. Neutral, matching
+// the local "policy link found, no rating" score in the policy detector.
+const UNRATED_SCORE = 50;
+
 // Politeness: ToS;DR is a free, volunteer-run API. Its gateway caps requests at
 // roughly five per ten seconds, so space calls out and honor Retry-After. A
 // first full build is slow by design; later builds only refetch what changed.
@@ -68,6 +72,16 @@ const ALLOW_PARTIAL = process.env.TOSDR_ALLOW_PARTIAL === '1';
 
 function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Human-readable duration for progress lines, e.g. "1h 04m" or "2m 15s". */
+function formatDuration(ms) {
+    const totalSeconds = Math.max(0, Math.round(ms / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
 }
 
 /**
@@ -200,6 +214,7 @@ async function fetchAllServices() {
             break;
         }
         services.push(...batch);
+        console.log(`  Catalog page ${page}: ${batch.length} services (${services.length} total)`);
 
         const meta = data.page;
         if (meta && meta.current >= meta.end) {
@@ -262,7 +277,7 @@ function validate(index, shards) {
         if (!domain || !entry || typeof entry !== 'object') {
             throw new Error(`Malformed index entry for domain: ${domain}`);
         }
-        if (!GRADES.includes(String(entry.grade))) {
+        if (entry.grade != null && !GRADES.includes(String(entry.grade))) {
             throw new Error(`Invalid grade for ${domain}: ${entry.grade}`);
         }
         if (typeof entry.score !== 'number' || entry.score < 0 || entry.score > 100) {
@@ -291,10 +306,11 @@ async function buildDatabase() {
         throw new Error('ToS;DR catalog was not fully fetched; keeping the existing dataset.');
     }
 
-    const candidates = services.filter(
-        (s) => letterGrade(s.rating) && (s.urls || []).some((u) => normalizeDomain(u))
-    );
-    console.log(`Found ${services.length} services; ${candidates.length} are rated and have a domain.`);
+    // Every service with a domain is fetched, not only the graded ones. A
+    // service can carry points and documents while its rating is N/A, and those
+    // entries are worth showing as "unrated" rather than hiding entirely.
+    const candidates = services.filter((s) => (s.urls || []).some((u) => normalizeDomain(u)));
+    console.log(`Found ${services.length} services; ${candidates.length} have a domain.`);
 
     const limit = MAX_SERVICES > 0 ? Math.min(MAX_SERVICES, candidates.length) : candidates.length;
     const indexEntries = {};
@@ -303,8 +319,24 @@ async function buildDatabase() {
     let fetched = 0;
     let reused = 0;
     let failed = 0;
+    let empty = 0;
+    const startedAt = Date.now();
+
+    console.log(`Fetching details for ${limit} services. The first build runs for hours at ToS;DR's rate limit; later builds reuse unchanged services.`);
 
     for (let i = 0; i < limit; i++) {
+        if (i % 100 === 0) {
+            const done = i;
+            const elapsed = Date.now() - startedAt;
+            const perService = done > 0 ? elapsed / done : 0;
+            const eta = done > 0 ? perService * (limit - done) : 0;
+            console.log(
+                `  [${done}/${limit}] fetched ${fetched} reused ${reused} failed ${failed} empty ${empty}` +
+                ` | elapsed ${formatDuration(elapsed)}` +
+                ` | ETA ${done > 0 ? formatDuration(eta) : 'calculating'}`
+            );
+        }
+
         const service = candidates[i];
         const domains = [...new Set((service.urls || []).map(normalizeDomain).filter(Boolean))];
         if (!domains.length) continue;
@@ -348,7 +380,19 @@ async function buildDatabase() {
         }
 
         const grade = letterGrade(service.rating);
-        const score = gradeToScore(grade);
+
+        // A service with no grade and nothing on record is not worth a dataset
+        // entry; the panel has nothing to show. It falls through to the local
+        // detection path instead.
+        if (!grade && (!points || points.length === 0) && (!documents || documents.length === 0)) {
+            empty++;
+            continue;
+        }
+
+        // An unrated but catalogued service is neutral, not dangerous: ToS;DR has
+        // it on file but offers no verdict. 50 matches the local "policy link
+        // found, no rating" score.
+        const score = grade ? gradeToScore(grade) : UNRATED_SCORE;
         for (const domain of domains) {
             const shard = bucketFor(domain);
             indexEntries[domain] = {
@@ -386,7 +430,7 @@ async function buildDatabase() {
         if (!written.has(file)) fs.unlinkSync(path.join(DETAIL_DIR, file));
     }
 
-    console.log(`Fetched ${fetched}, reused ${reused}, failed ${failed}.`);
+    console.log(`Fetched ${fetched}, reused ${reused}, failed ${failed}, skipped empty ${empty}.`);
     console.log(`Wrote ${index.count} domain entries to ${INDEX_FILE}`);
     console.log(`Wrote ${written.size} detail shards to ${DETAIL_DIR}`);
 }

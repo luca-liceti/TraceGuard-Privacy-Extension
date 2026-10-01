@@ -88,7 +88,9 @@ let _disconnectMap: Record<string, DisconnectEntry> | null = null;
 // is parsed once; shards are fetched one at a time and only a few are kept, so
 // memory stays flat no matter how many sites are visited.
 interface TosdrIndexEntry {
-    grade: string;
+    // Absent when ToS;DR catalogues the service but gives no verdict; the
+    // panel shows N/A and the score is neutral.
+    grade?: string;
     score: number;
     serviceId: string | number;
     serviceName: string;

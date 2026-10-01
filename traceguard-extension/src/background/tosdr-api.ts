@@ -202,7 +202,10 @@ async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
                     return {
                         found: true,
                         grade,
-                        score: gradeToScore(grade),
+                        // A catalogued service with no grade is neutral, not
+                        // dangerous: ToS;DR has it on file but gives no verdict.
+                        // 50 matches the local "policy link found, no rating" score.
+                        score: grade ? gradeToScore(grade) : 50,
                         source: 'tosdr',
                         serviceName: service.name,
                         serviceId: service.id,

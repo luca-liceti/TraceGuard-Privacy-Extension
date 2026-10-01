@@ -2,6 +2,17 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.17.0
+
+**What's new**
+
+- Services ToS;DR has catalogued but not graded are now bundled too. A service can have a list of points on file while its rating is N/A, such as Anthropic (Claude); those were skipped entirely before and read as no information. They now resolve with a grade of N/A and the points ToS;DR does have.
+- The dataset build reports its progress: each catalog page, and a running count of fetched, reused, and skipped services with an estimated time left.
+
+**What was fixed**
+
+- A catalogued service with no grade is no longer treated as dangerous. It scores neutral, the same as a privacy policy link found but not rated, instead of falling through to the lowest local score.
+
 ## v1.16.0
 
 **What's new**

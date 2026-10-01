@@ -62,6 +62,30 @@ describe('getTosDRRecord', () => {
         expect(await getTosDRRecord('unknown.example')).toBeUndefined();
     });
 
+    it('keeps a service ToS;DR catalogued but did not grade, scored neutral', async () => {
+        // A service can carry points and documents with an N/A rating; it should
+        // still resolve, show N/A, and not be scored as dangerous.
+        const index = {
+            updatedAt: 222,
+            shardCount: 64,
+            count: 1,
+            entries: {
+                'claude.ai': { score: 50, serviceId: 11619, serviceName: 'Anthropic (Claude)', shard: 7 },
+            },
+        };
+        const shard = {
+            'claude.ai': { points: [{ title: 'Some documented point', classification: 'bad' }], documents: [] },
+        };
+        mockFetch({ 'tosdr-index.json': index, 'tosdr/details/7.json': shard });
+        const { getTosDRRecord } = await import('./database-loader');
+
+        const record = await getTosDRRecord('claude.ai');
+        expect(record.found).toBe(true);
+        expect(record.grade).toBeUndefined();
+        expect(record.score).toBe(50);
+        expect(record.points).toHaveLength(1);
+    });
+
     it('falls back to the legacy single-file dataset when no index exists', async () => {
         mockFetch({ 'tosdr-data.json': { 'legacy.com': { found: true, grade: 'A', score: 100 } } });
         const { getTosDRRecord } = await import('./database-loader');

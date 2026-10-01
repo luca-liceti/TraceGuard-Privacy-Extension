@@ -102,8 +102,10 @@ export async function detectPrivacyPolicy(): Promise<number> {
 
         console.log('[Policy] ToS;DR response:', response);
 
-        // Check if we got a valid ToS;DR response with a grade
-        if (response && response.found && response.grade) {
+        // A found service counts even with no grade: ToS;DR may have a policy on
+        // file without a verdict, in which case the lookup already scored it as
+        // neutral. Requiring a grade here would discard that and fall back.
+        if (response && response.found) {
             console.log('[Policy] ToS;DR API result:', {
                 service: response.serviceName,
                 grade: response.grade,
@@ -111,8 +113,8 @@ export async function detectPrivacyPolicy(): Promise<number> {
                 source: 'tosdr'
             });
 
-            // Use the score from ToS;DR (already mapped: A=100, B=80, C=60, D=40, E=20)
-            console.log(`[Policy] Grade ${response.grade} → Score ${response.score}`);
+            // Use the score from ToS;DR (already mapped: A=100, B=80, C=60, D=40, E=20, unrated=50)
+            console.log(`[Policy] Grade ${response.grade || 'N/A'} → Score ${response.score}`);
             return response.score;
         }
 
@@ -154,10 +156,12 @@ export async function detectPrivacyPolicyDetailed(): Promise<PolicyDetectionResu
             url: window.location.href
         });
 
-        if (response && response.found && response.grade) {
+        if (response && response.found) {
             return {
                 score: response.score,
                 source: 'tosdr',
+                // Undefined for a catalogued-but-unrated service; the panel shows
+                // N/A and lists the points ToS;DR does have.
                 grade: response.grade,
                 serviceName: response.serviceName,
                 serviceId: response.serviceId,

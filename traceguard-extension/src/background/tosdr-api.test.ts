@@ -131,7 +131,8 @@ describe('checkTosDR', () => {
         const result = await checkTosDR('https://unrated.example');
         expect(result.found).toBe(true);
         expect(result.grade).toBeUndefined();
-        expect(result.score).toBe(0);
+        // Unrated is neutral, not dangerous.
+        expect(result.score).toBe(50);
     });
 
     it('trusts the cached negative when the seed has no rating either', async () => {
