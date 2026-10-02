@@ -38,15 +38,26 @@ in Chrome extension storage. It has no backend and no user accounts.
 
 ## External network requests
 
-TraceGuard is 100% local by default. The only optional external request is **Live rating updates**,
-which is **off by default**. If you enable it, TraceGuard sends the domain of unrated sites to
-ToS;DR (`api.tosdr.org`) to look up a privacy-policy rating; no other browsing data is included, and
-you can disable it at any time in Settings. The rating that comes back is cached locally in
-`tosdr_cache`, a plaintext map of domain to grade that holds no page data.
+TraceGuard is 100% local by default. Both external requests to ToS;DR (`api.tosdr.org`) are
+**off by default**, and each is a separate choice in Settings.
+
+- **Look up a site's rating when I visit it.** When enabled, TraceGuard sends the domain of a site
+  that is missing from its local data, or whose rating is old, to ToS;DR to look up a
+  privacy-policy rating. This reveals that domain to ToS;DR. No other browsing data is included,
+  and you can disable it at any time. If it is disabled, missing sites are shown as having no
+  rating rather than being looked up.
+- **Keep the ratings database current.** When enabled on a schedule you choose, TraceGuard fetches
+  ToS;DR's public ratings catalog. This request is the same for every user and does **not** include,
+or reveal, the sites you visit. It only updates ratings the extension already knows about.
+
+Ratings returned by either request are cached locally in `tosdr_cache`, a plaintext map of domain to
+grade that holds no page data. If both are off, ratings only change when a new version of the
+extension ships.
 
 Threat-intelligence data (phishing/malware domain lists from public feeds such as OpenPhish) is
-bundled at release time and refreshed from the publisher via signed updates. Those update requests
-contain no browsing or account data.
+bundled at release time and refreshed from the publisher via signed updates. That refresh is always
+on, because it is a security protection rather than a preference, and those update requests contain
+no browsing or account data.
 
 ## Encryption and control
 

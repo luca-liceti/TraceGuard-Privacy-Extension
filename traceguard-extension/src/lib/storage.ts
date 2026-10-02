@@ -110,7 +110,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     whitelist: [],                // Sites you've marked as always safe
     blacklist: [],                // Sites you've marked as always dangerous
     logRetentionDays: 30,         // Days to keep activity logs before auto-deletion
-    databaseRefreshDays: 7,
+    databaseRefreshDays: 0,       // Background ratings refresh is off by default (privacy-first)
     enableCloudTosdr: false,      // Live rating updates defaults to false (privacy-first)
     devMode: false               // Verbose diagnostics are off until explicitly enabled
 };

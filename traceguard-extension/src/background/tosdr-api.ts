@@ -225,6 +225,14 @@ async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
 }
 
 /**
+ * How stale a rating must be before a visit triggers a re-check. This governs
+ * only the on-visit path (the "Live rating updates" toggle). It is deliberately
+ * independent of `databaseRefreshDays`, which controls the background catalog
+ * sweep, so one can be on while the other is off.
+ */
+const RATING_RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
  * Check ToS;DR rating using a Hybrid approach (Stale-While-Revalidate).
  */
 export async function checkTosDR(url: string): Promise<TosDRResult> {
@@ -232,8 +240,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
     const settings = await storage.getSettings();
     const enableCloud = settings.enableCloudTosdr ?? false;
     if (!enableCloud) await maybePromptCloudOptIn();
-    const refreshDays = settings.databaseRefreshDays || 7;
-    const refreshMs = refreshDays * 24 * 60 * 60 * 1000;
+    const refreshMs = RATING_RECHECK_MS;
     
     // Helper to trigger background update
     const triggerLazyUpdate = async () => {
@@ -363,14 +370,14 @@ interface CatalogSyncState {
  * Fetch every ToS;DR service whose `updated_at` moved since the bundled index
  * was built (or that is new), then cache its rating for each of its domains.
  *
- * Returns null when live updates are off or no index is bundled, so callers can
- * invoke it unconditionally. Work is persisted as it goes: if the service worker
- * is torn down mid-sweep, the next run resumes where it stopped instead of
- * re-fetching what already applied.
+ * Returns null when the refresh schedule is off or no index is bundled, so
+ * callers can invoke it unconditionally. Work is persisted as it goes: if the
+ * service worker is torn down mid-sweep, the next run resumes where it stopped
+ * instead of re-fetching what already applied.
  */
 export async function refreshTosdrCatalog(): Promise<{ pages: number; checked: number; updated: number; complete: boolean } | null> {
     const settings = await storage.getSettings();
-    if (!(settings.enableCloudTosdr ?? false)) return null;
+    if ((settings.databaseRefreshDays ?? 0) === 0) return null;
 
     const meta = await getTosdrCatalogMeta();
     if (!meta) return null;

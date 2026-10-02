@@ -2,6 +2,21 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.20.0
+
+**What's new**
+
+- The privacy settings are now two independent choices, each named for what it does and what it costs:
+  - **Look up a site's rating when I visit it** fetches a rating from tosdr.org for a site that is missing from our data or whose rating is old. The description states that it sends the site's domain to tosdr.org.
+  - **Keep the ratings database current** fetches ToS;DR's public ratings catalog on a schedule you pick, and its description states that it does not reveal the sites you visit.
+- Keeping ratings fresh in the background no longer requires the per-site lookup. A privacy-conscious user can keep ratings current without sending a domain on every visit.
+- Phishing protection now updates on its own and is not affected by either ratings setting.
+
+**What was fixed**
+
+- The background ratings refresh is off by default and no longer inherits the old **Database Refresh** interval. Existing installs that had an interval start with it off, so nothing fetches from tosdr.org until you choose to.
+- A visited site's rating is re-checked against its own seven-day staleness window, separate from the background schedule.
+
 ## v1.19.0
 
 **What's new**

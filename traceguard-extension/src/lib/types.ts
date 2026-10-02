@@ -281,7 +281,7 @@ export interface UserSettings {
     enablePIIDetection?: boolean;        // Watch for personal info entry
     displayMode?: 'popup' | 'sidebar';   // How the extension opens
     autoLockTimeout?: number;            // Vault auto-lock timeout in minutes (0 = never)
-    databaseRefreshDays?: 1 | 3 | 7 | 14 | 30;
+    databaseRefreshDays?: 0 | 1 | 3 | 7 | 14 | 30; // Background ratings-catalog refresh in days (0 = off)
     enableCloudTosdr?: boolean;          // Live rating updates toggle (runtime tosdr.org lookups)
     devMode?: boolean;                   // Developer mode: verbose on-device diagnostics (off by default)
 }

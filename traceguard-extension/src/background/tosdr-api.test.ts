@@ -140,9 +140,10 @@ describe('checkTosDR', () => {
     });
 
     describe('refreshTosdrCatalog', () => {
-        it('does nothing while live updates are off', async () => {
-            // The toggle is the consent line for any tosdr.org request, so the
-            // sweep must not run (or even read the catalog) when it is off.
+        it('does nothing while the refresh schedule is off', async () => {
+            // The schedule is the consent line for the bulk catalog fetch, so
+            // the sweep must not run (or even read the catalog) when it is off.
+            // It is off by default.
             vi.mocked(getTosdrCatalogMeta).mockResolvedValue({ updatedAt: 1, versions: new Map() });
 
             const result = await refreshTosdrCatalog();
@@ -151,7 +152,8 @@ describe('checkTosDR', () => {
         });
 
         it('caches ratings for services whose updated_at moved since the bundle', async () => {
-            await chrome.storage.local.set({ settings: { enableCloudTosdr: true } });
+            // Runs on the schedule alone, with the per-site live toggle off.
+            await chrome.storage.local.set({ settings: { databaseRefreshDays: 7, enableCloudTosdr: false } });
             vi.mocked(getTosdrCatalogMeta).mockResolvedValue({
                 updatedAt: 1,
                 versions: new Map([['11619', '2026-01-01T00:00:00.000000']]),
@@ -194,7 +196,7 @@ describe('checkTosDR', () => {
         });
 
         it('skips a service whose updated_at matches the bundled version', async () => {
-            await chrome.storage.local.set({ settings: { enableCloudTosdr: true } });
+            await chrome.storage.local.set({ settings: { databaseRefreshDays: 7 } });
             vi.mocked(getTosdrCatalogMeta).mockResolvedValue({
                 updatedAt: 1,
                 versions: new Map([['11619', '2026-09-17T03:58:21.579833']]),

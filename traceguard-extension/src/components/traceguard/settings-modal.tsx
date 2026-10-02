@@ -214,7 +214,7 @@ export function SettingsModal() {
     const [themeLocal, setThemeLocal] = useState(settings?.theme || "system")
     const [notificationLevel, setNotificationLevel] = useState(settings?.notificationLevel || "balanced")
     const [logRetentionDays, setLogRetentionDays] = useState(settings?.logRetentionDays || 30)
-    const [databaseRefreshDays, setDatabaseRefreshDays] = useState(settings?.databaseRefreshDays || 7)
+    const [databaseRefreshDays, setDatabaseRefreshDays] = useState(settings?.databaseRefreshDays ?? 0)
     const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 50)
     const [enabled, setEnabled] = useState(settings?.enabled ?? true)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
@@ -277,7 +277,7 @@ export function SettingsModal() {
             setThemeLocal(settings.theme || "system")
             setNotificationLevel(settings.notificationLevel || "balanced")
             setLogRetentionDays(settings.logRetentionDays || 30)
-            setDatabaseRefreshDays(settings.databaseRefreshDays || 7)
+            setDatabaseRefreshDays(settings.databaseRefreshDays ?? 0)
             setWssThreshold(settings.wssThreshold || 50)
             setEnabled(settings.enabled ?? true)
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
@@ -304,7 +304,7 @@ export function SettingsModal() {
             notificationLevel,
             enabled,
             logRetentionDays,
-            databaseRefreshDays: databaseRefreshDays as 1 | 3 | 7 | 14 | 30,
+            databaseRefreshDays: databaseRefreshDays as 0 | 1 | 3 | 7 | 14 | 30,
             wssThreshold,
             enablePIIDetection,
             enableCloudTosdr,
@@ -337,7 +337,7 @@ export function SettingsModal() {
             notificationLevel: "balanced" as const,
             enabled: true,
             logRetentionDays: 30,
-            databaseRefreshDays: 7 as const,
+            databaseRefreshDays: 0 as const,
             wssThreshold: 50,
             enablePIIDetection: true,
             enableCloudTosdr: false,
@@ -645,8 +645,8 @@ export function SettingsModal() {
                         </SettingItem>
 
                         <SettingItem
-                            label={t("Live rating updates")}
-                            description={t("Fetch the latest ratings from tosdr.org when our local data is stale. Sends the current site's domain to tosdr.org.")}
+                            label={t("Look up a site's rating when I visit it")}
+                            description={t("Fetch the current rating from tosdr.org when a site is missing from our data or its rating is old. Sends this site's domain to tosdr.org.")}
                             controlId="cloud-tosdr-toggle"
                         >
                             <Switch
@@ -884,16 +884,17 @@ export function SettingsModal() {
                         />
 
                         <SettingItem
-                            label={t("Database Refresh")}
-                            description={t("Refresh the threat feed on this schedule, and re-check privacy ratings once they are this old")}
-                            note={!enableCloudTosdr ? t("Privacy ratings won't update without Live rating updates.") : undefined}
+                            label={t("Keep the ratings database current")}
+                            description={t("Refresh the whole privacy-ratings catalog on this schedule. Does not reveal the sites you visit.")}
+                            note={databaseRefreshDays === 0 ? t("With this off, ratings only refresh when the extension updates.") : undefined}
                         >
                             <Select value={String(databaseRefreshDays)} onValueChange={(value) => {
-                                setDatabaseRefreshDays(Number(value) as 1 | 3 | 7 | 14 | 30)
+                                setDatabaseRefreshDays(Number(value) as 0 | 1 | 3 | 7 | 14 | 30)
                                 handleChange()
                             }}>
                                 <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="0">{t("Off")}</SelectItem>
                                     <SelectItem value="1">{t("1 day")}</SelectItem>
                                     <SelectItem value="3">{t("3 days")}</SelectItem>
                                     <SelectItem value="7">{t("7 days")}</SelectItem>
@@ -902,6 +903,10 @@ export function SettingsModal() {
                                 </SelectContent>
                             </Select>
                         </SettingItem>
+
+                        <p className="text-sm text-muted-foreground break-words px-1">
+                            {t("Phishing protection updates on its own and is not affected by the two settings above.")}
+                        </p>
 
                         {/* Storage Usage */}
                         <div className="rounded-lg border p-4">

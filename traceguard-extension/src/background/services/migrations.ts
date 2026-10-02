@@ -9,14 +9,22 @@
  * silently skipping the migration.
  */
 
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 
 // Ordered upgrade steps, keyed by the version they migrate FROM.
-// Example (future):
-//   2: async () => {
-//     // migrate v2 -> v3
-//   },
-const MIGRATIONS: Record<number, () => Promise<void>> = {};
+const MIGRATIONS: Record<number, () => Promise<void>> = {
+    1: async () => {
+        // `databaseRefreshDays` used to drive only the phishing-feed alarm, so
+        // every install was read as "7 days" without the user meaning anything
+        // by it. It now controls the background privacy-ratings catalog fetch,
+        // so reset a positive value to off: nobody opted into that fetch, and
+        // the phishing feed refreshes on its own regardless of this setting.
+        const { settings } = await chrome.storage.local.get<{ settings?: Record<string, unknown> }>('settings');
+        if (settings && typeof settings.databaseRefreshDays === 'number' && settings.databaseRefreshDays > 0) {
+            await chrome.storage.local.set({ settings: { ...settings, databaseRefreshDays: 0 } });
+        }
+    },
+};
 
 export async function runDataMigrations(): Promise<void> {
     const { schemaVersion } = await chrome.storage.local.get<{ schemaVersion?: number }>('schemaVersion');

@@ -142,11 +142,16 @@ chrome.notifications.onClicked.addListener(async (notificationId) => {
 
 const DATABASE_REFRESH_ALARM = 'databaseRefresh';
 const CLEANUP_ALARM = 'cleanupLogs';
-const DATABASE_REFRESH_OPTIONS = new Set([1, 3, 7, 14, 30]);
+const DATABASE_REFRESH_OPTIONS = new Set([0, 1, 3, 7, 14, 30]);
+// The phishing feed is security, not a preference, so its alarm always runs.
+// With the ratings refresh off, it still fires daily to refresh only the feed.
+const THREAT_FEED_REFRESH_MINUTES = 24 * 60;
 
 async function configureDatabaseRefresh(days: number | undefined) {
-    const refreshDays = DATABASE_REFRESH_OPTIONS.has(days ?? 7) ? days ?? 7 : 7;
-    await chrome.alarms.create(DATABASE_REFRESH_ALARM, { periodInMinutes: refreshDays * 24 * 60 });
+    // An unknown value falls back to off rather than to a network fetch.
+    const refreshDays = DATABASE_REFRESH_OPTIONS.has(days ?? 0) ? days ?? 0 : 0;
+    const periodInMinutes = refreshDays === 0 ? THREAT_FEED_REFRESH_MINUTES : refreshDays * 24 * 60;
+    await chrome.alarms.create(DATABASE_REFRESH_ALARM, { periodInMinutes });
 }
 
 // =============================================================================
