@@ -111,11 +111,14 @@ function isValidDomain(value: string): boolean {
 function SettingItem({
     label,
     description,
+    note,
     controlId,
     children
 }: {
     label: string
     description?: string
+    /** Optional caveat shown under the description, e.g. when a setting is inert. */
+    note?: string
     /** Optional id linking this label to its control via htmlFor */
     controlId?: string
     children: React.ReactNode
@@ -127,6 +130,9 @@ function SettingItem({
                 <Label htmlFor={controlId} className="text-base font-medium">{label}</Label>
                 {description && (
                     <p className="text-sm text-muted-foreground break-words">{description}</p>
+                )}
+                {note && (
+                    <p className="text-sm text-warning break-words">{note}</p>
                 )}
             </div>
             <div className="flex-shrink-0">
@@ -879,7 +885,8 @@ export function SettingsModal() {
 
                         <SettingItem
                             label={t("Database Refresh")}
-                            description={t("Check for tracker and ToS;DR database updates on this schedule")}
+                            description={t("Refresh the threat feed on this schedule, and re-check privacy ratings once they are this old")}
+                            note={!enableCloudTosdr ? t("Privacy ratings won't update without Live rating updates.") : undefined}
                         >
                             <Select value={String(databaseRefreshDays)} onValueChange={(value) => {
                                 setDatabaseRefreshDays(Number(value) as 1 | 3 | 7 | 14 | 30)

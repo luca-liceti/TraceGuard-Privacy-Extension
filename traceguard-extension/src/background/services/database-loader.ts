@@ -110,9 +110,12 @@ interface TosdrIndex {
 
 let _tosdrIndex: TosdrIndex | null = null;
 let _tosdrIndexMissing = false;
-let _tosdrLegacy: Record<string, any> | null = null;
 const _tosdrShards = new Map<number, Record<string, TosdrDetailEntry>>();
 const TOSDR_SHARD_CACHE_LIMIT = 4;
+// Service id -> the ToS;DR `updated_at` the bundled index was built from. Built
+// once from the index; the runtime catalog sync diffs against it to find what
+// changed since the bundle shipped.
+let _tosdrServiceVersions: Map<string, string | undefined> | null = null;
 
 // Compiled wildcard regexes (cached after first load)
 let _compiledWildcards: Array<{ regex: RegExp; entry: CookieDBEntry }> | null = null;
@@ -203,8 +206,8 @@ export async function getDisconnectMap(): Promise<Record<string, DisconnectEntry
 /**
  * Load the ToS;DR index, the small always-resident map of domain to grade,
  * score, and the detail shard holding its point list. Returns null when the
- * build has not produced an index yet, so the loader can fall back to the older
- * single-file dataset.
+ * build has not produced an index yet, so ToS;DR lookups degrade to "no
+ * information" without breaking the rest of the package.
  */
 async function loadTosdrIndex(): Promise<TosdrIndex | null> {
     if (_tosdrIndex) return _tosdrIndex;
@@ -222,10 +225,10 @@ async function loadTosdrIndex(): Promise<TosdrIndex | null> {
         recordDatabaseLoaded('tosdr', Object.keys(index.entries).length);
         return _tosdrIndex;
     } catch {
-        // A missing index is expected until the first full build; fall back to
-        // the legacy file without treating it as a broken package.
+        // A missing index is expected until the first full build, so treat it
+        // as "no ToS;DR data" rather than a broken package.
         _tosdrIndexMissing = true;
-        logEvent('enrich', 'debug', 'tosdr_index_absent', 'ToS;DR index not found, using the legacy dataset');
+        logEvent('enrich', 'debug', 'tosdr_index_absent', 'ToS;DR index not found; privacy ratings unavailable');
         return null;
     }
 }
@@ -261,47 +264,50 @@ async function loadTosdrShard(shard: number): Promise<Record<string, TosdrDetail
     }
 }
 
-/** Load the pre-sharding single-file dataset, used only when no index exists. */
-async function loadLegacyTosdr(): Promise<Record<string, any>> {
-    if (_tosdrLegacy) return _tosdrLegacy;
-    try {
-        const url = chrome.runtime.getURL('assets/tosdr-data.json');
-        const response = await fetch(url);
-        const data = await response.json();
-        _tosdrLegacy = (data.default || data) as Record<string, any>;
-        recordDatabaseLoaded('tosdr-legacy', Object.keys(_tosdrLegacy).length);
-    } catch (e) {
-        recordDatabaseFailed('tosdr-legacy', e);
-        _tosdrLegacy = {};
-    }
-    return _tosdrLegacy;
-}
-
 /**
- * Look up one domain's ToS;DR rating. Prefers the sharded index; falls back to
- * the legacy single-file dataset when the index has not been built yet.
+ * Look up one domain's ToS;DR rating from the sharded index. Returns undefined
+ * when the bundled catalog has no entry for the domain.
  */
 export async function getTosDRRecord(domain: string): Promise<any | undefined> {
     const index = await loadTosdrIndex();
-    if (index) {
-        const entry = index.entries[domain];
-        if (!entry) return undefined;
-        const shard = await loadTosdrShard(entry.shard);
-        const detail = shard ? shard[domain] : undefined;
-        return {
-            found: true,
-            grade: entry.grade,
-            score: entry.score,
-            source: 'tosdr-local',
-            serviceName: entry.serviceName,
-            serviceId: entry.serviceId,
-            points: detail?.points || [],
-            documents: detail?.documents || [],
-            lastUpdated: index.updatedAt,
-        };
+    if (!index) return undefined;
+    const entry = index.entries[domain];
+    if (!entry) return undefined;
+    const shard = await loadTosdrShard(entry.shard);
+    const detail = shard ? shard[domain] : undefined;
+    return {
+        found: true,
+        grade: entry.grade,
+        score: entry.score,
+        source: 'tosdr-local',
+        serviceName: entry.serviceName,
+        serviceId: entry.serviceId,
+        points: detail?.points || [],
+        documents: detail?.documents || [],
+        serviceUpdatedAt: entry.serviceUpdatedAt,
+        lastUpdated: index.updatedAt,
+    };
+}
+
+/**
+ * The bundled catalog's build timestamp and its per-service ToS;DR
+ * `updated_at` versions. The runtime catalog sync uses both: the timestamp to
+ * detect a newly shipped bundle, the versions to find services that changed.
+ * Returns null when the index is missing.
+ */
+export async function getTosdrCatalogMeta(): Promise<{ updatedAt: number; versions: Map<string, string | undefined> } | null> {
+    const index = await loadTosdrIndex();
+    if (!index) return null;
+    if (!_tosdrServiceVersions) {
+        const versions = new Map<string, string | undefined>();
+        for (const entry of Object.values(index.entries)) {
+            if (entry && entry.serviceId != null) {
+                versions.set(String(entry.serviceId), entry.serviceUpdatedAt);
+            }
+        }
+        _tosdrServiceVersions = versions;
     }
-    const legacy = await loadLegacyTosdr();
-    return Object.prototype.hasOwnProperty.call(legacy, domain) ? legacy[domain] : undefined;
+    return { updatedAt: index.updatedAt, versions: _tosdrServiceVersions };
 }
 
 /**

@@ -2,11 +2,17 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
-## v1.18.0
+## v1.19.0
 
 **What's new**
 
-- The values in the activity log now open the site details panel at the section they summarize. Clicking a site's trackers, cookies, PII risk, reputation, policy, headers, or fingerprinting value opens the panel scrolled to that section and highlights it, the same way a PII alert already deep-links into the panel.
+- **Live rating updates** now also refresh ratings in the background. With it on, the extension pulls the ratings that changed in ToS;DR since the bundled data shipped, so a site you visit shows a current rating even between releases. The first check runs right after install, and later ones follow the **Database Refresh** schedule. This reveals nothing about the sites you visit: it fetches the same fixed catalog for everyone, unlike a live lookup.
+- Privacy ratings are re-checked based on the **rating's own age**, not the age of the whole bundle. Once the bundled data is a week old, only sites whose ToS;DR record is actually older than your refresh interval are re-checked, instead of every site.
+- The **Database Refresh** setting now says what it does: it refreshes the threat feed on that schedule and re-checks privacy ratings once they are that old. When **Live rating updates** is off, a note under it says privacy ratings will not update.
+
+**What was fixed**
+
+- The dead single-file privacy-ratings fallback that shipped alongside the sharded dataset is gone, removing about 1.6 MB of unused data from the package.
 
 ## v1.17.0
 

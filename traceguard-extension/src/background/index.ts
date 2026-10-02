@@ -37,7 +37,7 @@ import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './se
 import { calculateWSS, calculateTrackingScore, explainWSS } from '../lib/scoring';
 import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState, PIIDetectionEvent } from '../lib/types';
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
-import { checkTosDR } from './tosdr-api';
+import { checkTosDR, refreshTosdrCatalog } from './tosdr-api';
 import { evaluateNotificationBudget, readShownNotifications } from '../lib/notification-budget';
 import { calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
 import { scoreUps, buildHandovers, handoverBaseWeight } from '../lib/ups';
@@ -225,6 +225,16 @@ async function refreshPrivacyDatabases() {
         await refreshBlacklistFromRemote();
     } catch (error) {
         console.warn('[Reputation] Threat-feed refresh failed; keeping bundled snapshot:', error);
+    }
+
+    // Pull ToS;DR ratings that changed since the bundled catalog shipped. This
+    // only runs while live updates are on (it reveals nothing about the user,
+    // but it is still a network call the toggle gates). Best-effort: a failure
+    // leaves the bundled ratings in place.
+    try {
+        await refreshTosdrCatalog();
+    } catch (error) {
+        console.warn('[ToSDR] Catalog sync failed; keeping bundled ratings:', error);
     }
 }
 

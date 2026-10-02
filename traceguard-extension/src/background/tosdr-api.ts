@@ -47,6 +47,7 @@ interface TosDRResult {
     serviceId?: number;
     points?: { title: string; classification: string }[];
     documents?: { name: string; url: string }[];
+    serviceUpdatedAt?: string; // The ToS;DR updated_at this rating came from
 }
 
 // Cache for ToS;DR results is no longer needed (100% local)
@@ -131,7 +132,7 @@ function gradeToScore(grade: unknown): number {
     return gradeMap[normalized] ?? 0;
 }
 
-import { getTosDRRecord } from './services/database-loader';
+import { getTosDRRecord, getTosdrCatalogMeta } from './services/database-loader';
 import { captureError, logEvent } from '../lib/diagnostics';
 import { storage } from '../lib/storage';
 import { rateLimiters } from '../lib/rate-limiter';
@@ -210,7 +211,8 @@ async function fetchFromTosdr(domain: string): Promise<TosDRResult | null> {
                         serviceName: service.name,
                         serviceId: service.id,
                         points: details.points?.map((p: any) => ({ title: p.title, classification: p.case?.classification || p.classification || 'neutral' })) || [],
-                        documents: details.documents?.map((d: any) => ({ name: d.name, url: d.url })) || []
+                        documents: details.documents?.map((d: any) => ({ name: d.name, url: d.url })) || [],
+                        serviceUpdatedAt: details.updated_at || service.updated_at || undefined
                     };
                 }
             }
@@ -264,15 +266,19 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
             logEvent('enrich', 'debug', 'tosdr_cache_hit', 'Cached rating used', { host: domain, score: cachedEntry.data?.score });
         }
 
-        // A negative (found:false) result must never shadow a bundled seed
-        // rating: a transient cloud failure would otherwise hide known-good
-        // local data for up to refreshDays. Check the seed first; only trust
-        // the cached "not found" when the seed agrees it has no rating.
-        if (isNegative) {
+        // The bundled seed can be newer than a cached rating. A negative
+        // (found:false) result must never shadow a known-good seed rating, and
+        // after an extension update the bundle may carry a fresher ToS;DR
+        // version than a cloud result cached before the update.
+        const cachedVersion = Date.parse(cachedEntry.data?.serviceUpdatedAt || '');
+        if (isNegative || Number.isFinite(cachedVersion)) {
             const seedResult = await getTosDRRecord(domain);
             if (seedResult) {
-                logEvent('enrich', 'debug', 'tosdr_seed_overrode_negative', 'Bundled seed rating overrode a cached miss', { host: domain });
-                return seedResult as TosDRResult;
+                const seedVersion = Date.parse(seedResult.serviceUpdatedAt || '');
+                if (isNegative || (Number.isFinite(seedVersion) && seedVersion > cachedVersion)) {
+                    logEvent('enrich', 'debug', 'tosdr_seed_overrode_cache', 'Bundled seed rating was newer than the cached result', { host: domain, negative: isNegative });
+                    return seedResult as TosDRResult;
+                }
             }
         }
 
@@ -283,17 +289,20 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
     const seedResult = await getTosDRRecord(domain);
     
     if (seedResult) {
-        const seedTimestamp = seedResult.lastUpdated || 0;
+        // Prefer the rating's own ToS;DR updated_at over the bundle build time.
+        // The bundle is rebuilt wholesale, so build time makes every rating look
+        // equally stale and re-checks sites whose rating never changed.
+        const serviceTimestamp = Date.parse(seedResult.serviceUpdatedAt || '');
+        const seedTimestamp = Number.isFinite(serviceTimestamp) ? serviceTimestamp : (seedResult.lastUpdated || 0);
         const isStale = seedTimestamp > 0 && (Date.now() - seedTimestamp) > refreshMs;
-        
-        // If missing timestamp or explicitly stale, trigger an update
+
         if (isStale || seedTimestamp === 0) {
-            logEvent('enrich', 'debug', 'tosdr_seed_stale', 'Bundled seed rating is stale, refreshing', { host: domain, lastUpdated: seedTimestamp });
+            logEvent('enrich', 'debug', 'tosdr_seed_stale', 'Bundled seed rating is stale, refreshing', { host: domain, ratingAgeBasis: seedResult.serviceUpdatedAt ? 'serviceUpdatedAt' : 'lastUpdated', timestamp: seedTimestamp });
             triggerLazyUpdate();
         } else {
             logEvent('enrich', 'debug', 'tosdr_seed_used', 'Bundled seed rating used', { host: domain, score: seedResult.score, grade: seedResult.grade });
         }
-        
+
         return seedResult as TosDRResult;
     }
     
@@ -323,4 +332,145 @@ export async function clearTosDRCache(): Promise<void> {
     inMemoryCache = {};
     await chrome.storage.local.remove('tosdr_cache');
     logEvent('enrich', 'debug', 'tosdr_cache_cleared', 'Dynamic ToS;DR cache cleared');
+}
+
+// ---------------------------------------------------------------------------
+// CATALOG SYNC
+// Periodically pull ratings that changed in ToS;DR since the bundled catalog
+// shipped and write them into the lookup cache, so a site the user visits shows
+// a current rating even between extension releases.
+//
+// Unlike a per-domain lookup, this reveals nothing about which sites the user
+// visits: it fetches the same fixed catalog pages for every user.
+// ---------------------------------------------------------------------------
+
+const CATALOG_ENDPOINT = 'https://api.tosdr.org/service/v3/';
+// The catalog is ~21 pages of 500. The cap only guards a runaway loop if the API
+// ever changes shape.
+const CATALOG_MAX_PAGES = 30;
+// A long-overdue bundle could otherwise turn one sync into an hours-long job.
+// Whatever is left over is picked up on the next run.
+const CATALOG_MAX_DETAILS = 250;
+const CATALOG_SYNC_KEY = 'tosdr_catalog_sync';
+
+interface CatalogSyncState {
+    baseBundleUpdatedAt: number;
+    versions: Record<string, string | undefined>;
+    lastSyncedAt: number;
+}
+
+/**
+ * Fetch every ToS;DR service whose `updated_at` moved since the bundled index
+ * was built (or that is new), then cache its rating for each of its domains.
+ *
+ * Returns null when live updates are off or no index is bundled, so callers can
+ * invoke it unconditionally. Work is persisted as it goes: if the service worker
+ * is torn down mid-sweep, the next run resumes where it stopped instead of
+ * re-fetching what already applied.
+ */
+export async function refreshTosdrCatalog(): Promise<{ pages: number; checked: number; updated: number; complete: boolean } | null> {
+    const settings = await storage.getSettings();
+    if (!(settings.enableCloudTosdr ?? false)) return null;
+
+    const meta = await getTosdrCatalogMeta();
+    if (!meta) return null;
+
+    // Seed the version map from the bundle the first time, and re-seed whenever
+    // a new bundle ships. Otherwise a service that changed since the bundle
+    // would be re-fetched on every sync, because the bundle itself never moves.
+    const stored = (await chrome.storage.local.get<Record<string, any>>(CATALOG_SYNC_KEY))[CATALOG_SYNC_KEY] as CatalogSyncState | undefined;
+    const versions = new Map<string, string | undefined>(
+        stored && stored.baseBundleUpdatedAt === meta.updatedAt
+            ? Object.entries(stored.versions || {})
+            : [...meta.versions.entries()],
+    );
+    const persist = () => chrome.storage.local.set({
+        [CATALOG_SYNC_KEY]: {
+            baseBundleUpdatedAt: meta.updatedAt,
+            versions: Object.fromEntries(versions),
+            lastSyncedAt: Date.now(),
+        } satisfies CatalogSyncState,
+    });
+
+    interface ListedService { id: string | number; name: string; rating: unknown; urls?: string[]; updated_at?: string; }
+
+    let pages = 0;
+    let checked = 0;
+    let updated = 0;
+    let complete = false;
+
+    for (let page = 1; page <= CATALOG_MAX_PAGES; page++) {
+        let data: any;
+        try {
+            const res = await rateLimiters.tosdr.execute(() => fetchWithTimeout(`${CATALOG_ENDPOINT}?page=${page}`));
+            if (!res.ok) break;
+            data = await res.json();
+        } catch (err) {
+            captureError('enrich', err, 'tosdr_catalog_page_failed', { page });
+            break;
+        }
+
+        const batch: ListedService[] = data?.services || [];
+        if (!batch.length) { complete = true; break; }
+        pages++;
+
+        for (const service of batch) {
+            checked++;
+            const id = String(service.id);
+            if (versions.has(id) && versions.get(id) === service.updated_at) continue;
+            if (updated >= CATALOG_MAX_DETAILS) continue; // picked up on the next run
+
+            const record = await buildCatalogRecord(service);
+            if (!record) continue;
+
+            const domains = [...new Set((service.urls || []).map((u) => extractMainDomain(`https://${u}`)).filter(Boolean))];
+            for (const domain of domains) {
+                await saveCache(domain, { data: record, timestamp: Date.now() });
+            }
+            versions.set(id, service.updated_at);
+            updated++;
+        }
+
+        // Persist progress per page so an interrupted sweep is resumable.
+        await persist();
+
+        const pageMeta = data?.page;
+        if (pageMeta && pageMeta.current >= pageMeta.end) { complete = true; break; }
+    }
+
+    if (!complete) {
+        logEvent('enrich', 'debug', 'tosdr_catalog_incomplete', 'ToS;DR catalog sweep was incomplete; will continue later', { pages, checked, updated });
+        return { pages, checked, updated, complete: false };
+    }
+
+    await persist();
+    logEvent('enrich', 'debug', 'tosdr_catalog_synced', 'ToS;DR catalog sync finished', { pages, checked, updated });
+    return { pages, checked, updated, complete: true };
+}
+
+/** Fetch one service's detail and shape it into a cache record. */
+async function buildCatalogRecord(service: { id: string | number; name: string; rating: unknown; updated_at?: string }): Promise<TosDRResult | null> {
+    try {
+        const res = await rateLimiters.tosdr.execute(() => fetchWithTimeout(`${CATALOG_ENDPOINT}?id=${service.id}`));
+        if (!res.ok) return null;
+        const body = await res.json();
+        // v3 returns fields at the top level; older shapes nest them under `parameters`.
+        const detail = body?.parameters ?? body;
+        if (!detail) return null;
+        const grade = normalizeGrade(detail.rating) ?? normalizeGrade(service.rating);
+        return {
+            found: true,
+            grade,
+            score: grade ? gradeToScore(grade) : 50,
+            source: 'tosdr',
+            serviceName: service.name,
+            serviceId: Number(service.id),
+            points: (detail.points || []).map((p: any) => ({ title: p.title, classification: p.case?.classification || p.classification || 'neutral' })),
+            documents: (detail.documents || []).map((d: any) => ({ name: d.name, url: d.url })),
+            serviceUpdatedAt: service.updated_at,
+        };
+    } catch (err) {
+        captureError('enrich', err, 'tosdr_catalog_detail_failed', { serviceId: service.id });
+        return null;
+    }
 }

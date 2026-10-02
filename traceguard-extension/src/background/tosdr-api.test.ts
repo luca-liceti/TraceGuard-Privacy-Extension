@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // exist without hitting chrome-extension:// URLs in Node's fetch.
 vi.mock('./services/database-loader', () => ({
     getTosDRRecord: vi.fn().mockResolvedValue(undefined),
+    getTosdrCatalogMeta: vi.fn().mockResolvedValue(null),
 }));
 
 // Keep the other utils exports real and stub only the network call the lookup
@@ -18,16 +19,19 @@ vi.mock('../lib/rate-limiter', () => ({
     rateLimiters: { tosdr: { execute: (fn: () => Promise<unknown>) => fn() } },
 }));
 
-import { checkTosDR, clearTosDRCache } from './tosdr-api';
-import { getTosDRRecord } from './services/database-loader';
+import { checkTosDR, clearTosDRCache, refreshTosdrCatalog } from './tosdr-api';
+import { getTosDRRecord, getTosdrCatalogMeta } from './services/database-loader';
 import { fetchWithTimeout } from '../lib/utils';
 
 describe('checkTosDR', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         // Module-level cache survives between tests; reset so each test reads
-        // the storage it seeded.
+        // the storage it seeded. The catalog-sync bookmark leaks the same way.
         clearTosDRCache();
+        await chrome.storage.local.remove('tosdr_catalog_sync');
         vi.mocked(getTosDRRecord).mockResolvedValue(undefined);
+        vi.mocked(getTosdrCatalogMeta).mockResolvedValue(null);
+        vi.mocked(fetchWithTimeout).mockReset();
     });
 
     it('returns a local fallback for an unknown domain when cloud is disabled', async () => {
@@ -133,6 +137,88 @@ describe('checkTosDR', () => {
         expect(result.grade).toBeUndefined();
         // Unrated is neutral, not dangerous.
         expect(result.score).toBe(50);
+    });
+
+    describe('refreshTosdrCatalog', () => {
+        it('does nothing while live updates are off', async () => {
+            // The toggle is the consent line for any tosdr.org request, so the
+            // sweep must not run (or even read the catalog) when it is off.
+            vi.mocked(getTosdrCatalogMeta).mockResolvedValue({ updatedAt: 1, versions: new Map() });
+
+            const result = await refreshTosdrCatalog();
+            expect(result).toBeNull();
+            expect(fetchWithTimeout).not.toHaveBeenCalled();
+        });
+
+        it('caches ratings for services whose updated_at moved since the bundle', async () => {
+            await chrome.storage.local.set({ settings: { enableCloudTosdr: true } });
+            vi.mocked(getTosdrCatalogMeta).mockResolvedValue({
+                updatedAt: 1,
+                versions: new Map([['11619', '2026-01-01T00:00:00.000000']]),
+            });
+
+            // One catalog page with one changed service, then its detail.
+            vi.mocked(fetchWithTimeout)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => ({
+                        services: [{
+                            id: 11619,
+                            name: 'Anthropic (Claude)',
+                            rating: 'D',
+                            urls: ['anthropic.com'],
+                            updated_at: '2026-09-17T03:58:21.579833',
+                        }],
+                        page: { current: 1, end: 1 },
+                    }),
+                } as any)
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => ({
+                        name: 'Anthropic (Claude)',
+                        rating: 'D',
+                        points: [{ title: 'Some point', case: { classification: 'bad' } }],
+                        documents: [],
+                    }),
+                } as any);
+
+            const result = await refreshTosdrCatalog();
+            expect(result?.complete).toBe(true);
+            expect(result?.updated).toBe(1);
+
+            const { tosdr_cache } = await chrome.storage.local.get<Record<string, any>>('tosdr_cache');
+            const entry = tosdr_cache['anthropic.com'].data;
+            expect(entry.grade).toBe('D');
+            expect(entry.score).toBe(40);
+            expect(entry.serviceUpdatedAt).toBe('2026-09-17T03:58:21.579833');
+        });
+
+        it('skips a service whose updated_at matches the bundled version', async () => {
+            await chrome.storage.local.set({ settings: { enableCloudTosdr: true } });
+            vi.mocked(getTosdrCatalogMeta).mockResolvedValue({
+                updatedAt: 1,
+                versions: new Map([['11619', '2026-09-17T03:58:21.579833']]),
+            });
+
+            vi.mocked(fetchWithTimeout).mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    services: [{
+                        id: 11619,
+                        name: 'Anthropic (Claude)',
+                        rating: 'D',
+                        urls: ['anthropic.com'],
+                        updated_at: '2026-09-17T03:58:21.579833',
+                    }],
+                    page: { current: 1, end: 1 },
+                }),
+            } as any);
+
+            const result = await refreshTosdrCatalog();
+            expect(result?.updated).toBe(0);
+            // Only the single catalog page; unchanged services fetch no detail.
+            expect(fetchWithTimeout).toHaveBeenCalledTimes(1);
+        });
     });
 
     it('trusts the cached negative when the seed has no rating either', async () => {

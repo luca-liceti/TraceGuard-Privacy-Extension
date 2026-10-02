@@ -53,6 +53,8 @@ describe('getTosDRRecord', () => {
         expect(record.points).toHaveLength(1);
         expect(record.documents[0].name).toBe('Marketing Privacy Policy');
         expect(record.lastUpdated).toBe(111);
+        // The per-service version drives per-rating staleness and the catalog sync.
+        expect(record.serviceUpdatedAt).toBe('2026-07-22T03:00:02.559212');
     });
 
     it('returns undefined for a domain the index does not rate', async () => {
@@ -86,12 +88,46 @@ describe('getTosDRRecord', () => {
         expect(record.points).toHaveLength(1);
     });
 
-    it('falls back to the legacy single-file dataset when no index exists', async () => {
-        mockFetch({ 'tosdr-data.json': { 'legacy.com': { found: true, grade: 'A', score: 100 } } });
+    it('keeps at most four detail shards resident', async () => {
+        // Memory stays flat however many sites are visited: touching more than
+        // four shards evicts the least-recently-used, which then re-reads from
+        // its local file rather than a network call.
+        const entries: Record<string, any> = {};
+        const map: Record<string, unknown> = {};
+        for (let shard = 0; shard < 6; shard++) {
+            const domain = `site${shard}.com`;
+            entries[domain] = { score: 40, serviceId: shard, serviceName: domain, shard };
+            map[`tosdr/details/${shard}.json`] = { [domain]: { points: [], documents: [] } };
+        }
+        map['tosdr-index.json'] = { updatedAt: 1, shardCount: 6, count: 6, entries };
+        mockFetch(map);
         const { getTosDRRecord } = await import('./database-loader');
 
-        const record = await getTosDRRecord('legacy.com');
-        expect(record.grade).toBe('A');
-        expect(record.score).toBe(100);
+        for (let shard = 0; shard < 6; shard++) {
+            await getTosDRRecord(`site${shard}.com`);
+            const loads = (global.fetch as any).mock.calls.filter((c: unknown[]) => String(c[0]).includes('/details/')).length;
+            expect(loads).toBe(shard + 1);
+        }
+
+        // site0's shard was evicted after six loads; reading it again re-fetches.
+        await getTosDRRecord('site0.com');
+        const loads = (global.fetch as any).mock.calls.filter((c: unknown[]) => String(c[0]).includes('/details/')).length;
+        expect(loads).toBe(7);
+    });
+
+    it('returns undefined when the index is absent', async () => {
+        mockFetch({});
+        const { getTosDRRecord } = await import('./database-loader');
+
+        expect(await getTosDRRecord('instructure.com')).toBeUndefined();
+    });
+
+    it('exposes the catalog build time and per-service versions for the sync', async () => {
+        mockFetch({ 'tosdr-index.json': INDEX, 'tosdr/details/7.json': SHARD });
+        const { getTosdrCatalogMeta } = await import('./database-loader');
+
+        const meta = await getTosdrCatalogMeta();
+        expect(meta?.updatedAt).toBe(111);
+        expect(meta?.versions.get('2392')).toBe('2026-07-22T03:00:02.559212');
     });
 });
