@@ -1009,6 +1009,9 @@ export const resources = {
       "Vault not set up": "Bóveda no configurada",
       "With this off, ratings only refresh when the extension updates": "Con esto desactivado, las calificaciones solo se actualizan cuando se actualiza la extensión",
       "You will need to re-enter your Master Password to continue.": "Tendrás que volver a introducir tu contraseña maestra para continuar.",
+      "Sidebar": "Barra lateral",
+      "Toggle Sidebar": "Alternar barra lateral",
+      "Displays the mobile sidebar.": "Muestra la barra lateral móvil.",
     }
   },
   "fr": {
@@ -2021,6 +2024,9 @@ export const resources = {
       "Vault not set up": "Coffre-fort non configuré",
       "With this off, ratings only refresh when the extension updates": "Si cette option est désactivée, les notes ne se mettent à jour que lors d'une mise à jour de l'extension",
       "You will need to re-enter your Master Password to continue.": "Vous devrez ressaisir votre mot de passe principal pour continuer.",
+      "Sidebar": "Barre latérale",
+      "Toggle Sidebar": "Afficher/masquer la barre latérale",
+      "Displays the mobile sidebar.": "Affiche la barre latérale mobile.",
     }
   },
   "de": {
@@ -3033,6 +3039,9 @@ export const resources = {
       "Vault not set up": "Tresor nicht eingerichtet",
       "With this off, ratings only refresh when the extension updates": "Wenn dies aus ist, werden Bewertungen nur bei einer Aktualisierung der Erweiterung erneuert",
       "You will need to re-enter your Master Password to continue.": "Sie müssen Ihr Master-Passwort erneut eingeben, um fortzufahren.",
+      "Sidebar": "Seitenleiste",
+      "Toggle Sidebar": "Seitenleiste umschalten",
+      "Displays the mobile sidebar.": "Zeigt die mobile Seitenleiste an.",
     }
   }
 };

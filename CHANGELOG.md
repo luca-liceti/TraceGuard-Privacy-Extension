@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.21.3
+
+**What was fixed**
+
+- The sidebar's labels ("Sidebar", "Toggle Sidebar", and the mobile sidebar description) are now translated like the rest of the interface, instead of being fixed in English.
+
 ## v1.21.2
 
 **What was fixed**
