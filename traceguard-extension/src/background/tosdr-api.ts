@@ -158,8 +158,10 @@ async function maybePromptCloudOptIn() {
     const key = await storage.getVaultKey();
     const id = await storage.addNotification({
         type: 'info',
-        title: 'Live rating updates are off',
-        message: 'Turn it on to fetch the latest ratings from tosdr.org when our local data is stale. Sends the current site\'s domain to tosdr.org.',
+        title: 'Live Rating Lookup is off',
+        message: 'Turn it on to fetch a current rating from tosdr.org when our local data is missing or old. Sends the domain of the site you visit.',
+        titleKey: 'Live Rating Lookup is off',
+        messageKey: 'Turn it on to fetch a current rating from tosdr.org when our local data is missing or old. Sends the domain of the site you visit.',
         severity: 'info',
         actionUrl: '/overview?openSettings=privacy'
     }, key);

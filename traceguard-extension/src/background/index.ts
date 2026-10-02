@@ -1492,7 +1492,9 @@ async function askForSiteConfirmation(
                     domain: event.site,
                     fieldType: event.fieldType,
                     reason: decision.reason,
-                    message: decision.message,
+                    // The decision message is an English lookup key; translate it
+                    // here so the in-page card matches the chosen language.
+                    message: i18n.t(decision.message),
                     siteWSS,
                     costNote: i18n.t('Here it costs {{cost}} points. On a site we could vouch for, {{safeCost}}.', { cost, safeCost }),
                     texts,
@@ -1842,7 +1844,7 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
         decision = {
             penalize: false,
             reason: 'whitelisted',
-            message: 'You confirmed this site is safe - no penalty.',
+            message: i18n.t('You confirmed this site is safe - no penalty.'),
         };
     }
     const isExempt = !decision.penalize;
@@ -1952,9 +1954,9 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
         type: 'pii_detected',
         title: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
         titleKey: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
-        message: `${event.fieldType} entered on ${event.site} (${scoreImpact} pts). ${decision.message}`,
+        message: `${event.fieldType} entered on ${event.site} (${scoreImpact} pts). ${i18n.t(decision.message)}`,
         messageKey: '{{fieldType}} entered on {{site}} ({{scoreImpact}} pts). {{reason}}',
-        params: { fieldType: event.fieldType, site: event.site, scoreImpact, reason: decision.message },
+        params: { fieldType: event.fieldType, site: event.site, scoreImpact, reason: i18n.t(decision.message) },
         domain: event.site,
         severity: notificationSeverity,
         actionUrl: `/overview?viewSite=${encodeURIComponent(event.site)}&section=inputs`

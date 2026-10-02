@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.21.4
+
+**What was fixed**
+
+- The remaining user-facing strings that were fixed in English are now translated: the PII warning card and notification explanations, the "Live Rating Lookup is off" notice, and three accessibility labels (closing a toast, the sidebar toggle, and the chart range selector). The PII explanations are looked up dynamically, so the translation test now reads them from their source as well.
+
 ## v1.21.3
 
 **What was fixed**

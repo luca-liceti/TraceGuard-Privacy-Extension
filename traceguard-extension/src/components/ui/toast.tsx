@@ -4,6 +4,7 @@
 // adapted for this project: lucide-react icons, Tailwind v3-compatible
 // arbitrary values and data-* variants.
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { Toast as ToastPrimitive } from "@base-ui/react/toast"
 import { CircleCheck, Info, Loader2, OctagonX, TriangleAlert, X } from "lucide-react"
 
@@ -117,10 +118,11 @@ function ToastClose({
   render = <Button variant="ghost" size="icon" className="h-7 w-7" />,
   ...props
 }: ToastPrimitive.Close.Props) {
+  const { t } = useTranslation()
   return (
     <ToastPrimitive.Close
       data-slot="toast-close"
-      aria-label="Close toast"
+      aria-label={t("Close toast")}
       render={render}
       className={cn(
         "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",

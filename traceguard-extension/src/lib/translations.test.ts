@@ -43,6 +43,18 @@ function collectKeys(): { keys: Set<string>; dynamic: Set<string> } {
             else if (m[2]) keys.add(decode(m[2]));
         }
     }
+    // The PII decision messages are looked up as i18n.t(decision.message), so no
+    // literal t(...) call names them. Collect them straight from the function that
+    // returns them, or they would ship untranslated without failing this test.
+    const pii = readFileSync(join(process.cwd(), 'src/lib/pii.ts'), 'utf8');
+    const piiDecision = pii.slice(pii.indexOf('export function evaluatePIIEntry'));
+    // Matches `message: 'X'` and the ternary form `message: expr ? 'X' : 'Y'`.
+    const msgRe = /message:\s*(?:[^\n]*\n\s*\?\s*)?'((?:[^'\\]|\\.)*)'(?:\s*:\s*'((?:[^'\\]|\\.)*)')?/g;
+    let mm: RegExpExecArray | null;
+    while ((mm = msgRe.exec(piiDecision))) {
+        if (mm[1]) keys.add(decode(mm[1]));
+        if (mm[2]) keys.add(decode(mm[2]));
+    }
     return { keys, dynamic };
 }
 
@@ -53,6 +65,8 @@ describe('translation coverage', () => {
     it('reads the strings the UI actually uses', () => {
         // Guard against the extractor silently matching nothing.
         expect(keys.size).toBeGreaterThan(400);
+        // And against the PII-message extraction quietly finding none.
+        expect([...keys].some((k) => k.includes('no business asking'))).toBe(true);
         // A template literal key cannot be checked here and would ship English;
         // there are none today, so treat one appearing as a failure to review.
         expect([...dynamic]).toEqual([]);
