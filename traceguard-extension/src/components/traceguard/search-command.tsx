@@ -334,9 +334,9 @@ export function SearchCommand() {
               <ShieldUser className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{t("PII Detection")}</span>
             </CommandItem>
-            <CommandItem value="live rating updates tosdr ratings privacy policy fresh online" onSelect={() => openSettings("privacy")}>
+            <CommandItem value="live rating lookup updates tosdr ratings privacy policy fresh online" onSelect={() => openSettings("privacy")}>
               <Cloud className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-              <span>{t("Live rating updates")}</span>
+              <span>{t("Live Rating Lookup")}</span>
             </CommandItem>
             <CommandItem value="vault auto-lock auto lock timeout" onSelect={() => openSettings("privacy")}>
               <Lock className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -376,9 +376,9 @@ export function SearchCommand() {
               <Database className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{t("Data Retention")}</span>
             </CommandItem>
-            <CommandItem value="database refresh update schedule tracker tosdr frequency" onSelect={() => openSettings("data")}>
+            <CommandItem value="ratings refresh database update schedule tracker tosdr frequency" onSelect={() => openSettings("data")}>
               <RefreshCw className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-              <span>{t("Database Refresh")}</span>
+              <span>{t("Ratings Refresh")}</span>
             </CommandItem>
             <CommandItem value="storage used usage size quota disk" onSelect={() => openSettings("data")}>
               <HardDrive className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />

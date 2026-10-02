@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.21.2
+
+**What was fixed**
+
+- Strings that had no Spanish, French, or German translation no longer fall back to English. The gaps were in the import and backup dialogs, the vault lock screen, the two new privacy controls, and the Privacy Policy rating date.
+- A test now fails when a user-facing string is not translated into every shipped language, so a new string cannot ship untranslated. It also fails if a string is built dynamically, since those cannot be checked.
+
 ## v1.21.1
 
 **What was fixed**
