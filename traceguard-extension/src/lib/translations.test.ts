@@ -2,6 +2,24 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { resources } from './translations';
+import { getSafetyLabel, getSafetyLevel } from './risk-utils';
+
+// Values the UI looks up through t(variable) rather than a literal. They cannot
+// be found by scanning t("...") calls, so list the sources that feed them.
+const DYNAMIC_VALUES = [
+    // getSafetyLabel, the label shown in safety badges.
+    ...[0, 10, 30, 50, 70, 90].map((wss) => getSafetyLabel(getSafetyLevel(wss))),
+    // Detector names (rankings).
+    'Tracking', 'Cookies', 'Input Fields', 'Reputation', 'Privacy Policy',
+    // Risk levels (rankings).
+    'Low', 'Medium', 'High', 'Critical',
+    // Tracker categories (footprint / exposure), from CATEGORY_LABELS.
+    'Advertising', 'Analytics', 'Social', 'Content', 'CDN', 'Fingerprinting',
+    'Consent managers', 'Cryptomining', 'Email', 'Anti-fraud', 'Functional',
+    'Single sign-on', 'Unknown',
+    // PII field types, from the input detector.
+    'password', 'credit card', 'ssn', 'security code', 'email', 'phone', 'address', 'name', 'username',
+];
 
 // Every user-facing string is looked up by its English text through `t(...)`.
 // A string with no entry in a language falls back to English, which is easy to
@@ -71,6 +89,19 @@ describe('translation coverage', () => {
         // there are none today, so treat one appearing as a failure to review.
         expect([...dynamic]).toEqual([]);
     });
+
+    it('covers the values looked up dynamically', () => {
+        // Guard the curated list above against drift as much as the languages.
+        expect(DYNAMIC_VALUES.length).toBeGreaterThan(25);
+    });
+
+    for (const lang of LANGS) {
+        it(`translates every dynamic value into ${lang}`, () => {
+            const map = (resources[lang as keyof typeof resources] as { translation: Record<string, string> }).translation;
+            const missing = DYNAMIC_VALUES.filter((value) => !(value in map));
+            expect(missing, `Missing ${lang} dynamic translations:\n  ${missing.join('\n  ')}`).toEqual([]);
+        });
+    }
 
     for (const lang of LANGS) {
         it(`translates every used string into ${lang}`, () => {

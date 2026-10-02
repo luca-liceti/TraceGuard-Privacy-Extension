@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { getGradeTextColor, getSafetyBgColor, getSafetyTextColor } from "@/lib/theme-utils"
+import { getSafetyLabel } from "@/lib/risk-utils"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { storage } from "@/lib/storage"
 import { downloadJson } from "@/lib/export"
@@ -201,7 +202,7 @@ const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
       const level = row.getValue("safetyLevel") as string
       return (
         <Badge variant="secondary" className={`px-2.5 py-0.5 ${getSafetyBgColor(level)} ${getSafetyTextColor(level)}`}>
-          {t(level)}
+          {t(getSafetyLabel(level))}
         </Badge>
       )
     },
@@ -450,7 +451,7 @@ function GroupedTableBody({
                   variant="secondary"
                   className={`px-2.5 py-0.5 ${getSafetyBgColor(s.safetyLevel)} ${getSafetyTextColor(s.safetyLevel)}`}
                 >
-                  {t(s.safetyLevel)}
+                  {t(getSafetyLabel(s.safetyLevel))}
                 </Badge>
               </TableCell>
 

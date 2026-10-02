@@ -59,7 +59,7 @@ import { ExportDataDialog } from "./export-data-dialog"
 import { useSettingsModal } from "./settings-context"
 import { SiteDetailsPanel } from "./site-details-panel"
 import { getSafetyTextColor } from "@/lib/theme-utils"
-import { getSafetyLevel } from "@/lib/risk-utils"
+import { getSafetyLabel, getSafetyLevel } from "@/lib/risk-utils"
 import { SiteRiskData } from "@/lib/types"
 import { useAuth } from "@/components/traceguard/auth-provider"
 
@@ -225,7 +225,7 @@ export function SearchCommand() {
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-xs font-semibold tabular-nums ${colorClass}`}>{wss}</span>
           <Badge variant="outline" className={`text-[10px] uppercase tracking-wide ${colorClass}`}>
-            {t(safetyLevelStr)}
+            {t(getSafetyLabel(safetyLevelStr))}
           </Badge>
         </div>
       </CommandItem>

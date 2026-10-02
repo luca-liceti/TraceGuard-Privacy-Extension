@@ -2,6 +2,14 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.21.5
+
+**What was fixed**
+
+- Safety badges in the activity log and in site search showed the raw lowercase level (for example "excellent") instead of the translated label. They now use the same label as the rest of the interface.
+- Two tracker categories ("Anti-fraud" and "Functional") and the "security code" personal-data field type had no translation.
+- The translation test now also covers the values the interface looks up dynamically, such as safety labels, tracker categories, and field types, since those cannot be found by scanning literal calls.
+
 ## v1.21.4
 
 **What was fixed**

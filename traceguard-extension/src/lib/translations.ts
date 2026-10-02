@@ -1030,6 +1030,9 @@ export const resources = {
       "We cannot verify where this one-time code goes - entering it on a risky site is dangerous.": "No podemos verificar adónde va este código de un solo uso: introducirlo en un sitio arriesgado es peligroso.",
       "We cannot verify this site is safe - avoid entering personal info here.": "No podemos verificar que este sitio sea seguro: evita introducir datos personales aquí.",
       "You confirmed this site is safe - no penalty.": "Confirmaste que este sitio es seguro: sin penalización.",
+      "Anti-fraud": "Antifraude",
+      "Functional": "Funcional",
+      "security code": "código de seguridad",
     }
   },
   "fr": {
@@ -2063,6 +2066,9 @@ export const resources = {
       "We cannot verify where this one-time code goes - entering it on a risky site is dangerous.": "Nous ne pouvons pas vérifier où va ce code à usage unique : le saisir sur un site risqué est dangereux.",
       "We cannot verify this site is safe - avoid entering personal info here.": "Nous ne pouvons pas vérifier que ce site est sûr : évitez d'y saisir des informations personnelles.",
       "You confirmed this site is safe - no penalty.": "Vous avez confirmé que ce site est sûr : aucune pénalité.",
+      "Anti-fraud": "Anti-fraude",
+      "Functional": "Fonctionnel",
+      "security code": "code de sécurité",
     }
   },
   "de": {
@@ -3096,6 +3102,9 @@ export const resources = {
       "We cannot verify where this one-time code goes - entering it on a risky site is dangerous.": "Wir können nicht überprüfen, wohin dieser Einmalcode geht. Die Eingabe auf einer riskanten Website ist gefährlich.",
       "We cannot verify this site is safe - avoid entering personal info here.": "Wir können nicht bestätigen, dass diese Website sicher ist. Geben Sie hier keine persönlichen Daten ein.",
       "You confirmed this site is safe - no penalty.": "Sie haben diese Website als sicher bestätigt. Kein Abzug.",
+      "Anti-fraud": "Betrugsabwehr",
+      "Functional": "Funktional",
+      "security code": "Sicherheitscode",
     }
   }
 };
