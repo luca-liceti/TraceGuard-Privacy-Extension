@@ -83,6 +83,7 @@ export interface DetectionDetails {
         serviceId?: number;
         points?: { title: string; classification: string }[];
         documents?: { name: string; url: string }[];
+        capturedAt?: number;
     };
 }
 
@@ -205,7 +206,8 @@ export async function analyzePage(): Promise<PageAnalysisResult> {
                 score: policyResult.score,
                 serviceId: policyResult.serviceId,
                 points: policyResult.points,
-                documents: policyResult.documents
+                documents: policyResult.documents,
+                capturedAt: policyResult.capturedAt
             }
         },
         rawForEnrichment: {

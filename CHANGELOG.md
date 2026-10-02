@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.21.0
+
+**What's new**
+
+- The **Privacy Policy** section now shows when its rating data was captured, for example "Ratings data from Aug 12, 2026". With the background refresh and the per-site lookup both off by default, this makes it clear how current a grade is instead of presenting an old one as current.
+- The date reflects when the extension took its copy of the rating, not when ToS;DR last edited the service, so a rating that has been stable for a long time is not mislabelled as out of date.
+
 ## v1.20.0
 
 **What's new**

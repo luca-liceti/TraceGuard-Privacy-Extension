@@ -69,6 +69,24 @@ describe('checkTosDR', () => {
         expect(result.score).toBe(20);
     });
 
+    it('reports when the bundled rating data was captured', async () => {
+        // The panel labels a rating with the date of the data behind it, so a
+        // bundled rating must carry the catalog build time, not the ToS;DR
+        // edit time (a stable rating is not a stale one).
+        vi.mocked(getTosDRRecord).mockResolvedValue({
+            found: true,
+            grade: 'E',
+            score: 20,
+            source: 'tosdr-local',
+            serviceName: 'Google',
+            serviceId: 217,
+            lastUpdated: 1790928336725,
+        });
+
+        const result = await checkTosDR('https://www.google.com');
+        expect(result.capturedAt).toBe(1790928336725);
+    });
+
     it('reads the grade from the search endpoint rating object when the detail rating is N/A', async () => {
         // Regression: the search endpoint returns rating as { hex, human, letter },
         // while the detail endpoint returns a plain letter. Passing the object to

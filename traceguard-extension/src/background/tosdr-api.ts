@@ -48,6 +48,7 @@ interface TosDRResult {
     points?: { title: string; classification: string }[];
     documents?: { name: string; url: string }[];
     serviceUpdatedAt?: string; // The ToS;DR updated_at this rating came from
+    capturedAt?: number; // When our copy of this rating was taken (Unix ms)
 }
 
 // Cache for ToS;DR results is no longer needed (100% local)
@@ -284,12 +285,12 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
                 const seedVersion = Date.parse(seedResult.serviceUpdatedAt || '');
                 if (isNegative || (Number.isFinite(seedVersion) && seedVersion > cachedVersion)) {
                     logEvent('enrich', 'debug', 'tosdr_seed_overrode_cache', 'Bundled seed rating was newer than the cached result', { host: domain, negative: isNegative });
-                    return seedResult as TosDRResult;
+                    return { ...(seedResult as TosDRResult), capturedAt: seedResult.lastUpdated || undefined };
                 }
             }
         }
 
-        return cachedEntry.data;
+        return { ...cachedEntry.data, capturedAt: cachedEntry.timestamp };
     }
     
     // 2. Check local seed database
@@ -310,7 +311,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
             logEvent('enrich', 'debug', 'tosdr_seed_used', 'Bundled seed rating used', { host: domain, score: seedResult.score, grade: seedResult.grade });
         }
 
-        return seedResult as TosDRResult;
+        return { ...(seedResult as TosDRResult), capturedAt: seedResult.lastUpdated || undefined };
     }
     
     // 3. Not in seed, not in cache
@@ -319,7 +320,7 @@ export async function checkTosDR(url: string): Promise<TosDRResult> {
         const fresh = await fetchFromTosdr(domain);
         if (fresh) {
             await saveCache(domain, { data: fresh, timestamp: Date.now() });
-            return fresh;
+            return { ...fresh, capturedAt: Date.now() };
         }
         
         // Cache failure

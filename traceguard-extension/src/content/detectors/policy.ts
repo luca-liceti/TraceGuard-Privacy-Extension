@@ -53,6 +53,7 @@ export interface PolicyDetectionResult {
     hasLocalPolicy: boolean;  // Was a privacy policy link found on the page?
     points?: { title: string; classification: string }[]; // Reasons for the grade
     documents?: { name: string; url: string }[]; // Reference documents
+    capturedAt?: number;       // When this data was captured (Unix ms)
 }
 
 /**
@@ -167,7 +168,8 @@ export async function detectPrivacyPolicyDetailed(): Promise<PolicyDetectionResu
                 serviceId: response.serviceId,
                 hasLocalPolicy: localResult.found,
                 points: response.points,
-                documents: response.documents
+                documents: response.documents,
+                capturedAt: response.capturedAt
             };
         }
     } catch (error) {
@@ -189,7 +191,9 @@ export async function detectPrivacyPolicyDetailed(): Promise<PolicyDetectionResu
     return {
         score: fallbackScore,
         source: localResult.found ? 'local' : 'fallback',
-        hasLocalPolicy: localResult.found
+        hasLocalPolicy: localResult.found,
+        // A local check just happened, so its data is current as of now.
+        capturedAt: Date.now()
     };
 }
 

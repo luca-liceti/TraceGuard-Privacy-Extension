@@ -962,6 +962,12 @@ export function SiteDetailsPanel({
                                         )}
                                     </div>
 
+                                    {Number.isFinite(policyLegacy.capturedAt) && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {t("Ratings data from {{date}}", { date: format(new Date(policyLegacy.capturedAt), "MMM d, yyyy") })}
+                                        </p>
+                                    )}
+
                                     {policyLegacy.points && policyLegacy.points.length > 0 && (() => {
                                         const filtered = [...policyLegacy.points]
                                             .filter((p: any) => policyFilter === "all" || p.classification === policyFilter)
