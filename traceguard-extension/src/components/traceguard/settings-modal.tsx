@@ -645,8 +645,8 @@ export function SettingsModal() {
                         </SettingItem>
 
                         <SettingItem
-                            label={t("Look up a site's rating when I visit it")}
-                            description={t("Fetch the current rating from tosdr.org when a site is missing from our data or its rating is old. Sends this site's domain to tosdr.org.")}
+                            label={t("Live Rating Lookup")}
+                            description={t("Fetch a current rating from tosdr.org when a site is missing or its rating is old, sending the site's domain")}
                             controlId="cloud-tosdr-toggle"
                         >
                             <Switch
@@ -884,9 +884,9 @@ export function SettingsModal() {
                         />
 
                         <SettingItem
-                            label={t("Keep the ratings database current")}
-                            description={t("Refresh the whole privacy-ratings catalog on this schedule. Does not reveal the sites you visit.")}
-                            note={databaseRefreshDays === 0 ? t("With this off, ratings only refresh when the extension updates.") : undefined}
+                            label={t("Ratings Refresh")}
+                            description={t("Refresh the privacy-ratings catalog on this schedule without revealing the sites you visit")}
+                            note={databaseRefreshDays === 0 ? t("With this off, ratings only refresh when the extension updates") : undefined}
                         >
                             <Select value={String(databaseRefreshDays)} onValueChange={(value) => {
                                 setDatabaseRefreshDays(Number(value) as 0 | 1 | 3 | 7 | 14 | 30)
@@ -905,7 +905,7 @@ export function SettingsModal() {
                         </SettingItem>
 
                         <p className="text-sm text-muted-foreground break-words px-1">
-                            {t("Phishing protection updates on its own and is not affected by the two settings above.")}
+                            {t("Phishing protection updates on its own and is not affected by the two settings above")}
                         </p>
 
                         {/* Storage Usage */}
