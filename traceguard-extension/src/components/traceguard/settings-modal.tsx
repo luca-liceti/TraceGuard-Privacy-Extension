@@ -337,7 +337,7 @@ export function SettingsModal() {
             notificationLevel: "balanced" as const,
             enabled: true,
             logRetentionDays: 30,
-            databaseRefreshDays: 0 as const,
+            databaseRefreshDays: 7 as const,
             wssThreshold: 50,
             enablePIIDetection: true,
             enableCloudTosdr: false,
@@ -522,7 +522,7 @@ export function SettingsModal() {
                     <div className="flex-1 flex flex-col relative h-full min-h-0 overflow-hidden">
                         {/* Save Changes Bar - At Top */}
                         {hasChanges && (
-                            <div className="border-b border-primary/50 bg-background/95 backdrop-blur pl-6 pr-12 py-3 z-10 shrink-0">
+                            <div className="border-b border-primary/50 bg-background/95 backdrop-blur pl-6 pr-14 py-3 z-10 shrink-0">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-sm">
                                         <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -909,7 +909,7 @@ export function SettingsModal() {
 
                         {/* Storage Usage */}
                         <div className="rounded-lg border p-4">
-                            <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
+                            <div className={`flex flex-wrap items-center justify-between gap-y-2${storageInfo.quota > 0 ? " mb-4" : ""}`}>
                                 <div className="space-y-0.5 min-w-0">
                                     <Label className="text-base font-medium flex items-center gap-2">
                                         <HardDrive className="h-4 w-4 text-muted-foreground" />

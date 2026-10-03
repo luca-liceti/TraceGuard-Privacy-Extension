@@ -2,6 +2,20 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.1
+
+**What was fixed**
+
+- Restored visibility and clickability of the settings modal close button by ensuring it renders above the banner overlay with z-50 stacking.
+- Removed unnecessary trailing bottom margin from the Storage Used card when progress indicator is absent.
+
+## v1.22.0
+
+**What's new**
+
+- New installs now refresh the privacy-ratings catalog every 7 days by default, so policy ratings stay current. The refresh downloads the same public ToS;DR catalog for everyone and sends nothing about the sites you visit.
+- Existing installs keep the ratings refresh off until you choose a schedule in Settings, and Live Rating Lookup stays off by default because it sends the domain of the site you visit.
+
 ## v1.21.6
 
 **What was fixed**
