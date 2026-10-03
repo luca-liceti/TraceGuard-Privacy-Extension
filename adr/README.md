@@ -29,3 +29,4 @@ Format follows Michael Nygard's original ADR shape: status, context, decision, c
 | [0011](0011-behaviour-test-boundary.md) | The behaviour test governs persuasion, not entitlements |
 | [0012](0012-engagement-is-salience.md) | Engagement means salience at the decision point, not return visits |
 | [0013](0013-no-forget-action.md) | No forget action; the score cannot rise when records are deleted |
+| [0014](0014-background-ratings-refresh-default.md) | The background privacy-ratings catalog refresh is on by default |

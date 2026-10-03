@@ -161,7 +161,8 @@ describe('checkTosDR', () => {
         it('does nothing while the refresh schedule is off', async () => {
             // The schedule is the consent line for the bulk catalog fetch, so
             // the sweep must not run (or even read the catalog) when it is off.
-            // It is off by default.
+            // The default is on for new installs, so the off case is set here.
+            await chrome.storage.local.set({ settings: { databaseRefreshDays: 0 } });
             vi.mocked(getTosdrCatalogMeta).mockResolvedValue({ updatedAt: 1, versions: new Map() });
 
             const result = await refreshTosdrCatalog();

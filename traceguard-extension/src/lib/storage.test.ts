@@ -43,6 +43,10 @@ describe('storage.getSettings', () => {
         expect(settings.notifications).toBe(true);
         expect(settings.theme).toBe('system');
         expect(settings.whitelist).toEqual([]);
+        // The background ratings catalog refresh is on by default (ADR 0014),
+        // while the per-site live lookup stays off because it sends a domain.
+        expect(settings.databaseRefreshDays).toBe(7);
+        expect(settings.enableCloudTosdr).toBe(false);
     });
 
     it('merges persisted values over defaults', async () => {
