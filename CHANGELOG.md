@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.21.6
+
+**What was fixed**
+
+- The unsaved changes banner in settings now extends edge-to-edge across the top of the content area instead of being inset by padding.
+
 ## v1.21.5
 
 **What was fixed**

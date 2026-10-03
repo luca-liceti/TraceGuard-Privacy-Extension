@@ -519,31 +519,30 @@ export function SettingsModal() {
                     </div>
 
                     {/* Content Area */}
-                    <div className="flex-1 flex flex-col relative h-full">
-                        <div className="flex-1 overflow-y-auto p-6 scroll-smooth space-y-6">
-                            {/* Save Changes Bar - At Top */}
-                            {hasChanges && (
-                                <div className="border-b border-primary/50 bg-background/95 backdrop-blur sticky top-0 z-10">
-                                    <div className="py-3 px-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                                <span className="text-muted-foreground">{t("You have unsaved changes")}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Button variant="ghost" size="sm" onClick={resetSettings}>
-                                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                                    {t("Reset")}
-                                                </Button>
-                                                <Button size="sm" onClick={saveSettings}>
-                                                    <Save className="mr-2 h-4 w-4" />
-                                                    {t("Save Changes")}
-                                                </Button>
-                                            </div>
-                                        </div>
+                    <div className="flex-1 flex flex-col relative h-full min-h-0 overflow-hidden">
+                        {/* Save Changes Bar - At Top */}
+                        {hasChanges && (
+                            <div className="border-b border-primary/50 bg-background/95 backdrop-blur pl-6 pr-12 py-3 z-10 shrink-0">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                        <span className="text-muted-foreground">{t("You have unsaved changes")}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="ghost" size="sm" onClick={resetSettings}>
+                                            <RotateCcw className="mr-2 h-4 w-4" />
+                                            {t("Reset")}
+                                        </Button>
+                                        <Button size="sm" onClick={saveSettings}>
+                                            <Save className="mr-2 h-4 w-4" />
+                                            {t("Save Changes")}
+                                        </Button>
                                     </div>
                                 </div>
-                            )}
+                            </div>
+                        )}
+
+                        <div className="flex-1 overflow-y-auto p-6 scroll-smooth space-y-6">
 
                 {/* Appearance Tab */}
                 <TabsContent value="appearance" className="space-y-6 mt-0">
