@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.3
+
+**What was fixed**
+
+- The Website Safety score now shows an X in a circle for an unsafe site (Poor and Critical) instead of a warning triangle. Fair sites keep the triangle, and Good and above keep the check, so the icon matches the score's color bands.
+
 ## v1.22.2
 
 **What was fixed**

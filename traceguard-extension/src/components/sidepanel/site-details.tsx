@@ -17,9 +17,12 @@ import { getGradeTextColor } from "@/lib/theme-utils"
 import { SiteRiskData } from "@/lib/types"
 import { stoppedCount } from "@/lib/tracker-status"
 
+// Icon follows the safety bands: Good and above is safe, Fair is a caution,
+// Poor and Critical (an unsafe site) is the X. It inherits the score color.
 function getWSSIcon(wss: number) {
     if (wss >= 60) return <CircleCheck className="h-5 w-5" />;
-    return <AlertTriangle className="h-5 w-5" />;
+    if (wss >= 40) return <AlertTriangle className="h-5 w-5" />;
+    return <XCircle className="h-5 w-5" />;
 }
 
 const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> => ({
