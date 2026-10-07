@@ -16,13 +16,13 @@
  * 2. PRIVACY TAB
  *    - PII Detection: Toggle personal info monitoring
  *    - Tracker Blocking: Future feature (coming soon)
- *    - Safety Threshold: Alert level for risky sites (0-100)
  * 
  * 3. NOTIFICATIONS TAB
  *    - Alert Level: Silent/Balanced/Aggressive notification modes
+ *    - Safety Threshold: Which safety bands trigger an alert
  * 
  * 4. DATA TAB
- *    - Data Retention: How long to keep logs (7-90 days)
+ *    - Data Retention: How long to keep logs (preset windows)
  *    - Storage Usage: Visual display of storage used
  *    - Clear Actions: Delete activity logs, reset score
  *    - Danger Zone: Factory reset option
@@ -79,7 +79,6 @@ import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import {
     AlertDialog,
@@ -105,6 +104,16 @@ const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(\.[a-z]{2,})+$/i;
 function isValidDomain(value: string): boolean {
     return DOMAIN_PATTERN.test(value);
 }
+
+// Safety-band alert cutoffs. A site scoring below the chosen value triggers an
+// alert: 20 = critical only, 40 = poor and critical, 60 = fair and worse,
+// 80 = good and worse. The stored value is still a number, so a value from the
+// old slider that is not one of these stays selectable as a custom option.
+const THRESHOLD_OPTIONS = [20, 40, 60, 80]
+
+// Preset retention windows in days. Legacy values from the old slider that are
+// not listed here stay selectable as a custom option rather than being changed.
+const RETENTION_OPTIONS = [7, 14, 30, 60, 90]
 
 
 // Setting item component for consistent styling
@@ -142,61 +151,6 @@ function SettingItem({
     )
 }
 
-// Slider component for consistency
-function SettingSlider({
-    label,
-    description,
-    value,
-    min,
-    max,
-    step,
-    unit,
-    onChange,
-}: {
-    label: string
-    description: string
-    value: number
-    min: number
-    max: number
-    step: number
-    unit: string
-    onChange: (value: number) => void
-}) {
-    const { t } = useTranslation();
-    return (
-        <div className="rounded-lg border p-4">
-            <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
-                <div className="space-y-0.5 min-w-0">
-                    <Label className="text-base font-medium">{label}</Label>
-                    <p className="text-sm text-muted-foreground break-words">{description}</p>
-                </div>
-                <Badge variant="secondary" className="font-mono shrink-0">
-                    {value} {unit}
-                </Badge>
-            </div>
-            <input
-                id={label.toLowerCase().replace(/\s+/g, '-') + '-slider'}
-                type="range"
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={(e) => onChange(Number(e.target.value))}
-                aria-label={`${label}: ${value} ${unit}`}
-                aria-valuemin={min}
-                aria-valuemax={max}
-                aria-valuenow={value}
-                aria-valuetext={`${value} ${unit}`}
-                className="w-full h-2 bg-secondary rounded-md appearance-none cursor-pointer accent-primary"
-            />
-            <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                <span>{min} {unit}</span>
-                <span>{max} {unit}</span>
-            </div>
-        </div>
-    )
-}
-
 export function SettingsModal() {
     const { t } = useTranslation()
     const state = useAppState()
@@ -215,7 +169,7 @@ export function SettingsModal() {
     const [notificationLevel, setNotificationLevel] = useState(settings?.notificationLevel || "balanced")
     const [logRetentionDays, setLogRetentionDays] = useState(settings?.logRetentionDays || 30)
     const [databaseRefreshDays, setDatabaseRefreshDays] = useState(settings?.databaseRefreshDays ?? 0)
-    const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 50)
+    const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 60)
     const [enabled, setEnabled] = useState(settings?.enabled ?? true)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
     const [enableCloudTosdr, setEnableCloudTosdr] = useState(settings?.enableCloudTosdr ?? false)
@@ -278,7 +232,7 @@ export function SettingsModal() {
             setNotificationLevel(settings.notificationLevel || "balanced")
             setLogRetentionDays(settings.logRetentionDays || 30)
             setDatabaseRefreshDays(settings.databaseRefreshDays ?? 0)
-            setWssThreshold(settings.wssThreshold || 50)
+            setWssThreshold(settings.wssThreshold || 60)
             setEnabled(settings.enabled ?? true)
             setEnablePIIDetection(settings.enablePIIDetection ?? true)
             setEnableCloudTosdr(settings.enableCloudTosdr ?? false)
@@ -338,7 +292,7 @@ export function SettingsModal() {
             enabled: true,
             logRetentionDays: 30,
             databaseRefreshDays: 7 as const,
-            wssThreshold: 50,
+            wssThreshold: 60,
             enablePIIDetection: true,
             enableCloudTosdr: false,
             displayMode: "popup" as const,
@@ -681,20 +635,6 @@ export function SettingsModal() {
                             </Select>
                         </SettingItem>
 
-                        <SettingSlider
-                            label={t("Safety Threshold")}
-                            description={t("Get alerts when a site's safety score is below this value")}
-                            value={wssThreshold}
-                            min={0}
-                            max={100}
-                            step={5}
-                            unit=""
-                            onChange={(value) => {
-                                setWssThreshold(value)
-                                handleChange()
-                            }}
-                        />
-
                     </div>
                 </TabsContent>
 
@@ -734,6 +674,30 @@ export function SettingsModal() {
                                     <SelectItem value="silent">{t("Silent")}</SelectItem>
                                     <SelectItem value="balanced">{t("Balanced")}</SelectItem>
                                     <SelectItem value="aggressive">{t("Aggressive")}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </SettingItem>
+
+                        <SettingItem
+                            label={t("Safety Threshold")}
+                            description={t("Get alerts when a site's safety score is below this value")}
+                        >
+                            <Select
+                                value={String(wssThreshold)}
+                                onValueChange={(value) => {
+                                    setWssThreshold(Number(value))
+                                    handleChange()
+                                }}
+                            >
+                                <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {!THRESHOLD_OPTIONS.includes(wssThreshold) && (
+                                        <SelectItem value={String(wssThreshold)}>{t("Custom")} ({wssThreshold})</SelectItem>
+                                    )}
+                                    <SelectItem value="20">{t("Critical only (below 20)")}</SelectItem>
+                                    <SelectItem value="40">{t("Poor or worse (below 40)")}</SelectItem>
+                                    <SelectItem value="60">{t("Fair or worse (below 60)")}</SelectItem>
+                                    <SelectItem value="80">{t("Good or worse (below 80)")}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </SettingItem>
@@ -868,19 +832,30 @@ export function SettingsModal() {
                     <Separator />
                     
                     <div className="space-y-4">
-                        <SettingSlider
+                        <SettingItem
                             label={t("Data Retention")}
                             description={t("Old activity logs will be automatically deleted after this period")}
-                            value={logRetentionDays}
-                            min={7}
-                            max={90}
-                            step={1}
-                            unit={t("days")}
-                            onChange={(value) => {
-                                setLogRetentionDays(value)
-                                handleChange()
-                            }}
-                        />
+                        >
+                            <Select
+                                value={String(logRetentionDays)}
+                                onValueChange={(value) => {
+                                    setLogRetentionDays(Number(value))
+                                    handleChange()
+                                }}
+                            >
+                                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {!RETENTION_OPTIONS.includes(logRetentionDays) && (
+                                        <SelectItem value={String(logRetentionDays)}>{t("Custom")} ({logRetentionDays})</SelectItem>
+                                    )}
+                                    <SelectItem value="7">{t("7 days")}</SelectItem>
+                                    <SelectItem value="14">{t("14 days")}</SelectItem>
+                                    <SelectItem value="30">{t("30 days")}</SelectItem>
+                                    <SelectItem value="60">{t("60 days")}</SelectItem>
+                                    <SelectItem value="90">{t("90 days")}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </SettingItem>
 
                         <SettingItem
                             label={t("Ratings Refresh")}

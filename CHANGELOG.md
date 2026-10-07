@@ -2,6 +2,14 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.4
+
+**What's new**
+
+- Safety Threshold is now a dropdown of named bands instead of a 0 to 100 slider, and it moved to the Notifications tab next to the alerts it controls. The choices are Critical only (below 20), Poor or worse (below 40), Fair or worse (below 60), and Good or worse (below 80).
+- The default threshold is now 60 instead of 50, so sites rated Fair or worse trigger an alert. A value that is not one of the presets is kept and shown as a custom option.
+- Data Retention is now a dropdown of preset windows (7, 14, 30, 60, and 90 days) instead of a slider.
+
 ## v1.22.3
 
 **What was fixed**

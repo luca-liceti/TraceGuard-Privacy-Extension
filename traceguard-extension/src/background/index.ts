@@ -1307,7 +1307,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
 
     // Step 8: Create notifications for risky sites
     const settings = await storage.getSettings();
-    const threshold = settings.wssThreshold || 50;  // User's custom safety threshold
+    const threshold = settings.wssThreshold || 60;  // User's custom safety threshold
 
     // Check if this site is dangerous enough to warn the user
     // WSS is a safety score: lower = more dangerous
