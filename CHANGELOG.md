@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.5
+
+**What was fixed**
+
+- The Reset button in the unsaved changes bar no longer wiped every setting back to factory defaults. It is now Discard changes, which reverts the form to your last saved settings. Restoring factory defaults is a separate Reset to Defaults action in the Data tab, with its own confirmation, and it keeps your activity logs and site lists.
+
 ## v1.22.4
 
 **What's new**

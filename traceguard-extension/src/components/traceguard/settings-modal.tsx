@@ -25,13 +25,15 @@
  *    - Data Retention: How long to keep logs (preset windows)
  *    - Storage Usage: Visual display of storage used
  *    - Clear Actions: Delete activity logs, reset score
- *    - Danger Zone: Factory reset option
+ *    - Reset to Defaults: Restore settings, keeping logs and site lists
+ *    - Danger Zone: Delete all data
  * 
  * 5. ABOUT TAB
  *    - Version info and extension description
  * 
  * FEATURES:
  *    - Changes are tracked and require manual save
+ *    - Discard unsaved changes reverts to the last saved values
  *    - Reset to defaults option
  *    - Storage usage monitoring
  *    - Danger zone with confirmation dialogs
@@ -40,7 +42,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { useAppState, useSettings } from "@/lib/useStorage"
 import { ExportDataDialog } from "./export-data-dialog"
@@ -225,30 +227,42 @@ export function SettingsModal() {
         return unsubscribe
     }, [])
 
+    // Copies the stored settings into the form's local state. Used on load and
+    // when the user discards unsaved edits, so both paths apply the same values.
+    const syncLocalFromSettings = useCallback((s: NonNullable<typeof settings>) => {
+        setThemeLocal(s.theme || "system")
+        setNotificationLevel(s.notificationLevel || "balanced")
+        setLogRetentionDays(s.logRetentionDays || 30)
+        setDatabaseRefreshDays(s.databaseRefreshDays ?? 0)
+        setWssThreshold(s.wssThreshold || 60)
+        setEnabled(s.enabled ?? true)
+        setEnablePIIDetection(s.enablePIIDetection ?? true)
+        setEnableCloudTosdr(s.enableCloudTosdr ?? false)
+        setDisplayMode(s.displayMode || "popup")
+        setAutoLockTimeout(s.autoLockTimeout === 0 ? -1 : (s.autoLockTimeout ?? -1))
+        setWhitelist(s.whitelist || [])
+        setBlacklist(s.blacklist || [])
+        setDevModeLocal(s.devMode === true)
+        setDevMode(s.devMode === true)
+    }, [])
+
     // Sync local state with stored settings when they load
     useEffect(() => {
-        if (settings) {
-            setThemeLocal(settings.theme || "system")
-            setNotificationLevel(settings.notificationLevel || "balanced")
-            setLogRetentionDays(settings.logRetentionDays || 30)
-            setDatabaseRefreshDays(settings.databaseRefreshDays ?? 0)
-            setWssThreshold(settings.wssThreshold || 60)
-            setEnabled(settings.enabled ?? true)
-            setEnablePIIDetection(settings.enablePIIDetection ?? true)
-            setEnableCloudTosdr(settings.enableCloudTosdr ?? false)
-            setDisplayMode(settings.displayMode || "popup")
-            setAutoLockTimeout(settings.autoLockTimeout === 0 ? -1 : (settings.autoLockTimeout ?? -1))
-            setWhitelist(settings.whitelist || [])
-            setBlacklist(settings.blacklist || [])
-            setDevModeLocal(settings.devMode === true)
-            setDevMode(settings.devMode === true)
-        }
-    }, [settings])
+        if (settings) syncLocalFromSettings(settings)
+    }, [settings, syncLocalFromSettings])
 
     if (!state || !settings) return <div className="p-4">{t("Loading...")}</div>
 
     const handleChange = () => {
         setHasChanges(true)
+    }
+
+    // Revert unsaved edits back to the last saved settings, without touching what
+    // is stored. This backs the "Discard changes" button in the save bar;
+    // restoring factory defaults is a separate action in the Data tab.
+    const revertChanges = () => {
+        if (settings) syncLocalFromSettings(settings)
+        setHasChanges(false)
     }
 
     const saveSettings = async () => {
@@ -483,9 +497,9 @@ export function SettingsModal() {
                                         <span className="text-muted-foreground">{t("You have unsaved changes")}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="sm" onClick={resetSettings}>
+                                        <Button variant="ghost" size="sm" onClick={revertChanges}>
                                             <RotateCcw className="mr-2 h-4 w-4" />
-                                            {t("Reset")}
+                                            {t("Discard changes")}
                                         </Button>
                                         <Button size="sm" onClick={saveSettings}>
                                             <Save className="mr-2 h-4 w-4" />
@@ -964,6 +978,35 @@ export function SettingsModal() {
                                      </AlertDialogContent>
                                  </AlertDialog>
                              </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+                            <div className="space-y-0.5 flex-1 min-w-0">
+                                <Label className="text-base font-medium">{t("Reset to Defaults")}</Label>
+                                <p className="text-sm text-muted-foreground break-words">{t("Restore every setting to its factory value. Your activity logs and site lists are kept.")}</p>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="outline">
+                                            <RotateCcw className="mr-2 h-4 w-4" />
+                                            {t("Reset to Defaults")}
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>{t("Reset settings to defaults?")}</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                {t("This will restore all settings to their factory values. Your activity logs and site lists will not be deleted.")}
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                                            <AlertDialogAction onClick={resetSettings}>{t("Continue")}</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                         </div>
 
                         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/50 p-4">
