@@ -1,6 +1,6 @@
 import React from "react"
 import { useTranslation } from "react-i18next"
-import { ShieldUser, AlertTriangle, CircleCheck, Globe, Activity, Cookie, FileText, Key, OctagonAlert, XCircle, ThumbsDown, Info, Network, Fingerprint } from "lucide-react"
+import { BadgeCheck, Server, AlertTriangle, CircleCheck, Globe, Activity, Cookie, FileText, Key, OctagonAlert, XCircle, ThumbsDown, Info, Network, Fingerprint } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import { getSafetyConfig, scoreToGrade, SAFETY_CONFIGS } from "@/lib/risk-utils"
+import { getGradeTextColor } from "@/lib/theme-utils"
 import { SiteRiskData } from "@/lib/types"
 import { stoppedCount } from "@/lib/tracker-status"
 
@@ -21,20 +22,9 @@ function getWSSIcon(wss: number) {
     return <AlertTriangle className="h-5 w-5" />;
 }
 
-function getGradeColor(grade: string): string {
-    switch (grade?.toUpperCase()) {
-        case "A": return `${SAFETY_CONFIGS.excellent.color} font-bold`;
-        case "B": return `${SAFETY_CONFIGS.good.color} font-bold`;
-        case "C": return `${SAFETY_CONFIGS.fair.color} font-bold`;
-        case "D": return `${SAFETY_CONFIGS.poor.color} font-bold`;
-        case "E": return `${SAFETY_CONFIGS.critical.color} font-bold`;
-        default: return "text-muted-foreground";
-    }
-}
-
 const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> => ({
     reputation: {
-        icon: ShieldUser,
+        icon: BadgeCheck,
         label: t("Reputation"),
         description: t("Domain trustworthiness"),
         weight: "25%"
@@ -135,7 +125,7 @@ export function SiteDetails({ currentSite }: SiteDetailsProps) {
                                                 ({info.weight})
                                             </span>
                                             {key === 'policy' ? (
-                                                <span className={`text-sm font-bold ${getGradeColor(currentSite?.detectionDetails?.policy?.grade || '')}`}>
+                                                <span className={`text-sm font-bold ${getGradeTextColor(currentSite?.detectionDetails?.policy?.grade)}`}>
                                                     {currentSite?.detectionDetails?.policy?.grade || '—'}
                                                 </span>
                                             ) : (
@@ -302,14 +292,14 @@ export function SiteDetails({ currentSite }: SiteDetailsProps) {
                             {/* Security Headers */}
                             {enriched.headers && enriched.headers.items.length > 0 && (
                                 <div className="px-3 py-2 flex items-center gap-2">
-                                    <ShieldUser className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <Server className="h-4 w-4 text-muted-foreground shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <div className="text-xs font-medium">{t("Security Headers")}</div>
                                         <div className="text-xs text-muted-foreground">
                                             {enriched.headers.summary.present}/{enriched.headers.summary.present + enriched.headers.summary.missing} {t("present")}
                                         </div>
                                     </div>
-                                    <span className={`text-sm shrink-0 ${getGradeColor(enriched.headers.summary.grade)}`}>
+                                    <span className={`text-sm shrink-0 ${getGradeTextColor(enriched.headers.summary.grade)}`}>
                                         {enriched.headers.summary.grade}
                                     </span>
                                 </div>

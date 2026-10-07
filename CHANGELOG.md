@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.2
+
+**What was fixed**
+
+- An F grade for security headers now shows in red instead of gray, matching the other failing grade instead of looking neutral.
+- The Reputation and Security Headers rows no longer reuse the TraceGuard logo icon. Reputation now uses a verified-badge icon and Security Headers a server icon, so each row is recognizable at a glance.
+
 ## v1.22.1
 
 **What was fixed**

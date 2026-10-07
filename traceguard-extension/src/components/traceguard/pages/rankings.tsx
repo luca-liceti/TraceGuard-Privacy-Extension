@@ -33,6 +33,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatCard } from "@/components/ui/stat-card"
 import {
+  BadgeCheck,
   ShieldUser,
   Target,
   Cookie,
@@ -58,7 +59,7 @@ const DETECTOR_ICONS: Record<string, React.ComponentType<{ className?: string }>
   tracking:    Activity,
   cookies:     Cookie,
   inputs:      Key,
-  reputation:  ShieldUser,
+  reputation:  BadgeCheck,
   policy:      FileText,
 }
 

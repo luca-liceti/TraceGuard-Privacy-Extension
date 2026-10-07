@@ -38,7 +38,7 @@ import { sanitizeURL } from "@/lib/sanitize"
 import { isStoppedBeforeLoading, stoppedCount } from "@/lib/tracker-status"
 import { format } from "date-fns"
 import {
-    CircleCheck, XCircle, AlertTriangle, ThumbsDown, Info, Globe,
+    CircleCheck, XCircle, AlertTriangle, ThumbsDown, Info, Globe, Server,
     ShieldUser, OctagonAlert, Network, Activity, Cookie, Key,
     FileText, Fingerprint, ChevronDown, ChevronRight, ShieldAlert,
     ShieldCheck, Eye, Lock, Megaphone, BarChart, Share2, Wrench
@@ -1039,7 +1039,7 @@ export function SiteDetailsPanel({
                             CONNECTION SECURITY (formerly Security Headers)
                         ══════════════════════════════════════════════════════ */}
                         <div id="details-section-headers" className={sectionClass('headers')}>
-                            <SectionTitle icon={ShieldUser}>{t("Connection Security")}</SectionTitle>
+                            <SectionTitle icon={Server}>{t("Connection Security")}</SectionTitle>
                             <SectionDescription>{t("Protections the site uses to keep your connection safe from eavesdropping and tampering.")}</SectionDescription>
 
                             {hasHeaders ? (() => {
