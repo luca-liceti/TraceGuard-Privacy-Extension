@@ -4,13 +4,9 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 ## v1.22.7
 
-**What's new**
-
-- The **Privacy Score** ring is now drawn rather than charted. The filled part fades around its circumference, from a softened tone where it starts to the full colour at its leading end, and at a score of 100 the end of the ring sits over its start with a shadow. A full ring now reads as closed, the way a goal ring does, instead of as a line that happens to meet itself.
-
 **What was fixed**
 
-- The ring is 8 pixels thick instead of 12. It was thick enough to cover the ring behind it, so the track and the score read as one solid shape.
+- The **Privacy Score** ring on Overview now matches the shadcn radial chart it is built from. The coloured bar was 12 pixels thick and completely covered the ring behind it; shadcn draws an 8 pixel bar sitting inside that ring, and the bar is now the same 8 pixels.
 
 ## v1.22.6
 
