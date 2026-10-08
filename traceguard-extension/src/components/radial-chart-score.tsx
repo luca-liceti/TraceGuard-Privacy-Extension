@@ -106,7 +106,7 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
               startAngle={90}
               endAngle={-270}
               innerRadius={80}
-              outerRadius={110}
+              outerRadius={90}
             >
               <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
               <PolarGrid
@@ -114,7 +114,7 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
                 radialLines={false}
                 stroke="none"
                 className="first:fill-muted last:fill-background"
-                polarRadius={[86, 74]}
+                polarRadius={[90, 80]}
               />
               <RadialBar 
                 dataKey="visitors" 

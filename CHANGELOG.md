@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.7
+
+**What was fixed**
+
+- The **Privacy Score** ring on Overview is drawn thinner, matching the shadcn radial chart it is built from. The coloured bar was 12 pixels thick where the shadcn version draws it 4, so it completely covered the ring behind it and the two read as one solid shape.
+
 ## v1.22.6
 
 **What was fixed**
