@@ -7,6 +7,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * The Privacy Score ring is painted with a conic-gradient, whose sweep angle is
+ * driven by this custom property. Gradients do not interpolate on their own, so
+ * the property is registered here as an angle: that is what lets the ring grow
+ * smoothly when the score changes instead of jumping. See radial-chart-score.tsx.
+ */
+@property --score-ring-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 @layer base {
   :root {
     --radius: 0.625rem;
@@ -41,6 +53,19 @@
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
+
+    /*
+     * Privacy Score ring. The filled arc fades from a softened tone at its start
+     * to the full foreground colour at its leading end, so the end of the ring is
+     * the strongest part of it. Built from --primary and --background, so it keeps
+     * working in both themes: the arc strengthens towards its leading end either
+     * way round. The cap shadow separates the leading end where it overlaps the
+     * start once the ring is full.
+     */
+    --score-ring-start: color-mix(in oklch, var(--primary) 55%, var(--background));
+    --score-ring-end: var(--primary);
+    --score-ring-cap-shadow: color-mix(in oklch, var(--foreground) 40%, transparent);
+
     --scrollbar-thumb: oklch(0.556 0 0 / 0.45);
     --scrollbar-thumb-hover: oklch(0.556 0 0 / 0.65);
     --chart-1: oklch(0.646 0.222 41.116);
