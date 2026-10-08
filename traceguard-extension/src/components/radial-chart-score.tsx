@@ -101,12 +101,22 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
             config={chartConfig}
             className="mx-auto aspect-square w-full max-w-[250px]"
           >
+            {/*
+             * Ring geometry follows the shadcn radial-text block, whose grid ring
+             * is polarRadius [90, 80]. The radii below are not the block's 80 / 90
+             * because the two recharts majors place the bar band differently:
+             * recharts 2 (what this project uses) centres the band on innerRadius
+             * and draws it at 0.4 of the inner-to-outer range, while recharts 3
+             * (what shadcn ships) centres it between the two radii at 0.8 of the
+             * range. Both produce the same 8px bar from radius 81 to 89. Moving
+             * this project to recharts 3 means putting 80 / 90 back.
+             */}
             <RadialBarChart
               data={chartData}
               startAngle={90}
               endAngle={-270}
-              innerRadius={80}
-              outerRadius={90}
+              innerRadius={85}
+              outerRadius={105}
             >
               <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
               <PolarGrid

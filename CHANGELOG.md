@@ -6,7 +6,7 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 **What was fixed**
 
-- The **Privacy Score** ring on Overview is drawn thinner, matching the shadcn radial chart it is built from. The coloured bar was 12 pixels thick where the shadcn version draws it 4, so it completely covered the ring behind it and the two read as one solid shape.
+- The **Privacy Score** ring on Overview now matches the shadcn radial chart it is built from. The coloured bar was 12 pixels thick and completely covered the ring behind it; shadcn draws an 8 pixel bar sitting inside that ring, and the bar is now the same 8 pixels.
 
 ## v1.22.6
 
