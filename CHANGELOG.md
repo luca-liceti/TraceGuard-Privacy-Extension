@@ -2,6 +2,14 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.10
+
+**What was fixed**
+
+- The privacy policy now matches the code: it states that the ToS;DR ratings-catalog refresh is on by default for new installs and sends nothing about the sites you visit, while the per-site lookup stays off by default. It previously said both requests were off.
+- Settings, the quick search, and the store listing no longer claim TraceGuard blocks or protects anything. "Allow/Block" is now "Allowed and flagged", "Blocked Sites" is "Flagged sites", and the copy about future tracker blocking is removed, because TraceGuard has no blocking permission. A new test fails the build if that wording returns.
+- The sidebar no longer greets you with "Welcome back" or "Ready to browse safely?". It shows how many sites were analyzed, a plain fact instead of an invitation to return.
+
 ## v1.22.9
 
 **What was fixed**

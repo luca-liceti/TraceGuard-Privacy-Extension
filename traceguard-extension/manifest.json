@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "TraceGuard Privacy Extension",
-    "version": "1.22.9",
-    "description": "Real-time privacy scoring and protection.",
+    "version": "1.22.10",
+    "description": "Real-time privacy scoring and tracking alerts.",
     "icons": {
         "16": "src/assets/icons/icon-16.png",
         "48": "src/assets/icons/icon-48.png",

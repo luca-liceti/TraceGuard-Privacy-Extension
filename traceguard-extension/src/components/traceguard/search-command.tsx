@@ -357,7 +357,7 @@ export function SearchCommand() {
           <CommandGroup heading={t("Domain Lists")}>
             <CommandItem value="allow block whitelist blacklist allowed blocked sites exceptions trusted" onSelect={() => openSettings("domain-lists")}>
               <Globe className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-              <span>{t("Allow/Block")}</span>
+              <span>{t("Allowed and flagged")}</span>
             </CommandItem>
           </CommandGroup>
 

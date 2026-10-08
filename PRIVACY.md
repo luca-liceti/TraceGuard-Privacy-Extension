@@ -38,16 +38,17 @@ in Chrome extension storage. It has no backend and no user accounts.
 
 ## External network requests
 
-TraceGuard is 100% local by default. Both external requests to ToS;DR (`api.tosdr.org`) are
-**off by default**, and each is a separate choice in Settings.
+TraceGuard is local-first. Each external request to ToS;DR (`api.tosdr.org`) is a separate choice
+in Settings. The per-site lookup is **off by default**; the ratings-catalog refresh is **on by
+default for new installs** and runs on the schedule you choose.
 
 - **Look up a site's rating when I visit it.** When enabled, TraceGuard sends the domain of a site
   that is missing from its local data, or whose rating is old, to ToS;DR to look up a
   privacy-policy rating. This reveals that domain to ToS;DR. No other browsing data is included,
   and you can disable it at any time. If it is disabled, missing sites are shown as having no
   rating rather than being looked up.
-- **Keep the ratings database current.** When enabled on a schedule you choose, TraceGuard fetches
-  ToS;DR's public ratings catalog. This request is the same for every user and does **not** include,
+- **Keep the ratings database current.** On by default for new installs, running on a schedule you
+  choose. TraceGuard fetches ToS;DR's public ratings catalog. This request is the same for every user and does **not** include,
 or reveal, the sites you visit. It only updates ratings the extension already knows about.
 
 Ratings returned by either request are cached locally in `tosdr_cache`, a plaintext map of domain to

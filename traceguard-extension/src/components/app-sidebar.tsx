@@ -10,7 +10,7 @@ import {
 import { NavMain } from "@/components/nav-main"
 import { NavFooter } from "@/components/nav-footer"
 import { useLocation } from "react-router-dom"
-import { useUserName } from "@/lib/useStorage"
+import { useUserName, useAppState } from "@/lib/useStorage"
 import {
   Sidebar,
   SidebarContent,
@@ -49,18 +49,11 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
   const userName = useUserName()
-  const [greeting, setGreeting] = React.useState("")
-  
-  React.useEffect(() => {
-    if (userName) {
-      const g = [
-        t("Welcome back, {{name}} 👋", { name: userName }),
-        t("Ready to browse safely, {{name}}?", { name: userName }),
-        t("Good to see you, {{name}}", { name: userName })
-      ]
-      setGreeting(g[Math.floor(Math.random() * g.length)])
-    }
-  }, [userName, t])
+  // A plain fact, not a welcome-back nudge: the project's rules say return
+  // frequency is not a goal, so the sidebar shows what was analyzed instead of
+  // inviting the user to come back.
+  const appState = useAppState()
+  const sitesAnalyzed = appState?.sitesAnalyzed ?? 0
 
   const location = useLocation()
 
@@ -96,9 +89,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
-        {greeting && (
-          <div className="px-4 py-2 text-xs text-muted-foreground font-medium animate-in fade-in slide-in-from-bottom-2 duration-500 group-data-[state=collapsed]:hidden">
-            {greeting}
+        {sitesAnalyzed > 0 && (
+          <div className="px-4 py-2 text-xs text-muted-foreground font-medium group-data-[state=collapsed]:hidden">
+            {t("{{count}} sites analyzed", { count: sitesAnalyzed })}
           </div>
         )}
         <NavFooter user={{ name: userName || t("User"), email: "TraceGuard Vault" }} />

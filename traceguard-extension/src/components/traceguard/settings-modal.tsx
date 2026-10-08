@@ -471,7 +471,7 @@ export function SettingsModal() {
                             </TabsTrigger>
                             <TabsTrigger value="domain-lists" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
                                 <OctagonAlert className="h-4 w-4" />
-                                {t("Allow/Block")}
+                                {t("Allowed and flagged")}
                             </TabsTrigger>
                             <TabsTrigger value="data" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
                                 <Database className="h-4 w-4" />
@@ -719,15 +719,15 @@ export function SettingsModal() {
                 {/* Domain Lists Tab */}
                 <TabsContent value="domain-lists" className="space-y-6 mt-0">
                     <div>
-                        <h3 className="text-lg font-medium">{t("Allow/Block Sites")}</h3>
+                        <h3 className="text-lg font-medium">{t("Allowed and flagged sites")}</h3>
                         <p className="text-sm text-muted-foreground">{t("Manage explicit exceptions for website tracking and safety")}</p>
                     </div>
                     <Separator />
                     
                     <div className="space-y-6">
                         <div className="space-y-4">
-                            <h4 className="text-sm font-medium">{t("Allowed Sites (Whitelist)")}</h4>
-                            <p className="text-sm text-muted-foreground">{t("These sites will never trigger privacy alerts or be blocked.")}</p>
+                            <h4 className="text-sm font-medium">{t("Allowed sites")}</h4>
+                            <p className="text-sm text-muted-foreground">{t("TraceGuard will not flag personal-info handovers on these sites. It never blocks anything.")}</p>
                             <div className="grid grid-cols-[1fr_auto] items-center gap-2">
                                 <Input 
                                     id="add-whitelist" 
@@ -781,7 +781,7 @@ export function SettingsModal() {
                         <Separator />
 
                         <div className="space-y-4">
-                            <h4 className="text-sm font-medium">{t("Blocked Sites (Blacklist)")}</h4>
+                            <h4 className="text-sm font-medium">{t("Flagged sites")}</h4>
                             <p className="text-sm text-muted-foreground">{t("These sites will always trigger high-risk alerts.")}</p>
                             <div className="grid grid-cols-[1fr_auto] items-center gap-2">
                                 <Input 
@@ -814,7 +814,7 @@ export function SettingsModal() {
                             </div>
                             <div className="rounded-md border max-h-40 overflow-y-auto">
                                 {blacklist.length === 0 ? (
-                                    <div className="p-4 text-center text-sm text-muted-foreground">{t("No blocked sites")}</div>
+                                    <div className="p-4 text-center text-sm text-muted-foreground">{t("No flagged sites")}</div>
                                 ) : (
                                     <ul className="divide-y">
                                         {blacklist.map(domain => (

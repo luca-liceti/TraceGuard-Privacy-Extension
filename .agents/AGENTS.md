@@ -21,6 +21,7 @@
 - Put the information where the decision is made. If it can only appear on a dashboard the user has to open, call it informing rather than changing, and say so in the pull request or the roadmap entry.
 - The default must be safe. Doing nothing must not be a mistake, and no behaviour change may depend on configuration or setup.
 - Every claim must be true. An overstated warning teaches users to dismiss the tool, which kills the real warning later. Never credit TraceGuard with an effect it does not have.
+- User-facing copy must not claim TraceGuard blocks or protects anything: it has no blocking permission (see `PRIVACY.md`). `src/lib/no-overclaim.test.ts` fails the build when a `t("...")` string or either store description claims a block or calls the scoring "protection".
 - Reward actions the user takes, not outcomes they stumble across. Rewarding a "safe site visit" teaches avoidance of risk signals instead of risk, and the user controls the input, so it is farmable.
 - Never suppress a discouraging truth to protect motivation. If the honest picture demotivates, the user is still owed it.
 - Steering must be visible and reversible. An assistant that quietly optimises the user's behaviour is a dark pattern aimed at a good end.
