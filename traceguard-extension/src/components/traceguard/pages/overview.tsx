@@ -144,7 +144,7 @@ export default function OverviewPage() {
     }
 
     return visits
-  }, [detectorLogs, siteCache, t])
+  }, [detectorLogs, siteCache])
 
   // The denominator behind every count on this page, stated as provenance rather
   // than shown as a metric. It lets the reader interpret a small number as "few

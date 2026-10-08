@@ -91,7 +91,7 @@ export function initNetworkMonitor() {
                     blockedReason: null,
                     timestamp: details.timeStamp
                 };
-            } catch (e) {
+            } catch {
                 // Invalid URL, ignore
             }
         },
@@ -142,7 +142,7 @@ export function initNetworkMonitor() {
                             const reqUrl = new URL(details.url);
                             const parsed = parseSetCookie(header.value, reqUrl.hostname);
                             if (parsed) data.setCookies.push(parsed);
-                        } catch (e) {
+                        } catch {
                             // Ignore invalid URLs/headers
                         }
                     }

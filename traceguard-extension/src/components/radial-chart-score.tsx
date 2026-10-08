@@ -99,6 +99,8 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
         ) : (
           <ChartContainer
             config={chartConfig}
+            role="img"
+            aria-label={`${t("Privacy Score")}: ${Math.ceil(currentScore)}/100`}
             className="mx-auto aspect-square w-full max-w-[250px]"
           >
             {/*

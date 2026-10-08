@@ -35,7 +35,6 @@ import { ExportDataDialog } from "@/components/traceguard/export-data-dialog"
 
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -57,6 +56,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useSiteDetails } from "@/components/traceguard/site-details-context"
+import { getColumns } from "./data-table-columns"
 import { SiteRiskData } from "@/lib/types"
 import { DomainGroup } from "@/lib/types"
 
@@ -92,10 +92,6 @@ const REPUTATION_ORDER: Record<string, number> = {
   Suspicious: 1,
   Clean: 2,
   Unknown: 3,
-}
-
-const GRADE_ORDER: Record<string, number> = {
-  F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, 'N/A': -1,
 }
 
 /**
@@ -178,123 +174,7 @@ export function buildDomainGroups(visits: SiteVisit[]): DomainGroup[] {
   return groups
 }
 
-// ── Column definitions (shared for both parent and child rows) ───────────────
-const getColumns = (t: any): ColumnDef<SiteVisit>[] => [
-  {
-    accessorKey: "domain",
-    header: t("Domain"),
-    cell: ({ row }) => <div className="font-medium">{row.getValue("domain")}</div>,
-  },
-  {
-    accessorKey: "timestamp",
-    header: t("Visit Time"),
-    cell: ({ row }) => {
-      return (
-        <div className="text-muted-foreground">
-          {format(new Date(row.getValue("timestamp")), "MMM d, yyyy HH:mm:ss")}
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: "safetyLevel",
-    header: t("Safety Level"),
-    cell: ({ row }) => {
-      const level = row.getValue("safetyLevel") as string
-      return (
-        <Badge variant="secondary" className={`px-2.5 py-0.5 ${getSafetyBgColor(level)} ${getSafetyTextColor(level)}`}>
-          {t(getSafetyLabel(level))}
-        </Badge>
-      )
-    },
-  },
-  {
-    accessorKey: "trackers",
-    header: t("Trackers"),
-    cell: ({ row }) => <div>{row.getValue("trackers")}</div>,
-  },
-  {
-    accessorKey: "cookies",
-    header: t("Cookies"),
-    cell: ({ row }) => <div>{row.getValue("cookies")}</div>,
-  },
-  {
-    accessorKey: "inputs",
-    header: t("PII Risk"),
-    cell: ({ row }) => <div>{t(row.getValue("inputs") as string)}</div>,
-  },
-  {
-    accessorKey: "reputation",
-    header: t("Reputation"),
-    cell: ({ row }) => <div>{t(row.getValue("reputation") as string)}</div>,
-  },
-  {
-    accessorKey: "policy",
-    header: t("Policy"),
-    cell: ({ row }) => {
-      const grade = row.getValue("policy") as string
-      return <div className={`font-semibold ${getGradeTextColor(grade)}`}>{t(grade)}</div>
-    },
-  },
-  {
-    accessorKey: "headersGrade",
-    header: t("Headers"),
-    cell: ({ row }) => {
-      const grade = row.getValue("headersGrade") as string | undefined
-      if (!grade) return <div className="text-muted-foreground text-xs">—</div>
-      return <div className={`font-semibold ${getGradeTextColor(grade)}`}>{grade}</div>
-    },
-  },
-  {
-    accessorKey: "fingerprintingAttempts",
-    header: t("Fingerprinting"),
-    cell: ({ row }) => {
-      const count = row.getValue("fingerprintingAttempts") as number | undefined
-      if (count === undefined || count === null) return <div className="text-muted-foreground text-xs">—</div>
-      if (count === 0) return <div>0</div>
-      return (
-        <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border-transparent">
-          {count}
-        </Badge>
-      )
-    },
-  },
-  {
-    id: "actions",
-    header: t("Actions"),
-    cell: ({ row, table }) => {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-              size="icon"
-            >
-              <MoreVerticalIcon className="size-4" />
-              <span className="sr-only">{t("Open menu")}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem onClick={() => (table.options.meta as any)?.onViewDetails(row.original)}>
-              {t("View details")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => (table.options.meta as any)?.onExportLog(row.original)}>
-              {t("Export")}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              className="text-destructive focus:text-destructive"
-              onClick={() => (table.options.meta as any)?.onDeleteLog(row.original)}
-            >
-              {t("Delete log")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
+// ── Column definitions live in ./data-table-columns ─────────────────────
 
 // ── Grouped row renderer ─────────────────────────────────────────────────────
 

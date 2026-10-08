@@ -55,7 +55,7 @@ export function ChartAreaInteractive({
   timeRange?: string;
   onTimeRangeChange?: (value: string) => void;
 } = {}) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const isMobile = useIsMobile()
   const [internalTimeRange, setInternalTimeRange] = React.useState("1d")
   
@@ -66,7 +66,7 @@ export function ChartAreaInteractive({
     if (isMobile) {
       setTimeRange("7d")
     }
-  }, [isMobile])
+  }, [isMobile, setTimeRange])
 
   const history = useScoreHistory()
   // Stable reference so the memos below only recompute when history changes.
@@ -158,6 +158,8 @@ export function ChartAreaInteractive({
         ) : (
           <ChartContainer
             config={chartConfig}
+            role="img"
+            aria-label={t("Privacy Score History")}
             className="aspect-auto h-64 w-full"
           >
             <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -184,14 +186,14 @@ export function ChartAreaInteractive({
                 minTickGap={32}
                 tickFormatter={(value) => {
                   if (timeRange === '1d') {
-                    return new Date(value).toLocaleTimeString("en-US", {
+                    return new Date(value).toLocaleTimeString(i18n.language, {
                       hour: "numeric",
                       minute: "2-digit"
                     })
                   }
                   const [y, m, d] = value.split('T')[0].split('-');
                   const localDate = new Date(Number(y), Number(m) - 1, Number(d));
-                  return localDate.toLocaleDateString("en-US", {
+                  return localDate.toLocaleDateString(i18n.language, {
                     month: "short",
                     day: "numeric",
                   })

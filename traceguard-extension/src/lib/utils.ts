@@ -161,7 +161,7 @@ export function isLocalUrl(urlString: string): boolean {
         
         // Check hostname for local network/development addresses
         return isLocalAddress(url.hostname);
-    } catch (e) {
+    } catch {
         // If it's an invalid URL, we can't reliably scan it anyway
         return true; 
     }

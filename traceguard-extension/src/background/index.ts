@@ -35,7 +35,7 @@ import { appendRelayedEvents, captureError, installGlobalErrorHandlers, logEvent
 import { z } from 'zod';
 import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './services/reputation';
 import { calculateWSS, calculateTrackingScore, explainWSS } from '../lib/scoring';
-import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, AppState, PIIDetectionEvent } from '../lib/types';
+import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, PIIDetectionEvent } from '../lib/types';
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR, refreshTosdrCatalog } from './tosdr-api';
 import { evaluateNotificationBudget, readShownNotifications } from '../lib/notification-budget';
@@ -1170,7 +1170,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
         try {
             const currentTab = await chrome.tabs.get(sender.tab.id);
             isActiveTab = currentTab.active;
-        } catch (e) {
+        } catch {
             // Tab might be closed
             isActiveTab = false;
         }

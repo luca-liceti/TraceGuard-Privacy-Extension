@@ -2,6 +2,7 @@
 
 - Always recompile the project when finished editing.
 - When dealing with colors, always ensure they respect the light and dark theme toggle.
+- `<html lang>` must follow the selected language. `src/lib/i18n.ts` sets it from a `languageChanged` listener, so every entry point (dashboard, popup, side panel) must import that module, and new code must not set `document.documentElement.lang` itself.
 - When adding or replacing a UI section, it must be grabbed from an existing popular shadcn template.
 - **Actionable Data over Vanity Metrics:** Always prioritize actionable and highly useful information over vanity metrics when designing data visualizations, charts, or dashboards. Ensure every data point provides genuine value or understanding of privacy risks.
 - Never use em dashes in writing: comments, documentation, commit messages, and chat. Use commas, colons, parentheses, or separate sentences instead. This does not apply to product UI strings: translations and dashboard copy may keep em dashes.

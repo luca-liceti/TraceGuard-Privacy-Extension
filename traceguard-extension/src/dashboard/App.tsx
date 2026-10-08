@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { ThemeProvider, useTheme } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toast"
 import Layout from "@/components/traceguard/layout"
 import { useSettings } from "@/lib/useStorage"
@@ -49,13 +49,12 @@ function DeepLinkHandler() {
             setSettingsOpen(true)
             setActiveTab(params.get('openSettings') || 'privacy')
         }
-    }, [location.search])
+    }, [location.search, setActiveTab, setSettingsOpen])
 
     return null
 }
 
 function AppContent() {
-    const { theme } = useTheme()
     const { t } = useTranslation()
 
     useEffect(() => {
@@ -77,8 +76,7 @@ function AppContent() {
         return () => {
             window.removeEventListener('QUOTA_EXCEEDED', handleQuotaExceeded)
             chrome.runtime.onMessage.removeListener(messageListener);
-        }
-    }, [])
+        }    }, [t])
 
     return (
         <>

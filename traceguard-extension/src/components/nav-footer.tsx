@@ -7,7 +7,6 @@ import {
   Bug,
   Check,
   ChevronsUpDown,
-  ExternalLink,
   Globe,
   HelpCircle,
   Lock,

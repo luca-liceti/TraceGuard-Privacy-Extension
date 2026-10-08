@@ -44,6 +44,20 @@ if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
   });
 }
 
+// Keep the document's language tag in step with the selected language. The
+// extension pages ship `<html lang="en">`, so without this a screen reader
+// reads Spanish, French, or German text with an English voice, and the browser
+// cannot pick the right hyphenation or font fallback. This covers every path
+// that changes the language, because they all go through i18next.
+function applyDocumentLanguage(lng: string) {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.lang = lng;
+  }
+}
+
+i18n.on('languageChanged', applyDocumentLanguage);
+applyDocumentLanguage(savedLanguage);
+
 // Intercept changeLanguage to also write to chrome.storage
 const originalChangeLanguage = i18n.changeLanguage.bind(i18n);
 i18n.changeLanguage = async (lng: string, ...args) => {

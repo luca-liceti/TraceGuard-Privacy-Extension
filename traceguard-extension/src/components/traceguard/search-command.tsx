@@ -12,7 +12,6 @@ import {
   Info,
   LayoutGrid,
   Footprints,
-  Settings,
   MonitorSmartphone,
   Lock,
   AlertTriangle,
@@ -24,9 +23,6 @@ import {
   BarChart2,
   HelpCircle,
   Power,
-  Sparkles,
-  ShieldAlert,
-  Zap,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "@/components/ui/toast"
@@ -39,7 +35,6 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-  CommandShortcut,
 } from "@/components/ui/command"
 import {
   AlertDialog,
@@ -202,8 +197,6 @@ export function SearchCommand() {
     if (!sites) return []
     return sites.slice(0, MAX_VISIBLE_SITES)
   }, [sites])
-
-  const hasMoreSites = sites && sites.length > MAX_VISIBLE_SITES
 
   // ── Render helpers ─────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useRef, useState } from "react"
-import { Lock, Key, ShieldUser, AlertCircle, OctagonAlert } from "lucide-react"
+import { Key, ShieldUser, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -92,6 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     chrome.storage.onChanged.addListener(listener)
     return () => chrome.storage.onChanged.removeListener(listener)
+    // Runs once on mount by design. `checkAuth` is re-created every render, so
+    // listing it here would tear down and re-add the storage listener each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
 
@@ -191,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (decoder.decode(decryptedBuffer) !== "TraceGuardValidator") {
           throw new Error("Invalid password")
         }
-      } catch (e) {
+      } catch {
         throw new Error("Invalid password")
       }
 
@@ -206,7 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setPassword("")
       setAuthState("unlocked")
       return true
-    } catch (err: any) {
+    } catch {
       // Progressive backoff: slows down brute-force attempts from the UI.
       // Show a live countdown so the wait never looks like a frozen button.
       failedAttemptsRef.current += 1

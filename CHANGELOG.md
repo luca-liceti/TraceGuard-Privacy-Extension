@@ -2,6 +2,16 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.9
+
+**What was fixed**
+
+- The dashboard, popup, and side panel now set the page's language tag to the language you picked, so a screen reader uses the right voice instead of always reading English. It follows every language change.
+- Chart dates and times use your selected language instead of always the US format, so "Jul 4" reads as the local month name in Spanish, French, and German.
+- The **Privacy Score** ring and the score history chart are now labelled for screen readers, so the score is no longer readable only by looking at the drawing.
+- The dashboard no longer flashes a blank frame before its first paint.
+- List rows use stable keys instead of their position, so a row can no longer briefly show another row's data after a reorder.
+
 ## v1.22.8
 
 **What was fixed**

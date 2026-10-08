@@ -71,7 +71,6 @@ import {
     Copy,
     Download,
     Upload,
-    List,
     ShieldUser,
     OctagonAlert
 } from "lucide-react"
@@ -134,7 +133,6 @@ function SettingItem({
     controlId?: string
     children: React.ReactNode
 }) {
-    const { t } = useTranslation();
     return (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
             <div className="space-y-0.5 flex-1 min-w-0">

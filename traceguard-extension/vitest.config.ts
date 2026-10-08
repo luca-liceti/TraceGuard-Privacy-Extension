@@ -43,15 +43,15 @@ export default defineConfig({
             exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/vite-env.d.ts'],
             // Floor, not a target: CI fails if coverage regresses below today's
             // level. These sit just under the measured values for the widened
-            // scope (statements 40.4, branches 28.9, functions 28.4, lines 41.2),
+            // scope (statements 46.0, branches 32.6, functions 35.8, lines 47.1),
             // which are much lower than the old lib-only number because the
             // background worker, the content script, and the UI components are
             // now measured too. Raise them as those paths gain tests.
             thresholds: {
-                statements: 39,
-                branches: 27,
-                functions: 27,
-                lines: 40,
+                statements: 45,
+                branches: 31,
+                functions: 34,
+                lines: 46,
             },
         },
     },

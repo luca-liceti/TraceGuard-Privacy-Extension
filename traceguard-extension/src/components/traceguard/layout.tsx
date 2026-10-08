@@ -31,7 +31,6 @@ import type { ReactNode } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
 import {
   SidebarInset,
   SidebarProvider,
@@ -44,19 +43,14 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   // Auto-collapse the sidebar when the window gets too small, expand when it
   // returns to a normal size (see useAutoCollapseSidebar).
   const [sidebarOpen, setSidebarOpen] = useAutoCollapseSidebar()
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
-
+  // next-themes puts the `dark` class on <html>, so the theme is already applied
+  // before this renders; the extra class below is a belt-and-braces match for the
+  // shadcn template. No mount guard is needed: this is a Vite SPA with no
+  // server render, so gating on `mounted` only added a blank first frame.
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <div className={`flex min-h-screen w-full ${theme === "dark" ? "dark" : ""}`}>

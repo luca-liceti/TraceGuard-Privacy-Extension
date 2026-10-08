@@ -102,7 +102,6 @@ const getWssConfig = (t: any): ChartConfig => ({
 // ─── Small helper components ────────────────────────────────────────────────
 
 function EmptyState({ icon: Icon, title, description }: { icon: React.ComponentType<{ className?: string }>; title: string; description: string }) {
-    const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
       <div className="p-3 rounded-full bg-muted/50">
@@ -142,7 +141,7 @@ export default function RankingsPage() {
     const totalPii = piiLogs.length
 
     const avgWSS = sites.length > 0
-      ? Math.round(sites.reduce((sum, [_, d]) => sum + d.wss, 0) / sites.length)
+      ? Math.round(sites.reduce((sum, [, d]) => sum + d.wss, 0) / sites.length)
       : null
 
     // Today vs yesterday for threats
@@ -205,7 +204,7 @@ export default function RankingsPage() {
     const sorted = Object.entries(domainCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-    const total = sorted.reduce((s, [_, c]) => s + c, 0)
+    const total = sorted.reduce((s, [, c]) => s + c, 0)
     return sorted.map(([domain, count]) => ({
       domain,
       count,
@@ -221,7 +220,7 @@ export default function RankingsPage() {
     }
     logs.forEach(log => { if (counts[log.detector] !== undefined) counts[log.detector]++ })
     return Object.entries(counts)
-      .filter(([_, count]) => count > 0)
+      .filter(([, count]) => count > 0)
       .map(([name, value]) => ({ name, value, fill: DETECTOR_COLORS[name] }))
   }, [logs])
 
@@ -264,7 +263,7 @@ export default function RankingsPage() {
   // ── 6. WSS Distribution ───────────────────────────────────────────────
   const wssData = useMemo(() => {
     const bins = { Critical: 0, Poor: 0, Fair: 0, Good: 0, Excellent: 0 }
-    sites.forEach(([_, data]) => {
+    sites.forEach(([, data]) => {
       const score = data.wss
       if (score < 20) bins.Critical++
       else if (score < 40) bins.Poor++

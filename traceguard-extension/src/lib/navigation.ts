@@ -37,13 +37,7 @@ import {
     Settings,
     HelpCircle,
     LayoutGrid,
-    FileText,
-    ListChecks,
-    Globe,
-    BarChart2,
-    Eye,
     ShieldUser,
-    Link as LinkIcon,
     Database,
     type LucideIcon,
 } from "lucide-react"

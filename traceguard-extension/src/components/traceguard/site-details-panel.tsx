@@ -6,7 +6,6 @@ import {
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetDescription,
 } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -40,8 +39,7 @@ import { format } from "date-fns"
 import {
     CircleCheck, XCircle, AlertTriangle, ThumbsDown, Info, Globe, Server,
     ShieldUser, OctagonAlert, Network, Activity, Cookie, Key,
-    FileText, Fingerprint, ChevronDown, ChevronRight, ShieldAlert,
-    ShieldCheck, Eye, Lock, Megaphone, BarChart, Share2, Wrench
+    FileText, Fingerprint, ChevronDown, ChevronRight, Megaphone, BarChart, Share2, Wrench
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -53,6 +51,7 @@ import {
 import { getSafetyLabel } from "@/lib/risk-utils"
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
+import { SectionTitle, SectionDescription, SummaryStat, InsightRow } from "./site-details-helpers";
 
 // =============================================================================
 // TYPE HELPERS
@@ -77,66 +76,11 @@ interface SiteDetailsPanelProps {
 /**
  * Section keys rendered in this panel (also used as element id suffixes).
  */
-const SECTION_KEYS = ['trackers', 'cookies', 'network', 'inputs', 'fingerprinting', 'reputation', 'policy', 'headers'] as const
-type SectionKey = typeof SECTION_KEYS[number]
+type SectionKey = 'trackers' | 'cookies' | 'network' | 'inputs' | 'fingerprinting' | 'reputation' | 'policy' | 'headers'
 
 // =============================================================================
 // SHARED HELPER COMPONENTS
 // =============================================================================
-
-/** Section title with icon */
-function SectionTitle({ icon: Icon, children }: { icon?: React.ComponentType<any>; children: React.ReactNode }) {
-    const { t } = useTranslation();
-    return (
-        <div className="flex items-center gap-2">
-            {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-            <h3 className="font-semibold text-base">{children}</h3>
-        </div>
-    )
-}
-
-/** Section subtitle / description */
-function SectionDescription({ children }: { children: React.ReactNode }) {
-    const { t } = useTranslation();
-    return (
-        <p className="text-xs text-muted-foreground -mt-1">{children}</p>
-    )
-}
-
-/** Inline summary stat pill */
-function SummaryStat({ label, value, highlight }: { label: string; value: string | number; highlight?: boolean }) {
-    const { t } = useTranslation();
-    return (
-        <span className={highlight ? "font-medium text-foreground" : ""}>
-            <span className="text-muted-foreground">{label}: </span>
-            <span className={`font-semibold ${highlight ? "text-foreground" : "text-muted-foreground"}`}>{value}</span>
-        </span>
-    )
-}
-
-/**
- * A single user-friendly insight row, icon on the left, plain English on the right.
- * This matches the exact visual style of the Privacy Policy table rows.
- */
-function InsightRow({
-    icon: Icon,
-    iconClass,
-    children,
-    faded = false,
-}: {
-    icon: React.ComponentType<any>
-    iconClass: string
-    children: React.ReactNode
-    faded?: boolean
-}) {
-    const { t } = useTranslation();
-    return (
-        <div className={`flex items-start gap-3 px-3 py-2.5 rounded-md border bg-card ${faded ? "opacity-60" : ""}`}>
-            <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${iconClass}`} />
-            <span className="text-sm text-foreground leading-snug">{children}</span>
-        </div>
-    )
-}
 
 /**
  * A collapsible "Show technical details" wrapper with a standardized table inside.
@@ -401,10 +345,10 @@ export function SiteDetailsPanel({
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {items.map((t: TrackerDetail, idx: number) => {
+                                                            {items.map((t: TrackerDetail) => {
                                                                 const isBlocked = isStoppedBeforeLoading(t.status)
                                                                 return (
-                                                                    <TableRow key={idx} className={isBlocked ? "opacity-50" : ""}>
+                                                                    <TableRow key={t.url} className={isBlocked ? "opacity-50" : ""}>
                                                                         <TableCell className="w-8 pl-4 pr-2">
                                                                             {isBlocked
                                                                                 ? <XCircle className="h-4 w-4 text-muted-foreground" />
@@ -520,10 +464,10 @@ export function SiteDetailsPanel({
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {items.map((c: CookieDetail, idx: number) => {
+                                                            {items.map((c: CookieDetail) => {
                                                                 const isBlocked = isStoppedBeforeLoading(c.status)
                                                                 return (
-                                                                    <TableRow key={idx} className={isBlocked ? "opacity-50" : ""}>
+                                                                    <TableRow key={`${c.domain}-${c.name}`} className={isBlocked ? "opacity-50" : ""}>
                                                                         <TableCell className="w-8 pl-4 pr-2">
                                                                             {isBlocked
                                                                                 ? <XCircle className="h-4 w-4 text-muted-foreground" />
@@ -656,7 +600,7 @@ export function SiteDetailsPanel({
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {networkTableItems.map((r: NetworkRequestDetail, idx: number) => {
+                                                            {networkTableItems.map((r: NetworkRequestDetail) => {
                                                                 const isBlocked = isStoppedBeforeLoading(r.status)
                                                                 const rowIcon = r.isTracker
                                                                     ? <AlertTriangle className={`h-4 w-4 ${getIndicatorTextColor('error')}`} />
@@ -667,7 +611,7 @@ export function SiteDetailsPanel({
                                                                     ? `border-destructive/40 bg-destructive/10 ${getIndicatorTextColor('error')}`
                                                                     : "border-yellow-500/40 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
                                                                 return (
-                                                                    <TableRow key={idx} className={isBlocked ? "opacity-50" : ""}>
+                                                                    <TableRow key={r.url} className={isBlocked ? "opacity-50" : ""}>
                                                                         <TableCell className="w-8 pl-4 pr-2">{rowIcon}</TableCell>
                                                                         <TableCell>
                                                                             <div className="font-medium text-xs text-foreground">{r.domain}</div>
@@ -723,7 +667,7 @@ export function SiteDetailsPanel({
                                                 <InsightRow icon={CircleCheck} iconClass={getIndicatorTextColor('success')}>
                                                     {t("No personal data fields detected on this page.")}</InsightRow>
                                             )}
-                                            {types.map((type: string, idx: number) => {
+                                            {types.map((type: string) => {
                                                 const typeLabels: Record<string, string> = {
                                                     password: t("password — your login credential"),
                                                     email: t("email address"),
@@ -738,7 +682,7 @@ export function SiteDetailsPanel({
                                                 }
                                                 const label = typeLabels[type.toLowerCase()] ?? type
                                                 return (
-                                                    <InsightRow key={idx} icon={AlertTriangle} iconClass={getIndicatorTextColor('warning')}>
+                                                    <InsightRow key={type} icon={AlertTriangle} iconClass={getIndicatorTextColor('warning')}>
                                                         {t("This page asks for your")}{" "}<strong>{label}</strong>
                                                     </InsightRow>
                                                 )
@@ -779,7 +723,7 @@ export function SiteDetailsPanel({
                                         </div>
 
                                         <div className="flex flex-col gap-1.5">
-                                            {items.map((f: FingerprintingDetail, idx: number) => {
+                                            {items.map((f: FingerprintingDetail) => {
                                                 const desc = getFingerprintDescriptions(t)[f.technique] ?? f.description
                                                 const riskLabel = getFingerprintRiskLabels(t)[f.risk] ?? f.risk
                                                 const iconClass = f.risk === 'high'
@@ -789,7 +733,7 @@ export function SiteDetailsPanel({
                                                         : "text-muted-foreground"
                                                 const org = f.organization ? ` (${f.organization})` : ""
                                                 return (
-                                                    <InsightRow key={idx} icon={AlertTriangle} iconClass={iconClass}>
+                                                    <InsightRow key={f.technique} icon={AlertTriangle} iconClass={iconClass}>
                                                         <strong className="capitalize">{f.technique} {t("fingerprinting")}</strong>{org} — {desc}
                                                         {" "}<span className="text-muted-foreground text-xs">· {riskLabel}</span>
                                                     </InsightRow>
@@ -810,7 +754,7 @@ export function SiteDetailsPanel({
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                        {items.map((f: FingerprintingDetail, idx: number) => {
+                                                        {items.map((f: FingerprintingDetail) => {
                                                             const riskCfg = getRiskLevelBadge(f.risk)
                                                             const riskIcon = f.risk === 'high'
                                                                 ? <AlertTriangle className={`h-4 w-4 ${getIndicatorTextColor('error')}`} />
@@ -818,7 +762,7 @@ export function SiteDetailsPanel({
                                                                     ? <AlertTriangle className={`h-4 w-4 ${getIndicatorTextColor('warning')}`} />
                                                                     : <Info className="h-4 w-4 text-muted-foreground" />
                                                             return (
-                                                                <TableRow key={idx}>
+                                                                <TableRow key={`${f.scriptDomain ?? ''}-${f.technique}`}>
                                                                     <TableCell className="w-8 pl-4 pr-2">{riskIcon}</TableCell>
                                                                     <TableCell>
                                                                         <div className="font-medium text-xs text-foreground capitalize">{f.technique}</div>
@@ -885,8 +829,8 @@ export function SiteDetailsPanel({
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {checks.map((check: string, idx: number) => (
-                                                                <TableRow key={idx}>
+                                                            {checks.map((check: string) => (
+                                                                <TableRow key={check}>
                                                                     <TableCell className="w-8 pl-4 pr-2">
                                                                         {isClean
                                                                             ? <CircleCheck className={`h-4 w-4 ${getIndicatorTextColor('success')}`} />
@@ -993,7 +937,7 @@ export function SiteDetailsPanel({
                                                                 else if (p.classification === 'bad') { Icon = ThumbsDown; iconClass = getSafetyTextColor('poor') }
                                                                 else if (p.classification === 'good') { Icon = CircleCheck; iconClass = getSafetyTextColor('excellent') }
                                                                 return (
-                                                                    <TableRow key={idx}>
+                                                                    <TableRow key={p.title ?? idx}>
                                                                         <TableCell className="w-10 pl-4 pr-2">
                                                                             <Icon className={`h-4 w-4 ${iconClass}`} />
                                                                         </TableCell>
@@ -1016,7 +960,7 @@ export function SiteDetailsPanel({
                                                     const safeUrl = sanitizeURL(doc?.url);
                                                     if (!safeUrl) return null;
                                                     return (
-                                                        <a key={idx} href={safeUrl} target="_blank" rel="noopener noreferrer">
+                                                        <a key={doc?.url ?? idx} href={safeUrl} target="_blank" rel="noopener noreferrer">
                                                             <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer text-xs font-normal">
                                                                 {doc.name}
                                                             </Badge>
@@ -1096,10 +1040,10 @@ export function SiteDetailsPanel({
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {items.map((h: HeaderAnalysisDetail, idx: number) => {
+                                                            {items.map((h: HeaderAnalysisDetail) => {
                                                                 const ratingBadge = getHeaderRatingBadge(h.rating)
                                                                 return (
-                                                                    <TableRow key={idx}>
+                                                                    <TableRow key={h.header}>
                                                                         <TableCell className="w-8 pl-4 pr-2">
                                                                             {h.present
                                                                                 ? <CircleCheck className={`h-4 w-4 ${getIndicatorTextColor('success')}`} />

@@ -4,8 +4,6 @@ import {
   LayoutGrid,
   BarChart2,
   Footprints,
-  ShieldAlert,
-  SlidersHorizontal,
   ShieldUser,
 } from "lucide-react"
 
@@ -13,7 +11,6 @@ import { NavMain } from "@/components/nav-main"
 import { NavFooter } from "@/components/nav-footer"
 import { useLocation } from "react-router-dom"
 import { useUserName } from "@/lib/useStorage"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
@@ -63,7 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ]
       setGreeting(g[Math.floor(Math.random() * g.length)])
     }
-  }, [userName])
+  }, [userName, t])
 
   const location = useLocation()
 

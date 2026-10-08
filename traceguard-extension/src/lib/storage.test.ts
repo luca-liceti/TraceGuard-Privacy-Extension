@@ -15,7 +15,7 @@
  * =============================================================================
  */
 /// <reference types="node" />
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as nodeCrypto from 'node:crypto';
 
 // Polyfill web crypto for Node/Vitest environment

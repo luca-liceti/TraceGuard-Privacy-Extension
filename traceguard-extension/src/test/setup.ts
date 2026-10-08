@@ -49,7 +49,7 @@ const _onChangedListeners: ((...args: any[]) => void)[] = [];
 
 function notifyChanged(changes: Record<string, chrome.storage.StorageChange>, area: string) {
     for (const listener of _onChangedListeners) {
-        try { listener(changes, area); } catch (_) { /* ignore */ }
+        try { listener(changes, area); } catch { /* ignore */ }
     }
 }
 
