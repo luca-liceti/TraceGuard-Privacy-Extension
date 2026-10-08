@@ -8,11 +8,27 @@
         content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none';">
     <title>TraceGuard Popup</title>
     <style>
+        html,
         body {
             width: 360px;
-            min-height: 480px;
             margin: 0;
             padding: 0;
+        }
+
+        /*
+         * Chromium clamps action popups to 800x600, and viewport units inside
+         * a popup are measured against the popup itself: a 100vh layout can
+         * lock the popup to its first-paint size and leave the lower half of
+         * the UI unreachable. Pin the document to the allowed height instead,
+         * and let the app's own scroll region handle the overflow.
+         */
+        body {
+            height: 600px;
+            overflow: hidden;
+        }
+
+        #root {
+            height: 100%;
         }
     </style>
 </head>

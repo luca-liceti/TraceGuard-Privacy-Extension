@@ -4,6 +4,7 @@ import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "react-i18next"
 import { Toaster } from "@/components/ui/toast"
+import { cn } from "@/lib/utils"
 
 import { ScoreRing } from "@/components/sidepanel/score-ring"
 import { SiteDetails } from "@/components/sidepanel/site-details"
@@ -30,17 +31,32 @@ function HeaderAuthStatus({ t }: { t: any }) {
     );
 }
 
-function App() {
+interface AppProps {
+    /**
+     * The browser clamps an action popup to 800x600, and `min-h-screen` (100vh)
+     * inside a popup is measured against the popup itself - so the content can
+     * grow past the clamp and push the footer off screen. The popup therefore
+     * needs a definite height with its own scroll region. The side panel is a
+     * real viewport, where `min-h-screen` behaves as intended.
+     */
+    variant?: 'sidepanel' | 'popup';
+}
+
+function App({ variant = 'sidepanel' }: AppProps) {
     const { t } = useTranslation();
     const state = useAppState();
     const currentSite = useCurrentSite();
+    const isPopup = variant === 'popup';
 
     if (!state) {
         return <div className="p-4 text-foreground bg-background">{t("Loading TraceGuard...")}</div>;
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-4 flex flex-col">
+        <div className={cn(
+            "bg-background text-foreground p-4 flex flex-col",
+            isPopup ? "h-full overflow-hidden" : "min-h-screen"
+        )}>
                 <Toaster />
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
@@ -54,9 +70,9 @@ function App() {
                     <HeaderAuthStatus t={t} />
                 </div>
 
-                <div className="space-y-3 flex-1 overflow-y-auto">
+                <div className="space-y-3 flex-1 min-h-0 overflow-y-auto">
                     <ScoreRing ups={state.ups} />
-                    <SiteDetails currentSite={currentSite} />
+                    <SiteDetails currentSite={currentSite} variant={isPopup ? 'popup' : 'sidepanel'} />
                 </div>
                 <Actions />
             </div>

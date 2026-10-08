@@ -66,9 +66,17 @@ const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any
 
 interface SiteDetailsProps {
     currentSite: SiteRiskData | undefined;
+    /**
+     * The popup pins the document to a fixed height, so it owns a single scroll
+     * region. A fixed-height nested scroll area inside the policy accordion
+     * would swallow the wheel and leave the rest of the list unreachable, so the
+     * popup renders the points inline instead. The side panel is a real
+     * viewport, where a capped list keeps the card compact.
+     */
+    variant?: 'sidepanel' | 'popup';
 }
 
-export function SiteDetails({ currentSite }: SiteDetailsProps) {
+export function SiteDetails({ currentSite, variant = 'sidepanel' }: SiteDetailsProps) {
     const { t } = useTranslation();
     const currentSiteWSS = currentSite?.wss ?? null;
 
@@ -87,6 +95,34 @@ export function SiteDetails({ currentSite }: SiteDetailsProps) {
             </Card>
         );
     }
+
+    // ToS;DR points, worst classification first.
+    const policyPoints = currentSite.detectionDetails?.policy?.points ?? [];
+    const policyPointsList = [...policyPoints]
+        .sort((a: any, b: any) => {
+            const order: Record<string, number> = { blocker: 1, bad: 2, neutral: 3, good: 4 };
+            return (order[a.classification] || 5) - (order[b.classification] || 5);
+        })
+        .map((p: any, idx: number) => {
+            let Icon = Info;
+            let iconClass = "text-muted-foreground";
+            if (p.classification === 'blocker') {
+                Icon = XCircle;
+                iconClass = SAFETY_CONFIGS.critical.color;
+            } else if (p.classification === 'bad') {
+                Icon = ThumbsDown;
+                iconClass = SAFETY_CONFIGS.poor.color;
+            } else if (p.classification === 'good') {
+                Icon = CircleCheck;
+                iconClass = SAFETY_CONFIGS.excellent.color;
+            }
+            return (
+                <div key={idx} className="flex gap-2 items-start py-1">
+                    <Icon className={`h-4 w-4 shrink-0 mt-0.5 ${iconClass}`} />
+                    <span className="text-xs">{p.title}</span>
+                </div>
+            );
+        });
 
     return (
         <Card className="overflow-hidden">
@@ -249,32 +285,16 @@ export function SiteDetails({ currentSite }: SiteDetailsProps) {
                                                                 </Button>
                                                             </div>
                                                         )}
-                                                        {currentSite?.detectionDetails?.policy?.points && currentSite.detectionDetails.policy.points.length > 0 && (
-                                                            <ScrollArea className="h-52 mt-2 border-t pt-2 border-muted-foreground/20">
-                                                                {[...currentSite.detectionDetails.policy.points].sort((a: any, b: any) => {
-                                                                    const order: Record<string, number> = { blocker: 1, bad: 2, neutral: 3, good: 4 };
-                                                                    return (order[a.classification] || 5) - (order[b.classification] || 5);
-                                                                }).map((p: any, idx: number) => {
-                                                                    let Icon = Info;
-                                                                    let iconClass = "text-muted-foreground";
-                                                                    if (p.classification === 'blocker') {
-                                                                        Icon = XCircle;
-                                                                        iconClass = SAFETY_CONFIGS.critical.color;
-                                                                    } else if (p.classification === 'bad') {
-                                                                        Icon = ThumbsDown;
-                                                                        iconClass = SAFETY_CONFIGS.poor.color;
-                                                                    } else if (p.classification === 'good') {
-                                                                        Icon = CircleCheck;
-                                                                        iconClass = SAFETY_CONFIGS.excellent.color;
-                                                                    }
-                                                                    return (
-                                                                        <div key={idx} className="flex gap-2 items-start py-1">
-                                                                            <Icon className={`h-4 w-4 shrink-0 mt-0.5 ${iconClass}`} />
-                                                                            <span className="text-xs">{p.title}</span>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </ScrollArea>
+                                                        {policyPoints.length > 0 && (
+                                                            variant === 'popup' ? (
+                                                                <div className="mt-2 border-t pt-2 border-muted-foreground/20">
+                                                                    {policyPointsList}
+                                                                </div>
+                                                            ) : (
+                                                                <ScrollArea className="h-52 mt-2 border-t pt-2 border-muted-foreground/20">
+                                                                    {policyPointsList}
+                                                                </ScrollArea>
+                                                            )
                                                         )}
                                                     </>
                                                 )}

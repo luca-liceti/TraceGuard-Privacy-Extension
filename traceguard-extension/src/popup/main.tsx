@@ -56,7 +56,7 @@ function Root() {
             disableTransitionOnChange
         >
             <AuthProvider>
-                <App />
+                <App variant="popup" />
             </AuthProvider>
         </ThemeProvider>
     );

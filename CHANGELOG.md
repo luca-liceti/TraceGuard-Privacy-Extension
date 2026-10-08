@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.6
+
+**What was fixed**
+
+- The popup scrolls as one region again. The fixed-height list inside the Privacy Policy accordion swallowed the mouse wheel, so the points past the fold could not be reached; the popup now renders them inline and the panel around them scrolls.
+- The popup is pinned to the height Chrome allows for it, so the header and the action buttons stay on screen instead of the content pushing the footer out of view.
+
 ## v1.22.5
 
 **What was fixed**
