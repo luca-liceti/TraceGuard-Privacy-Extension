@@ -25,7 +25,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
     // Record it in the shared diagnostics stream so a React crash shows up in
     // the copied diagnostics bundle, not only in a console nobody is watching.
     captureError('ui', error, 'react_error_boundary', {

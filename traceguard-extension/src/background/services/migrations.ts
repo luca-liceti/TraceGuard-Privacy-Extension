@@ -9,6 +9,8 @@
  * silently skipping the migration.
  */
 
+import { logEvent } from '../../lib/diagnostics';
+
 const CURRENT_SCHEMA_VERSION = 2;
 
 // Ordered upgrade steps, keyed by the version they migrate FROM.
@@ -35,9 +37,10 @@ export async function runDataMigrations(): Promise<void> {
     if (current > CURRENT_SCHEMA_VERSION) {
         // A downgrade (e.g. an older extension build opened newer data) must not
         // run migrations backwards; leave the data untouched.
-        console.warn(
-            `[Migrations] Storage schema v${current} is newer than this build (v${CURRENT_SCHEMA_VERSION}); refusing to downgrade.`
-        );
+        logEvent('storage', 'warn', 'schema_downgrade_refused', 'Storage schema is newer than this build; refusing to downgrade', {
+            stored: current,
+            build: CURRENT_SCHEMA_VERSION,
+        });
         return;
     }
 
@@ -53,7 +56,7 @@ export async function runDataMigrations(): Promise<void> {
         }
 
         if (migrate) {
-            console.log(`[Migrations] Upgrading schema ${from} -> ${to}`);
+            logEvent('storage', 'debug', 'schema_upgrading', 'Upgrading storage schema', { from, to });
             await migrate();
         }
 
@@ -66,5 +69,5 @@ export async function runDataMigrations(): Promise<void> {
     if (current !== initialVersion) {
         await chrome.storage.local.set({ schemaVersion: CURRENT_SCHEMA_VERSION });
     }
-    console.log(`[Migrations] Storage schema is up to date (v${CURRENT_SCHEMA_VERSION}).`);
+    logEvent('storage', 'debug', 'schema_current', 'Storage schema is up to date', { version: CURRENT_SCHEMA_VERSION });
 }

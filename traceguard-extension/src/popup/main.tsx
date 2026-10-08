@@ -8,7 +8,7 @@ import { useSettings } from '@/lib/useStorage'
 import { redirectToDashboardIfFirstRun } from '@/lib/first-run'
 import '@/styles/globals.css'
 import '@/lib/i18n'
-import { installGlobalErrorHandlers, logEvent, setDiagnosticContext, syncDevModeFromSettings } from '@/lib/diagnostics'
+import { captureError, installGlobalErrorHandlers, logEvent, setDiagnosticContext, syncDevModeFromSettings } from '@/lib/diagnostics'
 
 // Capture uncaught errors thrown anywhere in the popup context.
 installGlobalErrorHandlers()
@@ -66,7 +66,7 @@ try {
     const rootElement = document.getElementById('root');
 
     if (!rootElement) {
-        console.error('Failed to find root element');
+        logEvent('popup', 'error', 'popup_root_missing', 'Could not find the popup root element');
     } else {
         ReactDOM.createRoot(rootElement).render(
             <React.StrictMode>
@@ -77,5 +77,5 @@ try {
         )
     }
 } catch (error) {
-    console.error('Error mounting popup:', error);
+    captureError('popup', error, 'popup_mount_failed');
 }

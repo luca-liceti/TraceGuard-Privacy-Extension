@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label"
 import { getGradeTextColor, getSafetyBgColor, getSafetyTextColor } from "@/lib/theme-utils"
 import { getSafetyLabel } from "@/lib/risk-utils"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
+import { captureError } from "@/lib/diagnostics"
 import { storage } from "@/lib/storage"
 import { downloadJson } from "@/lib/export"
 import { ExportDataDialog } from "@/components/traceguard/export-data-dialog"
@@ -811,7 +812,7 @@ export function DataTable({
       )
       toast.add({ type: "success", title: t("Log exported successfully") })
     } catch (e) {
-      console.error(e)
+      captureError('dashboard', e, 'log_export_failed')
       toast.add({ type: "error", title: t("Failed to export log"), priority: "high" })
     }
   }
@@ -826,7 +827,7 @@ export function DataTable({
       }, key)
       toast.add({ type: "success", title: t("Log deleted successfully") })
     } catch (e) {
-      console.error(e)
+      captureError('dashboard', e, 'log_delete_failed')
       toast.add({ type: "error", title: t("Failed to delete log"), priority: "high" })
     }
   }

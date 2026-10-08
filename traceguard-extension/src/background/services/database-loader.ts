@@ -462,5 +462,5 @@ export async function preWarmDatabases(): Promise<void> {
         getEasyPrivacySet(),
         getDisconnectMap(),
     ]);
-    console.log('[DatabaseLoader] All databases pre-warmed and ready');
+    logEvent('background', 'debug', 'databases_prewarmed', 'All databases pre-warmed and ready');
 }

@@ -66,7 +66,7 @@ const SCORE_HISTORY_LIMIT = 5000;
 let telemetryWriteQueue: Promise<void> = Promise.resolve();
 function queueTelemetryWrite(task: () => Promise<void>): Promise<void> {
     const next = telemetryWriteQueue.then(task, task);
-    telemetryWriteQueue = next.catch(error => console.error('[Storage] Queued write failed:', error));
+    telemetryWriteQueue = next.catch(error => captureError('storage', error, 'telemetry_write_failed'));
     return next;
 }
 
@@ -114,7 +114,7 @@ async function createNotification(
         await chrome.storage.session.set({ notificationBudget: decision.next });
     } catch (error) {
         // An OS notification must never prevent the local event from being saved.
-        console.warn('[Notifications] Unable to create OS notification:', error);
+        logEvent('background', 'warn', 'os_notification_failed', 'Unable to create OS notification', { error: String(error) });
     }
 }
 
@@ -197,8 +197,7 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
             await storage.updateState({ currentSite: resolution.next });
         }
     } catch (error) {
-        console.error('[TabTracking] Error syncing site data:', error);
-        recordError('Tab tracking sync failed', String(error));
+        captureError('background', error, 'tab_tracking_sync_failed');
     }
 }
 
@@ -207,7 +206,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         const tab = await chrome.tabs.get(activeInfo.tabId);
         await syncActiveTabSiteData(tab.url);
     } catch (error) {
-        console.error('[TabTracking] Error getting activated tab:', error);
+        logEvent('background', 'warn', 'tab_activation_read_failed', 'Could not read the activated tab', { error: String(error) });
     }
 });
 
@@ -222,14 +221,14 @@ async function refreshPrivacyDatabases() {
         await preWarmDatabases();
     } catch (error) {
         // Bundled/last-known snapshots remain available when an update is offline.
-        console.warn('[DatabaseLoader] Scheduled refresh failed; keeping current data:', error);
+        logEvent('background', 'warn', 'database_refresh_failed', 'Scheduled database refresh failed; keeping current data', { error: String(error) });
     }
 
     // Best-effort signed threat-feed refresh; bundled snapshot remains on failure.
     try {
         await refreshBlacklistFromRemote();
     } catch (error) {
-        console.warn('[Reputation] Threat-feed refresh failed; keeping bundled snapshot:', error);
+        logEvent('background', 'warn', 'threat_feed_refresh_failed', 'Threat-feed refresh failed; keeping bundled snapshot', { error: String(error) });
     }
 
     // Pull ToS;DR ratings that changed since the bundled catalog shipped. This
@@ -239,7 +238,7 @@ async function refreshPrivacyDatabases() {
     try {
         await refreshTosdrCatalog();
     } catch (error) {
-        console.warn('[ToSDR] Catalog sync failed; keeping bundled ratings:', error);
+        logEvent('background', 'warn', 'tosdr_catalog_sync_failed', 'Catalog sync failed; keeping bundled ratings', { error: String(error) });
     }
 }
 
@@ -480,8 +479,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     try {
         await runDataMigrations();
     } catch (error) {
-        console.error('[Migrations] Failed on install:', error);
-        recordError('Data migration failed', String(error));
+        captureError('background', error, 'migration_failed_on_install');
     }
 
     // Load user settings from storage (or use defaults if this is a fresh install)
@@ -517,8 +515,7 @@ chrome.runtime.onStartup.addListener(async () => {
     try {
         await runDataMigrations();
     } catch (error) {
-        console.error('[Migrations] Failed on startup:', error);
-        recordError('Data migration failed', String(error));
+        captureError('background', error, 'migration_failed_on_startup');
     }
 
     // Reload the blacklist in case it was updated
@@ -552,12 +549,12 @@ async function configureDisplayMode(mode: 'popup' | 'sidebar') {
         // Sidebar mode: Disable the popup and make the sidebar open when you click the icon
         await chrome.action.setPopup({ popup: '' });  // Empty string = no popup
         await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-        console.log('Display mode: Sidebar');
+        logEvent('background', 'debug', 'display_mode_set', 'Display mode set to sidebar');
     } else {
         // Popup mode: Enable the popup and disable automatic sidebar opening
         await chrome.action.setPopup({ popup: 'src/popup/index.html' });
         await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
-        console.log('Display mode: Popup');
+        logEvent('background', 'debug', 'display_mode_set', 'Display mode set to popup');
     }
 }
 
@@ -573,7 +570,7 @@ async function syncStateWithCache() {
     try {
         const key = await getCryptoKey();
         if (!key) {
-            console.log('[Sync] Vault locked. Skipping sync.');
+            logEvent('background', 'debug', 'state_sync_skipped', 'State sync skipped: vault locked');
             return;
         }
 
@@ -592,7 +589,7 @@ async function syncStateWithCache() {
         }
         // Failsafe healing for corrupted siteCache
         if (siteCacheData && typeof siteCacheData === 'object' && typeof siteCacheData[0] === 'string') {
-            console.warn('[Sync] Detected corrupted siteCache. Healing...');
+            logEvent('storage', 'warn', 'site_cache_corrupted', 'Detected corrupted siteCache; healing');
             siteCacheData = {};
             await chrome.storage.local.set({ siteCache: await encryptData(key, siteCacheData) });
         }
@@ -604,7 +601,7 @@ async function syncStateWithCache() {
 
         // Sync sitesAnalyzed
         if (sites.length > 0 && state.sitesAnalyzed === 0) {
-            console.log('[Sync] Syncing sitesAnalyzed with siteCache...');
+            logEvent('background', 'debug', 'state_sync_started', 'Syncing sitesAnalyzed from siteCache');
             const totalVisits = sites.reduce((sum, site) => sum + (site.visitCount || 1), 0);
             state.sitesAnalyzed = totalVisits;
             
@@ -613,11 +610,10 @@ async function syncStateWithCache() {
         }
         
         if (updated) {
-            console.log('[Sync] Sync complete.');
+            logEvent('background', 'debug', 'state_sync_complete', 'State sync complete');
         }
     } catch (err) {
-        console.error('[Sync] Error syncing state:', err);
-        recordError('State sync failed', String(err));
+        captureError('storage', err, 'state_sync_failed');
     }
 }
 
@@ -656,7 +652,7 @@ async function armAutoLock(force = false): Promise<void> {
         lastAutoLockArm = now;
         await chrome.alarms.create('autoLockTimer', { delayInMinutes: timeout });
     } catch (err) {
-        console.error('[Lock] Failed to arm auto-lock:', err);
+        captureError('background', err, 'auto_lock_arm_failed');
     }
 }
 
@@ -674,7 +670,7 @@ async function armAutoLock(force = false): Promise<void> {
  */
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (_sender.id !== chrome.runtime.id) {
-        console.warn('[Security] Rejected message from unknown sender:', _sender.id);
+        logEvent('background', 'warn', 'message_rejected_unknown_sender', 'Rejected message from unknown sender', { senderId: _sender.id });
         return;
     }
 
@@ -698,7 +694,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const url = message.url || (message.domain ? `https://${message.domain}` : undefined);
 
         if (!url || isLocalUrl(url)) {
-            console.warn('[Reputation] No URL or domain provided, or is local URL');
+            logEvent('background', 'warn', 'reputation_check_no_url', 'Reputation check requested without a valid URL');
             sendResponse({ isBlacklisted: false, score: 100 });  // Assume safe if no URL given
             return true;
         }
@@ -713,7 +709,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }).catch(error => {
             // Fail CLOSED on uncertainty: match checkReputation's own error
             // contract (50 = uncertain), never report a domain as safe (100).
-            console.warn('Reputation check failed:', error);
+            logEvent('background', 'warn', 'reputation_check_failed', 'Reputation check failed', { error: String(error) });
             sendResponse({ isBlacklisted: false, score: 50, checks: ['Reputation check failed — score uncertain'] });
         });
 
@@ -728,7 +724,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const url = message.url;
 
         if (!url) {
-            console.warn('[ToS;DR] No URL provided');
+            logEvent('background', 'warn', 'tosdr_check_no_url', 'ToS;DR check requested without a URL');
             sendResponse({ found: false, score: 0, source: 'fallback' });
             return true;
         }
@@ -737,7 +733,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         checkTosDR(url).then(result => {
             sendResponse(result);
         }).catch(error => {
-            console.warn('[ToS;DR] Check failed:', error);
+            logEvent('background', 'warn', 'tosdr_check_failed', 'ToS;DR check failed', { error: String(error) });
             sendResponse({ found: false, score: 0, source: 'fallback' });
         });
 
@@ -881,7 +877,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         ])
             .then(() => sendResponse({ success: true }))
             .catch((error) => {
-                console.error('Failed to update display mode:', error);
+                captureError('background', error, 'display_mode_update_failed');
                 sendResponse({ success: false, error: error.message });
             });
         return true;
@@ -950,13 +946,13 @@ const SettingsChangedSchema = z.object({
 async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSender) {
     const parsed = PageAnalysisSchema.safeParse(message);
     if (!parsed.success) {
-        console.warn('[handlePageAnalysis] Invalid message payload:', parsed.error);
+        logEvent('content', 'warn', 'page_analysis_invalid', 'Rejected a malformed page analysis payload', { issues: parsed.error.issues.map(issue => issue.path.join('.')).join(', ') });
         return;
     }
     const validMessage = parsed.data;
 
     if (!validMessage.url || isLocalUrl(validMessage.url)) {
-        console.warn('[handlePageAnalysis] URL missing or is local URL:', validMessage.url);
+        logEvent('content', 'warn', 'page_analysis_local_url', 'Page analysis skipped for a missing or local URL');
         return;
     }
     message = validMessage;
@@ -1018,7 +1014,7 @@ async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSe
                     const radar = await lookupTrackerDomain(new URL(f.scriptUrl).hostname);
                     org = radar?.owner || radar?.displayName || null;
                 } catch (e) {
-                    console.warn('[Enrichment] Fingerprint script lookup failed:', e);
+                    logEvent('enrich', 'warn', 'fingerprint_lookup_failed', 'Tracker lookup for a fingerprint script failed', { error: String(e) });
                 }
             }
             return {
@@ -2000,7 +1996,7 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
 // Auto-lock timer listener
 chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'autoLockTimer') {
-        console.log('[Lock] Auto-lock timer expired. Locking vault.');
+        logEvent('background', 'debug', 'auto_lock_fired', 'Auto-lock timer expired; locking vault');
         await chrome.storage.session.remove('cryptoKeyHex');
     } else if (alarm.name === DATABASE_REFRESH_ALARM) {
         await refreshPrivacyDatabases();

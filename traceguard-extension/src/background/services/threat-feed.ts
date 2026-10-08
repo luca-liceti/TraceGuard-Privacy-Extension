@@ -81,7 +81,7 @@ async function verifySignature(canonical: string, signatureB64: string, publicKe
         const data = new TextEncoder().encode(canonical);
         return await crypto.subtle.verify({ name: 'Ed25519' }, key, signature, data);
     } catch (err) {
-        console.warn('[threat-feed] Signature verification error:', err);
+        logEvent('background', 'warn', 'threat_feed_signature_error', 'Threat-feed signature verification error', { error: String(err) });
         return false;
     }
 }

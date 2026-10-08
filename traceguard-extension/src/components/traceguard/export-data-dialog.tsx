@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 import { exportAllData } from "@/lib/export"
+import { captureError } from "@/lib/diagnostics"
 
 export function ExportDataDialog({
     open,
@@ -58,7 +59,7 @@ export function ExportDataDialog({
                 description: t("Your data has been exported."),
             })
         } catch (e) {
-            console.error(e)
+            captureError('dashboard', e, 'export_failed')
             toast.add({
                 type: "error",
                 title: t("Export Failed"),

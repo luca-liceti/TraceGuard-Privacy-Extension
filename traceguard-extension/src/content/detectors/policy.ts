@@ -88,8 +88,7 @@ function detectLocalPrivacyPolicy(): { found: boolean; links: string[] } {
  * Uses ToS;DR API with fallback to local detection
  */
 export async function detectPrivacyPolicy(): Promise<number> {
-    console.log('[Policy Detector] Starting analysis...');
-    console.log('[Policy] URL:', window.location.href);
+    logEvent('detector', 'debug', 'policy_analysis_started', 'Policy detector started');
 
     // Also check local policy presence
     const localResult = detectLocalPrivacyPolicy();
@@ -101,21 +100,19 @@ export async function detectPrivacyPolicy(): Promise<number> {
             url: window.location.href
         });
 
-        console.log('[Policy] ToS;DR response:', response);
+        logEvent('detector', 'debug', 'policy_tosdr_response', 'ToS;DR response received', { found: response?.found === true });
 
         // A found service counts even with no grade: ToS;DR may have a policy on
         // file without a verdict, in which case the lookup already scored it as
         // neutral. Requiring a grade here would discard that and fall back.
         if (response && response.found) {
-            console.log('[Policy] ToS;DR API result:', {
-                service: response.serviceName,
-                grade: response.grade,
-                score: response.score,
-                source: 'tosdr'
-            });
-
             // Use the score from ToS;DR (already mapped: A=100, B=80, C=60, D=40, E=20, unrated=50)
-            console.log(`[Policy] Grade ${response.grade || 'N/A'} → Score ${response.score}`);
+            logEvent('detector', 'debug', 'policy_tosdr_result', 'ToS;DR returned a rating', {
+                service: response.serviceName,
+                grade: response.grade ?? null,
+                score: response.score,
+                source: 'tosdr',
+            });
             return response.score;
         }
 
@@ -133,13 +130,13 @@ export async function detectPrivacyPolicy(): Promise<number> {
     // If no link found, give low score (25)
     const fallbackScore = localResult.found ? 50 : 25;
 
-    console.log('[Policy] Fallback score:', {
+    logEvent('detector', 'debug', 'policy_local_fallback', 'Fell back to local policy detection', {
         hasLocalPolicy: localResult.found,
         linkCount: localResult.links.length,
         score: fallbackScore,
         reason: localResult.found
-            ? 'Privacy link found but no ToS;DR rating → neutral (50)'
-            : 'No privacy link and no ToS;DR rating → low (25)'
+            ? 'privacy link found but not rated, neutral 50'
+            : 'no privacy link and not rated, low 25',
     });
 
     return fallbackScore;

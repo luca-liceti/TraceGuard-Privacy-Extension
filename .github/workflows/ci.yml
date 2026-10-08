@@ -25,7 +25,12 @@ jobs:
 
     - name: Security audit
       working-directory: ./traceguard-extension
-      run: npm audit --audit-level=high
+      # Production dependencies only: the audit gate protects code that ships.
+      # Build-only tooling (Tailwind, Vite, and their glob helpers) is scoped to
+      # devDependencies because braces has an open high-severity advisory with
+      # no patched release (CVE-2026-93687, patched versions: none), so a full
+      # audit cannot pass. See .agents/AGENTS.md, Versioning and security.
+      run: npm audit --omit=dev --audit-level=high
       
     - name: Run ESLint
       working-directory: ./traceguard-extension

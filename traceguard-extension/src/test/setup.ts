@@ -117,6 +117,7 @@ const chromeMock = {
                 }
                 notifyChanged(changes, 'session');
             }),
+            setAccessLevel: vi.fn().mockResolvedValue(undefined),
         },
         onChanged: {
             addListener: vi.fn((listener: (...args: any[]) => void) => {
@@ -129,11 +130,14 @@ const chromeMock = {
         },
     },
     runtime: {
+        id: 'test-id',
         sendMessage: vi.fn().mockResolvedValue({}),
         onMessage: {
             addListener: vi.fn(),
             removeListener: vi.fn(),
         },
+        onInstalled: { addListener: vi.fn(), removeListener: vi.fn() },
+        onStartup: { addListener: vi.fn(), removeListener: vi.fn() },
         getURL: vi.fn((path: string) => `chrome-extension://test-id/${path}`),
         getManifest: vi.fn(() => ({ version: '1.0.0' })),
     },
@@ -142,10 +146,15 @@ const chromeMock = {
         sendMessage: vi.fn().mockResolvedValue({}),
         get: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockResolvedValue({}),
+        update: vi.fn().mockResolvedValue({}),
+        onActivated: { addListener: vi.fn(), removeListener: vi.fn() },
+        onUpdated: { addListener: vi.fn(), removeListener: vi.fn() },
+        onRemoved: { addListener: vi.fn(), removeListener: vi.fn() },
     },
     action: {
         setPopup: vi.fn().mockResolvedValue(undefined),
         setBadgeText: vi.fn().mockResolvedValue(undefined),
+        setBadgeTextColor: vi.fn().mockResolvedValue(undefined),
         setBadgeBackgroundColor: vi.fn().mockResolvedValue(undefined),
     },
     sidePanel: {
@@ -157,6 +166,23 @@ const chromeMock = {
             addListener: vi.fn(),
             removeListener: vi.fn(),
         },
+    },
+    alarms: {
+        create: vi.fn().mockResolvedValue(undefined),
+        clear: vi.fn().mockResolvedValue(true),
+        onAlarm: { addListener: vi.fn(), removeListener: vi.fn() },
+    },
+    webRequest: {
+        onBeforeRequest: { addListener: vi.fn(), removeListener: vi.fn() },
+        onHeadersReceived: { addListener: vi.fn(), removeListener: vi.fn() },
+        onErrorOccurred: { addListener: vi.fn(), removeListener: vi.fn() },
+    },
+    windows: {
+        update: vi.fn().mockResolvedValue({}),
+    },
+    downloads: {
+        download: vi.fn().mockResolvedValue(1),
+        onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
     },
 }
 

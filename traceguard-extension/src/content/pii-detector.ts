@@ -145,7 +145,7 @@ class PIIDetector {
         const domain = window.location.hostname;
         const fieldType = semanticType;
 
-        console.warn(`[TraceGuard] PII detected: ${sensitivity} sensitivity field on ${domain}`);
+        logEvent('detector', 'debug', 'pii_field_detected', 'Sensitive field detected', { fieldType, sensitivity });
 
         // Create detection event. The background worker owns the authoritative
         // site WSS (it holds the vault key and decrypted current-site state);

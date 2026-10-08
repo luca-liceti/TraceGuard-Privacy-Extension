@@ -11,7 +11,7 @@ import { ShieldUser } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import '@/styles/globals.css'
 import '@/lib/i18n'
-import { installGlobalErrorHandlers, logEvent, setDiagnosticContext, syncDevModeFromSettings } from '@/lib/diagnostics'
+import { captureError, installGlobalErrorHandlers, logEvent, setDiagnosticContext, syncDevModeFromSettings } from '@/lib/diagnostics'
 
 // Capture uncaught errors thrown anywhere in the side panel context.
 installGlobalErrorHandlers()
@@ -94,7 +94,7 @@ try {
     const rootElement = document.getElementById('root');
 
     if (!rootElement) {
-        console.error('Failed to find root element');
+        logEvent('sidepanel', 'error', 'sidepanel_root_missing', 'Could not find the side panel root element');
     } else {
         ReactDOM.createRoot(rootElement).render(
             <React.StrictMode>
@@ -105,5 +105,5 @@ try {
         )
     }
 } catch (error) {
-    console.error('Error mounting sidepanel:', error);
+    captureError('sidepanel', error, 'sidepanel_mount_failed');
 }

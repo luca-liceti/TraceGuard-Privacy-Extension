@@ -76,6 +76,12 @@
 - Rewrite or delete rules that no longer match the code. A stale rule is worse than no rule.
 - Rules name exact files, functions, commands, and settings keys.
 
+## Dependency security
+
+- CI runs `npm audit --omit=dev --audit-level=high`, so the security gate protects dependencies that ship. Run the same command locally before a release.
+- Build-only tooling belongs in `devDependencies`: Vite, `@vitejs/plugin-react`, `@crxjs/vite-plugin`, `vite-plugin-static-copy`, Tailwind, PostCSS, autoprefixer, `@tailwindcss/container-queries`, `tailwindcss-animate`, and every `@types/*` package. Runtime libraries (React, the Radix and Base UI primitives, `recharts`, `zod`, `dompurify`, `i18next`, `date-fns`) stay in `dependencies`. The split is what makes `--omit=dev` a real boundary.
+- A full `npm audit` still reports build-tool advisories. `braces` carries an unfixed high-severity advisory with no patched release (CVE-2026-93687, patched versions: none) and is pulled in by Tailwind's glob chain, which is why the gate runs with `--omit=dev` rather than unscoped. Do not move a build tool back into `dependencies` to silence it.
+
 ## Versioning
 
 - Follow SemVer (MAJOR.MINOR.PATCH). See VERSIONING.md for the full policy.

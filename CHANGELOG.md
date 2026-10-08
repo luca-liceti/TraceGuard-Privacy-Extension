@@ -2,6 +2,14 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.22.8
+
+**What was fixed**
+
+- Background-worker failures now reach the diagnostics log instead of a browser console nobody has open. Errors in tab tracking, migrations, auto-lock, the threat feed, the ToS;DR catalog, and the four UI entry points are recorded through the same path as the rest of the extension, so they appear in the **Copy diagnostics** bundle. Deprecation warnings are the only console output left in shipped code.
+- The bundled HTML sanitizer (DOMPurify) is updated past the known DOM XSS advisories, and build-only tooling moved to `devDependencies` so the CI security audit gates on dependencies that actually ship. `npm audit --omit=dev --audit-level=high` reports no vulnerabilities.
+- Added tests that load the background service worker and mount the popup and side panel, raising coverage of those entry points (popup 0 to 78 percent, side panel 0 to 59 percent) and lifting the overall floor.
+
 ## v1.22.7
 
 **What was fixed**

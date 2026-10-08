@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { storage } from "@/lib/storage"
+import { captureError } from "@/lib/diagnostics"
 
 export function ThemeToggle() {
   const { setTheme } = useTheme()
@@ -20,7 +21,7 @@ export function ThemeToggle() {
 
   const handleThemeChange = (theme: "light" | "dark" | "system") => {
     setTheme(theme)
-    storage.updateSettings({ theme }).catch(console.error)
+    storage.updateSettings({ theme }).catch((error) => captureError('dashboard', error, 'theme_save_failed'))
   }
 
   return (

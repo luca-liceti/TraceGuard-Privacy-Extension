@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 import { importAllData, MAX_BACKUP_BYTES } from "@/lib/export"
+import { captureError } from "@/lib/diagnostics"
 
 export function ImportDataDialog({
     open,
@@ -59,7 +60,7 @@ export function ImportDataDialog({
             onOpenChange(false)
             reset()
         } catch (e) {
-            console.error(e)
+            captureError('dashboard', e, 'import_failed')
             setError(e instanceof Error ? e.message : t("Could not import data. Please try again."))
         } finally {
             setImporting(false)
