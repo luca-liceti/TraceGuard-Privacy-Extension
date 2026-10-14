@@ -6,7 +6,7 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 **What was fixed**
 
-- The allow control on **Your Footprint** no longer carries a shield icon, and an allowed site now uses the theme's own text and border colour instead of a fixed green, so it reads correctly in both the light and dark theme.
+- The allow control on **Your Footprint** is now plain text on a site you have not allowed, and a rounded chip reading **Allowed** on one you have, instead of a small boxed button with a shield icon. It uses the theme's own colours, so it is white on the dark theme and black on the light one.
 
 ## v1.23.0
 

@@ -152,15 +152,17 @@ function AllowControl({
                 onToggle(domain)
             }}
             onKeyDown={(event) => event.stopPropagation()}
-            // Allowed is the theme's own foreground, so the text and border are
-            // white on the dark theme and black on the light one. A fixed green
-            // would have ignored the theme toggle. The hover fill comes from the
-            // ghost variant, whose accent is the same value as muted.
+            // Plain text until the site is allowed, so a list of untrusted sites
+            // stays flat instead of carrying a boxed control on every row. Allowed
+            // is a chip filled with the theme's muted colour and written in its
+            // foreground, which is white on the dark theme and black on the light
+            // one. The hover classes are stated for both states so the ghost
+            // variant's own accent hover cannot override them.
             className={cn(
-                "h-6 rounded border px-1.5 text-[10px] font-medium shadow-none",
+                "h-6 px-2 text-[11px] font-medium shadow-none",
                 allowed
-                    ? "border-foreground text-foreground"
-                    : "border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "rounded-full bg-muted px-2.5 text-foreground hover:bg-muted hover:text-foreground"
+                    : "rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
         >
             {allowed ? t("Allowed") : t("Allow")}
