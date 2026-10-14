@@ -270,7 +270,17 @@ Nothing here starts until all three are answered from real data.
 
 1. **Coverage.** What fraction of the sites the user actually visits have no ToS;DR rating? This is
    computable now from `siteCache` against the bundled ToS;DR data. If it is 10 percent this is a
-   small feature. If it is 60 percent it is a real one.
+   small feature. If it is 60 percent it is a real one. Two details decide whether the number is
+   honest, and both are easy to get backwards:
+   - **A rating is a `grade`, not an entry.** The bundled index holds 14,389 domains, but only 5,002
+     carry a grade (A 68, B 318, C 1,625, D 1,875, E 1,116). The other 9,387 carry ToS;DR's
+     placeholder score of 50 with `grade` undefined, which is not a rating. A check written as "is
+     the domain in the index" reports near total coverage and answers the question backwards.
+   - **The join must normalise the same way the runtime does.** `siteCache` is keyed by full hostname
+     (`new URL(message.url).hostname` in `src/background/index.ts`), while the rating lookup is an
+     exact key match on the main domain (`extractMainDomain` in `src/background/tosdr-api.ts`, used by
+     `getTosDRRecord`). Without that step every `www.` and `mail.` subdomain reads as unrated and the
+     gap is badly overstated.
 2. **Impact.** For those sites, how much does the excluded policy weight inflate the WSS? The weight
    is known, so this is arithmetic.
 3. **Calibration, and this decides it.** Run the candidate model against sites that **do** have
