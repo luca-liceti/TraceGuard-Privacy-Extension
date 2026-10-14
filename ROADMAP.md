@@ -282,7 +282,17 @@ Nothing here starts until all three are answered from real data.
      `getTosDRRecord`). Without that step every `www.` and `mail.` subdomain reads as unrated and the
      gap is badly overstated.
 2. **Impact.** For those sites, how much does the excluded policy weight inflate the WSS? The weight
-   is known, so this is arithmetic.
+   is known, so this is arithmetic, and the bound does not need the user's data. Excluding policy
+   rescales the other five detectors by 1 / 0.9, so the reported score becomes their average `A`,
+   while including a real policy score `p` would give `0.9A + 0.1p`. The inflation is therefore
+   `0.1 x (A - p)`:
+   - Zero when the other five average 50, whatever the policy says.
+   - At most 10 points, and only when the other five average 100 and the true policy score is 0.
+   - Realistically 0 to 6. A site whose other signals average 80 is over-credited by 6 points if its
+     real policy score is 20, by 0 if the policy is genuinely neutral, and under-credited by 2 if the
+     policy is excellent (100).
+   So the defect is bounded and modest, which is itself an input to how much Track B is worth.
+   `explainWSS` in `src/lib/scoring.ts` is the reference for these weights.
 3. **Calibration, and this decides it.** Run the candidate model against sites that **do** have
    ToS;DR grades and measure agreement. If it disagrees with human raters where the truth is known,
    it must not ship, whatever Track A does.
