@@ -335,18 +335,22 @@ export default function RankingsPage() {
 
         {/* 1. Activity Volume, full width, AreaChart */}
         <Card className="col-span-1 md:col-span-2 @container/card">
-          <CardHeader className="relative">
-            <CardTitle>{t("Activity Volume")}</CardTitle>
-            <CardDescription>
-              <span className="@[540px]/card:block hidden">
-                {t("Volume of privacy risks detected")}{" "}
-                {timeRange === "1d" ? t("today") : timeRange === "7d" ? t("over the last 7 days") : t("over the last 30 days")}
-              </span>
-              <span className="@[540px]/card:hidden">
-                {timeRange === "1d" ? t("Today") : timeRange === "7d" ? t("Last 7 days") : t("Last 30 days")}
-              </span>
-            </CardDescription>
-            <div className="absolute right-4 top-4">
+          {/* In-flow control, matching the Overview chart: it wraps under the
+              title on a narrow card instead of overlapping it. */}
+          <CardHeader className="flex flex-col gap-3 space-y-0 @[460px]/card:flex-row @[460px]/card:items-start @[460px]/card:justify-between">
+            <div className="min-w-0 space-y-1.5">
+              <CardTitle>{t("Activity Volume")}</CardTitle>
+              <CardDescription>
+                <span className="@[540px]/card:block hidden">
+                  {t("Volume of privacy risks detected")}{" "}
+                  {timeRange === "1d" ? t("today") : timeRange === "7d" ? t("over the last 7 days") : t("over the last 30 days")}
+                </span>
+                <span className="@[540px]/card:hidden">
+                  {timeRange === "1d" ? t("Today") : timeRange === "7d" ? t("Last 7 days") : t("Last 30 days")}
+                </span>
+              </CardDescription>
+            </div>
+            <div className="flex shrink-0">
               <ToggleGroup
                 type="single"
                 value={timeRange}
@@ -359,7 +363,7 @@ export default function RankingsPage() {
                 <ToggleGroupItem value="30d" className="h-8 px-2.5">{t("Last 30 days")}</ToggleGroupItem>
               </ToggleGroup>
               <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="@[767px]/card:hidden flex w-40" aria-label="Select a time range">
+                <SelectTrigger className="@[767px]/card:hidden flex w-full @[460px]/card:w-40" aria-label="Select a time range">
                   <SelectValue placeholder={t("Last 7 days")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -413,7 +417,7 @@ export default function RankingsPage() {
                       </span>
                       {/* Domain. The label opens the site details panel;
                           the bar and counts stay as they are. */}
-                      <div className="flex items-center gap-2 w-40 flex-shrink-0">
+                      <div className="flex items-center gap-2 w-24 flex-shrink-0 sm:w-40">
                         <button
                           type="button"
                           title={entry.domain}

@@ -433,7 +433,12 @@ export function SettingsModal() {
                 }}
             >
             <DialogContent
-                className="max-w-4xl p-0 overflow-hidden gap-0 bg-background border shadow-2xl h-[600px] flex flex-col"
+                // Height is capped to the viewport so a short window (a laptop with
+                // devtools open, landscape phone) never clips the dialog's top and
+                // bottom. The base 600px is the preferred height; max-h wins when the
+                // viewport is shorter. Width keeps a small margin on narrow screens
+                // instead of spanning edge to edge.
+                className="max-w-4xl w-[calc(100vw-1rem)] sm:w-full h-[600px] max-h-[calc(100dvh-1rem)] p-0 overflow-hidden gap-0 bg-background border shadow-2xl flex flex-col"
                 onEscapeKeyDown={(e) => {
                     if (hasChanges) {
                         e.preventDefault()
@@ -450,42 +455,46 @@ export function SettingsModal() {
                 <DialogTitle className="sr-only">{t("Settings")}</DialogTitle>
                 <DialogDescription className="sr-only">{t("Configure TraceGuard preferences")}</DialogDescription>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 h-[600px] w-full">
-                    {/* Sidebar Navigation */}
-                    <div className="w-[240px] flex flex-col border-r bg-muted/10 h-full">
-                        <div className="p-4 py-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 min-h-0 w-full flex-col sm:flex-row">
+                    {/* Navigation. A fixed 240px column leaves no room for the
+                        content on a phone, so below `sm` it becomes a compact
+                        icon row across the top and the labels return as the
+                        column does. Each trigger keeps an aria-label because the
+                        visible text is hidden on the narrow layout. */}
+                    <div className="flex w-full shrink-0 flex-col border-b bg-muted/10 sm:h-full sm:w-[240px] sm:border-b-0 sm:border-r">
+                        <div className="p-4 py-4 sm:py-6">
                             <h2 className="text-xl font-bold tracking-tight">{t("Settings")}</h2>
                         </div>
-                        <TabsList className="flex flex-col h-full w-full justify-start items-stretch space-y-1 bg-transparent p-3 pt-0">
-                            <TabsTrigger value="appearance" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                        <TabsList className="flex h-auto w-full flex-row items-stretch justify-start gap-1 bg-transparent p-3 pt-0 sm:h-full sm:flex-col sm:gap-0 sm:space-y-1">
+                            <TabsTrigger value="appearance" aria-label={t("Appearance")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
                                 <Palette className="h-4 w-4" />
-                                {t("Appearance")}
+                                <span className="hidden sm:inline">{t("Appearance")}</span>
                             </TabsTrigger>
-                            <TabsTrigger value="privacy" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                            <TabsTrigger value="privacy" aria-label={t("Privacy")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
                                 <ShieldUser className="h-4 w-4" />
-                                {t("Privacy")}
+                                <span className="hidden sm:inline">{t("Privacy")}</span>
                             </TabsTrigger>
-                            <TabsTrigger value="notifications" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                            <TabsTrigger value="notifications" aria-label={t("Notifications")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
                                 <Bell className="h-4 w-4" />
-                                {t("Notifications")}
+                                <span className="hidden sm:inline">{t("Notifications")}</span>
                             </TabsTrigger>
-                            <TabsTrigger value="domain-lists" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                            <TabsTrigger value="domain-lists" aria-label={t("Allowed and flagged")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
                                 <OctagonAlert className="h-4 w-4" />
-                                {t("Allowed and flagged")}
+                                <span className="hidden sm:inline">{t("Allowed and flagged")}</span>
                             </TabsTrigger>
-                            <TabsTrigger value="data" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                            <TabsTrigger value="data" aria-label={t("Data")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
                                 <Database className="h-4 w-4" />
-                                {t("Data")}
+                                <span className="hidden sm:inline">{t("Data")}</span>
                             </TabsTrigger>
-                            <TabsTrigger value="about" className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                            <TabsTrigger value="about" aria-label={t("About")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
                                 <Info className="h-4 w-4" />
-                                {t("About")}
+                                <span className="hidden sm:inline">{t("About")}</span>
                             </TabsTrigger>
                         </TabsList>
                     </div>
 
                     {/* Content Area */}
-                    <div className="flex-1 flex flex-col relative h-full min-h-0 overflow-hidden">
+                    <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
                         {/* Save Changes Bar - At Top */}
                         {hasChanges && (
                             <div className="border-b border-primary/50 bg-background/95 backdrop-blur pl-6 pr-14 py-3 z-10 shrink-0">
@@ -508,7 +517,7 @@ export function SettingsModal() {
                             </div>
                         )}
 
-                        <div className="flex-1 overflow-y-auto p-6 scroll-smooth space-y-6">
+                        <div className="flex-1 overflow-y-auto p-4 scroll-smooth space-y-6 sm:p-6">
 
                 {/* Appearance Tab */}
                 <TabsContent value="appearance" className="space-y-6 mt-0">

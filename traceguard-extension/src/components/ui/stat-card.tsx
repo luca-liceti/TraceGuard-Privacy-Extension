@@ -137,7 +137,10 @@ export function StatCard({
 
                         {/* Value with optional trend */}
                         <div className="flex items-baseline gap-2">
-                            <span className={cn("text-2xl font-bold", valueColor)}>
+                            {/* min-w-0 + break-words: a long value (a domain is the
+                                common case) wraps inside the card instead of
+                                pushing past its edge on a narrow screen. */}
+                            <span className={cn("min-w-0 break-words text-2xl font-bold", valueColor)}>
                                 {value}
                             </span>
 

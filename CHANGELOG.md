@@ -8,6 +8,9 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 - The allow control on **Your Footprint** is a proper button in both states: outlined while a site is untrusted, filled while it is allowed, and red under the pointer on an allowed site, so the click that takes it back is visible before you make it. It uses the theme's own colours, so it stays readable in the light and dark theme.
 - The **Add** buttons under Settings, **Allowed and flagged** now use the outlined style of the **Export** button on Overview, instead of a solid block that was white on the dark theme and black on the light one.
+- Settings no longer runs off a short window. The panel is capped to the height of the window instead of a fixed 600 pixels, so its title and buttons stay on screen. On a phone the six tabs become a row of icons and the content gets the full width, instead of being squeezed into the small strip left beside a 240 pixel column.
+- The time-range control on the Overview and Rankings charts no longer lands on top of the card title in a narrow window. It sits beside the title when there is room, and drops below it when there is not.
+- A long value in a stat card now wraps inside the card. A site name was the usual one to spill past the card's edge and add a sideways scrollbar to the page. The **Top Offenders** rows also give the site name less width on a phone, so the bar and the counts keep their room.
 
 ## v1.23.0
 

@@ -91,17 +91,23 @@ export function ChartAreaInteractive({
       </Card>
     }>
     <Card className="@container/card h-full">
-      <CardHeader className="relative">
-        <CardTitle>{t("Privacy Score History")}</CardTitle>
-        <CardDescription>
-          <span className="@[540px]/card:block hidden">
-            {t('Score for')} {timeRange === '1d' ? t('today') : timeRange === '7d' ? t('the last 7 days') : t('the last 30 days')}
-          </span>
-          <span className="@[540px]/card:hidden">
-            {timeRange === '1d' ? t('Today') : timeRange === '7d' ? t('Last 7 days') : t('Last 30 days')}
-          </span>
-        </CardDescription>
-        <div className="absolute right-4 top-4">
+      {/* The range control sits in normal flow beside the title and wraps below
+          it on a narrow card. Absolutely positioning it (as the shadcn block
+          does) overlapped the title once the card was narrower than the control
+          plus the text. */}
+      <CardHeader className="flex flex-col gap-3 space-y-0 @[460px]/card:flex-row @[460px]/card:items-start @[460px]/card:justify-between">
+        <div className="min-w-0 space-y-1.5">
+          <CardTitle>{t("Privacy Score History")}</CardTitle>
+          <CardDescription>
+            <span className="@[540px]/card:block hidden">
+              {t('Score for')} {timeRange === '1d' ? t('today') : timeRange === '7d' ? t('the last 7 days') : t('the last 30 days')}
+            </span>
+            <span className="@[540px]/card:hidden">
+              {timeRange === '1d' ? t('Today') : timeRange === '7d' ? t('Last 7 days') : t('Last 30 days')}
+            </span>
+          </CardDescription>
+        </div>
+        <div className="flex shrink-0">
           <ToggleGroup
             type="single"
             value={timeRange}
@@ -121,7 +127,7 @@ export function ChartAreaInteractive({
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
-              className="@[767px]/card:hidden flex w-40"
+              className="@[767px]/card:hidden flex w-full @[460px]/card:w-40"
               aria-label={t("Select a value")}
             >
               <SelectValue placeholder={t("Last 30 days")} />
