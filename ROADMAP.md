@@ -1,6 +1,6 @@
 # TraceGuard Roadmap
 
-**Updated:** September 30, 2026
+**Updated:** October 14, 2026
 **Branch:** `dev`, the integration branch. Releases are cut from `main` by tagging, so `dev` runs
 ahead of `main` between releases.
 
@@ -95,6 +95,28 @@ holder" was the original wording and it was too loose: it would pass by noise.
 
 Because the extension sends no telemetry, every threshold is self-reported. That is unavoidable for
 a privacy product, and it is why the numbers are few and blunt.
+
+**The clock expired undecided.** The two weeks ended on October 9, 2026 with no pass, extension, or
+kill recorded, and nothing on disk settles it in hindsight. That makes the gate unanswered rather
+than failed, so the next step is to pick a route deliberately instead of letting a date pass again.
+Reading the three criteria against the code on October 14, 2026:
+
+- **Criterion 2 has no instrument.** Nothing counts opens of `/exposure` and no stored field records
+them, so "6 of the 14 days" is memory only. Measuring it in future means adding a local counter.
+- **Criterion 3 cannot pass as written.** The ledger is derived from records written while the
+extension runs, so a holder the user knew about from before install is absent by construction. Two
+caps can also drop a holder it did record: `crossSiteExposure` keeps 500 domains per data type
+(`MAX_EXPOSURE_DOMAINS_PER_TYPE` in `src/lib/exposure.ts`), and the site cache evicts above 5000
+domains (`src/background/index.ts`). Either reword it as "no holder missing that the ledger could
+have recorded", or accept that it fails for a reason that is not about usefulness.
+- **Criterion 1 needs data, not code.** The flag rules are implemented and covered by
+`src/lib/exposure.test.ts`, and `single-visit` reads a field the worker really writes, but the only
+export to hand is from August 16, 2026, before the clock started, and carries neither input the
+ledger reads. So the criterion cannot be scored retroactively.
+
+Criterion 1 is measurable going forward: `exportAllData` in `src/lib/export.ts` writes
+`crossSiteExposure`, `piiDetections`, and `siteCache` as plaintext JSON while the vault is unlocked,
+so a fresh backup can be run through `buildExposureReport` and counted exactly.
 
 ## A2. Make it actionable
 
