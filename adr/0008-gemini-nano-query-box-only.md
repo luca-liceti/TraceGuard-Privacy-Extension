@@ -1,6 +1,6 @@
 # 0008. Gemini Nano is scoped to the query box
 
-**Status:** Accepted
+**Status:** Superseded by [0015](0015-ai-ships-no-model.md)
 **Date:** 2026-09-13
 
 ## Context

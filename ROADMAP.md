@@ -28,27 +28,23 @@ ledger.
 Both A3 and B1 stay blocked until the items below are done. They are shared plumbing and shared
 disclosure rather than feature work, and none of them assumes a model is present.
 
-- **Gemma and Gemini Nano are different things, and the names get crossed.** Chrome's built-in
-  model is **Gemini Nano**; the extension APIs are `Summarizer` (Summarizer API) and `LanguageModel`
-  (Prompt API). "Gemma Nano" is not a product: the downloadable family is **Gemma**, Google's open
-  model line, whose on-device sizes are Gemma 3n and, now, Gemma 4 E2B and E4B. The two names are
-  related (Gemma 3n shares architecture with Gemini Nano), but Chrome's built-in API serves only
-  Gemini Nano with no documented way to substitute a Gemma model. WebGPU is only relevant to the
-  second path below, so decide per job which path is used:
+- **The two providers are the browser's model and the user's own model, and the names get crossed.**
+  Record [0015](adr/0015-ai-ships-no-model.md) decides this. Chrome's built-in model is **Gemini
+  Nano**; the extension APIs are `Summarizer` and `LanguageModel`. "Gemma Nano" is not a product: it
+  is **Gemma**, Google's separate open family (Gemma 3n, Gemma 4 E2B/E4B), which the extension does
+  not ship. The paths are:
   - **Chrome's built-in model.** The extension makes no WebGPU call and ships no model: Chrome runs
     Gemini Nano on the GPU or CPU. It is available to extension pages and the service worker from
     Chrome 138, but not to ordinary web workers. It is gated on hardware, about 22 GB free disk and
     either more than 4 GB VRAM or 16 GB RAM with 4 cores, plus a one-time multi-gigabyte download, so
     many users fail the gate and nothing may assume a model exists.
-  - **Our own runtime over WebGPU.** Bundle WebLLM, Transformers.js, ONNX Runtime Web or Google's
-    own MediaPipe LLM Inference API with a Gemma model (Gemma 3n, or Gemma 4 E2B/E4B). This is the
-    only path that actually uses WebGPU, and it is what makes Brave work. It takes on MV3 limits: no
-    remote executable code (the WASM runtime ships in the package), `wasm-unsafe-eval` in the
-    `extension_pages` CSP, weights are data so they may be downloaded separately, service-worker
-    termination must be handled (an offscreen document is the usual pattern: the "Gemma Gem"
-    extension loads Gemma 4 2B over WebGPU in one), and the store package cap is 2 GB. The Gemma
-    Terms of Use also govern shipping or downloading the weights, so check the license before
-    bundling.
+  - **The user's own model over localhost.** Ollama, LM Studio or llama.cpp, reached with the
+    optional host permission below. This is the only provider that exists in Brave and the other
+    Chromium browsers.
+  - **Bundling our own runtime over WebGPU is rejected.** WebLLM, Transformers.js, ONNX Runtime Web
+    or MediaPipe with a Gemma model would break the "ships without AI" requirement, and it adds a
+    bundled WASM runtime, `wasm-unsafe-eval` in the CSP, a weight-download feature and the Gemma
+    Terms of Use, for a gain the browser's own model already gives in Chrome.
 - **"Chromium-based" is not enough for the built-in path.** Chrome's built-in AI is not a
   Chromium-wide feature: the model is a separate Google component and the backend depends on
   Google-internal services. Brave disables the Optimization Guide keyed service, and where `LanguageModel`
@@ -56,32 +52,29 @@ disclosure rather than feature work, and none of them assumes a model is present
   backed by a different model (Phi-4-mini), in preview, with different options. So built-in-only
   means Chrome on desktop and ChromeOS, not Brave, Vivaldi or Opera. Detection must be
   `await LanguageModel.availability()` (and the Summarizer equivalent) inside a `try`/`catch`, never a
-  name check, because Brave showed the API while the backend was broken. WebGPU is the cross-browser
-  part, stable in Chrome and Edge since 113 and in Brave from around Chromium 114, so the
-  bundled-runtime path is what a Brave user can actually run.
-- **A new ADR is required before any AI code.** Record [0008](adr/0008-gemini-nano-query-box-only.md)
-  scopes Gemini Nano to the query box and lists "Gemini Nano for policy rating" under not-doing.
-  Summarising a page or a policy is a third job that the record does not cover, and an accepted
-  record is never edited in place, so write its successor first and name which path each job uses.
+  name check, because Brave showed the API while the backend was broken. Those browsers therefore show
+  an honest unavailable state for the summary, and only the local provider works there.
+- **The governing record is [0015](adr/0015-ai-ships-no-model.md).** It supersedes
+  [0008](adr/0008-gemini-nano-query-box-only.md) and sets the two providers. Read it before touching
+  any AI feature.
 - **Manifest and CSP.** The local-server path needs `optional_host_permissions` for the exact
   loopback origins (`http://localhost:11434/*`, and `http://127.0.0.1:11434/*` only if the server is
   addressed that way), requested when the user enables the feature and never granted up front.
   `manifest.json` line 46 also pins `connect-src` to `'self'`, `api.tosdr.org` and
   `raw.githubusercontent.com`, so a fetch to a local model is blocked until that origin is added.
-  The in-browser path needs its model-weight host in `connect-src` for the same reason.
 - **Server-side setup belongs to the user.** Ollama refuses extension origins unless `OLLAMA_ORIGINS`
   allows them, and LM Studio needs `--cors`. Chrome 142's Local Network Access permission needs a
   real test against the exact extension origin, because the docs do not settle whether it applies to
   extension-origin requests.
-- **Disclosure moves with the data or the download.** The local-server path (B1) sends text, policy
-  text that `PRIVACY.md` today says it never reads. The in-browser path sends no page data, but it
-  fetches model weights once, which is a new external request to disclose and to allow in
-  `connect-src`. Either way three files change with the feature: `PRIVACY.md`,
+- **Disclosure moves with the local provider.** The built-in provider sends nothing and downloads
+  nothing on our behalf. The local provider sends text to the user's own machine: policy text for the
+  report, which `PRIVACY.md` today says it never reads, or the site's analysis and browsing log for a
+  summary. Three files change with each provider that is added: `PRIVACY.md`,
   `traceguard-extension/PRIVACY_AND_PERMISSIONS.md`, and the "Remote code and services" answer in
   `docs/store-listing/data-usage-questionnaire.md`.
-- **Classify the summary against the behaviour rules.** A model summary shown to the user is Context
-  unless it changes a decision, in which case it is Persuasion and must name the behaviour at the
-  point where the decision is made. If a summary ever feeds the score, record
+- **Classify each output against the behaviour rules.** Both summaries are Context: they restate
+  true facts and make no claim on behaviour. The browsing brief must not become a Persuasion without
+  naming the behaviour it exists to change. If a generated policy rating feeds the score, record
   [0006](adr/0006-asymmetric-policy-ratings.md) binds it: it may lower a score or stay neutral, and
   it may never raise one or mark a site safe for the PII gate.
 - **Gate B is still unanswered.** Coverage, impact and calibration come before any policy rating, so
@@ -235,24 +228,20 @@ card would look nice" is not.
 
 ## A3. Optional local AI
 
-Blocked on the shared prerequisites above, and it may not start until the successor record to
-[0008](adr/0008-gemini-nano-query-box-only.md) names which runtime path it uses. Off by default,
-opt-in permission, never a dependency of the core. Scope and providers are set by record
-[0008](adr/0008-gemini-nano-query-box-only.md).
+Off by default, opt-in permission, never a dependency of the core. Providers are set by record
+[0015](adr/0015-ai-ships-no-model.md). Blocked on the shared prerequisites above.
 
 - **Query box.** Sits on Overview beside the score ring and the activity chart. Note that grid is
   currently two columns, so this needs a third column or its own row. The model routes the question
-  to the deterministic data and the answer comes from storage, so it cannot invent facts. Local
-  server preferred, Chrome's built-in Gemini Nano as the zero-setup fallback.
-- **Plain-language summary.** Two jobs: the current site's analysis restated in plain sentences (in
-  the popup, side panel or site details), and a short recap on the Overview dashboard beside the
-  query box. Both read the deterministic record (`siteCache` and the detector results), so no page
-  text is scraped and the `PRIVACY.md` promise that it reads page structure and never page text still
-  holds. The requirement is inference in the browser for every Chromium browser, so the WebGPU/Gemma
-  path is the primary one and the local server is not needed for the summary. Gemini Nano is the
-  Chrome-only bonus when `availability()` confirms it. Classification is Context: it restates true
+  to the deterministic data and the answer comes from storage, so it cannot invent facts.
+- **Context summarization.** One setting, two providers. The browser's built-in lightweight model is
+  the default, and the user's own local model is the option they can switch to. It summarizes the
+  current site's analysis in the popup and side panel, and writes a short brief of the user's
+  browsing log into an Overview section. Both read the deterministic record (`siteCache`, the
+  detector results and the log), so no page text is scraped and the `PRIVACY.md` promise that it
+  reads page structure and never page text still holds. Classification is Context: it restates true
   facts and makes no claim on behaviour.
-- **Policy rating** is Track B, not here.
+- **Policy report** is Track B, not here.
 
 ---
 
@@ -286,8 +275,8 @@ when the feature is enabled. The scrape happens in the content script while the 
 page, so the page never talks to the local server. The inference call itself is made from an
 extension context (the service worker, or a dedicated offscreen document), which does need the
 optional host permission and the matching `connect-src` entry named in the prerequisites. Only the
-policy text is sent, never the footprint ledger or logs. It also stays blocked on Gate B and on the
-summarisation record that scopes the runtime path.
+policy text is sent, never the footprint ledger or logs. Providers are set by record
+[0015](adr/0015-ai-ships-no-model.md): the user's local model only, and it stays blocked on Gate B.
 
 - Cache by a **normalised content hash** (strip dates, whitespace, navigation), not by domain, so
   one analysis covers every site sharing a policy. Re-analyse on change using a similarity
