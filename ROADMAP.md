@@ -42,6 +42,16 @@ disclosure rather than feature work, and none of them assumes a model is present
     no remote executable code (the WASM runtime ships in the package), `wasm-unsafe-eval` in the
     `extension_pages` CSP, weights are data so they may be downloaded separately, service-worker
     termination must be handled, and the store package cap is 2 GB.
+- **"Chromium-based" is not enough for the built-in path.** Chrome's built-in AI is not a
+  Chromium-wide feature: the model is a separate Google component and the backend depends on
+  Google-internal services. Brave disables the Optimization Guide keyed service, and where `LanguageModel`
+  was exposed there it crashed. Edge ships same-named `LanguageModel` and `Summarizer` APIs but
+  backed by a different model (Phi-4-mini), in preview, with different options. So built-in-only
+  means Chrome on desktop and ChromeOS, not Brave, Vivaldi or Opera. Detection must be
+  `await LanguageModel.availability()` (and the Summarizer equivalent) inside a `try`/`catch`, never a
+  name check, because Brave showed the API while the backend was broken. WebGPU is the cross-browser
+  part, stable in Chrome and Edge since 113 and in Brave from around Chromium 114, so the
+  bundled-runtime path is what a Brave user can actually run.
 - **A new ADR is required before any AI code.** Record [0008](adr/0008-gemini-nano-query-box-only.md)
   scopes Gemini Nano to the query box and lists "Gemini Nano for policy rating" under not-doing.
   Summarising a page or a policy is a third job that the record does not cover, and an accepted
@@ -55,11 +65,12 @@ disclosure rather than feature work, and none of them assumes a model is present
   allows them, and LM Studio needs `--cors`. Chrome 142's Local Network Access permission needs a
   real test against the exact extension origin, because the docs do not settle whether it applies to
   extension-origin requests.
-- **Disclosure moves with the data.** Policy text, and any page text a summary needs, would leave the
-  page for a local model, so three files change in the same commit as the feature: `PRIVACY.md`
-  (which today says it reads page structure and never page text),
-  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md` (one line for the new optional permission), and
-  the "Remote code and services" answer in `docs/store-listing/data-usage-questionnaire.md`.
+- **Disclosure moves with the data.** The local-server path sends text to the user's own machine.
+  For B1 that is policy text, which `PRIVACY.md` today says it never reads. For the summary it is the
+  site's analysis (domains, tracker and cookie names, scores), not page text. Three files change in
+  the same commit as each feature: `PRIVACY.md`, one new line in
+  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md` for the optional permission, and the "Remote
+  code and services" answer in `docs/store-listing/data-usage-questionnaire.md`.
 - **Classify the summary against the behaviour rules.** A model summary shown to the user is Context
   unless it changes a decision, in which case it is Persuasion and must name the behaviour at the
   point where the decision is made. If a summary ever feeds the score, record
@@ -225,6 +236,13 @@ opt-in permission, never a dependency of the core. Scope and providers are set b
   currently two columns, so this needs a third column or its own row. The model routes the question
   to the deterministic data and the answer comes from storage, so it cannot invent facts. Local
   server preferred, Chrome's built-in Gemini Nano as the zero-setup fallback.
+- **Plain-language summary.** Two jobs: the current site's analysis restated in plain sentences (in
+  the popup, side panel or site details), and a short recap on the Overview dashboard beside the
+  query box. Both read the deterministic record (`siteCache` and the detector results), so no page
+  text is scraped and the `PRIVACY.md` promise that it reads page structure and never page text still
+  holds. Where a local server does the work, that analysis text does leave the device, so the
+  disclosure bullet in the prerequisites still applies. Classification is Context: it restates true
+  facts and makes no claim on behaviour.
 - **Policy rating** is Track B, not here.
 
 ---
