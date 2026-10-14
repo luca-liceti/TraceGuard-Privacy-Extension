@@ -154,11 +154,12 @@ function AllowControl({
             onKeyDown={(event) => event.stopPropagation()}
             // Allowed is the theme's own foreground, so the text and border are
             // white on the dark theme and black on the light one. A fixed green
-            // would have ignored the theme toggle.
+            // would have ignored the theme toggle. The hover fill comes from the
+            // ghost variant, whose accent is the same value as muted.
             className={cn(
                 "h-6 rounded border px-1.5 text-[10px] font-medium shadow-none",
                 allowed
-                    ? "border-foreground text-foreground hover:bg-foreground/10"
+                    ? "border-foreground text-foreground"
                     : "border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
         >
