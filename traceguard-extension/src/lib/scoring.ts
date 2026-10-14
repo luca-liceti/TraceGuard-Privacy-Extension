@@ -27,8 +27,9 @@
  * - Few cookies: 80 × 15% = 12
  * - A canvas fingerprinting attempt: 70 × 15% = 10.5
  * - Login form: 65 × 10% = 6.5
- * - No policy rating: excluded
- * Final WSS = 69 (generally safe)
+ * - No policy rating: excluded, and its 10% weight is redistributed
+ * Those five contributions total 69. Excluding policy rescales them by 1 / 0.9,
+ * so the reported WSS is 69 / 0.9 = 77 (generally safe), not 69.
  * =============================================================================
  */
 
