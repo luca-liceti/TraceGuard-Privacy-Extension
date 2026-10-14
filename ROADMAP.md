@@ -28,23 +28,24 @@ ledger.
 Both A3 and B1 stay blocked until the items below are done. They are shared plumbing and shared
 disclosure rather than feature work, and none of them assumes a model is present.
 
-- **The two providers are the browser's model and the user's own model, and the names get crossed.**
-  Record [0015](adr/0015-ai-ships-no-model.md) decides this. Chrome's built-in model is **Gemini
+- **Three providers, and the names get crossed.** Record
+  [0016](adr/0016-bundled-summarization-model.md) decides this. Chrome's built-in model is **Gemini
   Nano**; the extension APIs are `Summarizer` and `LanguageModel`. "Gemma Nano" is not a product: it
-  is **Gemma**, Google's separate open family (Gemma 3n, Gemma 4 E2B/E4B), which the extension does
-  not ship. The paths are:
-  - **Chrome's built-in model.** The extension makes no WebGPU call and ships no model: Chrome runs
-    Gemini Nano on the GPU or CPU. It is available to extension pages and the service worker from
-    Chrome 138, but not to ordinary web workers. It is gated on hardware, about 22 GB free disk and
-    either more than 4 GB VRAM or 16 GB RAM with 4 cores, plus a one-time multi-gigabyte download, so
-    many users fail the gate and nothing may assume a model exists.
+  is **Gemma**, Google's separate open family, which the extension does not bundle. The paths are:
+  - **Chrome's built-in model.** No WebGPU call and no download on our side: Chrome runs Gemini Nano
+    on the GPU or CPU. It is available to extension pages and the service worker from Chrome 138, but
+    not to ordinary web workers. It is gated on hardware, about 22 GB free disk and either more than
+    4 GB VRAM or 16 GB RAM with 4 cores, plus a one-time multi-gigabyte download, so many users fail
+    the gate and nothing may assume a model exists.
+  - **The bundled model, for the summary only.** `Qwen/Qwen3.5-0.8B`, Apache 2.0, run with WebLLM
+    over WebGPU in an offscreen document as `Qwen3.5-0.8B-q4f16_1-MLC`: about 437 MB to download and
+    about 1.6 GB of GPU memory at run time. WebGPU exists in every Chromium browser from about version
+    113, so this is the provider that works in Brave, Vivaldi and Opera. Gemma 3 and 3n are ruled out
+    by their terms of use, and Gemma 4 by its 3.4 GB q4f16 footprint, even though it is Apache 2.0.
+    The policy report never uses this model.
   - **The user's own model over localhost.** Ollama, LM Studio or llama.cpp, reached with the
-    optional host permission below. This is the only provider that exists in Brave and the other
-    Chromium browsers.
-  - **Bundling our own runtime over WebGPU is rejected.** WebLLM, Transformers.js, ONNX Runtime Web
-    or MediaPipe with a Gemma model would break the "ships without AI" requirement, and it adds a
-    bundled WASM runtime, `wasm-unsafe-eval` in the CSP, a weight-download feature and the Gemma
-    Terms of Use, for a gain the browser's own model already gives in Chrome.
+    optional host permission below. This is the third provider for the summary, and the only
+    provider for the policy report.
 - **"Chromium-based" is not enough for the built-in path.** Chrome's built-in AI is not a
   Chromium-wide feature: the model is a separate Google component and the backend depends on
   Google-internal services. Brave disables the Optimization Guide keyed service, and where `LanguageModel`
@@ -52,26 +53,34 @@ disclosure rather than feature work, and none of them assumes a model is present
   backed by a different model (Phi-4-mini), in preview, with different options. So built-in-only
   means Chrome on desktop and ChromeOS, not Brave, Vivaldi or Opera. Detection must be
   `await LanguageModel.availability()` (and the Summarizer equivalent) inside a `try`/`catch`, never a
-  name check, because Brave showed the API while the backend was broken. Those browsers therefore show
-  an honest unavailable state for the summary, and only the local provider works there.
-- **The governing record is [0015](adr/0015-ai-ships-no-model.md).** It supersedes
-  [0008](adr/0008-gemini-nano-query-box-only.md) and sets the two providers. Read it before touching
-  any AI feature.
+  name check, because Brave showed the API while the backend was broken. In those browsers the
+  built-in provider shows an honest unavailable state, and the summary falls back to the bundled
+  model, which is the reason for shipping one.
+- **The governing record is [0016](adr/0016-bundled-summarization-model.md).** It supersedes
+  [0015](adr/0015-ai-ships-no-model.md), which supersedes
+  [0008](adr/0008-gemini-nano-query-box-only.md), and it sets the provider order. Read it before
+  touching any AI feature.
 - **Manifest and CSP.** The local-server path needs `optional_host_permissions` for the exact
   loopback origins (`http://localhost:11434/*`, and `http://127.0.0.1:11434/*` only if the server is
   addressed that way), requested when the user enables the feature and never granted up front.
-  `manifest.json` line 46 also pins `connect-src` to `'self'`, `api.tosdr.org` and
-  `raw.githubusercontent.com`, so a fetch to a local model is blocked until that origin is added.
+  `content_security_policy.extension_pages` in `manifest.json` also pins `connect-src` to `'self'`,
+  `api.tosdr.org` and `raw.githubusercontent.com`, so a fetch to a local model is blocked until that
+  origin is added. The bundled model needs two more things there: `wasm-unsafe-eval` in `script-src`
+  for the WebLLM runtime, and the weight host in `connect-src` for the first download.
 - **Server-side setup belongs to the user.** Ollama refuses extension origins unless `OLLAMA_ORIGINS`
   allows them, and LM Studio needs `--cors`. Chrome 142's Local Network Access permission needs a
   real test against the exact extension origin, because the docs do not settle whether it applies to
   extension-origin requests.
-- **Disclosure moves with the local provider.** The built-in provider sends nothing and downloads
-  nothing on our behalf. The local provider sends text to the user's own machine: policy text for the
-  report, which `PRIVACY.md` today says it never reads, or the site's analysis and browsing log for a
-  summary. Three files change with each provider that is added: `PRIVACY.md`,
-  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md`, and the "Remote code and services" answer in
-  `docs/store-listing/data-usage-questionnaire.md`.
+- **Disclosure moves with each provider.** Three providers, three separate disclosures, and each one
+  changes the same three files: `PRIVACY.md`, `traceguard-extension/PRIVACY_AND_PERMISSIONS.md`, and
+  the "Remote code and services" answer in `docs/store-listing/data-usage-questionnaire.md`.
+  - **Chrome's built-in model** sends nothing and downloads nothing on our behalf.
+  - **The bundled model** adds one external request, the weight download from the pinned WebLLM
+    artifact host on first use. After that it runs on device. Its WASM runtime also counts as remote
+    or executed code in the store questionnaire.
+  - **The user's local model** sends text to the user's own machine: policy text for the report,
+    which `PRIVACY.md` today says it never reads, or the site's analysis and browsing log for a
+    summary.
 - **Classify each output against the behaviour rules.** Both summaries are Context: they restate
   true facts and make no claim on behaviour. The browsing brief must not become a Persuasion without
   naming the behaviour it exists to change. If a generated policy rating feeds the score, record
@@ -229,18 +238,21 @@ card would look nice" is not.
 ## A3. Optional local AI
 
 Off by default, opt-in permission, never a dependency of the core. Providers are set by record
-[0015](adr/0015-ai-ships-no-model.md). Blocked on the shared prerequisites above.
+[0016](adr/0016-bundled-summarization-model.md). Blocked on the shared prerequisites above.
 
 - **Query box.** Sits on Overview beside the score ring and the activity chart. Note that grid is
   currently two columns, so this needs a third column or its own row. The model routes the question
   to the deterministic data and the answer comes from storage, so it cannot invent facts.
-- **Context summarization.** One setting, two providers. The browser's built-in lightweight model is
-  the default, and the user's own local model is the option they can switch to. It summarizes the
+- **Context summarization.** One setting, three providers tried in order: the browser's built-in
+  lightweight model where it exists, then the bundled model, then the user's own local model. It
+  summarizes the
   current site's analysis in the popup and side panel, and writes a short brief of the user's
   browsing log into an Overview section. Both read the deterministic record (`siteCache`, the
   detector results and the log), so no page text is scraped and the `PRIVACY.md` promise that it
   reads page structure and never page text still holds. Classification is Context: it restates true
-  facts and makes no claim on behaviour.
+  facts and makes no claim on behaviour. Every number and named fact in the output must appear in the
+  input, or the summary is discarded, because a 0.8B model can invent a tracker or a count while
+  restating the record.
 - **Policy report** is Track B, not here.
 
 ---
@@ -276,7 +288,8 @@ page, so the page never talks to the local server. The inference call itself is 
 extension context (the service worker, or a dedicated offscreen document), which does need the
 optional host permission and the matching `connect-src` entry named in the prerequisites. Only the
 policy text is sent, never the footprint ledger or logs. Providers are set by record
-[0015](adr/0015-ai-ships-no-model.md): the user's local model only, and it stays blocked on Gate B.
+[0016](adr/0016-bundled-summarization-model.md): the user's local model only, never the bundled
+summary model, and it stays blocked on Gate B.
 
 - Cache by a **normalised content hash** (strip dates, whitespace, navigation), not by domain, so
   one analysis covers every site sharing a policy. Re-analyse on change using a similarity
@@ -288,8 +301,9 @@ policy text is sent, never the footprint ledger or logs. Providers are set by re
 - **Asymmetric by design:** may lower a score or stay neutral, never raise one, and never mark a
   site safe for the PII gate.
 
-**Estimate:** A3 about a week. B1 several weeks, between chunking long policies, hash and diff
-logic, output validation, and two failure modes per provider.
+**Estimate:** A3 two to three weeks, most of it the bundled runtime, the download flow and the
+offscreen document. B1 several weeks, between chunking long policies, hash and diff logic, output
+validation, and two failure modes per provider.
 
 ---
 

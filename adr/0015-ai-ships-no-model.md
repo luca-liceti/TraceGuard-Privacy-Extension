@@ -1,6 +1,6 @@
 # 0015. AI is opt-in and the extension ships no model
 
-**Status:** Accepted
+**Status:** Superseded by [0016](0016-bundled-summarization-model.md)
 **Date:** 2026-10-14
 
 ## Context

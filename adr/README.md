@@ -31,3 +31,4 @@ Format follows Michael Nygard's original ADR shape: status, context, decision, c
 | [0013](0013-no-forget-action.md) | No forget action; the score cannot rise when records are deleted |
 | [0014](0014-background-ratings-refresh-default.md) | The background privacy-ratings catalog refresh is on by default |
 | [0015](0015-ai-ships-no-model.md) | AI is opt-in and the extension ships no model |
+| [0016](0016-bundled-summarization-model.md) | Summarization ships a bundled small model |
