@@ -317,7 +317,7 @@ export function SiteDetails({ currentSite, variant = 'sidepanel' }: SiteDetailsP
                                 <div className="px-3 py-2 flex items-center gap-2">
                                     <Server className="h-4 w-4 text-muted-foreground shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-medium">{t("Security Headers")}</div>
+                                        <div className="text-xs font-medium break-words">{t("Security Headers")}</div>
                                         <div className="text-xs text-muted-foreground">
                                             {enriched.headers.summary.present}/{enriched.headers.summary.present + enriched.headers.summary.missing} {t("present")}
                                         </div>
@@ -332,7 +332,7 @@ export function SiteDetails({ currentSite, variant = 'sidepanel' }: SiteDetailsP
                                 <div className="px-3 py-2 flex items-center gap-2">
                                     <Fingerprint className="h-4 w-4 text-muted-foreground shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-medium">{t("Fingerprinting")}</div>
+                                        <div className="text-xs font-medium break-words">{t("Fingerprinting")}</div>
                                         <div className="text-xs text-muted-foreground">
                                             {enriched.fingerprinting.summary.totalAttempts} {t("attempts")} · {enriched.fingerprinting.summary.techniques.join(', ')}
                                         </div>
@@ -350,7 +350,7 @@ export function SiteDetails({ currentSite, variant = 'sidepanel' }: SiteDetailsP
                                 <div className="px-3 py-2 flex items-center gap-2">
                                     <Network className="h-4 w-4 text-muted-foreground shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-medium">{t("Network Requests")}</div>
+                                        <div className="text-xs font-medium break-words">{t("Network Requests")}</div>
                                         <div className="text-xs text-muted-foreground">
                                             {enriched.networkRequests.summary.thirdParty} {t("third-party")} · {enriched.networkRequests.summary.trackerRequests} {t("trackers")} · {stoppedCount(enriched.networkRequests.summary)} {t("stopped by browser")}
                                         </div>

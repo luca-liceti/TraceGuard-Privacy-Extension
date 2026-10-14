@@ -11,6 +11,7 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 - Settings no longer runs off a short window. The panel is capped to the height of the window instead of a fixed 600 pixels, so its title and buttons stay on screen. On a phone the six tabs become a row of icons and the content gets the full width, instead of being squeezed into the small strip left beside a 240 pixel column.
 - The time-range control on the Overview and Rankings charts no longer lands on top of the card title in a narrow window. It sits beside the title when there is room, and drops below it when there is not.
 - A long value in a stat card now wraps inside the card. A site name was the usual one to spill past the card's edge and add a sideways scrollbar to the page. The **Top Offenders** rows also give the site name less width on a phone, so the bar and the counts keep their room.
+- In the side panel, the headings on the site detail rows (**Security Headers**, **Fingerprinting**, **Network Requests**) wrap instead of spilling outside the card when the panel is narrow.
 
 ## v1.23.0
 
