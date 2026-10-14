@@ -321,6 +321,23 @@ Nothing here starts until all three are answered from real data.
    ToS;DR grades and measure agreement. If it disagrees with human raters where the truth is known,
    it must not ship, whatever Track A does.
 
+**Status, October 14, 2026: items 1 and 2 are answered from a real export; item 3 is not.**
+
+- **Coverage.** 52 sites and 372 visits. 61.5 percent of sites and 69.1 percent of visits carry a
+  real grade. 13.5 percent of sites (3.2 percent of visits) are catalogued without a grade, and 25
+  percent of sites (27.7 percent of visits) are absent from ToS;DR entirely. The gap is 38.5 percent
+  of sites and 30.9 percent of visits, which lands between the two thresholds above rather than at
+  either end.
+- **The normalisation warning is not theoretical.** Joining on the raw `siteCache` hostname would
+  have called 46 of the 52 sites absent instead of 13, overstating the gap by more than three times.
+- **Impact.** 17 of the 52 sites sit in the policy-fallback state, and their mean WSS is 87.8, which
+  is the worst case for this defect: excluding a neutral detector lifts a score most when the other
+  signals are strong. Against the mean policy score among the export's rated sites (37), the
+  over-credit is 5.1 points.
+- **What that adds up to.** About 5 points on about a third of visits. That is a real defect and a
+  modest one, so item 3 is now the deciding question rather than a formality, and the cheaper route
+  below deserves to be tested before any model is built.
+
 A cheaper option to test first: many sites reuse policy templates (Termly, Iubenda and similar), so
 template clustering may cover the long tail deterministically, with no model at all.
 
