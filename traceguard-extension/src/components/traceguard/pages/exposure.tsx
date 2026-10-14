@@ -8,7 +8,7 @@ import { getSafetyConfig } from "@/lib/risk-utils"
 import { storage } from "@/lib/storage"
 import { captureError } from "@/lib/diagnostics"
 import { toast } from "@/components/ui/toast"
-import { Button } from "@/components/ui/button"
+import { Toggle } from "@/components/ui/toggle"
 import { useSiteDetails } from "@/components/traceguard/site-details-context"
 import { categoryLabelKey } from "@/lib/exposure"
 import type { ExposureSite, HandoverGroup, SurpriseReason, Watcher } from "@/lib/exposure"
@@ -137,36 +137,35 @@ function AllowControl({
     const { t } = useTranslation()
 
     return (
-        <Button
-            type="button"
-            variant="ghost"
+        <Toggle
+            // The shadcn toggle, not a hand-rolled button: its outline variant
+            // draws a bordered control before the click and a filled one after,
+            // and it always answers the pointer. Scaled to the row, which is
+            // denser than the component's own sm size.
+            variant="outline"
             size="sm"
+            pressed={allowed}
+            onPressedChange={() => onToggle(domain)}
             disabled={saving}
-            aria-pressed={allowed}
             aria-label={`${allowed ? t("Remove from allow list") : t("Allow")}: ${domain}`}
             // The row itself is a button that expands on click, so this control has
             // to stop the event. Keyboard needs the same treatment, or Enter here
             // would also toggle the row. The domain link beside it does the same.
-            onClick={(event) => {
-                event.stopPropagation()
-                onToggle(domain)
-            }}
+            onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
-            // Plain text until the site is allowed, so a list of untrusted sites
-            // stays flat instead of carrying a boxed control on every row. Allowed
-            // is a chip filled with the theme's muted colour and written in its
-            // foreground, which is white on the dark theme and black on the light
-            // one. The hover classes are stated for both states so the ghost
-            // variant's own accent hover cannot override them.
+            // An allowed site fills with the theme's accent and is written in the
+            // theme's foreground, so it is white on the dark theme and black on
+            // the light one. Hovering an allowed site turns the label red, the
+            // same cue the settings list uses for a control that removes.
             className={cn(
-                "h-6 px-2 text-[11px] font-medium shadow-none",
+                "h-6 min-w-0 px-2 text-[10px] font-medium shadow-none",
                 allowed
-                    ? "rounded-full bg-muted px-2.5 text-foreground hover:bg-muted hover:text-foreground"
-                    : "rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "text-foreground data-[state=on]:hover:text-destructive"
+                    : "text-muted-foreground"
             )}
         >
             {allowed ? t("Allowed") : t("Allow")}
-        </Button>
+        </Toggle>
     )
 }
 

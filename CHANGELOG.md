@@ -6,7 +6,8 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 **What was fixed**
 
-- The allow control on **Your Footprint** is now plain text on a site you have not allowed, and a rounded chip reading **Allowed** on one you have, instead of a small boxed button with a shield icon. It uses the theme's own colours, so it is white on the dark theme and black on the light one.
+- The allow control on **Your Footprint** is a proper button in both states: outlined while a site is untrusted, filled while it is allowed, and red under the pointer on an allowed site, so the click that takes it back is visible before you make it. It uses the theme's own colours, so it stays readable in the light and dark theme.
+- The **Add** buttons under Settings, **Allowed and flagged** now use the outlined style of the **Export** button on Overview, instead of a solid block that was white on the dark theme and black on the light one.
 
 ## v1.23.0
 

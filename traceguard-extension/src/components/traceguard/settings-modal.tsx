@@ -745,7 +745,7 @@ export function SettingsModal() {
                                         }
                                     }}
                                 />
-                                <Button size="sm" onClick={() => {
+                                <Button variant="outline" size="sm" onClick={() => {
                                     const input = document.getElementById('add-whitelist') as HTMLInputElement;
                                     const val = input.value.trim().toLowerCase();
                                     if (val && !isValidDomain(val)) {
@@ -800,7 +800,7 @@ export function SettingsModal() {
                                         }
                                     }}
                                 />
-                                <Button size="sm" onClick={() => {
+                                <Button variant="outline" size="sm" onClick={() => {
                                     const input = document.getElementById('add-blacklist') as HTMLInputElement;
                                     const val = input.value.trim().toLowerCase();
                                     if (val && !isValidDomain(val)) {
