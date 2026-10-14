@@ -111,8 +111,9 @@ domains (`src/background/index.ts`). Either reword it as "no holder missing that
 have recorded", or accept that it fails for a reason that is not about usefulness.
 - **Criterion 1 needs data, not code.** The flag rules are implemented and covered by
 `src/lib/exposure.test.ts`, and `single-visit` reads a field the worker really writes, but the only
-export to hand is from August 16, 2026, before the clock started, and carries neither input the
-ledger reads. So the criterion cannot be scored retroactively.
+export to hand is from August 16, 2026, before the clock started. It holds 5 cached sites and
+neither exposure input: no `crossSiteExposure` map and no `piiDetections` journal at all. So the
+criterion cannot be scored retroactively.
 
 Criterion 1 is measurable going forward: `exportAllData` in `src/lib/export.ts` writes
 `crossSiteExposure`, `piiDetections`, and `siteCache` as plaintext JSON while the vault is unlocked,
