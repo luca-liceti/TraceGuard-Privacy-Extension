@@ -144,7 +144,14 @@ function AllowControl({
             disabled={saving}
             aria-pressed={allowed}
             aria-label={`${allowed ? t("Remove from allow list") : t("Allow")}: ${domain}`}
-            onClick={() => onToggle(domain)}
+            // The row itself is a button that expands on click, so this control has
+            // to stop the event. Keyboard needs the same treatment, or Enter here
+            // would also toggle the row. The domain link beside it does the same.
+            onClick={(event) => {
+                event.stopPropagation()
+                onToggle(domain)
+            }}
+            onKeyDown={(event) => event.stopPropagation()}
             className={cn(
                 "h-6 gap-1 rounded border px-1.5 text-[10px] font-medium shadow-none",
                 allowed

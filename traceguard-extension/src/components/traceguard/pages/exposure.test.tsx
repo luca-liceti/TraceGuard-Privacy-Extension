@@ -87,6 +87,23 @@ describe('allow control on Your Footprint', () => {
         expect(await screen.findByRole('button', { name: 'Allow: once.com' })).toHaveAttribute('aria-pressed', 'false')
     })
 
+    it('does not expand the row it sits on', async () => {
+        // The row is itself a button that expands to show what else the site
+        // holds, so the allow control has to stop the click. Otherwise allowing a
+        // site also opens it, which reads as the click having done two things.
+        await seed({
+            exposure: { email: ['once.com'], password: ['once.com'] },
+            siteCache: { 'once.com': site('once.com', { visitCount: 1 }) },
+        })
+        renderPage()
+
+        const [allow] = await screen.findAllByRole('button', { name: 'Allow: once.com' })
+        fireEvent.click(allow)
+
+        await waitFor(async () => expect(await storedWhitelist()).toContain('once.com'))
+        expect(screen.queryByText(/This site also holds/)).toBeNull()
+    })
+
     it('removes the entry that vouches for the row, not only the bare host', async () => {
         await seed({
             exposure: { email: ['www.patreon.com'] },
