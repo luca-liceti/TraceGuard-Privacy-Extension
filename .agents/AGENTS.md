@@ -65,12 +65,11 @@
 
 ## Communication
 
-- Explain work in plain language, pitched at an entry-level developer. Lead with what the change does for the user, then how it works.
-- Dumb it down by default. When the user asks for a simpler answer, cut jargon, internal names, and API detail that does not change what they should do. A simpler answer is shorter, not the same answer reworded. Keep the facts that matter and drop the rest.
+- Write for a 15-year-old by default, not only when asked. Assume a smart reader who is new to this: they can follow the logic, they just have not met the words yet. Use short sentences and everyday words, and explain any term that is not plain English the first time it appears ("the worker, the part that runs with no window"). Lead with what the change does for the user, then how it works. Never talk down to them: simple means shorter and clearer, not vaguer.
+- When the user asks for a shorter or simpler answer, cut jargon, internal names, and API detail that does not change what they should do. A simpler answer is shorter, not the same answer reworded. Keep the facts that matter and drop the rest.
 - Answer in short bullet points, not paragraphs. One idea per bullet, no padding.
 - When reporting a problem, always give the fix options and name the recommended one, with the reason in one sentence. A problem with no proposed fix is unfinished.
-- Define a term the first time it appears ("the worker, the part that runs with no window"). Avoid unexplained internal shorthand.
-- Keep the precise details. Simple is not vague: name the file, the function, and the exact behaviour, then describe it in words a new developer can follow.
+- Keep the precise details. Simple is not vague: name the file, the function, and the exact behaviour, then describe it in words a reader new to the code can follow.
 - When something is only partly done, say which parts are done and which are not, rather than describing it as finished.
 - When presenting options or asking the user to choose, always name the option you recommend and give the reason in one sentence. A list of options with no recommendation leaves the decision unfinished.
 
