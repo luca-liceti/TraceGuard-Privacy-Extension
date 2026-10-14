@@ -96,28 +96,34 @@ holder" was the original wording and it was too loose: it would pass by noise.
 Because the extension sends no telemetry, every threshold is self-reported. That is unavoidable for
 a privacy product, and it is why the numbers are few and blunt.
 
-**The clock expired undecided.** The two weeks ended on October 9, 2026 with no pass, extension, or
-kill recorded, and nothing on disk settles it in hindsight. That makes the gate unanswered rather
-than failed, so the next step is to pick a route deliberately instead of letting a date pass again.
-Reading the three criteria against the code on October 14, 2026:
+**The clock expired undecided, and the record can now be scored.** The two weeks ended on
+October 9, 2026 with no pass, extension, or kill recorded. The export of October 14, 2026 covers the
+window exactly: all 11 handovers were recorded between September 30 and October 7. Running
+`buildExposureReport` over it, from the plaintext `crossSiteExposure`, `piiDetections`, and
+`siteCache` that `exportAllData` in `src/lib/export.ts` writes while the vault is unlocked:
 
-- **Criterion 2 has no instrument.** Nothing counts opens of `/exposure` and no stored field records
-them, so "6 of the 14 days" is memory only. Measuring it in future means adding a local counter.
-- **Criterion 3 cannot pass as written.** The ledger is derived from records written while the
-extension runs, so a holder the user knew about from before install is absent by construction. Two
-caps can also drop a holder it did record: `crossSiteExposure` keeps 500 domains per data type
-(`MAX_EXPOSURE_DOMAINS_PER_TYPE` in `src/lib/exposure.ts`), and the site cache evicts above 5000
-domains (`src/background/index.ts`). Either reword it as "no holder missing that the ledger could
-have recorded", or accept that it fails for a reason that is not about usefulness.
-- **Criterion 1 needs data, not code.** The flag rules are implemented and covered by
-`src/lib/exposure.test.ts`, and `single-visit` reads a field the worker really writes, but the only
-export to hand is from August 16, 2026, before the clock started. It holds 5 cached sites and
-neither exposure input: no `crossSiteExposure` map and no `piiDetections` journal at all. So the
-criterion cannot be scored retroactively.
+- **Criterion 1 fell short.** 5 sites hold the user's data, across 11 handovers. The ledger flags 1
+site, `app.freewill.com`, on 2 flags (`email` and `password`), both for a single visit. The
+threshold is 3 holders with at least 1 visited once, so the single-visit half passes and the count
+falls short. Whether that site was genuinely forgotten is still the user's call: a flag only says
+the page surfaced it.
+- **Criterion 2 was never measured.** Nothing counts opens of `/exposure` and no stored field records
+them, so "6 of the 14 days" is memory only. Measuring it needs a local counter.
+- **Criterion 3 is clean for this record and unjudgeable in general.** Every one of the 5 holder
+domains is still in the site cache and has a journal entry with dates. As written it still cannot
+pass, because the ledger is derived from records written while the extension runs, so a holder the
+user knew about from before install is absent by construction. Two caps can also drop a holder it
+did record: `crossSiteExposure` keeps 500 domains per data type (`MAX_EXPOSURE_DOMAINS_PER_TYPE` in
+`src/lib/exposure.ts`) and the site cache evicts above 5000 domains (`src/background/index.ts`).
+Neither was near its limit here, at 5 domains held and 52 sites cached. Reword it as "no holder
+missing that the ledger could have recorded", or accept that it fails for a reason that is not
+about usefulness.
 
-Criterion 1 is measurable going forward: `exportAllData` in `src/lib/export.ts` writes
-`crossSiteExposure`, `piiDetections`, and `siteCache` as plaintext JSON while the vault is unlocked,
-so a fresh backup can be run through `buildExposureReport` and counted exactly.
+The second list is the weaker one on this record. Tracker companies come from `enrichedDetails` on
+41 of the 52 cached sites, and 63 of their 238 tracker items carry no organisation name, so the
+ranking under-counts. The display also stops at `MAX_WATCHERS` (25) while the record holds 32
+organisations, so 7 are never shown. Neither figure casts doubt on the first list, which is the one
+the three criteria are about.
 
 ## A2. Make it actionable
 
