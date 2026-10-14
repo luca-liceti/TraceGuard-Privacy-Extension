@@ -235,6 +235,13 @@ Proceed only if the user hits a question the fixed lists **cannot** answer, and 
 roughly weekly. "Which sites have my card?" when no card filter exists is a real gap. "A summary
 card would look nice" is not. This gate opens the query box and nothing else.
 
+**Status, October 14, 2026: the recurring questions are real, but they do not need a model.** The
+two the user reports are "how can I improve my browsing?" and "am I too dependent on certain
+websites?". Both are answerable from the deterministic record that already exists: visit
+concentration from `visitCount` in `siteCache`, and who holds what from `crossSiteExposure`. A
+question the arithmetic can answer does not clear a gate that exists to justify a model, so the gap
+is in the ledger and not in the AI. Build the arithmetic first and re-ask afterwards.
+
 ### Gate A2 to summarization
 
 Question evidence cannot open summarization, so it needs its own gate, in the same shape: the user
@@ -246,6 +253,11 @@ weekly. Two conditions, both met:
 - The user says they do not read it in its current form. There is no telemetry (record
   [0001](adr/0001-local-first.md)), so this comes from the user, exactly as it does for the query
   gate. "It would look nice" is not evidence.
+
+**Status, October 14, 2026: the gate fails, and it is closed.** The user reads both the site
+analysis and the browsing log, so the condition is not met and summarization does not start. This is
+the gate working: it stopped a feature that would have added a model, a download and a disclosure to
+restate data the user already reads. Re-open it only if that changes.
 
 ## A3. Optional local AI
 
