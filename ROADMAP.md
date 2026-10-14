@@ -68,16 +68,17 @@ disclosure rather than feature work, and none of them assumes a model is present
   addressed that way), requested when the user enables the feature and never granted up front.
   `manifest.json` line 46 also pins `connect-src` to `'self'`, `api.tosdr.org` and
   `raw.githubusercontent.com`, so a fetch to a local model is blocked until that origin is added.
+  The in-browser path needs its model-weight host in `connect-src` for the same reason.
 - **Server-side setup belongs to the user.** Ollama refuses extension origins unless `OLLAMA_ORIGINS`
   allows them, and LM Studio needs `--cors`. Chrome 142's Local Network Access permission needs a
   real test against the exact extension origin, because the docs do not settle whether it applies to
   extension-origin requests.
-- **Disclosure moves with the data.** The local-server path sends text to the user's own machine.
-  For B1 that is policy text, which `PRIVACY.md` today says it never reads. For the summary it is the
-  site's analysis (domains, tracker and cookie names, scores), not page text. Three files change in
-  the same commit as each feature: `PRIVACY.md`, one new line in
-  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md` for the optional permission, and the "Remote
-  code and services" answer in `docs/store-listing/data-usage-questionnaire.md`.
+- **Disclosure moves with the data or the download.** The local-server path (B1) sends text, policy
+  text that `PRIVACY.md` today says it never reads. The in-browser path sends no page data, but it
+  fetches model weights once, which is a new external request to disclose and to allow in
+  `connect-src`. Either way three files change with the feature: `PRIVACY.md`,
+  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md`, and the "Remote code and services" answer in
+  `docs/store-listing/data-usage-questionnaire.md`.
 - **Classify the summary against the behaviour rules.** A model summary shown to the user is Context
   unless it changes a decision, in which case it is Persuasion and must name the behaviour at the
   point where the decision is made. If a summary ever feeds the score, record
@@ -247,8 +248,9 @@ opt-in permission, never a dependency of the core. Scope and providers are set b
   the popup, side panel or site details), and a short recap on the Overview dashboard beside the
   query box. Both read the deterministic record (`siteCache` and the detector results), so no page
   text is scraped and the `PRIVACY.md` promise that it reads page structure and never page text still
-  holds. Where a local server does the work, that analysis text does leave the device, so the
-  disclosure bullet in the prerequisites still applies. Classification is Context: it restates true
+  holds. The requirement is inference in the browser for every Chromium browser, so the WebGPU/Gemma
+  path is the primary one and the local server is not needed for the summary. Gemini Nano is the
+  Chrome-only bonus when `availability()` confirms it. Classification is Context: it restates true
   facts and makes no claim on behaviour.
 - **Policy rating** is Track B, not here.
 
