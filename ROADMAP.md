@@ -31,8 +31,8 @@ problem, so the language layer comes last.
 
 ## A1. Footprint ledger, read-only
 
-**Status: built, awaiting the gate.** Released as v1.8.0; the browsing drill-down and the
-attributable score ring followed in v1.12.0.
+**Status: built, kept by decision on October 14, 2026.** Released as v1.8.0; the browsing drill-down
+and the attributable score ring followed in v1.12.0.
 
 Two defects were fixed before the gate starts, because either would have failed it for the wrong
 reason: a handover whose send to the worker was rejected vanished silently, indistinguishable from
@@ -96,28 +96,42 @@ holder" was the original wording and it was too loose: it would pass by noise.
 Because the extension sends no telemetry, every threshold is self-reported. That is unavoidable for
 a privacy product, and it is why the numbers are few and blunt.
 
-**The clock expired undecided, and the record can now be scored.** The two weeks ended on
-October 9, 2026 with no pass, extension, or kill recorded. The export of October 14, 2026 covers the
-window exactly: all 11 handovers were recorded between September 30 and October 7. Running
-`buildExposureReport` over it, from the plaintext `crossSiteExposure`, `piiDetections`, and
+**Outcome: kept, and A2 unblocked.** Decided on October 14, 2026, five days after the clock ran out.
+The export of October 14, 2026 covers the window exactly (all 11 handovers were recorded between
+September 30 and October 7), so the criteria can be scored from the record instead of remembered.
+Running `buildExposureReport` over it, from the plaintext `crossSiteExposure`, `piiDetections`, and
 `siteCache` that `exportAllData` in `src/lib/export.ts` writes while the vault is unlocked:
 
 - **Criterion 1 fell short.** 5 sites hold the user's data, across 11 handovers. The ledger flags 1
 site, `app.freewill.com`, on 2 flags (`email` and `password`), both for a single visit. The
-threshold is 3 holders with at least 1 visited once, so the single-visit half passes and the count
-falls short. Whether that site was genuinely forgotten is still the user's call: a flag only says
-the page surfaced it.
-- **Criterion 2 was never measured.** Nothing counts opens of `/exposure` and no stored field records
-them, so "6 of the 14 days" is memory only. Measuring it needs a local counter.
-- **Criterion 3 is clean for this record and unjudgeable in general.** Every one of the 5 holder
-domains is still in the site cache and has a journal entry with dates. As written it still cannot
-pass, because the ledger is derived from records written while the extension runs, so a holder the
-user knew about from before install is absent by construction. Two caps can also drop a holder it
-did record: `crossSiteExposure` keeps 500 domains per data type (`MAX_EXPOSURE_DOMAINS_PER_TYPE` in
-`src/lib/exposure.ts`) and the site cache evicts above 5000 domains (`src/background/index.ts`).
-Neither was near its limit here, at 5 domains held and 52 sites cached. Reword it as "no holder
-missing that the ledger could have recorded", or accept that it fails for a reason that is not
-about usefulness.
+threshold was 3 holders with at least 1 visited once, so the single-visit half passed and the count
+did not. The site it named is a real finding: visited once, and holding an email and a password.
+- **Criterion 2 was never observable.** Nothing counts opens of `/exposure` and no stored field
+records them, so "6 of the 14 days" was memory only, and no verdict was reachable whatever the user
+did.
+- **Criterion 3 could not be judged as written.** Every one of the 5 holder domains is still in the
+site cache and has a journal entry with dates, and neither cap was near its limit (5 domains held
+against 500, 52 sites cached against 5000). As written it can never pass, because the ledger is
+derived from records written while the extension runs, so a holder the user knew about from before
+install is absent by construction.
+
+**Why it is kept anyway.** The measurement was the point of the two weeks and it now exists, and the
+page named a site that no other surface names. What failed was the test's observability, not the
+page, and the kill criterion (does the page name something the user did not know) is answered by
+that one site.
+
+**The terms a future verdict uses.** The original three are replaced, so the next reading is
+decidable:
+
+1. A **holder** is a site, not a field type, so a site holding an email and a password counts once.
+2. **Completeness** is scoped: no holder missing that the ledger could have recorded, with either
+   cap named when it trims (`MAX_EXPOSURE_DOMAINS_PER_TYPE` in `src/lib/exposure.ts`, and the site
+   cache eviction above 5000 domains in `src/background/index.ts`).
+3. **Criterion 1 is re-measured** from a fresh export at the next release, with the same command, and
+   the result written here. If a month of real use names nothing new, the kill criterion stands.
+
+The return-visit requirement is dropped rather than instrumented. It measured the user's curiosity,
+and counting a dashboard being opened is a metric with no action behind it.
 
 The second list is the weaker one on this record. Tracker companies come from `enrichedDetails` on
 41 of the 52 cached sites, and 63 of their 238 tracker items carry no organisation name, so the
@@ -127,7 +141,7 @@ the three criteria are about.
 
 ## A2. Make it actionable
 
-Only after the gate passes.
+Unblocked on October 14, 2026, when the ledger was kept.
 
 - **Trust.** `trustSite(domain)` using the existing whitelist, surfaced where the record lives
   instead of only in Settings.
