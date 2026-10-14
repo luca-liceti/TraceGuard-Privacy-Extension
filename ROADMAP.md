@@ -28,20 +28,27 @@ ledger.
 Both A3 and B1 stay blocked until the items below are done. They are shared plumbing and shared
 disclosure rather than feature work, and none of them assumes a model is present.
 
-- **Naming and runtime path are unresolved, and they are two different things.** The model Chrome
-  ships is **Gemini Nano**; the extension APIs are `Summarizer` (Summarizer API) and `LanguageModel`
-  (Prompt API), and there is no product called "Gemma Nano". WebGPU is only relevant to the second
-  path below, so decide per job which path is used:
+- **Gemma and Gemini Nano are different things, and the names get crossed.** Chrome's built-in
+  model is **Gemini Nano**; the extension APIs are `Summarizer` (Summarizer API) and `LanguageModel`
+  (Prompt API). "Gemma Nano" is not a product: the downloadable family is **Gemma**, Google's open
+  model line, whose on-device sizes are Gemma 3n and, now, Gemma 4 E2B and E4B. The two names are
+  related (Gemma 3n shares architecture with Gemini Nano), but Chrome's built-in API serves only
+  Gemini Nano with no documented way to substitute a Gemma model. WebGPU is only relevant to the
+  second path below, so decide per job which path is used:
   - **Chrome's built-in model.** The extension makes no WebGPU call and ships no model: Chrome runs
     Gemini Nano on the GPU or CPU. It is available to extension pages and the service worker from
     Chrome 138, but not to ordinary web workers. It is gated on hardware, about 22 GB free disk and
     either more than 4 GB VRAM or 16 GB RAM with 4 cores, plus a one-time multi-gigabyte download, so
     many users fail the gate and nothing may assume a model exists.
-  - **Our own runtime over WebGPU.** Bundle WebLLM, Transformers.js or ONNX Runtime Web with a
-    Gemma-class model. This is the only path that actually uses WebGPU, and it takes on MV3 limits:
-    no remote executable code (the WASM runtime ships in the package), `wasm-unsafe-eval` in the
+  - **Our own runtime over WebGPU.** Bundle WebLLM, Transformers.js, ONNX Runtime Web or Google's
+    own MediaPipe LLM Inference API with a Gemma model (Gemma 3n, or Gemma 4 E2B/E4B). This is the
+    only path that actually uses WebGPU, and it is what makes Brave work. It takes on MV3 limits: no
+    remote executable code (the WASM runtime ships in the package), `wasm-unsafe-eval` in the
     `extension_pages` CSP, weights are data so they may be downloaded separately, service-worker
-    termination must be handled, and the store package cap is 2 GB.
+    termination must be handled (an offscreen document is the usual pattern: the "Gemma Gem"
+    extension loads Gemma 4 2B over WebGPU in one), and the store package cap is 2 GB. The Gemma
+    Terms of Use also govern shipping or downloading the weights, so check the license before
+    bundling.
 - **"Chromium-based" is not enough for the built-in path.** Chrome's built-in AI is not a
   Chromium-wide feature: the model is a separate Google component and the backend depends on
   Google-internal services. Brave disables the Optimization Guide keyed service, and where `LanguageModel`
