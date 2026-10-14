@@ -152,14 +152,16 @@ function AllowControl({
                 onToggle(domain)
             }}
             onKeyDown={(event) => event.stopPropagation()}
+            // Allowed is the theme's own foreground, so the text and border are
+            // white on the dark theme and black on the light one. A fixed green
+            // would have ignored the theme toggle.
             className={cn(
-                "h-6 gap-1 rounded border px-1.5 text-[10px] font-medium shadow-none",
+                "h-6 rounded border px-1.5 text-[10px] font-medium shadow-none",
                 allowed
-                    ? "border-success/30 bg-success/10 text-success hover:bg-success/20"
+                    ? "border-foreground text-foreground hover:bg-foreground/10"
                     : "border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
         >
-            <ShieldCheck className="h-3 w-3" />
             {allowed ? t("Allowed") : t("Allow")}
         </Button>
     )

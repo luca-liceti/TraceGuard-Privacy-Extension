@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.23.1
+
+**What was fixed**
+
+- The allow control on **Your Footprint** no longer carries a shield icon, and an allowed site now uses the theme's own text and border colour instead of a fixed green, so it reads correctly in both the light and dark theme.
+
 ## v1.23.0
 
 **What's new**
