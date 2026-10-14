@@ -229,25 +229,37 @@ so it needs to be visible, listable, and one-click reversible. The shipped contr
 in one line on the page rather than leaving it implicit, and it deletes nothing: an allowed site
 stays on the list of holders.
 
-### Gate A2 to A3
+### Gate A2 to A3: the query box
 
 Proceed only if the user hits a question the fixed lists **cannot** answer, and hits it repeatedly,
 roughly weekly. "Which sites have my card?" when no card filter exists is a real gap. "A summary
-card would look nice" is not.
+card would look nice" is not. This gate opens the query box and nothing else.
+
+### Gate A2 to summarization
+
+Question evidence cannot open summarization, so it needs its own gate, in the same shape: the user
+wants a plain-language read of the analysis or of the browsing log, and wants it repeatedly, roughly
+weekly. Two conditions, both met:
+
+- The local record is big enough to be worth summarizing, meaning at least 20 analysed sites or at
+  least two weeks of browsing log.
+- The user says they do not read it in its current form. There is no telemetry (record
+  [0001](adr/0001-local-first.md)), so this comes from the user, exactly as it does for the query
+  gate. "It would look nice" is not evidence.
 
 ## A3. Optional local AI
 
 Off by default, opt-in permission, never a dependency of the core. Providers are set by record
-[0016](adr/0016-bundled-summarization-model.md). Blocked on the shared prerequisites above.
+[0016](adr/0016-bundled-summarization-model.md). Blocked on the shared prerequisites above and on
+whichever gate above matches the item.
 
 - **Query box.** Sits on Overview beside the score ring and the activity chart. Note that grid is
   currently two columns, so this needs a third column or its own row. The model routes the question
   to the deterministic data and the answer comes from storage, so it cannot invent facts.
 - **Context summarization.** One setting, three providers tried in order: the browser's built-in
   lightweight model where it exists, then the bundled model, then the user's own local model. It
-  summarizes the
-  current site's analysis in the popup and side panel, and writes a short brief of the user's
-  browsing log into an Overview section. Both read the deterministic record (`siteCache`, the
+  summarizes the current site's analysis in the popup and side panel, and writes a short brief of
+  the user's browsing log into an Overview section. Both read the deterministic record (`siteCache`, the
   detector results and the log), so no page text is scraped and the `PRIVACY.md` promise that it
   reads page structure and never page text still holds. Classification is Context: it restates true
   facts and makes no claim on behaviour. Every number and named fact in the output must appear in the
