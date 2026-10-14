@@ -2,9 +2,13 @@ import React from "react"
 import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useExposureReport } from "@/lib/useStorage"
+import { useExposureReport, useSettings } from "@/lib/useStorage"
 import { cn } from "@/lib/utils"
 import { getSafetyConfig } from "@/lib/risk-utils"
+import { storage } from "@/lib/storage"
+import { captureError } from "@/lib/diagnostics"
+import { toast } from "@/components/ui/toast"
+import { Button } from "@/components/ui/button"
 import { useSiteDetails } from "@/components/traceguard/site-details-context"
 import { categoryLabelKey } from "@/lib/exposure"
 import type { ExposureSite, HandoverGroup, SurpriseReason, Watcher } from "@/lib/exposure"
@@ -50,6 +54,111 @@ function useReasonLabel() {
 }
 
 /**
+ * The allow-list entry that vouches for a domain, if one does.
+ *
+ * This has to read the list exactly the way the engine does, or a row could
+ * claim a site is allowed while the PII gate still penalizes it. An entry
+ * vouches for its own host and for any subdomain of it, so `patreon.com`
+ * covers `www.patreon.com` and not the other way around.
+ */
+function allowEntryFor(domain: string, whitelist: string[]): string | undefined {
+    const host = domain.toLowerCase()
+    return whitelist.find(entry => host === entry || host.endsWith(`.${entry}`))
+}
+
+/**
+ * Allow and un-allow a site, from the row that names it.
+ *
+ * The same action already exists while you type, through the confirmation card
+ * in `content/pii-confirm.ts`, and this writes the same list, so the two cannot
+ * disagree about which sites are trusted. It is also the only control on this
+ * page that lowers safety, which is why the state stays visible on the row and
+ * a second click takes it back.
+ */
+function useAllowList() {
+    const { t } = useTranslation()
+    const settings = useSettings()
+    const [isSaving, setIsSaving] = React.useState(false)
+
+    const whitelist = React.useMemo(() => settings?.whitelist ?? [], [settings])
+
+    const isAllowed = React.useCallback(
+        (domain: string) => allowEntryFor(domain, whitelist) !== undefined,
+        [whitelist]
+    )
+
+    const toggleAllow = React.useCallback(async (domain: string) => {
+        const host = domain.toLowerCase()
+        const covering = allowEntryFor(host, whitelist)
+        // Removing the covering entry is what actually un-allows the row: dropping
+        // the bare host would leave a parent entry vouching for it.
+        const next = covering === undefined
+            ? [...whitelist, host]
+            : whitelist.filter(entry => entry !== covering)
+
+        setIsSaving(true)
+        try {
+            await storage.updateSettings({ whitelist: next })
+            toast.add({
+                type: 'success',
+                title: covering === undefined ? t('Added to allow list') : t('Removed from whitelist'),
+                description: domain,
+            })
+        } catch (error) {
+            // No toast on failure: the row keeps its old state, and the error goes
+            // to the durable log rather than reading as a successful change.
+            captureError('dashboard', error, 'whitelist_save_failed')
+        } finally {
+            setIsSaving(false)
+        }
+    }, [whitelist, t])
+
+    return { isAllowed, toggleAllow, isSaving }
+}
+
+/**
+ * The allow control on one holder row.
+ *
+ * A toggle rather than two buttons: `aria-pressed` carries the state for screen
+ * readers, and the label flips between Allow and Allowed so the current state is
+ * readable without hovering.
+ */
+function AllowControl({
+    domain,
+    allowed,
+    saving,
+    onToggle,
+}: {
+    domain: string
+    allowed: boolean
+    saving: boolean
+    onToggle: (domain: string) => void
+}) {
+    const { t } = useTranslation()
+
+    return (
+        <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={saving}
+            aria-pressed={allowed}
+            aria-label={`${allowed ? t("Remove from allow list") : t("Allow")}: ${domain}`}
+            onClick={() => onToggle(domain)}
+            className={cn(
+                "h-6 gap-1 rounded border px-1.5 text-[10px] font-medium shadow-none",
+                allowed
+                    ? "border-success/30 bg-success/10 text-success hover:bg-success/20"
+                    : "border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+        >
+            <ShieldCheck className="h-3 w-3" />
+            {allowed ? t("Allowed") : t("Allow")}
+        </Button>
+    )
+}
+
+/**
  * One site under one kind of data.
  *
  * Tapping it answers the question the row raises and cannot: a site that holds
@@ -60,10 +169,16 @@ function SiteRow({
     site,
     reasonLabel,
     alsoHolds,
+    allow,
 }: {
     site: ExposureSite
     reasonLabel: (r: SurpriseReason) => string
     alsoHolds: string[]
+    allow: {
+        isAllowed: (domain: string) => boolean
+        onToggle: (domain: string) => void
+        saving: boolean
+    }
 }) {
     const { t } = useTranslation()
     const { openSiteDetails } = useSiteDetails()
@@ -129,6 +244,12 @@ function SiteRow({
                     </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                    <AllowControl
+                        domain={site.domain}
+                        allowed={allow.isAllowed(site.domain)}
+                        saving={allow.saving}
+                        onToggle={allow.onToggle}
+                    />
                     {site.wss !== null && (
                         <span className={cn("text-sm font-bold", getSafetyConfig(site.wss).color)}>
                             {site.wss}
@@ -159,10 +280,16 @@ function HandoverCard({
     group,
     reasonLabel,
     alsoHoldsByDomain,
+    allow,
 }: {
     group: HandoverGroup
     reasonLabel: (r: SurpriseReason) => string
     alsoHoldsByDomain: Record<string, string[]>
+    allow: {
+        isAllowed: (domain: string) => boolean
+        onToggle: (domain: string) => void
+        saving: boolean
+    }
 }) {
     const { t } = useTranslation()
     const plural = usePlural()
@@ -188,6 +315,7 @@ function HandoverCard({
                         key={site.domain}
                         site={site}
                         reasonLabel={reasonLabel}
+                        allow={allow}
                         alsoHolds={(alsoHoldsByDomain[site.domain] ?? []).filter(
                             fieldType => fieldType !== group.fieldType
                         )}
@@ -284,6 +412,14 @@ export default function ExposurePage() {
     const { report, isLoading } = useExposureReport()
     const reasonLabel = useReasonLabel()
 
+    // One allow list for the whole page rather than a subscription per row, and a
+    // stable object so the memoized rows below are not invalidated each render.
+    const { isAllowed, toggleAllow, isSaving } = useAllowList()
+    const allow = React.useMemo(
+        () => ({ isAllowed, onToggle: toggleAllow, saving: isSaving }),
+        [isAllowed, toggleAllow, isSaving]
+    )
+
     // Domain to every kind of data recorded there, so a site row can say what
     // else the site holds without a second aggregation pass in the ledger.
     const alsoHoldsByDomain = React.useMemo(() => {
@@ -329,6 +465,9 @@ export default function ExposurePage() {
                             <KeyRound className="h-4 w-4 text-muted-foreground" />
                             <h2 className="text-lg font-semibold">{t("What you have handed over")}</h2>
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                            {t("Allowing a site exempts it from the handover penalty. Nothing is deleted.")}
+                        </p>
                         {report.handedOver.length === 0 ? (
                             <Card>
                                 <CardContent className="p-4 text-sm text-muted-foreground">
@@ -342,6 +481,7 @@ export default function ExposurePage() {
                                     group={group}
                                     reasonLabel={reasonLabel}
                                     alsoHoldsByDomain={alsoHoldsByDomain}
+                                    allow={allow}
                                 />
                             ))
                         )}

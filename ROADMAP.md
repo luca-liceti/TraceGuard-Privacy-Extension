@@ -143,8 +143,10 @@ the three criteria are about.
 
 Unblocked on October 14, 2026, when the ledger was kept.
 
-- **Trust.** `trustSite(domain)` using the existing whitelist, surfaced where the record lives
-  instead of only in Settings.
+- **Trust. Shipped in v1.23.0.** Each holder row on `/exposure` carries an allow control that writes
+  the same `settings.whitelist` the confirmation card and the settings screen write, shows the state
+  on the row, and takes it back on a second click. The row reads the list the way the engine does, so
+  an entry covering a subdomain is what removal takes out.
 - **Memory in the PII gate.** The gate currently asks "is this site safe?" with no history. Feed the
   ledger into it so it can say "you have shared this with 12 sites, 3 of them one-off". This is
   where behaviour actually changes, because it appears while the user is typing.
@@ -155,7 +157,9 @@ change nothing about the exposure while raising the score, which makes the numbe
 bookkeeping instead of behaviour.
 
 **One thing to be honest about in the design.** Trust is the only action here that reduces safety,
-so it needs to be visible, listable, and one-click reversible.
+so it needs to be visible, listable, and one-click reversible. The shipped control states its effect
+in one line on the page rather than leaving it implicit, and it deletes nothing: an allowed site
+stays on the list of holders.
 
 ### Gate A2 to A3
 

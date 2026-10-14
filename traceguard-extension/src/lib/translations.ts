@@ -2,6 +2,7 @@ export const resources = {
   "es": {
     "translation": {
       "Added to allow list": "Añadido a la lista de permitidos",
+      "Allowing a site exempts it from the handover penalty. Nothing is deleted.": "Permitir un sitio lo exime de la penalización por cesión de datos. No se elimina nada.",
       "Already blacklisted": "Ya en lista negra",
       "Already whitelisted": "Ya en lista blanca",
       "Analyze and monitor every website TraceGuard has scanned": "Analiza y monitorea cada sitio web que TraceGuard ha escaneado",
@@ -236,6 +237,7 @@ export const resources = {
       "Quick Start": "Inicio rápido",
       "Recent errors are stored locally on this device to help troubleshoot. They never leave your browser.": "Los errores recientes se guardan localmente en este dispositivo para ayudar a solucionar problemas. Nunca salen de tu navegador.",
       "Removed from blacklist": "Eliminado de la lista negra",
+      "Remove from allow list": "Quitar de la lista de permitidos",
       "Removed from whitelist": "Eliminado de la lista blanca",
       "Remove specific data from the extension": "Elimina datos específicos de la extensión",
       "Reputation": "Reputación",
@@ -588,6 +590,8 @@ export const resources = {
       "All logged events have been removed.": "Todos los eventos registrados han sido eliminados.",
       "All tracker detection and score calculations happen directly on your device.": "Toda la detección de rastreadores y el cálculo de puntuaciones ocurren directamente en tu dispositivo.",
       "All-time average": "Promedio histórico",
+      "Allow": "Permitir",
+      "Allowed": "Permitido",
       "Allowed and flagged": "Permitidos y marcados",
       "Allowed and flagged sites": "Sitios permitidos y marcados",
       "Allowed sites": "Sitios permitidos",
@@ -1042,6 +1046,7 @@ export const resources = {
   "fr": {
     "translation": {
       "Added to allow list": "Ajouté à la liste autorisée",
+      "Allowing a site exempts it from the handover penalty. Nothing is deleted.": "Autoriser un site l’exempte de la pénalité de transfert de données. Rien n’est supprimé.",
       "Already blacklisted": "Déjà sur liste noire",
       "Already whitelisted": "Déjà sur liste blanche",
       "Analyze and monitor every website TraceGuard has scanned": "Analysez et surveillez chaque site web scanné par TraceGuard",
@@ -1276,6 +1281,7 @@ export const resources = {
       "Quick Start": "Démarrage rapide",
       "Recent errors are stored locally on this device to help troubleshoot. They never leave your browser.": "Les erreurs récentes sont stockées localement sur cet appareil pour vous aider à résoudre les problèmes. Elles ne quittent jamais votre navigateur.",
       "Removed from blacklist": "Retiré de la liste noire",
+      "Remove from allow list": "Retirer de la liste d’autorisation",
       "Removed from whitelist": "Retiré de la liste blanche",
       "Remove specific data from the extension": "Supprimer des données spécifiques de l'extension",
       "Reputation": "Réputation",
@@ -1628,6 +1634,8 @@ export const resources = {
       "All logged events have been removed.": "Tous les événements enregistrés ont été supprimés.",
       "All tracker detection and score calculations happen directly on your device.": "Toute la détection des traqueurs et les calculs de scores se font directement sur votre appareil.",
       "All-time average": "Moyenne globale",
+      "Allow": "Autoriser",
+      "Allowed": "Autorisé",
       "Allowed and flagged": "Autorisés et signalés",
       "Allowed and flagged sites": "Sites autorisés et signalés",
       "Allowed sites": "Sites autorisés",
@@ -2082,6 +2090,7 @@ export const resources = {
   "de": {
     "translation": {
       "Added to allow list": "Zur Zulassungsliste hinzugefügt",
+      "Allowing a site exempts it from the handover penalty. Nothing is deleted.": "Eine erlaubte Seite ist von der Strafe für Datenübergaben ausgenommen. Es wird nichts gelöscht.",
       "Already blacklisted": "Bereits auf der schwarzen Liste",
       "Already whitelisted": "Bereits auf der weißen Liste",
       "Analyze and monitor every website TraceGuard has scanned": "Analysieren und überwachen Sie jede Website, die TraceGuard gescannt hat",
@@ -2316,6 +2325,7 @@ export const resources = {
       "Quick Start": "Schnellstart",
       "Recent errors are stored locally on this device to help troubleshoot. They never leave your browser.": "Aktuelle Fehler werden lokal auf diesem Gerät gespeichert, um bei der Fehlerbehebung zu helfen. Sie verlassen niemals deinen Browser.",
       "Removed from blacklist": "Von der schwarzen Liste entfernt",
+      "Remove from allow list": "Aus der Erlaubnisliste entfernen",
       "Removed from whitelist": "Von der weißen Liste entfernt",
       "Remove specific data from the extension": "Spezifische Daten aus der Erweiterung entfernen",
       "Reputation": "Ruf",
@@ -2668,6 +2678,8 @@ export const resources = {
       "All logged events have been removed.": "Alle protokollierten Ereignisse wurden entfernt.",
       "All tracker detection and score calculations happen directly on your device.": "Die gesamte Tracker-Erkennung und Score-Berechnung erfolgt direkt auf Ihrem Gerät.",
       "All-time average": "Gesamtdurchschnitt",
+      "Allow": "Erlauben",
+      "Allowed": "Erlaubt",
       "Allowed and flagged": "Erlaubt und markiert",
       "Allowed and flagged sites": "Erlaubte und markierte Websites",
       "Allowed sites": "Erlaubte Websites",

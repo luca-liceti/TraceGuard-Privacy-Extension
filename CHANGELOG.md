@@ -2,6 +2,13 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.23.0
+
+**What's new**
+
+- **Your Footprint** now lets you allow a site from the row that names it, instead of only while a confirmation card appears mid-form. Each row shows whether the site is allowed, one click allows it, and a second click takes it back. It writes the same allow list you edit under **Allowed and flagged**.
+- Allowing a site exempts its handovers from the penalty, so the row says so in one line. It never deletes the record and it never blocks anything: the site keeps what it has, and the page still lists it as a holder.
+
 ## v1.22.10
 
 **What was fixed**
