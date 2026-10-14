@@ -23,6 +23,53 @@ ledger.
 
 ---
 
+# Prerequisites before any on-device AI
+
+Both A3 and B1 stay blocked until the items below are done. They are shared plumbing and shared
+disclosure rather than feature work, and none of them assumes a model is present.
+
+- **Naming and runtime path are unresolved, and they are two different things.** The model Chrome
+  ships is **Gemini Nano**; the extension APIs are `Summarizer` (Summarizer API) and `LanguageModel`
+  (Prompt API), and there is no product called "Gemma Nano". WebGPU is only relevant to the second
+  path below, so decide per job which path is used:
+  - **Chrome's built-in model.** The extension makes no WebGPU call and ships no model: Chrome runs
+    Gemini Nano on the GPU or CPU. It is available to extension pages and the service worker from
+    Chrome 138, but not to ordinary web workers. It is gated on hardware, about 22 GB free disk and
+    either more than 4 GB VRAM or 16 GB RAM with 4 cores, plus a one-time multi-gigabyte download, so
+    many users fail the gate and nothing may assume a model exists.
+  - **Our own runtime over WebGPU.** Bundle WebLLM, Transformers.js or ONNX Runtime Web with a
+    Gemma-class model. This is the only path that actually uses WebGPU, and it takes on MV3 limits:
+    no remote executable code (the WASM runtime ships in the package), `wasm-unsafe-eval` in the
+    `extension_pages` CSP, weights are data so they may be downloaded separately, service-worker
+    termination must be handled, and the store package cap is 2 GB.
+- **A new ADR is required before any AI code.** Record [0008](adr/0008-gemini-nano-query-box-only.md)
+  scopes Gemini Nano to the query box and lists "Gemini Nano for policy rating" under not-doing.
+  Summarising a page or a policy is a third job that the record does not cover, and an accepted
+  record is never edited in place, so write its successor first and name which path each job uses.
+- **Manifest and CSP.** The local-server path needs `optional_host_permissions` for the exact
+  loopback origins (`http://localhost:11434/*`, and `http://127.0.0.1:11434/*` only if the server is
+  addressed that way), requested when the user enables the feature and never granted up front.
+  `manifest.json` line 46 also pins `connect-src` to `'self'`, `api.tosdr.org` and
+  `raw.githubusercontent.com`, so a fetch to a local model is blocked until that origin is added.
+- **Server-side setup belongs to the user.** Ollama refuses extension origins unless `OLLAMA_ORIGINS`
+  allows them, and LM Studio needs `--cors`. Chrome 142's Local Network Access permission needs a
+  real test against the exact extension origin, because the docs do not settle whether it applies to
+  extension-origin requests.
+- **Disclosure moves with the data.** Policy text, and any page text a summary needs, would leave the
+  page for a local model, so three files change in the same commit as the feature: `PRIVACY.md`
+  (which today says it reads page structure and never page text),
+  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md` (one line for the new optional permission), and
+  the "Remote code and services" answer in `docs/store-listing/data-usage-questionnaire.md`.
+- **Classify the summary against the behaviour rules.** A model summary shown to the user is Context
+  unless it changes a decision, in which case it is Persuasion and must name the behaviour at the
+  point where the decision is made. If a summary ever feeds the score, record
+  [0006](adr/0006-asymmetric-policy-ratings.md) binds it: it may lower a score or stay neutral, and
+  it may never raise one or mark a site safe for the PII gate.
+- **Gate B is still unanswered.** Coverage, impact and calibration come before any policy rating, so
+  no part of B1 ships even when the plumbing above is done.
+
+---
+
 # Track A: Footprint assistant
 
 The goal is to expose the user to their own behaviour, reward good behaviour, and guide them away
@@ -169,8 +216,10 @@ card would look nice" is not.
 
 ## A3. Optional local AI
 
-Off by default, opt-in permission, never a dependency of the core. Scope and providers are set by
-record [0008](adr/0008-gemini-nano-query-box-only.md).
+Blocked on the shared prerequisites above, and it may not start until the successor record to
+[0008](adr/0008-gemini-nano-query-box-only.md) names which runtime path it uses. Off by default,
+opt-in permission, never a dependency of the core. Scope and providers are set by record
+[0008](adr/0008-gemini-nano-query-box-only.md).
 
 - **Query box.** Sits on Overview beside the score ring and the activity chart. Note that grid is
   currently two columns, so this needs a third column or its own row. The model routes the question
@@ -206,9 +255,12 @@ template clustering may cover the long tail deterministically, with no model at 
 ## B1. Local policy rating
 
 The user's own local model only, reached over an optional localhost host permission requested only
-when the feature is enabled. The scrape happens in the content script while the user is on the
-policy page, so no new network permission and no CSP change is needed. Only the policy text is sent,
-never the footprint ledger or logs.
+when the feature is enabled. The scrape happens in the content script while the user is on the policy
+page, so the page never talks to the local server. The inference call itself is made from an
+extension context (the service worker, or a dedicated offscreen document), which does need the
+optional host permission and the matching `connect-src` entry named in the prerequisites. Only the
+policy text is sent, never the footprint ledger or logs. It also stays blocked on Gate B and on the
+summarisation record that scopes the runtime path.
 
 - Cache by a **normalised content hash** (strip dates, whitespace, navigation), not by domain, so
   one analysis covers every site sharing a policy. Re-analyse on change using a similarity
