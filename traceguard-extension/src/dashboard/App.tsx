@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toast"
 import Layout from "@/components/traceguard/layout"
 import { useSettings } from "@/lib/useStorage"
 import { AuthProvider } from "@/components/traceguard/auth-provider"
+import { LoadingScreen } from "@/components/traceguard/loading-screen"
 import { resilientLazy } from "@/lib/resilient-lazy"
 
 // Import pages (lazy-loaded so heavy chart/table dependencies only ship when
@@ -77,14 +78,13 @@ function AppContent() {
             window.removeEventListener('QUOTA_EXCEEDED', handleQuotaExceeded)
             chrome.runtime.onMessage.removeListener(messageListener);
         }    }, [t])
-
     return (
         <>
             <Toaster />
             <Router>
                 <DeepLinkHandler />
                 <SiteDetailsProvider>
-                <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">{t("Loading...")}</div>}>
+                <Suspense fallback={<LoadingScreen />}>
                     <Routes>
                         {/* Default route - redirect to Overview */}
                         <Route path="/" element={<Navigate to="/overview" replace />} />
@@ -115,7 +115,6 @@ function App() {
 
     return (
         <ThemeProvider
-            key={settings?.theme || "system"}
             attribute="class"
             defaultTheme={settings?.theme || "system"}
             enableSystem={true}
