@@ -10,7 +10,7 @@ import {
 import { NavMain } from "@/components/nav-main"
 import { NavFooter } from "@/components/nav-footer"
 import { useLocation } from "react-router-dom"
-import { useUserName, useAppState } from "@/lib/useStorage"
+import { useUserName } from "@/lib/useStorage"
 import {
   Sidebar,
   SidebarContent,
@@ -49,12 +49,6 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
   const userName = useUserName()
-  // A plain fact, not a welcome-back nudge: the project's rules say return
-  // frequency is not a goal, so the sidebar shows what was analyzed instead of
-  // inviting the user to come back.
-  const appState = useAppState()
-  const sitesAnalyzed = appState?.sitesAnalyzed ?? 0
-
   const location = useLocation()
 
   const navItems = React.useMemo(() => {
@@ -89,11 +83,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
-        {sitesAnalyzed > 0 && (
-          <div className="px-4 py-2 text-xs text-muted-foreground font-medium group-data-[state=collapsed]:hidden">
-            {t("{{count}} sites analyzed", { count: sitesAnalyzed })}
-          </div>
-        )}
         <NavFooter user={{ name: userName || t("User"), email: "TraceGuard Vault" }} />
       </SidebarFooter>
       <SidebarRail />
