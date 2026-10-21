@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card"
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 import { useActivityLogs, useAppState, useScoreHistory } from "@/lib/useStorage"
+import { getScoreColor } from "@/lib/risk-utils"
 
 const chartConfig = {
   visitors: {
@@ -150,7 +151,7 @@ export function RadialChartScore({ timeRange = "30d" }: { timeRange?: string }) 
                           <tspan
                             x={viewBox.cx}
                             y={viewBox.cy}
-                            className="fill-foreground text-4xl font-bold"
+                            className={`fill-current ${getScoreColor(currentScore)} text-4xl font-bold`}
                           >
                             {Math.ceil(chartData[0].visitors)}
                           </tspan>
