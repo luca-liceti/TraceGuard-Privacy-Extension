@@ -1,6 +1,7 @@
 # 0016. Summarization ships a bundled small model
 
-**Status:** Accepted
+**Status:** Accepted, amended October 14, 2026 by the user's cross-Chromium requirement and
+October 21, 2026 to scope the Gemma licensing objection to Gemma 3 and 3n
 **Date:** 2026-10-14
 
 ## Context
@@ -18,8 +19,11 @@ breaks on the coverage requirement:
   scores) is easy. Rating legal text feeds a score, needs a much larger model, and stays on the
   user's own server, which is what 0015 already decided.
 
-So the summary needs a provider that ships with the extension and runs on the device. The question
-was only which model, and the answer is set by license and by fit rather than by brand.
+So the summary needs a provider that ships with the extension and runs on the device. The user later
+clarified that this feature must work across Chromium browsers, not only Chrome, and explicitly asked
+to test summaries despite the earlier demand gate. Chrome's built-in provider is therefore excluded.
+The Ollama provider is being built first as a checkpoint; the bundled WebGPU provider remains the
+cross-browser goal. The model choice is set by license and fit rather than brand.
 
 ## Decision
 
@@ -30,10 +34,10 @@ The extension bundles one small model for **context summarization only**, and sh
 - **Runtime:** WebLLM over WebGPU, in an offscreen document. WebGPU exists in every Chromium
   browser from about version 113, so this is the provider that works in Brave, Vivaldi and Opera,
   not just Chrome.
-- **Provider order for the summary:**
-  1. Chrome's built-in model when `await availability()` succeeds, because it costs no download.
-  2. The bundled model, which is the default everywhere else.
-  3. The user's own local model, for a user who would rather use the one they already run.
+- **Provider choice for the summary:** the bundled WebGPU model is the planned cross-Chromium
+  default. The user's own local model is an opt-in alternative. During implementation, build and
+  verify one provider at a time, pausing for the user's confirmation after each. Do not use Chrome's
+  built-in model, since it does not meet the cross-Chromium requirement.
 - **The policy report is unchanged from 0015:** the user's local model only, never the bundled one.
   That job needs a model far larger than 0.8B (the reason 0008 gives), and record
   [0006](0006-asymmetric-policy-ratings.md) governs what a generated rating may do.
@@ -42,7 +46,16 @@ The extension bundles one small model for **context summarization only**, and sh
 Why this model rather than Gemma. Gemma 3 and Gemma 3n use Google's own terms of use, which
 require passing those terms on to the user and enforcing the use restrictions, which is a poor fit
 for weights the extension downloads by itself. Gemma 4 is Apache 2.0 but needs about 3.4 GB of GPU
-memory at q4f16, too heavy for rewriting a few numbers. Qwen3.5-0.8B is Apache 2.0, is already in
+memory at q4f16, too heavy for rewriting a few numbers.
+
+**Scope of the Gemma objection (amended October 21, 2026).** The licensing objection covers Gemma 3
+and Gemma 3n only. Gemma 4 is Apache 2.0, confirmed in the Ollama manifest, which ships the Apache
+license text. So "no Gemma" is not a project rule, and it never applied to a model the user installs
+themselves: the policy report runs on the user's own Ollama model, which this record already allows
+to be any model they choose. Gemma 4 stays out of the **bundled** slot for size, not license, because
+about 3.4 GB of GPU memory to restate a handful of counts is a worse trade than 1.6 GB.
+The model recommended for the user-installed jobs is recorded in `ROADMAP.md`, not here, because
+this record governs what ships inside the package. Qwen3.5-0.8B is Apache 2.0, is already in
 WebLLM's prebuilt catalog so no custom compilation is needed, and fits a modest GPU. The smaller
 Apache 2.0 fallbacks, if quality or memory turns out to be the binding constraint, are
 `SmolLM2-360M-Instruct` (also in WebLLM, about 376 MB of GPU memory) and `granite-4.0-350m` (a
@@ -61,9 +74,11 @@ Transformers.js build, about 350 MB).
 - **New machinery to build:** a download with progress and a cancel, storage accounting and a
   delete, an offscreen document because the service worker is killed mid-generation, and a model
   plus prompt version recorded with each summary so a result can be invalidated.
-- **New disclosure:** the weight download is an external request, so `PRIVACY.md`,
-  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md` and the store data-usage questionnaire all
-  change. The summary itself is computed on device and sends nothing.
+- **New disclosure:** the weight download is an external request, so `PRIVACY.md` and
+  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md` must change. The store data-usage questionnaire
+  is ignored by Git in this checkout. The Ollama provider sends the exact stored facts documented in
+  `PRIVACY.md` to the user's own local server. The bundled summary itself is computed on device and
+  sends nothing.
 - **GPU memory is the real gate, not download size.** About 1.6 GB of VRAM is a higher bar than the
   437 MB download suggests, so the measurement on real machines stays a prerequisite.
 - **Output validation is mandatory, and it is not only for the policy report.** A 0.8B model can

@@ -100,6 +100,7 @@ If you encounter issues or have questions, please use the following resources:
 - **[ROADMAP.md](ROADMAP.md)**: what is being built next, and what would make us stop.
 - **[CHANGELOG.md](CHANGELOG.md)**: release history.
 - **[PRIVACY.md](PRIVACY.md)**: what is stored, what is not, and why.
+- **[CREDITS.md](CREDITS.md)**: the data, models and ideas borrowed from other projects, including ToS;DR and Docbot, and the terms they come under.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** and **[VERSIONING.md](VERSIONING.md)**: contributing and releases.
 The `docs/` folder is deliberately not versioned. It holds local working material: the audit reports, store-listing drafts, branding, and screenshots, none of which belong in the repository.
 

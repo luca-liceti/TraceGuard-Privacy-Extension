@@ -3,8 +3,10 @@
  * throwing. The entry runs on import, so the test supplies the root element the
  * popup HTML normally provides, then waits for React to render into it.
  */
-import { waitFor } from '@testing-library/react';
+import { act, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+let unmount: (() => void) | undefined;
 
 describe('popup entry', () => {
     beforeEach(async () => {
@@ -20,11 +22,16 @@ describe('popup entry', () => {
     });
 
     afterEach(() => {
+        // The entry owns its root. Unmount before the environment is torn down,
+        // or a pending storage promise schedules React work with no window.
+        unmount?.();
+        unmount = undefined;
         document.body.innerHTML = '';
     });
 
     it('mounts the app into the root element', async () => {
-        await import('./main');
+        const entry = await import('./main');
+        unmount = () => act(() => entry.root?.unmount());
         await waitFor(() => {
             expect(document.getElementById('root')!.childElementCount).toBeGreaterThan(0);
         });

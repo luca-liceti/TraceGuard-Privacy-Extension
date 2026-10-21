@@ -48,6 +48,7 @@ import { useAppState, useSettings } from "@/lib/useStorage"
 import { ExportDataDialog } from "./export-data-dialog"
 import { ImportDataDialog } from "./import-data-dialog"
 import { storage } from "@/lib/storage"
+import { logEvent } from "@/lib/diagnostics"
 import { getErrorLog, clearErrorLog, type ErrorLogEntry } from "@/lib/error-log"
 import {
     clearSessionEvents,
@@ -72,7 +73,8 @@ import {
     Download,
     Upload,
     ShieldUser,
-    OctagonAlert
+    OctagonAlert,
+    RefreshCw
 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -95,6 +97,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTheme } from "@/components/theme-provider"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { ModelRecommendation } from "./model-recommendation"
 import { useSettingsModal } from "./settings-context"
 
 
@@ -121,12 +124,14 @@ const RETENTION_OPTIONS = [7, 14, 30, 60, 90]
 function SettingItem({
     label,
     description,
+    descriptionClassName,
     note,
     controlId,
     children
 }: {
     label: string
     description?: string
+    descriptionClassName?: string
     /** Optional caveat shown under the description, e.g. when a setting is inert. */
     note?: string
     /** Optional id linking this label to its control via htmlFor */
@@ -138,7 +143,7 @@ function SettingItem({
             <div className="space-y-0.5 flex-1 min-w-0">
                 <Label htmlFor={controlId} className="text-base font-medium">{label}</Label>
                 {description && (
-                    <p className="text-sm text-muted-foreground break-words">{description}</p>
+                    <p className={`${descriptionClassName ?? "text-sm"} text-muted-foreground break-words`}>{description}</p>
                 )}
                 {note && (
                     <p className="text-sm text-warning break-words">{note}</p>
@@ -173,7 +178,13 @@ export function SettingsModal() {
     const [enabled, setEnabled] = useState(settings?.enabled ?? true)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
     const [enableCloudTosdr, setEnableCloudTosdr] = useState(settings?.enableCloudTosdr ?? false)
-    const [displayMode, setDisplayMode] = useState(settings?.displayMode || "popup")
+    const [enableLocalSummaries, setEnableLocalSummaries] = useState(settings?.enableLocalSummaries ?? false)
+    const [localSummaryModel, setLocalSummaryModel] = useState(settings?.localSummaryModel ?? 'qwen3.5:0.8b')
+    const [ollamaModels, setOllamaModels] = useState<string[]>([])
+    const [ollamaModelsLoading, setOllamaModelsLoading] = useState(false)
+    const [ollamaModelsError, setOllamaModelsError] = useState(false)
+    const [enableLocalPolicyReports, setEnableLocalPolicyReports] = useState(settings?.enableLocalPolicyReports ?? false)
+    const [displayMode, setDisplayMode] = useState(settings?.displayMode || "sidebar")
     // Legacy "Never" (0) behaved exactly like "On Browser Close" (-1): both
     // simply skip the idle timer, and session storage clears on browser close
     // either way. Normalize any stored 0 to -1 and drop the redundant option.
@@ -187,6 +198,26 @@ export function SettingsModal() {
     const [sessionEvents, setSessionEvents] = useState<DiagnosticEvent[]>([])
     const [exportOpen, setExportOpen] = useState(false)
     const [importOpen, setImportOpen] = useState(false)
+
+    const refreshOllamaModels = useCallback(async () => {
+        setOllamaModelsLoading(true)
+        setOllamaModelsError(false)
+        try {
+            const { listOllamaModels } = await import('@/lib/ai/ollama')
+            setOllamaModels(await listOllamaModels())
+        } catch (error) {
+            setOllamaModelsError(true)
+            logEvent('ui', 'warn', 'ai_summary_model_list_ui_failed', 'Settings could not refresh locally installed Ollama models', {
+                error: error instanceof Error ? error.message : String(error),
+            })
+        } finally {
+            setOllamaModelsLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (isSettingsOpen && enableLocalSummaries) void refreshOllamaModels()
+    }, [isSettingsOpen, enableLocalSummaries, refreshOllamaModels])
 
     // Fetch manifest version
     useEffect(() => {
@@ -236,7 +267,10 @@ export function SettingsModal() {
         setEnabled(s.enabled ?? true)
         setEnablePIIDetection(s.enablePIIDetection ?? true)
         setEnableCloudTosdr(s.enableCloudTosdr ?? false)
-        setDisplayMode(s.displayMode || "popup")
+        setEnableLocalSummaries(s.enableLocalSummaries ?? false)
+        setLocalSummaryModel(s.localSummaryModel ?? 'qwen3.5:0.8b')
+        setEnableLocalPolicyReports(s.enableLocalPolicyReports ?? false)
+        setDisplayMode(s.displayMode || "sidebar")
         setAutoLockTimeout(s.autoLockTimeout === 0 ? -1 : (s.autoLockTimeout ?? -1))
         setWhitelist(s.whitelist || [])
         setBlacklist(s.blacklist || [])
@@ -274,6 +308,9 @@ export function SettingsModal() {
             wssThreshold,
             enablePIIDetection,
             enableCloudTosdr,
+            enableLocalSummaries,
+            localSummaryModel,
+            enableLocalPolicyReports,
             displayMode,
             autoLockTimeout,
             whitelist,
@@ -307,7 +344,10 @@ export function SettingsModal() {
             wssThreshold: 60,
             enablePIIDetection: true,
             enableCloudTosdr: false,
-            displayMode: "popup" as const,
+            enableLocalSummaries: false,
+            localSummaryModel: 'qwen3.5:0.8b',
+            enableLocalPolicyReports: false,
+            displayMode: "sidebar" as const,
             autoLockTimeout: -1,
             devMode: false,
         }
@@ -322,6 +362,9 @@ export function SettingsModal() {
         setWssThreshold(defaultPreferences.wssThreshold)
         setEnablePIIDetection(defaultPreferences.enablePIIDetection)
         setEnableCloudTosdr(defaultPreferences.enableCloudTosdr)
+        setEnableLocalSummaries(defaultPreferences.enableLocalSummaries)
+        setLocalSummaryModel(defaultPreferences.localSummaryModel)
+        setEnableLocalPolicyReports(defaultPreferences.enableLocalPolicyReports)
         setDisplayMode(defaultPreferences.displayMode)
         setAutoLockTimeout(defaultPreferences.autoLockTimeout)
         setDevModeLocal(defaultPreferences.devMode)
@@ -632,6 +675,92 @@ export function SettingsModal() {
                                 }}
                             />
                         </SettingItem>
+
+                        <SettingItem
+                            label={t("Local AI summaries")}
+                            description={t("Optional: sends this site's domain, score, detector scores and counts, and ToS;DR grade to Ollama on this device. Overview summaries send aggregate counts and five domains with visits and scores. Never sends page text or sensitive field types. Ollama must allow this browser's extension origin: set OLLAMA_ORIGINS=chrome-extension://* and restart Ollama.")}
+                            descriptionClassName="text-xs"
+                            controlId="local-summary-toggle"
+                        >
+                            <Switch
+                                id="local-summary-toggle"
+                                checked={enableLocalSummaries}
+                                onCheckedChange={async (checked) => {
+                                    setEnableLocalSummaries(checked)
+                                    handleChange()
+                                }}
+                            />
+                        </SettingItem>
+                        <SettingItem
+                            label={t("Local policy reports")}
+                            description={t("Optional experiment: when requested on a privacy policy page, sends up to 30,000 characters of visible policy text and its page address to your Ollama model on this device. The report is provisional and never changes the site's score. A policy report needs a bigger model than the summary default: qwen3.5:9b (6.6 GB) is functional from 10 GB of GPU memory, gemma4:12b (8.0 GB) is better from 12 GB, and gemma4:26b (18.7 GB) is outstanding from 24 GB.")}
+                            descriptionClassName="text-xs"
+                            controlId="local-policy-report-toggle"
+                        >
+                            <Switch
+                                id="local-policy-report-toggle"
+                                checked={enableLocalPolicyReports}
+                                onCheckedChange={(checked) => {
+                                    setEnableLocalPolicyReports(checked)
+                                    handleChange()
+                                }}
+                            />
+                        </SettingItem>
+                        {enableLocalSummaries && (
+                            <ModelRecommendation
+                                installedModels={ollamaModels}
+                                selectedModel={localSummaryModel}
+                                onSelect={(model) => {
+                                    setLocalSummaryModel(model)
+                                    handleChange()
+                                }}
+                            />
+                        )}
+                        {enableLocalSummaries && (
+                            <SettingItem
+                                label={t("Ollama model")}
+                                description={t("Choose an installed Ollama model. The list refreshes when you open Settings. The saved model stays selected if it is not installed right now.")}
+                                controlId="local-summary-model"
+                                note={ollamaModelsError
+                                    ? t("Could not load Ollama models. Check that Ollama is running and allows this extension origin.")
+                                    : !ollamaModelsLoading && ollamaModels.length === 0
+                                        ? t("No installed Ollama models found.")
+                                        : undefined}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Select
+                                        value={localSummaryModel}
+                                        onValueChange={(value) => {
+                                            setLocalSummaryModel(value)
+                                            handleChange()
+                                        }}
+                                        disabled={ollamaModelsLoading || ollamaModels.length === 0}
+                                    >
+                                        <SelectTrigger id="local-summary-model" className="w-44">
+                                            <SelectValue placeholder={ollamaModelsLoading ? t("Loading Ollama models…") : t("No installed Ollama models found.")} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {localSummaryModel && !ollamaModelsError && !ollamaModels.includes(localSummaryModel) && (
+                                                <SelectItem value={localSummaryModel}>{localSummaryModel} ({t("not installed")})</SelectItem>
+                                            )}
+                                            {ollamaModels.map((model) => <SelectItem key={model} value={model}>{model}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        onClick={() => void refreshOllamaModels()}
+                                        disabled={ollamaModelsLoading}
+                                        aria-label={t("Refresh installed models")}
+                                        title={t("Refresh installed models")}
+                                    >
+                                        <RefreshCw className={`h-4 w-4 ${ollamaModelsLoading ? "animate-spin" : ""}`} />
+                                    </Button>
+                                </div>
+                            </SettingItem>
+                        )}
 
                         <SettingItem
                             label={t("Vault Auto-Lock")}

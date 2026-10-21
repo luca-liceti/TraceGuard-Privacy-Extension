@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 import { ScoreRing } from "@/components/sidepanel/score-ring"
 import { SiteDetails } from "@/components/sidepanel/site-details"
 import { Actions } from "@/components/sidepanel/actions"
+import { SummaryCard } from "@/components/sidepanel/summary-card"
+import { buildSiteSummaryRequest } from "@/lib/ai/facts"
 
 /**
  * Small helper component for the header lock status. Children only render
@@ -72,6 +74,7 @@ function App({ variant = 'sidepanel' }: AppProps) {
 
                 <div className="space-y-3 flex-1 min-h-0 overflow-y-auto">
                     <ScoreRing ups={state.ups} />
+                    {currentSite && <SummaryCard request={buildSiteSummaryRequest(currentSite)} />}
                     <SiteDetails currentSite={currentSite} variant={isPopup ? 'popup' : 'sidepanel'} />
                 </div>
                 <Actions />

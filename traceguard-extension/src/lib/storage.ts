@@ -112,6 +112,10 @@ const DEFAULT_SETTINGS: UserSettings = {
     logRetentionDays: 30,         // Days to keep activity logs before auto-deletion
     databaseRefreshDays: 7,       // Background ratings refresh every 7 days by default; the sweep sends no browsing data. Existing installs keep 0 (migration 1 -> 2).
     enableCloudTosdr: false,      // Live rating updates defaults to false (privacy-first)
+    displayMode: 'sidebar',       // Open the side panel when clicking the extension icon
+    enableLocalSummaries: false,  // Local-model requests are opt-in
+    localSummaryModel: 'qwen3.5:0.8b', // Edit to the exact model name installed in Ollama
+    enableLocalPolicyReports: false, // Policy text is sent only after an explicit request
     devMode: false               // Verbose diagnostics are off until explicitly enabled
 };
 

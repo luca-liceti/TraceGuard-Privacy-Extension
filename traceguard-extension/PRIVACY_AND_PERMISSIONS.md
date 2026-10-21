@@ -1,4 +1,4 @@
-# Chrome Web Store permissions justification
+# Chromium extension permissions justification
 
 The **Privacy practices** tab asks for a separate one-line justification for every permission in the
 manifest. The **Form text** under each heading is the exact string to paste into that field. The
@@ -56,7 +56,12 @@ mode where the current site's score follows the user as they switch tabs.
 **Why it is needed:** The worker reads `tab.url` in the `onActivated` and `onUpdated` handlers to
 resolve the domain being scored, and uses those events to update the badge and the side panel
 context for the newly active tab. This is the permission behind Chrome's "Read your browsing history"
-warning, so the form text should say plainly that the tab URL is read.
+warning, so the form text should say plainly that the tab URL is read. The broad website host permission already includes localhost, so Local AI summaries request no additional permission.
+
+It is also how a local policy report reaches a policy the user did not open: the worker creates an
+inactive tab for the candidate policy URL (`chrome.tabs.create`), reads it through the content
+script, and removes it in a `finally` (`chrome.tabs.remove`), so a failed or timed-out read cannot
+leave a tab behind. No new permission is involved.
 
 ## `notifications`
 
@@ -119,8 +124,8 @@ traffic entirely, and no requests, cookies, or headers are recorded while paused
 
 **Form text:**
 
-> TraceGuard scores the privacy practices of every site a user visits. Broad host access is required to inject the analysis content script and observe third-party network requests (trackers, cookies, headers) across the web. All analysis happens locally.
+> TraceGuard scores the privacy practices of every site a user visits. Broad host access is required to inject the analysis content script and observe third-party network requests (trackers, cookies, headers) across the web. All analysis happens locally. If the user enables Local AI summaries, the same access also permits requests to their own Ollama server at localhost:11434.
 
 **Why it is needed:** The content script is declared for `*://*/*` because the extension scores
 whatever site the user opens, and the observational `webRequest` listener needs the same scope to see
-third-party requests. No browsing data leaves the device.
+third-party requests. Site analysis does not send browsing data to a server. If Local AI summaries are enabled, only the bounded detector findings and audit aggregates described in `PRIVACY.md` are sent to the user's own localhost Ollama server.

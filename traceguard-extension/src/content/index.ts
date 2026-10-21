@@ -36,6 +36,7 @@ import { piiDetector } from './pii-detector';  // Monitors sensitive input field
 import { showPIIConfirmCard } from './pii-confirm';  // "Is this website safe?" popup
 import { showToast } from './toast';                 // In-page toast notifications
 import { isLocalUrl } from '../lib/utils'; // Helps identify local network addresses
+import { POLICY_MARKER, POLICY_PAGE_MARKER } from '../lib/ai/policy-text';
 import { captureError, installGlobalErrorHandlers, logEvent, setDevMode, setDiagnosticContext } from '../lib/diagnostics';
 
 
@@ -48,6 +49,14 @@ import { captureError, installGlobalErrorHandlers, logEvent, setDevMode, setDiag
  * It runs the page analysis as soon as this script loads.
  * The 'async' keyword lets us use 'await' for operations that take time.
  */
+/**
+ * The background opens policy pages in an inactive tab, marked with this
+ * fragment. Analysis is skipped there so that reading a policy does not record
+ * the policy's domain as a visited site.
+ */
+const POLICY_CAPTURE_HASH = '#tg-policy-capture';
+const isPolicyCaptureTab = window.location.hash === POLICY_CAPTURE_HASH;
+
 // Utility: Debounce function to prevent running analysis too often
 function debounce(func: (...args: any[]) => void, wait: number) {
     let timeout: ReturnType<typeof setTimeout>;
@@ -63,6 +72,11 @@ function debounce(func: (...args: any[]) => void, wait: number) {
 
 // Function to perform analysis and notify background
 async function runAnalysis(isInitialLoad: boolean) {
+    // A capture tab exists only to be read, never to be scored or journalled.
+    if (isPolicyCaptureTab) {
+        return;
+    }
+
     // Skip analysis on local addresses
     if (isLocalUrl(window.location.href)) {
         return;
@@ -200,7 +214,71 @@ window.addEventListener('beforeunload', () => {
  * Currently, this is used to show toast notifications on the webpage
  * when something important happens (like PII detection on a risky site).
  */
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Candidate policy links on this page, ranked by the background. The list is
+    // returned raw and bounded; ordering rules live in lib/policy-links.ts.
+    if (message?.type === 'FIND_POLICY_LINKS') {
+        if (sender.id !== chrome.runtime.id) {
+            sendResponse({ ok: false, reason: 'untrusted-sender' });
+            return false;
+        }
+        const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href]'))
+            .slice(0, 400)
+            .map((anchor) => ({
+                href: anchor.href,
+                text: (anchor.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 120),
+            }));
+        sendResponse({ ok: true, pageUrl: window.location.href, links });
+        return false;
+    }
+
+    if (message?.type === 'GET_PRIVACY_POLICY_TEXT') {
+        if (sender.id !== chrome.runtime.id) {
+            sendResponse({ ok: false, reason: 'untrusted-sender' });
+            return false;
+        }
+        let pageUrl: URL;
+        try {
+            pageUrl = new URL(window.location.href);
+        } catch {
+            sendResponse({ ok: false, reason: 'invalid-page-url' });
+            return false;
+        }
+        if (pageUrl.protocol !== 'https:' && pageUrl.protocol !== 'http:') {
+            sendResponse({ ok: false, reason: 'invalid-page-url' });
+            return false;
+        }
+        // Terms and cookie pages are valid sources too: a ToS;DR document list
+        // often points at the terms, and the text check below still requires
+        // policy vocabulary before anything is returned.
+        const policyPage = POLICY_PAGE_MARKER.test(`${pageUrl.pathname} ${document.title}`);
+        if (!policyPage) {
+            sendResponse({ ok: false, reason: 'not-policy-page' });
+            return false;
+        }
+        const candidates = Array.from(document.querySelectorAll<HTMLElement>('main, article, [role="main"]'))
+            .map((element) => ({ text: element.innerText.replace(/\s+/g, ' ').trim() }))
+            .filter((candidate) => candidate.text.length >= 500)
+            .sort((a, b) => b.text.length - a.text.length);
+        const candidate = candidates[0];
+        if (!candidate) {
+            sendResponse({ ok: false, reason: 'no-readable-policy-content' });
+            return false;
+        }
+        if (!POLICY_MARKER.test(candidate.text)) {
+            sendResponse({ ok: false, reason: 'not-policy-text' });
+            return false;
+        }
+        sendResponse({
+            ok: true,
+            // The capture marker is an internal detail; the report cites the page.
+            url: `${pageUrl.origin}${pageUrl.pathname}${pageUrl.search}`,
+            title: document.title,
+            text: candidate.text.slice(0, 30_000),
+        });
+        return false;
+    }
+
     // Handle the "Is this website safe?" confirmation popup from the background
     if (message.type === 'SHOW_PII_CONFIRM') {
         showPIIConfirmCard(message.data);

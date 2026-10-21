@@ -38,6 +38,8 @@ import { calculateWSS, calculateTrackingScore, explainWSS } from '../lib/scoring
 import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, PIIDetectionEvent } from '../lib/types';
 import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR, refreshTosdrCatalog } from './tosdr-api';
+import { capturePolicyText, type PolicyCaptureDeps, type PolicyPageReply } from './policy-capture';
+import { policyCandidates } from '../lib/policy-links';
 import { evaluateNotificationBudget, readShownNotifications } from '../lib/notification-budget';
 import { calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
 import { scoreUps, buildHandovers, handoverBaseWeight } from '../lib/ups';
@@ -500,7 +502,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     await loadBlacklist();
 
     // Set up how the extension opens (popup window vs sidebar)
-    await configureDisplayMode(settings.displayMode || 'popup');
+    await configureDisplayMode(settings.displayMode || 'sidebar');
 
     // Sync corrupted/missing state from cache
     await syncStateWithCache();
@@ -528,7 +530,7 @@ chrome.runtime.onStartup.addListener(async () => {
     const settings = await storage.getSettings();
     await configureDatabaseRefresh(settings.databaseRefreshDays);
     await chrome.alarms.create(CLEANUP_ALARM, { periodInMinutes: 24 * 60 });
-    await configureDisplayMode(settings.displayMode || 'popup');
+    await configureDisplayMode(settings.displayMode || 'sidebar');
 
     // Sync corrupted/missing state from cache
     await syncStateWithCache();
@@ -662,6 +664,54 @@ async function armAutoLock(force = false): Promise<void> {
 // =============================================================================
 
 /**
+ * Browser wiring for policy capture.
+ *
+ * Each candidate opens in an inactive tab because a service-worker `fetch` is
+ * blocked by this extension's own `connect-src`, returns unrendered HTML, and
+ * carries no `SameSite=Lax` cookies. The tab is always closed by the capture
+ * orchestrator, including when the read throws.
+ */
+const policyCaptureDeps: PolicyCaptureDeps = {
+    async openTab(url) {
+        try {
+            // The fragment makes the content script skip analysis, so reading a
+            // policy does not record its domain as a visited site.
+            const marked = url.includes('#') ? url : `${url}#tg-policy-capture`;
+            const tab = await chrome.tabs.create({ url: marked, active: false });
+            return typeof tab?.id === 'number' ? tab.id : null;
+        } catch {
+            return null;
+        }
+    },
+    async readPage(tabId, timeoutMs) {
+        const deadline = Date.now() + timeoutMs;
+        let last: PolicyPageReply = { ok: false, reason: 'timeout' };
+        while (Date.now() < deadline) {
+            try {
+                const reply = await chrome.tabs.sendMessage(tabId, { type: 'GET_PRIVACY_POLICY_TEXT' }) as PolicyPageReply;
+                if (reply) {
+                    last = reply;
+                    if (reply.ok) return reply;
+                    // These will not change while the page stays open.
+                    if (reply.reason === 'invalid-page-url' || reply.reason === 'untrusted-sender') return reply;
+                }
+            } catch {
+                // The content script has not been injected yet; keep waiting.
+            }
+            await new Promise(resolve => setTimeout(resolve, 400));
+        }
+        return last;
+    },
+    async closeTab(tabId) {
+        try {
+            await chrome.tabs.remove(tabId);
+        } catch {
+            // Already closed, or its window went away.
+        }
+    },
+};
+
+/**
  * This is the main "message center" of the extension.
  * Other parts of the extension (content scripts, popup, dashboard) send messages here,
  * and this function decides what to do with each type of message.
@@ -682,6 +732,145 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     // Any message from the extension counts as activity, reset the idle timer.
     armAutoLock();
+
+    if (message.type === 'GET_PRIVACY_POLICY_TEXT') {
+        if (_sender.tab || typeof message.expectedDomain !== 'string') {
+            sendResponse({ ok: false, reason: 'extension-view-required' });
+            return false;
+        }
+        storage.getSettings().then(async (settings) => {
+            if (!settings.enableLocalPolicyReports) {
+                sendResponse({ ok: false, reason: 'not-enabled' });
+                return;
+            }
+            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            const activeTab = tabs[0];
+            if (!activeTab?.id || !activeTab.url) {
+                sendResponse({ ok: false, reason: 'page-unavailable' });
+                return;
+            }
+            let activeDomain: string;
+            try {
+                const activeUrl = new URL(activeTab.url);
+                if (activeUrl.protocol !== 'https:' && activeUrl.protocol !== 'http:') {
+                    sendResponse({ ok: false, reason: 'page-unavailable' });
+                    return;
+                }
+                activeDomain = activeUrl.hostname.toLowerCase();
+            } catch {
+                sendResponse({ ok: false, reason: 'page-unavailable' });
+                return;
+            }
+            if (activeDomain !== message.expectedDomain.toLowerCase()) {
+                sendResponse({ ok: false, reason: 'active-site-changed' });
+                return;
+            }
+            try {
+                const data = await chrome.tabs.sendMessage(activeTab.id, { type: 'GET_PRIVACY_POLICY_TEXT' });
+                sendResponse(data);
+            } catch (error) {
+                logEvent('background', 'warn', 'policy_text_request_failed', 'Could not read policy text from the active tab', {
+                    host: activeDomain,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+                sendResponse({ ok: false, reason: 'page-unavailable' });
+            }
+        }).catch((error) => {
+            logEvent('background', 'warn', 'policy_text_settings_read_failed', 'Could not read local policy report setting', {
+                error: error instanceof Error ? error.message : String(error),
+            });
+            sendResponse({ ok: false, reason: 'settings-unavailable' });
+        });
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // POLICY CAPTURE: find and read a policy the user did not navigate to
+    // -------------------------------------------------------------------------
+    if (message.type === 'CAPTURE_PRIVACY_POLICY') {
+        if (_sender.tab || typeof message.expectedDomain !== 'string') {
+            sendResponse({ ok: false, reason: 'extension-view-required' });
+            return false;
+        }
+        storage.getSettings().then(async (settings) => {
+            if (!settings.enableLocalPolicyReports) {
+                sendResponse({ ok: false, reason: 'not-enabled' });
+                return;
+            }
+            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            const activeTab = tabs[0];
+            if (!activeTab?.id || !activeTab.url) {
+                sendResponse({ ok: false, reason: 'page-unavailable' });
+                return;
+            }
+            let activeUrl: URL;
+            try {
+                activeUrl = new URL(activeTab.url);
+            } catch {
+                sendResponse({ ok: false, reason: 'page-unavailable' });
+                return;
+            }
+            if (activeUrl.protocol !== 'https:' && activeUrl.protocol !== 'http:') {
+                sendResponse({ ok: false, reason: 'page-unavailable' });
+                return;
+            }
+            if (activeUrl.hostname.toLowerCase() !== message.expectedDomain.toLowerCase()) {
+                sendResponse({ ok: false, reason: 'active-site-changed' });
+                return;
+            }
+
+            // Already on a policy page: read it where it is, no extra tab.
+            try {
+                const current = await chrome.tabs.sendMessage(activeTab.id, { type: 'GET_PRIVACY_POLICY_TEXT' }) as PolicyPageReply;
+                if (current?.ok && current.url && current.title && current.text) {
+                    sendResponse(current);
+                    return;
+                }
+            } catch {
+                // No content script on this page yet; discovery still works.
+            }
+
+            let links: { href: string; text: string }[] = [];
+            try {
+                const found = await chrome.tabs.sendMessage(activeTab.id, { type: 'FIND_POLICY_LINKS' }) as { links?: { href: string; text: string }[] };
+                if (Array.isArray(found?.links)) links = found.links;
+            } catch (error) {
+                logEvent('background', 'warn', 'policy_links_scan_failed', 'Could not scan the page for policy links', {
+                    host: activeUrl.hostname,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+
+            const documents = Array.isArray(message.documents)
+                ? message.documents
+                    .filter((document: unknown) => Boolean(document) && typeof document === 'object')
+                    .slice(0, 10)
+                : [];
+            const candidates = policyCandidates({ pageUrl: activeUrl.href, documents, links });
+            if (candidates.length === 0) {
+                logEvent('background', 'info', 'policy_capture_no_candidates', 'No policy link or common path was available to capture', {
+                    host: activeUrl.hostname,
+                });
+                sendResponse({ ok: false, reason: 'no-candidates' });
+                return;
+            }
+
+            const result = await capturePolicyText(candidates, policyCaptureDeps);
+            logEvent('background', result.ok ? 'info' : 'warn', 'policy_capture_finished', 'Policy capture finished', {
+                host: activeUrl.hostname,
+                ok: result.ok,
+                attempted: result.attempted,
+                reason: result.ok ? null : result.reason,
+            });
+            sendResponse(result);
+        }).catch((error) => {
+            logEvent('background', 'warn', 'policy_capture_failed', 'Policy capture failed before reading a page', {
+                error: error instanceof Error ? error.message : String(error),
+            });
+            sendResponse({ ok: false, reason: 'unavailable' });
+        });
+        return true;
+    }
 
     // -------------------------------------------------------------------------
     // REPUTATION CHECK: Is this website known to be dangerous?
@@ -872,7 +1061,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         // Update the display mode and refresh schedule immediately.
         setNetworkMonitorEnabled(newSettings.enabled !== false);
         Promise.all([
-            configureDisplayMode(newSettings.displayMode || 'popup'),
+            configureDisplayMode(newSettings.displayMode || 'sidebar'),
             configureDatabaseRefresh(newSettings.databaseRefreshDays),
         ])
             .then(() => sendResponse({ success: true }))

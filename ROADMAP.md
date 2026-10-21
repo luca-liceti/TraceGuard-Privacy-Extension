@@ -28,66 +28,80 @@ ledger.
 Both A3 and B1 stay blocked until the items below are done. They are shared plumbing and shared
 disclosure rather than feature work, and none of them assumes a model is present.
 
-- **Three providers, and the names get crossed.** Record
-  [0016](adr/0016-bundled-summarization-model.md) decides this. Chrome's built-in model is **Gemini
-  Nano**; the extension APIs are `Summarizer` and `LanguageModel`. "Gemma Nano" is not a product: it
-  is **Gemma**, Google's separate open family, which the extension does not bundle. The paths are:
-  - **Chrome's built-in model.** No WebGPU call and no download on our side: Chrome runs Gemini Nano
-    on the GPU or CPU. It is available to extension pages and the service worker from Chrome 138, but
-    not to ordinary web workers. It is gated on hardware, about 22 GB free disk and either more than
-    4 GB VRAM or 16 GB RAM with 4 cores, plus a one-time multi-gigabyte download, so many users fail
-    the gate and nothing may assume a model exists.
-  - **The bundled model, for the summary only.** `Qwen/Qwen3.5-0.8B`, Apache 2.0, run with WebLLM
+- **Two providers, selected for Chromium-wide coverage.** Record
+  [0016](adr/0016-bundled-summarization-model.md) originally included Chrome's built-in Gemini Nano.
+  The user has clarified that a Chrome-only provider is out of scope: the feature is meant to work
+  across Chromium browsers. This is a requested experiment despite the earlier product-gate result.
+  The provider plan is now:
+  - **The bundled model, for summaries only.** `Qwen/Qwen3.5-0.8B`, Apache 2.0, runs with WebLLM
     over WebGPU in an offscreen document as `Qwen3.5-0.8B-q4f16_1-MLC`: about 437 MB to download and
-    about 1.6 GB of GPU memory at run time. WebGPU exists in every Chromium browser from about version
-    113, so this is the provider that works in Brave, Vivaldi and Opera. Gemma 3 and 3n are ruled out
-    by their terms of use, and Gemma 4 by its 3.4 GB q4f16 footprint, even though it is Apache 2.0.
-    The policy report never uses this model.
-  - **The user's own model over localhost.** Ollama, LM Studio or llama.cpp, reached with the
-    optional host permission below. This is the third provider for the summary, and the only
-    provider for the policy report.
-- **"Chromium-based" is not enough for the built-in path.** Chrome's built-in AI is not a
-  Chromium-wide feature: the model is a separate Google component and the backend depends on
-  Google-internal services. Brave disables the Optimization Guide keyed service, and where `LanguageModel`
-  was exposed there it crashed. Edge ships same-named `LanguageModel` and `Summarizer` APIs but
-  backed by a different model (Phi-4-mini), in preview, with different options. So built-in-only
-  means Chrome on desktop and ChromeOS, not Brave, Vivaldi or Opera. Detection must be
-  `await LanguageModel.availability()` (and the Summarizer equivalent) inside a `try`/`catch`, never a
-  name check, because Brave showed the API while the backend was broken. In those browsers the
-  built-in provider shows an honest unavailable state, and the summary falls back to the bundled
-  model, which is the reason for shipping one.
-- **The governing record is [0016](adr/0016-bundled-summarization-model.md).** It supersedes
-  [0015](adr/0015-ai-ships-no-model.md), which supersedes
-  [0008](adr/0008-gemini-nano-query-box-only.md), and it sets the provider order. Read it before
-  touching any AI feature.
-- **Manifest and CSP.** The local-server path needs `optional_host_permissions` for the exact
-  loopback origins (`http://localhost:11434/*`, and `http://127.0.0.1:11434/*` only if the server is
-  addressed that way), requested when the user enables the feature and never granted up front.
-  `content_security_policy.extension_pages` in `manifest.json` also pins `connect-src` to `'self'`,
-  `api.tosdr.org` and `raw.githubusercontent.com`, so a fetch to a local model is blocked until that
-  origin is added. The bundled model needs two more things there: `wasm-unsafe-eval` in `script-src`
-  for the WebLLM runtime, and the weight host in `connect-src` for the first download.
-- **Server-side setup belongs to the user.** Ollama refuses extension origins unless `OLLAMA_ORIGINS`
-  allows them, and LM Studio needs `--cors`. Chrome 142's Local Network Access permission needs a
-  real test against the exact extension origin, because the docs do not settle whether it applies to
-  extension-origin requests.
-- **Disclosure moves with each provider.** Three providers, three separate disclosures, and each one
-  changes the same three files: `PRIVACY.md`, `traceguard-extension/PRIVACY_AND_PERMISSIONS.md`, and
-  the "Remote code and services" answer in `docs/store-listing/data-usage-questionnaire.md`.
-  - **Chrome's built-in model** sends nothing and downloads nothing on our behalf.
-  - **The bundled model** adds one external request, the weight download from the pinned WebLLM
-    artifact host on first use. After that it runs on device. Its WASM runtime also counts as remote
-    or executed code in the store questionnaire.
-  - **The user's local model** sends text to the user's own machine: policy text for the report,
-    which `PRIVACY.md` today says it never reads, or the site's analysis and browsing log for a
-    summary.
+    about 1.6 GB of GPU memory at run time. WebGPU exists in Chromium browsers from about version
+    113. Gemma 3 and 3n are ruled out by their terms of use, and Gemma 4 by its 3.4 GB q4f16
+    footprint; Gemma 4 is Apache 2.0, so the objection to it is size, not license. That license
+    objection covers Gemma 3 and 3n only, and only the bundled model: the policy report runs on a
+    model the user installs, which they may choose from any permissively licensed family. The
+    policy report never uses this model.
+  - **The user's own model over localhost.** Ollama is the first implementation checkpoint because
+    the user already has it. It is optional and sends only the summary facts listed in the privacy
+    policy. The same local model is the only provider for the policy report.
+  - **Recommended local models, in two groups.** Every tag below has a verified size, and each
+    memory figure already includes the 16,384-token context a policy report needs, plus about 1 GB
+    for the browser and OS. The choice is by memory, not by brand: the bundled-slot objection to
+    Gemma does not apply to a model the user installs.
+    - **Underpowered laptops: `qwen3.5:0.8b`, 1.3 GB.** Summaries only, exactly the sidebar and
+      Overview behavior that already works. It cannot hold a 30,000-character policy and copy a
+      verbatim quote, so the policy-report setting should stay off on these machines instead of
+      failing on every attempt.
+    - **Capable machines, Apple Silicon or a discrete GPU: three models, each doing all three
+      jobs.** The rungs change quality and memory together, so a user picks the highest one their
+      machine can hold.
+      - **Functional: `qwen3.5:9b`, 6.6 GB, about 10 GB of memory.** The floor for a working
+        policy report, and the same family and request shape already verified end to end here.
+      - **Better: `gemma4:12b`, 8.0 GB, about 12 GB of memory.** Apache 2.0 with a 256K context
+        and more headroom for a long policy. Ollama publishes no 12B benchmark, only 26B and 31B,
+        so this rung rests on the family and the context window, not a measured score.
+      - **Outstanding: `gemma4:26b`, 18.7 GB, about 24 GB of memory.** A mixture of experts with
+        4B active parameters, so it reads a full policy at closer to 4B speed. `qwen3.5:27b`,
+        17.5 GB, is the dense alternative where speed matters less.
+    - **Unified memory.** A Mac uses total memory in place of VRAM, minus what the OS and browser
+      hold, about 4 to 6 GB on a 16 GB machine.
+
+    `qwen3.5:0.8b` stays the summary-only default for low-end devices, which is why the policy
+    report screen names the larger model instead of changing that default. Policy reports request a
+    16,384-token context because 30,000 characters is roughly 8,000 tokens.
+  - **No Chrome-only built-in provider.** It would make this feature behave differently by browser,
+    which conflicts with the user's cross-Chromium requirement.
+- **Why there is no browser built-in provider.** Chrome's model is not a Chromium-wide feature: it
+  is a separate Google component and depends on Google-internal services. This project deliberately
+  does not target that Chrome-only path; summaries use a user-provided local model as the first
+  checkpoint and a bundled WebGPU model as the cross-Chromium provider.
+- **The governing record is [0016](adr/0016-bundled-summarization-model.md), amended by the user's
+  cross-Chromium requirement.** It supersedes [0015](adr/0015-ai-ships-no-model.md), which supersedes
+  [0008](adr/0008-gemini-nano-query-box-only.md). The bundled provider is the planned cross-browser
+  default; local Ollama is an opt-in provider tested first by user request. Chrome's built-in model
+  is out of scope.
+- **Manifest and CSP.** The manifest already grants broad website host access for site analysis,
+  which also permits the user's localhost Ollama endpoint without a new permission prompt.
+  `content_security_policy.extension_pages` in `manifest.json` must allow `http://localhost:11434`.
+  The bundled model also needs `wasm-unsafe-eval` in `script-src` for WebLLM and its pinned weight
+  host in `connect-src` for the first download.
+- **Server-side setup belongs to the user.** Ollama must allow the installed browser extension's
+  origin in `OLLAMA_ORIGINS`. Chromium local-network restrictions still need a real test against
+  the exact extension origin in each target browser.
+- **Disclosure moves with each provider.** Update `PRIVACY.md` and
+  `traceguard-extension/PRIVACY_AND_PERMISSIONS.md` for each provider. The store questionnaire is
+  ignored by Git in this checkout, so its tracked counterpart must be added to the repository if it
+  is to be maintained. The Ollama summary provider sends only the facts listed in `PRIVACY.md`. The
+  bundled provider adds a first-use weight download from the pinned WebLLM artifact host; its WASM
+  runtime and remote weight data must be disclosed.
 - **Classify each output against the behaviour rules.** Both summaries are Context: they restate
   true facts and make no claim on behaviour. The browsing brief must not become a Persuasion without
   naming the behaviour it exists to change. If a generated policy rating feeds the score, record
   [0006](adr/0006-asymmetric-policy-ratings.md) binds it: it may lower a score or stay neutral, and
   it may never raise one or mark a site safe for the PII gate.
-- **Gate B is still unanswered.** Coverage, impact and calibration come before any policy rating, so
-  no part of B1 ships even when the plumbing above is done.
+- **Gate B calibration is still unanswered.** The user has explicitly requested feature 3 despite
+  the earlier evidence gate. Build the calibration harness and run it on known ToS;DR grades before
+  any generated rating can affect scores; no policy rating ships before that test passes.
 
 ---
 
@@ -254,29 +268,28 @@ weekly. Two conditions, both met:
   [0001](adr/0001-local-first.md)), so this comes from the user, exactly as it does for the query
   gate. "It would look nice" is not evidence.
 
-**Status, October 14, 2026: the gate fails, and it is closed.** The user reads both the site
-analysis and the browsing log, so the condition is not met and summarization does not start. This is
-the gate working: it stopped a feature that would have added a model, a download and a disclosure to
-restate data the user already reads. Re-open it only if that changes.
+**Status, October 14, 2026: the original evidence gate failed, then the user explicitly asked to
+build summaries anyway.** This is a deliberate user-requested experiment, not a claim that the old
+evidence changed. Keep it opt-in, fact-checked, and independent of scoring. The user asked to test
+providers one at a time and confirm each before the next provider starts.
 
 ## A3. Optional local AI
 
-Off by default, opt-in permission, never a dependency of the core. Providers are set by record
-[0016](adr/0016-bundled-summarization-model.md). Blocked on the shared prerequisites above and on
-whichever gate above matches the item.
+Off by default, never a dependency of the core. The user explicitly requested the summary and policy
+calibration experiments on October 14, 2026. Summaries target Chromium browsers: the bundled model
+is the cross-browser provider, and Ollama is the first provider checkpoint. Do not add Chrome's
+built-in model. The user will confirm each summary provider before the next one is built. Policy
+ratings remain blocked from shipping until the calibration against known ToS;DR grades passes.
 
 - **Query box.** Sits on Overview beside the score ring and the activity chart. Note that grid is
   currently two columns, so this needs a third column or its own row. The model routes the question
   to the deterministic data and the answer comes from storage, so it cannot invent facts.
-- **Context summarization.** One setting, three providers tried in order: the browser's built-in
-  lightweight model where it exists, then the bundled model, then the user's own local model. It
-  summarizes the current site's analysis in the popup and side panel, and writes a short brief of
-  the user's browsing log into an Overview section. Both read the deterministic record (`siteCache`, the
-  detector results and the log), so no page text is scraped and the `PRIVACY.md` promise that it
-  reads page structure and never page text still holds. Classification is Context: it restates true
-  facts and makes no claim on behaviour. Every number and named fact in the output must appear in the
-  input, or the summary is discarded, because a 0.8B model can invent a tracker or a count while
-  restating the record.
+- **Context summarization.** One setting, using the bundled WebGPU model for cross-Chromium coverage
+  and the user's local Ollama model as an opt-in alternative. It summarizes the current site's
+  analysis in the popup and side panel, and writes a short brief of the user's browsing record into
+  Overview. Both read a bounded list of deterministic facts; no page text is scraped. Classification
+  is Context: it restates facts and makes no claim on behaviour. Unsupported numbers, domains, or
+  names cause the whole output to be discarded.
 - **Policy report** is Track B, not here.
 
 ---

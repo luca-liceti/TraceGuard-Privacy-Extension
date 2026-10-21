@@ -219,8 +219,8 @@ export interface SiteRiskData {
         tracking?: { count: number; known: number; suspicious: number };
         cookies?: { total: number; tracking: number; thirdParty: number };
         input?: { total: number; sensitive: number; types: string[] };
-        policy?: { 
-            grade?: string; 
+        policy?: {
+            grade?: string;
             source: string;
             score?: number;
             serviceId?: number;
@@ -283,6 +283,9 @@ export interface UserSettings {
     autoLockTimeout?: number;            // Vault auto-lock timeout in minutes (0 = never)
     databaseRefreshDays?: 0 | 1 | 3 | 7 | 14 | 30; // Background ratings-catalog refresh in days (0 = off)
     enableCloudTosdr?: boolean;          // Live rating updates toggle (runtime tosdr.org lookups)
+    enableLocalSummaries?: boolean;      // Send summary facts to the user's own localhost Ollama server (off by default)
+    localSummaryModel?: string;          // Exact model name installed in Ollama (default qwen3.5:0.8b)
+    enableLocalPolicyReports?: boolean;  // Allow explicit policy-page text analysis by the user's local Ollama model (off by default)
     devMode?: boolean;                   // Developer mode: verbose on-device diagnostics (off by default)
 }
 

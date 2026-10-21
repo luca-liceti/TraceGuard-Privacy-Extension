@@ -10,7 +10,8 @@
  * there.
  *
  * Both the popup and the side panel share this check: they are the two
- * surfaces that open when the user clicks the toolbar icon.
+ * surfaces that can open when the user clicks the toolbar icon. The normal
+ * side panel remains visible immediately while this asynchronous check runs.
  * =============================================================================
  */
 

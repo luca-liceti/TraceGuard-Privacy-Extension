@@ -190,6 +190,9 @@ const UserSettingsSchema = z.object({
     autoLockTimeout: z.number().finite().min(-1).max(10080).optional(),
     databaseRefreshDays: z.union([z.literal(0), z.literal(1), z.literal(3), z.literal(7), z.literal(14), z.literal(30)]).optional(),
     enableCloudTosdr: z.boolean().optional(),
+    enableLocalSummaries: z.boolean().optional(),
+    localSummaryModel: z.string().max(100).optional(),
+    enableLocalPolicyReports: z.boolean().optional(),
     devMode: z.boolean().optional(),
 }).passthrough();
 

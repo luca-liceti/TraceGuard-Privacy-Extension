@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
+import type { Root as ReactRoot } from 'react-dom/client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import App from '../sidepanel/App'
 import { AuthProvider } from '@/components/traceguard/auth-provider'
@@ -19,8 +20,6 @@ void syncDevModeFromSettings()
 
 function Root() {
     const settings = useSettings();
-    const [showPopup, setShowPopup] = useState(false);
-
     useEffect(() => {
         let cancelled = false;
         redirectToDashboardIfFirstRun()
@@ -28,24 +27,16 @@ function Root() {
                 if (cancelled) return;
                 if (redirected) {
                     window.close();
-                } else {
-                    setShowPopup(true);
                 }
             })
             .catch((error) => {
                 // If the check fails (e.g. storage unavailable), fall back to
                 // the normal popup UI rather than leaving a blank window.
                 logEvent('popup', 'warn', 'first_run_check_failed', 'Could not check first-run state', { error: String(error) });
-                if (!cancelled) setShowPopup(true);
             });
         return () => { cancelled = true; };
     }, []);
 
-    if (!showPopup) {
-        // Blank while we check for first run; popups are transient so the
-        // flash is imperceptible.
-        return null;
-    }
 
     return (
         <ThemeProvider
@@ -62,13 +53,19 @@ function Root() {
     );
 }
 
+/** The mounted root, exported so the entry test can unmount it and stop
+ *  pending React work from firing after the test environment is torn down. */
+export let root: ReactRoot | null = null
+
 try {
     const rootElement = document.getElementById('root');
 
     if (!rootElement) {
         logEvent('popup', 'error', 'popup_root_missing', 'Could not find the popup root element');
     } else {
-        ReactDOM.createRoot(rootElement).render(
+        const mounted = ReactDOM.createRoot(rootElement)
+        root = mounted
+        mounted.render(
             <React.StrictMode>
                 <ErrorBoundary>
                     <Root />

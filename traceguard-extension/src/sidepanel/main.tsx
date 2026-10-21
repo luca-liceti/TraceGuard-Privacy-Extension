@@ -1,14 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
+import type { Root } from 'react-dom/client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import App from './App'
 import { AuthProvider } from '@/components/traceguard/auth-provider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { useSettings } from '@/lib/useStorage'
 import { redirectToDashboardIfFirstRun } from '@/lib/first-run'
-import { Button } from '@/components/ui/button'
-import { ShieldUser } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
 import '@/styles/globals.css'
 import '@/lib/i18n'
 import { captureError, installGlobalErrorHandlers, logEvent, setDiagnosticContext, syncDevModeFromSettings } from '@/lib/diagnostics'
@@ -20,60 +18,23 @@ void syncDevModeFromSettings()
 
 /**
  * First-run UX: like the popup, a fresh install opens the full dashboard tab
- * (account creation) instead of the side panel. The panel shows a minimal
- * placeholder until the vault is created in that tab - the storage listener
- * below then swaps in the normal app without needing a reopen.
+ * (account creation) instead of the side panel. The panel renders immediately
+ * while setup continues in that tab.
  */
 function Root() {
-    const { t } = useTranslation();
     const settings = useSettings();
-    const [ready, setReady] = useState(false);
-
     useEffect(() => {
-        let cancelled = false;
         const check = async () => {
             try {
-                const redirected = await redirectToDashboardIfFirstRun();
-                if (!cancelled) setReady(!redirected);
+                await redirectToDashboardIfFirstRun();
             } catch (error) {
-                // If the check fails (e.g. storage unavailable), fall back to
-                // the normal panel UI rather than leaving a placeholder.
+                // If the check fails (e.g. storage unavailable), keep the
+                // app visible and report the expected storage failure.
                 logEvent('sidepanel', 'warn', 'first_run_check_failed', 'Could not check first-run state', { error: String(error) });
-                if (!cancelled) setReady(true);
             }
         };
         check();
-
-        // The vault is created in the dashboard tab (cryptoSalt/validator are
-        // written to local storage); react so the panel switches to the app.
-        const listener = (changes: any, namespace: string) => {
-            if (namespace === 'local' && (changes.cryptoSalt || changes.validator)) {
-                check();
-            }
-        };
-        chrome.storage.onChanged.addListener(listener);
-        return () => {
-            cancelled = true;
-            chrome.storage.onChanged.removeListener(listener);
-        };
     }, []);
-
-    if (!ready) {
-        return (
-            <div className="flex h-full flex-col items-center justify-center gap-3 bg-background p-6 text-center text-sm text-muted-foreground">
-                <ShieldUser className="h-8 w-8 text-foreground" />
-                <p>{t("Create your TraceGuard vault to get started.")}</p>
-                <Button
-                    size="sm"
-                    onClick={() => {
-                        chrome.tabs.create({ url: chrome.runtime.getURL('src/dashboard/index.html') });
-                    }}
-                >
-                    {t("Open Dashboard")}
-                </Button>
-            </div>
-        );
-    }
 
     return (
         <ThemeProvider
@@ -90,13 +51,19 @@ function Root() {
     );
 }
 
+/** The mounted root, exported so the entry test can unmount it and stop
+ *  pending React work from firing after the test environment is torn down. */
+export let root: Root | null = null
+
 try {
     const rootElement = document.getElementById('root');
 
     if (!rootElement) {
         logEvent('sidepanel', 'error', 'sidepanel_root_missing', 'Could not find the side panel root element');
     } else {
-        ReactDOM.createRoot(rootElement).render(
+        const mounted = ReactDOM.createRoot(rootElement)
+        root = mounted
+        mounted.render(
             <React.StrictMode>
                 <ErrorBoundary>
                     <Root />

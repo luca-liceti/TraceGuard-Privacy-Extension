@@ -2,6 +2,27 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.24.0
+
+**What's new**
+
+- Optional local summaries use the Ollama model you run on this device. Current-site summaries send the domain, score, tracker and cookie counts, and ToS;DR grade when present. Overview summaries send aggregate site/visit counts and up to five domains with their visits and scores.
+- Summary input is limited to stored facts, never page text, sensitive field types, typed values, tracker URLs, or the personal-data ledger. Output is discarded if it adds an unsupported number, domain, or named entity. Summaries are not saved.
+- The feature is off by default. Turn it on in Settings, set the installed `qwen3.5:0.8b` model, and allow the installed browser extension's origin in Ollama's `OLLAMA_ORIGINS`. No new permission prompt is needed because the extension already has broad site-analysis host access.
+- This uses Ollama rather than a browser-specific built-in model, so the implementation can be tested across Chromium-based browsers. The next provider checkpoint is the bundled WebGPU model, after this Ollama checkpoint works.
+- A local policy report now follows the shape ToS;DR's Docbot uses, on device: the model picks from a closed list of cases and points at the numbered sentence that supports each one, the extension resolves the sentence, and the score and letter grade are computed from the selected cases. Quotes are exact by construction and the grade is reproducible. The case list is this project's own wording, and `CREDITS.md` records the debt to Docbot and ToS;DR.
+- A local policy report no longer requires opening the policy page first. One button in the policy section finds the site's policy (ToS;DR's document links, then a link on the page, then common paths such as `/privacy-policy`), reads it in an inactive tab, closes the tab, and runs the selected model on the text. Capture tabs carry a marker so reading a policy never records its domain as a visit.
+- Settings now checks this device's graphics hardware when the local model picker opens, and names the model it can actually run, with the `ollama pull` command to copy. Browsers do not report graphics memory, so the card name is read from WebGL and matched against a table of common GPUs; when the card is unknown, the suggestion stays conservative instead of guessing high. Detect a recommended model already installed and it offers to select it.
+- The Settings and Help text now name the models a policy report needs, instead of leaving users on the summary default. `qwen3.5:0.8b` stays the summaries-only default for underpowered laptops. Machines with a discrete GPU or Apple Silicon get three options that all handle summaries, overviews, and policy reports: `qwen3.5:9b` (6.6 GB) is functional from 10 GB of memory, `gemma4:12b` (8.0 GB) is better from 12 GB, and `gemma4:26b` (18.7 GB) is outstanding from 24 GB. All four are Apache 2.0.
+
+**What was fixed**
+
+- The On-device summary no longer stops with "the summary facts are missing or too large to send safely" on the Overview when a busy site has a long domain. The Overview facts are now built within the same 300-character value limit the request checks, so whole findings are kept and the request reaches Ollama instead of being rejected before it is sent. A refusal for missing or oversized facts is now recorded in the diagnostics log instead of failing silently.
+- A summary rejected by the evidence check used to be retried with no explanation, so the model repeated the same mistake and the second attempt was discarded too. The retry now names the failure (too long, an unsupported number or domain, or an unsupported claim), and the length bound matches the model's own output budget. The check also accepts `bbc.co.uk` for a fact recorded as `www.bbc.co.uk`, no longer reads an unrelated good score as praise for entering data, and no longer treats the correct disclaimer "not submitted" as a submission claim.
+- The summary evidence check no longer discards a valid audit when it says that no form entries were recorded on any site, refers to a site by the numbered label inside its domain, or begins a formatted line with a heading word. The retry now names the exact values the model invented, and the reply budget leaves room to close the JSON object, so a long first answer no longer comes back as invalid JSON.
+- Policy reports now ask Ollama for a 16,384-token context. The 30,000 characters of policy text are roughly 8,000 tokens, so the previous 8,000 setting silently cut the end of long policies before the model scored them.
+- An HTTP 403 from Ollama now names the real cause and the fix: add `chrome-extension://*` to `OLLAMA_ORIGINS` and restart Ollama. The settings model list, the local policy report, and the Help page say the same, and the refusal is recorded in diagnostics, instead of suggesting the Ollama server is down.
+
 ## v1.23.1
 
 **What was fixed**

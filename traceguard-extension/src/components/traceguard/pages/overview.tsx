@@ -4,13 +4,16 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable, SiteVisit } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { RadialChartScore } from "@/components/radial-chart-score"
-import { useDetectorLogs, useSiteCache } from "@/lib/useStorage"
+import { useActivityLogs, useDetectorLogs, useSiteCache } from "@/lib/useStorage"
 import { DetectorType } from "@/lib/types"
 import { WSS_WEIGHTS } from "@/lib/scoring"
+import { SummaryCard } from "@/components/sidepanel/summary-card"
+import { buildLogSummaryRequest } from "@/lib/ai/facts"
 
 export default function OverviewPage() {
   const { t } = useTranslation()
   const detectorLogs = useDetectorLogs()
+  const handovers = useActivityLogs()
   const { siteCache } = useSiteCache()
   const [timeRange, setTimeRange] = React.useState("1d")
 
@@ -176,6 +179,7 @@ export default function OverviewPage() {
         </div>
       </div>
       <SectionCards />
+      <SummaryCard request={buildLogSummaryRequest(siteCache, handovers)} />
       <DataTable data={groupedVisits} siteCache={siteCache} />
     </>
   )

@@ -53,7 +53,27 @@ or reveal, the sites you visit. It only updates ratings the extension already kn
 
 Ratings returned by either request are cached locally in `tosdr_cache`, a plaintext map of domain to
 grade that holds no page data. If both are off, ratings only change when a new version of the
-extension ships.
+extension ships.  - **Local AI summaries.** Off by default. If you turn it on, TraceGuard uses its existing website
+  access permission to contact Ollama at `http://localhost:11434`. When you request a current-site
+  audit, it sends that site's domain, overall and detector scores, tracker/cookie counts and
+  categories, fingerprinting attempts and techniques, missing security-header names, ToS;DR grade,
+  and up to three adverse ToS;DR point titles. When you request the Overview audit, it sends counts
+  and score bands across analyzed sites, the lowest- and highest-scoring sample of sites with their
+  recorded findings, and aggregated counts and scores for recorded form entries. These records mean
+  typing started, not that data was submitted or received. It never sends page text, sensitive field
+  types, typed values, the personal-data ledger, raw URLs, tracker URLs, cookie names, or activity
+  logs. The server and model are chosen and run by you; Ollama may keep prompts according to its own
+  local settings. Returned text is checked against supplied facts and discarded if it introduces
+  unsupported numbers, domains, names, or claims about a form entry being submitted. Audits exist
+  only in the open view and are not saved. Turning the setting off stops future requests.
+- **Local policy report.** Off by default, and only reachable while local AI is on. When you ask for a
+  report on a site with no ToS;DR rating, TraceGuard finds the site's privacy policy, using ToS;DR's
+  published document links, a policy link on the page, or a common path such as `/privacy-policy`.
+  It opens that page in an inactive tab, reads its visible text, and closes the tab again; the page
+  may appear in your browser history. Up to 30,000 characters of that text and the page address are
+  sent to your Ollama model on this device and nowhere else. The report is provisional, always shows
+  the quotes it was based on, and never changes the site's score. If no policy can be found or read,
+  it says so instead of guessing.
 
 Threat-intelligence data (phishing/malware domain lists from public feeds such as OpenPhish) is
 bundled at release time and refreshed from the publisher via signed updates. That refresh is always
