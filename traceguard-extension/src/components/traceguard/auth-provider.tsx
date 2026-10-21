@@ -21,6 +21,7 @@ import {
 import { deriveKeyFromPassword, generateSalt, exportKey, verifySaltUniqueness } from "@/lib/crypto"
 import { storage } from "@/lib/storage"
 import { captureError } from "@/lib/diagnostics"
+import { LoadingScreen } from "@/components/traceguard/loading-screen"
 
 import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
 import { useTranslation } from "react-i18next";
@@ -250,9 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthState('setup')
   }
 
-  if (authState === "loading") {
-    return <div className="flex h-screen items-center justify-center bg-background"><ShieldUser className="h-8 w-8 animate-pulse text-foreground" /></div>
-  }
+  if (authState === "loading") return <LoadingScreen />
 
   if (authState === "setup") {
     if (showPrivacyPolicy) {
