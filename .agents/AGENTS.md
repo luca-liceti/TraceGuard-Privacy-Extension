@@ -48,6 +48,7 @@
 
 ## Diagnostics and failure reporting
 
+- Add, edit, or remove translation entries only while preparing a release. During feature implementation and bug fixes, write the English UI copy and defer locale translations to release preparation.
 - Every failure path reports through `src/lib/diagnostics.ts`. Never ship a silent failure: no empty `catch {}`, no `.catch(() => {})`, and no `catch` that only writes to a console nobody has attached.
 - Do not use `console.*` for anything worth knowing later. Signatures, cache decisions, and calculation steps belong in `logEvent`, not in a tree of `console.log` lines that dies with the devtools console. Deprecation notices are the only exception.
 - Classify each `catch` when you write it. A genuine bug or broken invariant uses `captureError(area, error, eventName)`, which also lands in the durable error log. A transient or expected condition (worker asleep, network offline, invalid URL, optional data absent) uses `logEvent(area, 'warn', eventName, message)`, which stays in the session log.
