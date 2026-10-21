@@ -237,7 +237,8 @@ async function confirmSupportedCases(
         format: VERIFY_SCHEMA,
         stream: false,
         think: false,
-        options: { temperature: 0, num_predict: 300, num_ctx: 4_096 },
+        // Same document, same verdicts: greedy sampling with a fixed seed.
+        options: { temperature: 0, top_k: 1, seed: 7, num_predict: 300, num_ctx: 4_096 },
     };
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
@@ -320,7 +321,9 @@ export async function ratePrivacyPolicyLocally(input: {
         format: RESPONSE_SCHEMA,
         stream: false,
         think: false,
-        options: { temperature: 0, num_predict: 500, num_ctx: POLICY_REPORT_NUM_CTX },
+        // Without greedy sampling and a fixed seed, the same policy produced one
+        // case on one run and five on the next.
+        options: { temperature: 0, top_k: 1, seed: 7, num_predict: 500, num_ctx: POLICY_REPORT_NUM_CTX },
     };
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);

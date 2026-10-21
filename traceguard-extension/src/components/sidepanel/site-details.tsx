@@ -1,6 +1,6 @@
 import React from "react"
 import { useTranslation } from "react-i18next"
-import { BadgeCheck, Server, AlertTriangle, CircleCheck, Globe, Activity, Cookie, FileText, Key, XCircle, ThumbsDown, Info, Network, Fingerprint } from "lucide-react"
+import { BadgeCheck, Server, AlertTriangle, ChevronDown, CircleCheck, Globe, Activity, Cookie, FileText, Key, XCircle, ThumbsDown, Info, Network, Fingerprint } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -68,6 +68,13 @@ const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any
         weight: "10%"
     }
 });
+
+/** Grade chip colour, matching the score bands the panel already uses. */
+function gradeBadgeClass(grade: string): string {
+    if (grade === 'A' || grade === 'B') return 'bg-emerald-600/15 text-emerald-600';
+    if (grade === 'C') return 'bg-amber-500/15 text-amber-600';
+    return 'bg-destructive/15 text-destructive';
+}
 
 /** Turn a capture failure into something the user can act on. */
 function policyCaptureErrorMessage(reason: string | undefined, t: (key: string) => string): string {
@@ -393,54 +400,60 @@ export function SiteDetails({ currentSite, variant = 'sidepanel' }: SiteDetailsP
                                                                         </div>
                                                                     </div>
                                                                 )}
-                                                                <p className="text-xs text-muted-foreground">{t('This optional report finds this site\'s privacy policy, reads it in a background tab, and sends the text to your local model. Its estimate is provisional and does not change the site score.')}</p>
-                                                                <Button variant="outline" size="sm" onClick={generatePolicyReport} disabled={policyReportBusy}>
-                                                                    {policyReportStage === 'reading'
-                                                                        ? t('Finding and reading the policy…')
-                                                                        : policyReportStage === 'analyzing'
-                                                                            ? t('Analyzing policy…')
-                                                                            : t('Analyze policy with local model')}
-                                                                </Button>
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <Button variant="outline" size="sm" onClick={generatePolicyReport} disabled={policyReportBusy}>
+                                                                        {policyReportStage === 'reading'
+                                                                            ? t('Finding and reading the policy…')
+                                                                            : policyReportStage === 'analyzing'
+                                                                                ? t('Analyzing policy…')
+                                                                                : t('Analyze policy with local model')}
+                                                                    </Button>
+                                                                    {!policyReport && !policyReportError && !policyReportBusy && (
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            {t('Reads this site\'s policy in a background tab, then asks your local model.')}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                                 {policyReportError && <p role="alert" className="text-xs text-destructive">{policyReportError}</p>}
                                                                 {policyReport && policyReportDomain === currentSite.domain && (
-                                                                    <div className="rounded-md bg-muted/40 p-2 space-y-2 text-xs" aria-live="polite">
-                                                                        <p><strong>{t('Provisional estimate, not a ToS;DR grade')}:</strong> {policyReport.score}/100 · {t('grade')} {policyReport.grade}</p>
-                                                                        <p>{policyReport.summary}</p>
-                                                                        {policyReport.points.length > 0 && (
-                                                                            <div className="space-y-1">
-                                                                                <strong>{t('Cases the policy supports')}:</strong>
-                                                                                <ul className="space-y-1">
-                                                                                    {policyReport.points.map((point) => {
-                                                                                        const Icon = point.classification === 'blocker'
-                                                                                            ? XCircle
-                                                                                            : point.classification === 'bad'
-                                                                                                ? ThumbsDown
-                                                                                                : point.classification === 'good'
-                                                                                                    ? CircleCheck
-                                                                                                    : Info;
-                                                                                        const tone = point.classification === 'blocker'
-                                                                                            ? 'text-destructive'
-                                                                                            : point.classification === 'bad'
-                                                                                                ? 'text-warning'
-                                                                                                : point.classification === 'good'
-                                                                                                    ? 'text-emerald-600'
-                                                                                                    : 'text-muted-foreground';
-                                                                                        return (
-                                                                                            <li key={point.caseId} className="flex gap-1.5 items-start">
-                                                                                                <Icon className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${tone}`} />
-                                                                                                <div className="min-w-0">
-                                                                                                    <span className="font-medium">{point.title}</span>
-                                                                                                    <span className="block text-muted-foreground break-words">“{point.quote}”</span>
-                                                                                                </div>
-                                                                                            </li>
-                                                                                        );
-                                                                                    })}
-                                                                                </ul>
-                                                                            </div>
-                                                                        )}
-                                                                        <p className="text-muted-foreground">{t('The cases follow the idea of ToS;DR\'s taxonomy; this report is generated locally and was not reviewed by ToS;DR.')}</p>
-                                                                        <p className="text-muted-foreground">{t('Model: {{model}} · {{time}}', { model: policyReport.model, time: new Date(policyReport.generatedAt).toLocaleTimeString() })}</p>
-                                                                        <p className="text-muted-foreground">{policyReport.promptVersion}</p>
+                                                                    <div className="overflow-hidden rounded-md border text-xs" aria-live="polite">
+                                                                        <div className="flex items-center gap-2 border-b bg-muted/40 px-2 py-1.5">
+                                                                            <span className={`flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold ${gradeBadgeClass(policyReport.grade)}`}>
+                                                                                {policyReport.grade}
+                                                                            </span>
+                                                                            <span className="font-medium">{policyReport.score}/100</span>
+                                                                            <span className="text-muted-foreground">{t('Provisional, not a ToS;DR grade')}</span>
+                                                                        </div>
+                                                                        {policyReport.summary && <p className="px-2 py-1.5">{policyReport.summary}</p>}
+                                                                        {policyReport.points.map((point) => {
+                                                                            const Icon = point.classification === 'blocker'
+                                                                                ? XCircle
+                                                                                : point.classification === 'bad'
+                                                                                    ? ThumbsDown
+                                                                                    : point.classification === 'good'
+                                                                                        ? CircleCheck
+                                                                                        : Info;
+                                                                            const tone = point.classification === 'blocker'
+                                                                                ? 'text-destructive'
+                                                                                : point.classification === 'bad'
+                                                                                    ? 'text-warning'
+                                                                                    : point.classification === 'good'
+                                                                                        ? 'text-emerald-600'
+                                                                                        : 'text-muted-foreground';
+                                                                            return (
+                                                                                <details key={point.caseId} className="group border-t">
+                                                                                    <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 [&::-webkit-details-marker]:hidden">
+                                                                                        <Icon className={`h-3.5 w-3.5 shrink-0 ${tone}`} />
+                                                                                        <span className="flex-1">{point.title}</span>
+                                                                                        <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                                                                                    </summary>
+                                                                                    <p className="px-2 pb-2 pl-7 text-muted-foreground break-words">“{point.quote}”</p>
+                                                                                </details>
+                                                                            );
+                                                                        })}
+                                                                        <p className="border-t px-2 py-1.5 text-muted-foreground">
+                                                                            {t('{{model}} · {{time}} · locally generated', { model: policyReport.model, time: new Date(policyReport.generatedAt).toLocaleTimeString() })}
+                                                                        </p>
                                                                     </div>
                                                                 )}
                                                             </div>
