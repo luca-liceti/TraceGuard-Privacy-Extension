@@ -49,6 +49,7 @@ import {
     getIndicatorTextColor
 } from "@/lib/theme-utils"
 import { getSafetyLabel } from "@/lib/risk-utils"
+import { filterPolicyPoints, normalizePolicyPointClassification, type PolicyPointFilter } from "@/lib/policy-points"
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { SectionTitle, SectionDescription, SummaryStat, InsightRow } from "./site-details-helpers";
@@ -198,7 +199,7 @@ export function SiteDetailsPanel({
     const { t } = useTranslation();
     const pluralize = (count: number, singularKey: string, pluralKey: string) =>
         count === 1 ? t(singularKey) : t(pluralKey)
-    const [policyFilter, setPolicyFilter] = React.useState("all")
+    const [policyFilter, setPolicyFilter] = React.useState<PolicyPointFilter>("all")
     const enriched = siteData?.enrichedDetails
 
     const cookiesLegacy = legacyDetails?.cookies?.details ?? legacyDetails?.cookies
@@ -891,7 +892,7 @@ export function SiteDetailsPanel({
                                             ) : null}
                                         </div>
                                         {policyLegacy.points && policyLegacy.points.length > 0 && (
-                                            <Select value={policyFilter} onValueChange={setPolicyFilter}>
+                                            <Select value={policyFilter} onValueChange={(value) => setPolicyFilter(value as PolicyPointFilter)}>
                                                 <SelectTrigger className="h-8 w-[140px] text-xs">
                                                     <SelectValue placeholder={t("Filter points")} />
                                                 </SelectTrigger>
@@ -913,8 +914,7 @@ export function SiteDetailsPanel({
                                     )}
 
                                     {policyLegacy.points && policyLegacy.points.length > 0 && (() => {
-                                        const filtered = [...policyLegacy.points]
-                                            .filter((p: any) => policyFilter === "all" || p.classification === policyFilter)
+                                        const filtered = filterPolicyPoints(policyLegacy.points, policyFilter)
                                             .sort((a: any, b: any) => {
                                                 const order: Record<string, number> = { blocker: 1, bad: 2, neutral: 3, good: 4 }
                                                 return (order[a.classification] || 5) - (order[b.classification] || 5)
@@ -933,9 +933,10 @@ export function SiteDetailsPanel({
                                                             {filtered.map((p: any, idx: number) => {
                                                                 let Icon = Info
                                                                 let iconClass = "text-muted-foreground"
-                                                                if (p.classification === 'blocker') { Icon = XCircle; iconClass = getSafetyTextColor('critical') }
-                                                                else if (p.classification === 'bad') { Icon = ThumbsDown; iconClass = getSafetyTextColor('poor') }
-                                                                else if (p.classification === 'good') { Icon = CircleCheck; iconClass = getSafetyTextColor('excellent') }
+                                                                const classification = normalizePolicyPointClassification(p.classification)
+                                                                if (classification === 'blocker') { Icon = XCircle; iconClass = getSafetyTextColor('critical') }
+                                                                else if (classification === 'bad') { Icon = ThumbsDown; iconClass = getSafetyTextColor('poor') }
+                                                                else if (classification === 'good') { Icon = CircleCheck; iconClass = getSafetyTextColor('excellent') }
                                                                 return (
                                                                     <TableRow key={p.title ?? idx}>
                                                                         <TableCell className="w-10 pl-4 pr-2">
