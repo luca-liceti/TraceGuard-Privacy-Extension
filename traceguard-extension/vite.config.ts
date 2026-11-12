@@ -35,10 +35,10 @@ import pkg from './package.json'
 const DEV_SERVER_PORT = 5173
 
 // CRXJS serves the extension from the Vite dev server while developing, and the
-// background worker proxies the popup's own request there. The manifest pins
-// connect-src to the extension and the two feed origins, so that proxy fetch is
-// blocked and the popup opens on ERR_FAILED. Allow the dev server and its HMR
-// socket only for `vite dev`; the packaged manifest keeps the tight policy.
+// background worker proxies the popup's own request there. The packaged manifest
+// allows HTTP(S) connections because policy candidates can live on any site. These
+// fetches omit credentials; a rendered-tab fallback uses the browser session. Allow
+// the dev server and HMR socket only for `vite dev`.
 function allowDevServer(policy: string | undefined): string | undefined {
   if (!policy) return policy
   const origin = `http://localhost:${DEV_SERVER_PORT}`
@@ -75,6 +75,11 @@ export default defineConfig(({ command }) => {
     version: pkg.version,
     ...(isDev
       ? {
+          // CRXJS only dev-serves the HTML pages it finds in the manifest. The
+          // dashboard is opened by URL and is not one of them, so it would load
+          // whatever the last `vite build` left in dist. Registering it as the
+          // (dev-only) options page makes it a dev page too, with HMR.
+          options_ui: { page: 'src/dashboard/index.html', open_in_tab: true },
           content_security_policy: {
             ...rawManifest.content_security_policy,
             extension_pages: allowDevServer(rawManifest.content_security_policy?.extension_pages),
