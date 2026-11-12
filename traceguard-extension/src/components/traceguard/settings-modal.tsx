@@ -14,8 +14,8 @@
  *    - Display Mode: Popup vs Side Panel
  * 
  * 2. PRIVACY TAB
- *    - PII Detection: Toggle personal info monitoring
- *    - Tracker Blocking: Future feature (coming soon)
+ *    - Browsing analysis, personal-info detection, rating lookup, and local AI
+ *    - Vault auto-lock
  * 
  * 3. NOTIFICATIONS TAB
  *    - Alert Level: Silent/Balanced/Aggressive notification modes
@@ -49,6 +49,8 @@ import { ExportDataDialog } from "./export-data-dialog"
 import { ImportDataDialog } from "./import-data-dialog"
 import { storage } from "@/lib/storage"
 import { logEvent } from "@/lib/diagnostics"
+import { clearCachedPolicyReports } from "@/lib/ai/policy-report-cache"
+import { LoadingSpinner } from "@/components/ui/pending"
 import { getErrorLog, clearErrorLog, type ErrorLogEntry } from "@/lib/error-log"
 import {
     clearSessionEvents,
@@ -59,23 +61,7 @@ import {
     type DiagnosticEvent,
 } from "@/lib/diagnostics"
 import { toast } from '@/components/ui/toast'
-import {
-    Bell,
-    Database,
-    Save,
-    RotateCcw,
-    Trash2,
-    AlertTriangle,
-    Palette,
-    HardDrive,
-    Info,
-    Copy,
-    Download,
-    Upload,
-    ShieldUser,
-    OctagonAlert,
-    RefreshCw
-} from "lucide-react"
+import { Bell, Database, Info, OctagonAlert, Palette, ShieldUser, Trash2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
@@ -127,6 +113,8 @@ function SettingItem({
     descriptionClassName,
     note,
     controlId,
+    controlOnMobileTop = false,
+    stacked = false,
     children
 }: {
     label: string
@@ -136,20 +124,44 @@ function SettingItem({
     note?: string
     /** Optional id linking this label to its control via htmlFor */
     controlId?: string
+    /** Keep compact controls such as switches beside their label on phones. */
+    controlOnMobileTop?: boolean
+    /** Keep wide controls below their description at every viewport size. */
+    stacked?: boolean
     children: React.ReactNode
 }) {
-    return (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-            <div className="space-y-0.5 flex-1 min-w-0">
-                <Label htmlFor={controlId} className="text-base font-medium">{label}</Label>
-                {description && (
-                    <p className={`${descriptionClassName ?? "text-sm"} text-muted-foreground break-words`}>{description}</p>
-                )}
-                {note && (
-                    <p className="text-sm text-warning break-words">{note}</p>
-                )}
+    const text = (
+        <>
+            <Label htmlFor={controlId} className="text-base font-medium">{label}</Label>
+            {description && (
+                <p className={`${descriptionClassName ?? "text-sm"} text-muted-foreground break-words`}>{description}</p>
+            )}
+            {note && (
+                <p className="text-sm text-warning break-words">{note}</p>
+            )}
+        </>
+    )
+
+    if (controlOnMobileTop) {
+        return (
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 rounded-lg border p-4 sm:items-center sm:gap-x-6">
+                <div className="col-start-1 row-start-1 min-w-0"><Label htmlFor={controlId} className="text-base font-medium">{label}</Label></div>
+                <div className="col-start-1 row-start-2 min-w-0 space-y-0.5">
+                    {description && <p className={`${descriptionClassName ?? "text-sm"} text-muted-foreground break-words`}>{description}</p>}
+                    {note && <p className="text-sm text-warning break-words">{note}</p>}
+                </div>
+                <div className="col-start-2 row-span-2 row-start-1 self-center">{children}</div>
             </div>
-            <div className="flex-shrink-0">
+        )
+    }
+
+    // The control sits beside the description whenever it fits and drops below
+    // it only when the card is genuinely too narrow. Wrapping on content beats a
+    // fixed breakpoint: a short description never leaves a dead gap beside it.
+    return (
+        <div className={`rounded-lg border p-4 ${stacked ? 'flex flex-col gap-3' : 'flex flex-wrap items-center justify-between gap-x-6 gap-y-3'}`}>
+            <div className={`min-w-0 space-y-0.5${stacked ? '' : ' flex-1 basis-[280px]'}`}>{text}</div>
+            <div className={`flex [&>*]:max-w-full${stacked ? ' w-full' : ' w-full flex-shrink-0 sm:w-auto'}`}>
                 {children}
             </div>
         </div>
@@ -216,8 +228,10 @@ export function SettingsModal() {
     }, [])
 
     useEffect(() => {
-        if (isSettingsOpen && enableLocalSummaries) void refreshOllamaModels()
-    }, [isSettingsOpen, enableLocalSummaries, refreshOllamaModels])
+        if (isSettingsOpen && (enableLocalSummaries || enableLocalPolicyReports)) {
+            void refreshOllamaModels()
+        }
+    }, [isSettingsOpen, enableLocalSummaries, enableLocalPolicyReports, refreshOllamaModels])
 
     // Fetch manifest version
     useEffect(() => {
@@ -243,10 +257,13 @@ export function SettingsModal() {
         return () => clearInterval(interval)
     }, [])
 
-    // Load the local-only error log for the diagnostics panel
+    // Refresh the local-only error log whenever the modal opens. The component
+    // stays mounted for the life of the dashboard, so a one-time read would
+    // keep showing the errors that existed when the dashboard first loaded.
     useEffect(() => {
+        if (!isSettingsOpen) return
         getErrorLog().then(setErrorLog)
-    }, [])
+    }, [isSettingsOpen])
 
     // Live developer-mode stream: subscribe for new events and pull in whatever
     // the service worker, content script, or another view already recorded.
@@ -283,7 +300,7 @@ export function SettingsModal() {
         if (settings) syncLocalFromSettings(settings)
     }, [settings, syncLocalFromSettings])
 
-    if (!state || !settings) return <div className="p-4">{t("Loading...")}</div>
+    if (!state || !settings) return <div className="p-4"><LoadingSpinner label={t("Loading...")} /></div>
 
     const handleChange = () => {
         setHasChanges(true)
@@ -319,6 +336,10 @@ export function SettingsModal() {
         }
 
         await chrome.storage.local.set({ settings: updatedSettings })
+        // Turning the feature off should not leave analyzed policies behind.
+        if (settings.enableLocalPolicyReports && !enableLocalPolicyReports) {
+            void clearCachedPolicyReports()
+        }
         applyTheme(themeLocal)
 
         chrome.runtime.sendMessage({
@@ -377,6 +398,9 @@ export function SettingsModal() {
         }
 
         await chrome.storage.local.set({ settings: newSettings })
+        // Reset disables local policy reports, so cached analyses must not
+        // outlive the opt-in here either.
+        if (settings.enableLocalPolicyReports) void clearCachedPolicyReports()
 
         chrome.runtime.sendMessage({
             type: 'SETTINGS_CHANGED',
@@ -478,10 +502,10 @@ export function SettingsModal() {
             <DialogContent
                 // Height is capped to the viewport so a short window (a laptop with
                 // devtools open, landscape phone) never clips the dialog's top and
-                // bottom. The base 600px is the preferred height; max-h wins when the
+                // bottom. The base 520px is the preferred height; max-h wins when the
                 // viewport is shorter. Width keeps a small margin on narrow screens
                 // instead of spanning edge to edge.
-                className="max-w-4xl w-[calc(100vw-1rem)] sm:w-full h-[600px] max-h-[calc(100dvh-1rem)] p-0 overflow-hidden gap-0 bg-background border shadow-2xl flex flex-col"
+                className="max-w-4xl w-[calc(100vw-1rem)] sm:w-full h-[520px] max-h-[calc(100dvh-2rem)] p-0 overflow-hidden gap-0 bg-background border shadow-2xl flex flex-col"
                 onEscapeKeyDown={(e) => {
                     if (hasChanges) {
                         e.preventDefault()
@@ -498,61 +522,73 @@ export function SettingsModal() {
                 <DialogTitle className="sr-only">{t("Settings")}</DialogTitle>
                 <DialogDescription className="sr-only">{t("Configure TraceGuard preferences")}</DialogDescription>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 min-h-0 w-full flex-col sm:flex-row">
-                    {/* Navigation. A fixed 240px column leaves no room for the
-                        content on a phone, so below `sm` it becomes a compact
-                        icon row across the top and the labels return as the
-                        column does. Each trigger keeps an aria-label because the
-                        visible text is hidden on the narrow layout. */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-w-0 flex-1 min-h-0 w-full flex-col sm:flex-row">
+                    {/* The compact section picker keeps mobile navigation legible;
+                        desktop uses the same clear text labels. */}
                     <div className="flex w-full shrink-0 flex-col border-b bg-muted/10 sm:h-full sm:w-[240px] sm:border-b-0 sm:border-r">
                         <div className="p-4 py-4 sm:py-6">
                             <h2 className="text-xl font-bold tracking-tight">{t("Settings")}</h2>
                         </div>
-                        <TabsList className="flex h-auto w-full flex-row items-stretch justify-start gap-1 bg-transparent p-3 pt-0 sm:h-full sm:flex-col sm:gap-0 sm:space-y-1">
-                            <TabsTrigger value="appearance" aria-label={t("Appearance")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
-                                <Palette className="h-4 w-4" />
-                                <span className="hidden sm:inline">{t("Appearance")}</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="privacy" aria-label={t("Privacy")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
-                                <ShieldUser className="h-4 w-4" />
-                                <span className="hidden sm:inline">{t("Privacy")}</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="notifications" aria-label={t("Notifications")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
-                                <Bell className="h-4 w-4" />
-                                <span className="hidden sm:inline">{t("Notifications")}</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="domain-lists" aria-label={t("Allowed and flagged")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
-                                <OctagonAlert className="h-4 w-4" />
-                                <span className="hidden sm:inline">{t("Allowed and flagged")}</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="data" aria-label={t("Data")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
-                                <Database className="h-4 w-4" />
-                                <span className="hidden sm:inline">{t("Data")}</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="about" aria-label={t("About")} className="flex-1 justify-center gap-2 px-3 py-2 data-[state=active]:bg-muted sm:flex-none sm:justify-start">
-                                <Info className="h-4 w-4" />
-                                <span className="hidden sm:inline">{t("About")}</span>
-                            </TabsTrigger>
-                        </TabsList>
+                        <div className="px-4 pb-4 sm:hidden">
+                            <Select value={activeTab} onValueChange={setActiveTab}>
+                                <SelectTrigger aria-label={t("Settings section")} className="w-full bg-background">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="appearance">{t("Appearance")}</SelectItem>
+                                    <SelectItem value="privacy">{t("Privacy")}</SelectItem>
+                                    <SelectItem value="notifications">{t("Notifications")}</SelectItem>
+                                    <SelectItem value="domain-lists">{t("Allowed and flagged")}</SelectItem>
+                                    <SelectItem value="data">{t("Data")}</SelectItem>
+                                    <SelectItem value="about">{t("About")}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="hidden sm:block">
+                            <TabsList className="flex h-auto w-full flex-col items-stretch justify-start gap-0 bg-transparent p-3 pt-0 sm:space-y-1">
+                                <TabsTrigger value="appearance" aria-label={t("Appearance")} className="w-full justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                    <Palette aria-hidden="true" className="h-4 w-4" />
+                                    <span>{t("Appearance")}</span>
+                                </TabsTrigger>
+                                <TabsTrigger value="privacy" aria-label={t("Privacy")} className="w-full justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                    <ShieldUser aria-hidden="true" className="h-4 w-4" />
+                                    <span>{t("Privacy")}</span>
+                                </TabsTrigger>
+                                <TabsTrigger value="notifications" aria-label={t("Notifications")} className="w-full justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                    <Bell aria-hidden="true" className="h-4 w-4" />
+                                    <span>{t("Notifications")}</span>
+                                </TabsTrigger>
+                                <TabsTrigger value="domain-lists" aria-label={t("Allowed and flagged")} className="w-full justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                    <OctagonAlert aria-hidden="true" className="h-4 w-4" />
+                                    <span>{t("Allowed and flagged")}</span>
+                                </TabsTrigger>
+                                <TabsTrigger value="data" aria-label={t("Data")} className="w-full justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                    <Database aria-hidden="true" className="h-4 w-4" />
+                                    <span>{t("Data")}</span>
+                                </TabsTrigger>
+                                <TabsTrigger value="about" aria-label={t("About")} className="w-full justify-start gap-2 px-3 py-2 data-[state=active]:bg-muted">
+                                    <Info aria-hidden="true" className="h-4 w-4" />
+                                    <span>{t("About")}</span>
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
                     </div>
 
                     {/* Content Area */}
-                    <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
+                    <div className="flex min-w-0 flex-1 flex-col relative min-h-0 overflow-hidden">
                         {/* Save Changes Bar - At Top */}
                         {hasChanges && (
-                            <div className="border-b border-primary/50 bg-background/95 backdrop-blur pl-6 pr-14 py-3 z-10 shrink-0">
-                                <div className="flex items-center justify-between">
+                            <div className="border-b border-primary/50 bg-background/95 backdrop-blur pl-4 pr-12 py-3 z-10 shrink-0 sm:pl-6 sm:pr-14">
+                                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-center gap-2 text-sm">
                                         <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                         <span className="text-muted-foreground">{t("You have unsaved changes")}</span>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
                                         <Button variant="ghost" size="sm" onClick={revertChanges}>
-                                            <RotateCcw className="mr-2 h-4 w-4" />
                                             {t("Discard changes")}
                                         </Button>
                                         <Button size="sm" onClick={saveSettings}>
-                                            <Save className="mr-2 h-4 w-4" />
                                             {t("Save Changes")}
                                         </Button>
                                     </div>
@@ -560,10 +596,10 @@ export function SettingsModal() {
                             </div>
                         )}
 
-                        <div className="flex-1 overflow-y-auto p-4 scroll-smooth space-y-6 sm:p-6">
+                        <div className="min-w-0 flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 scroll-smooth space-y-6 sm:p-6">
 
                 {/* Appearance Tab */}
-                <TabsContent value="appearance" className="space-y-6 mt-0">
+                <TabsContent value="appearance" className="min-w-0 w-full space-y-6 mt-0">
                     <div>
                         <h3 className="text-lg font-medium">
                             {t("Appearance")}
@@ -585,7 +621,7 @@ export function SettingsModal() {
                                     handleChange()
                                 }}
                             >
-                                <SelectTrigger className="w-[150px]">
+                                <SelectTrigger className="w-full sm:w-[150px]">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -607,7 +643,7 @@ export function SettingsModal() {
                                     handleChange()
                                 }}
                             >
-                                <SelectTrigger className="w-[150px]">
+                                <SelectTrigger className="w-full sm:w-[150px]">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -620,21 +656,22 @@ export function SettingsModal() {
                 </TabsContent>
 
                 {/* Privacy Tab */}
-                <TabsContent value="privacy" className="space-y-6 mt-0">
+                <TabsContent value="privacy" className="min-w-0 w-full space-y-6 mt-0">
                     <div>
                         <h3 className="text-lg font-medium">
                             {t("Privacy")}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                            {t("Configure privacy detection features and alerts")}
+                            {t("Configure analysis, local AI, and rating lookups")}
                         </p>
                     </div>
                     <Separator />
                     <div className="space-y-4">
                         <SettingItem
                             label={t("Extension Enabled")}
-                            description={t("Pause TraceGuard to stop analyzing and recording browsing activity")}
+                            description={t("Pause TraceGuard's site analysis, personal-info checks, and activity recording")}
                             controlId="enabled-toggle"
+                            controlOnMobileTop
                         >
                             <Switch
                                 id="enabled-toggle"
@@ -647,9 +684,10 @@ export function SettingsModal() {
                         </SettingItem>
 
                         <SettingItem
-                            label={t("PII Detection")}
-                            description={t("Monitor when you enter personal information on websites")}
+                            label={t("Personal Information Detection")}
+                            description={t("Detect when you enter personal information on websites")}
                             controlId="pii-detection-toggle"
+                            controlOnMobileTop
                         >
                             <Switch
                                 id="pii-detection-toggle"
@@ -663,8 +701,9 @@ export function SettingsModal() {
 
                         <SettingItem
                             label={t("Live Rating Lookup")}
-                            description={t("Fetch a current rating from tosdr.org when a site is missing or its rating is old, sending the site's domain")}
+                            description={t("When a local rating is missing or over a week old, check ToS;DR for an update. Sends the site's domain.")}
                             controlId="cloud-tosdr-toggle"
+                            controlOnMobileTop
                         >
                             <Switch
                                 id="cloud-tosdr-toggle"
@@ -677,10 +716,10 @@ export function SettingsModal() {
                         </SettingItem>
 
                         <SettingItem
-                            label={t("Local AI summaries")}
-                            description={t("Optional: sends this site's domain, score, detector scores and counts, and ToS;DR grade to Ollama on this device. Overview summaries send aggregate counts and five domains with visits and scores. Never sends page text or sensitive field types. Ollama must allow this browser's extension origin: set OLLAMA_ORIGINS=chrome-extension://* and restart Ollama.")}
-                            descriptionClassName="text-xs"
+                            label={t("Local AI Summaries")}
+                            description={t("Optional summaries run through Ollama on this device. Requests send site domains and analysis scores and counts. Overview summaries also send up to five visited domains. They do not send page text or personal-info field names.")}
                             controlId="local-summary-toggle"
+                            controlOnMobileTop
                         >
                             <Switch
                                 id="local-summary-toggle"
@@ -692,10 +731,10 @@ export function SettingsModal() {
                             />
                         </SettingItem>
                         <SettingItem
-                            label={t("Local policy reports")}
-                            description={t("Optional experiment: when requested on a privacy policy page, sends up to 30,000 characters of visible policy text and its page address to your Ollama model on this device. The report is provisional and never changes the site's score. A policy report needs a bigger model than the summary default: qwen3.5:9b (6.6 GB) is functional from 10 GB of GPU memory, gemma4:12b (8.0 GB) is better from 12 GB, and gemma4:26b (18.7 GB) is outstanding from 24 GB.")}
-                            descriptionClassName="text-xs"
+                            label={t("Local Policy Reports")}
+                            description={t("When enabled and no saved report exists, TraceGuard automatically checks unrated sites shown in the popup or side panel if a policy-capable Ollama model is loaded. It fetches up to four policy pages without cookies or site credentials; those hosts receive ordinary requests and can observe network metadata. If browser rendering is needed, one inactive tab may open as a fallback using your normal session, may send applicable cookies, and may appear in history. Up to 30,000 characters and the page address go only to Ollama on this device. Reports are provisional and do not change the site's score.")}
                             controlId="local-policy-report-toggle"
+                            controlOnMobileTop
                         >
                             <Switch
                                 id="local-policy-report-toggle"
@@ -706,28 +745,22 @@ export function SettingsModal() {
                                 }}
                             />
                         </SettingItem>
-                        {enableLocalSummaries && (
-                            <ModelRecommendation
-                                installedModels={ollamaModels}
-                                selectedModel={localSummaryModel}
-                                onSelect={(model) => {
-                                    setLocalSummaryModel(model)
-                                    handleChange()
-                                }}
-                            />
+                        {(enableLocalSummaries || enableLocalPolicyReports) && (
+                            <ModelRecommendation installedModels={ollamaModels} />
                         )}
-                        {enableLocalSummaries && (
+                        {(enableLocalSummaries || enableLocalPolicyReports) && (
                             <SettingItem
-                                label={t("Ollama model")}
-                                description={t("Choose an installed Ollama model. The list refreshes when you open Settings. The saved model stays selected if it is not installed right now.")}
+                                label={t("Ollama Model")}
+                                description={t("Choose an installed model. The list refreshes when Settings opens. Your saved choice remains visible if the model is unavailable.")}
                                 controlId="local-summary-model"
+                                stacked
                                 note={ollamaModelsError
                                     ? t("Could not load Ollama models. Check that Ollama is running and allows this extension origin.")
                                     : !ollamaModelsLoading && ollamaModels.length === 0
                                         ? t("No installed Ollama models found.")
                                         : undefined}
                             >
-                                <div className="flex items-center gap-2">
+                                <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row">
                                     <Select
                                         value={localSummaryModel}
                                         onValueChange={(value) => {
@@ -736,7 +769,7 @@ export function SettingsModal() {
                                         }}
                                         disabled={ollamaModelsLoading || ollamaModels.length === 0}
                                     >
-                                        <SelectTrigger id="local-summary-model" className="w-44">
+                                        <SelectTrigger id="local-summary-model" className="w-full min-w-0 sm:flex-1 sm:w-auto">
                                             <SelectValue placeholder={ollamaModelsLoading ? t("Loading Ollama models…") : t("No installed Ollama models found.")} />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -749,14 +782,11 @@ export function SettingsModal() {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        size="icon"
-                                        className="h-9 w-9 shrink-0"
+                                        className="w-full shrink-0 sm:w-auto"
                                         onClick={() => void refreshOllamaModels()}
                                         disabled={ollamaModelsLoading}
-                                        aria-label={t("Refresh installed models")}
-                                        title={t("Refresh installed models")}
                                     >
-                                        <RefreshCw className={`h-4 w-4 ${ollamaModelsLoading ? "animate-spin" : ""}`} />
+                                        {ollamaModelsLoading ? t("Refreshing…") : t("Refresh")}
                                     </Button>
                                 </div>
                             </SettingItem>
@@ -764,7 +794,7 @@ export function SettingsModal() {
 
                         <SettingItem
                             label={t("Vault Auto-Lock")}
-                            description={t("When should your privacy vault automatically lock?")}
+                            description={t("Lock the vault after the selected period without activity")}
                         >
                             <Select
                                 value={autoLockTimeout.toString()}
@@ -773,7 +803,7 @@ export function SettingsModal() {
                                     handleChange()
                                 }}
                             >
-                                <SelectTrigger className="w-[180px]">
+                                <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -789,13 +819,13 @@ export function SettingsModal() {
                 </TabsContent>
 
                 {/* Notifications Tab */}
-                <TabsContent value="notifications" className="space-y-6 mt-0">
+                <TabsContent value="notifications" className="min-w-0 w-full space-y-6 mt-0">
                     <div>
                         <h3 className="text-lg font-medium">
                             {t("Notifications")}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                            {t("Control when and how you receive security alerts")}
+                            {t("Choose which alerts TraceGuard sends and how often")}
                         </p>
                     </div>
                     <Separator />
@@ -804,10 +834,10 @@ export function SettingsModal() {
                             label={t("Alert Level")}
                             description={
                                 notificationLevel === "silent"
-                                    ? t("You won't receive any notifications")
+                                    ? t("No system alerts. Items remain in the alert history.")
                                     : notificationLevel === "balanced"
-                                        ? t("Notified for high-risk sites and critical PII events")
-                                        : t("Notified for all site changes and tracker detections")
+                                        ? t("Critical and warning alerts. Up to five system alerts per browser session.")
+                                        : t("All alert levels. Up to five system alerts per browser session.")
                             }
                         >
                             <Select
@@ -817,7 +847,7 @@ export function SettingsModal() {
                                     handleChange()
                                 }}
                             >
-                                <SelectTrigger className="w-[150px]">
+                                <SelectTrigger className="w-full sm:w-[150px]">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -830,7 +860,7 @@ export function SettingsModal() {
 
                         <SettingItem
                             label={t("Safety Threshold")}
-                            description={t("Get alerts when a site's safety score is below this value")}
+                            description={t("Show a warning below this safety score. Sites at 20 or lower are always classed as critical.")}
                         >
                             <Select
                                 value={String(wssThreshold)}
@@ -839,12 +869,12 @@ export function SettingsModal() {
                                     handleChange()
                                 }}
                             >
-                                <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="w-full sm:w-[220px]"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     {!THRESHOLD_OPTIONS.includes(wssThreshold) && (
                                         <SelectItem value={String(wssThreshold)}>{t("Custom")} ({wssThreshold})</SelectItem>
                                     )}
-                                    <SelectItem value="20">{t("Critical only (below 20)")}</SelectItem>
+                                    <SelectItem value="20">{t("No threshold-based warnings (critical at 20 or lower)")}</SelectItem>
                                     <SelectItem value="40">{t("Poor or worse (below 40)")}</SelectItem>
                                     <SelectItem value="60">{t("Fair or worse (below 60)")}</SelectItem>
                                     <SelectItem value="80">{t("Good or worse (below 80)")}</SelectItem>
@@ -855,18 +885,18 @@ export function SettingsModal() {
                 </TabsContent>
 
                 {/* Domain Lists Tab */}
-                <TabsContent value="domain-lists" className="space-y-6 mt-0">
+                <TabsContent value="domain-lists" className="min-w-0 w-full space-y-6 mt-0">
                     <div>
                         <h3 className="text-lg font-medium">{t("Allowed and flagged sites")}</h3>
-                        <p className="text-sm text-muted-foreground">{t("Manage explicit exceptions for website tracking and safety")}</p>
+                        <p className="text-sm text-muted-foreground">{t("Set reputation overrides for specific domains. Allowed domains also exempt personal-info entries from risk penalties.")}</p>
                     </div>
                     <Separator />
                     
                     <div className="space-y-6">
                         <div className="space-y-4">
                             <h4 className="text-sm font-medium">{t("Allowed sites")}</h4>
-                            <p className="text-sm text-muted-foreground">{t("TraceGuard will not flag personal-info handovers on these sites. It never blocks anything.")}</p>
-                            <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                            <p className="text-sm text-muted-foreground">{t("Reputation is set to clean. Personal-info entries are recorded without risk penalties or alerts.")}</p>
+                            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                                 <Input 
                                     id="add-whitelist" 
                                     placeholder={t("e.g. example.com")} 
@@ -903,7 +933,7 @@ export function SettingsModal() {
                                         {whitelist.map(domain => (
                                             <li key={domain} className="flex items-center justify-between p-2 px-3 text-sm">
                                                 <span>{domain}</span>
-                                                <Button variant="ghost" size="icon" aria-label={`${t("Delete")}: ${domain}`} className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => {
+                                                <Button variant="ghost" size="icon" aria-label={`${t("Delete")}: ${domain}`} title={`${t("Delete")}: ${domain}`} className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => {
                                                     setWhitelist(whitelist.filter(d => d !== domain));
                                                     handleChange();
                                                 }}>
@@ -920,8 +950,8 @@ export function SettingsModal() {
 
                         <div className="space-y-4">
                             <h4 className="text-sm font-medium">{t("Flagged sites")}</h4>
-                            <p className="text-sm text-muted-foreground">{t("These sites will always trigger high-risk alerts.")}</p>
-                            <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+                            <p className="text-sm text-muted-foreground">{t("These domains receive a critical reputation score and are treated as high risk.")}</p>
+                            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                                 <Input 
                                     id="add-blacklist" 
                                     placeholder={t("e.g. badsite.com")} 
@@ -958,7 +988,7 @@ export function SettingsModal() {
                                         {blacklist.map(domain => (
                                             <li key={domain} className="flex items-center justify-between p-2 px-3 text-sm">
                                                 <span>{domain}</span>
-                                                <Button variant="ghost" size="icon" aria-label={`${t("Delete")}: ${domain}`} className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => {
+                                                <Button variant="ghost" size="icon" aria-label={`${t("Delete")}: ${domain}`} title={`${t("Delete")}: ${domain}`} className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => {
                                                     setBlacklist(blacklist.filter(d => d !== domain));
                                                     handleChange();
                                                 }}>
@@ -974,7 +1004,7 @@ export function SettingsModal() {
                 </TabsContent>
 
                 {/* Data Tab */}
-                <TabsContent value="data" className="space-y-6 mt-0">
+                <TabsContent value="data" className="min-w-0 w-full space-y-6 mt-0">
                     <div>
                         <h3 className="text-lg font-medium">{t("Data")}</h3>
                         <p className="text-sm text-muted-foreground">{t("Manage your data storage, exports, and deletions")}</p>
@@ -993,7 +1023,7 @@ export function SettingsModal() {
                                     handleChange()
                                 }}
                             >
-                                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     {!RETENTION_OPTIONS.includes(logRetentionDays) && (
                                         <SelectItem value={String(logRetentionDays)}>{t("Custom")} ({logRetentionDays})</SelectItem>
@@ -1016,7 +1046,7 @@ export function SettingsModal() {
                                 setDatabaseRefreshDays(Number(value) as 0 | 1 | 3 | 7 | 14 | 30)
                                 handleChange()
                             }}>
-                                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="w-full sm:w-[150px]"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="0">{t("Off")}</SelectItem>
                                     <SelectItem value="1">{t("1 day")}</SelectItem>
@@ -1028,18 +1058,15 @@ export function SettingsModal() {
                             </Select>
                         </SettingItem>
 
-                        <p className="text-sm text-muted-foreground break-words px-1">
-                            {t("Phishing protection updates on its own and is not affected by the two settings above")}
+                        <p className="text-sm text-muted-foreground break-words">
+                            {t("The threat list updates automatically. This schedule only applies to the privacy-ratings catalog.")}
                         </p>
 
                         {/* Storage Usage */}
                         <div className="rounded-lg border p-4">
                             <div className={`flex flex-wrap items-center justify-between gap-y-2${storageInfo.quota > 0 ? " mb-4" : ""}`}>
                                 <div className="space-y-0.5 min-w-0">
-                                    <Label className="text-base font-medium flex items-center gap-2">
-                                        <HardDrive className="h-4 w-4 text-muted-foreground" />
-                                        {t("Storage Used")}
-                                    </Label>
+                                    <Label className="text-base font-medium">{t("Storage Used")}</Label>
                                 </div>
                                 <span className="text-sm text-muted-foreground shrink-0">
                                     {(storageInfo.bytesInUse / 1024 / 1024).toFixed(2)} {t("MB")}{storageInfo.quota > 0 ? ` ${t("of")} ${(storageInfo.quota / 1024 / 1024).toFixed(0)} ${t("MB")}` : ""}
@@ -1047,38 +1074,32 @@ export function SettingsModal() {
                             </div>
                             {storageInfo.quota > 0 && <Progress value={storagePercentage} className="h-2" />}
                         </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-                             <div className="space-y-0.5 flex-1 min-w-0">
-                                 <Label className="text-base font-medium">{t("Export Data")}</Label>
-                                 <p className="text-sm text-muted-foreground break-words">{t("Export a JSON backup of all your data (optionally password-protected)")}</p>
+                        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border p-4">
+                            <div className="min-w-0 flex-1 basis-[240px] space-y-0.5">
+                                <Label className="text-base font-medium">{t("Export Data")}</Label>
+                                <p className="text-sm text-muted-foreground break-words">{t("Save a JSON backup, with optional password encryption")}</p>
                              </div>
-                             <div className="flex-shrink-0 flex flex-wrap gap-2">
-                                 <Button variant="outline" onClick={() => setImportOpen(true)}>
-                                     <Upload className="mr-2 h-4 w-4" />
+                            <div className="flex flex-wrap gap-2">
+                                <Button variant="outline" onClick={() => setImportOpen(true)}>
                                      {t("Import")}
                                  </Button>
-                                 <Button variant="outline" onClick={exportData}>
-                                     <Download className="mr-2 h-4 w-4" />
-                                     {t("Export to JSON")}
-                                 </Button>
-                             </div>
+                                <Button variant="outline" onClick={exportData}>
+                                    {t("Export to JSON")}
+                                </Button>
+                            </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-                             <div className="space-y-0.5 flex-1 min-w-0">
-                                 <Label className="text-base font-medium">{t("Clear Data")}</Label>
-                                 <p className="text-sm text-muted-foreground break-words">{t("Remove specific data from the extension")}</p>
+                        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border p-4">
+                            <div className="min-w-0 flex-1 basis-[240px] space-y-0.5">
+                                <Label className="text-base font-medium">{t("Clear Data")}</Label>
+                                <p className="text-sm text-muted-foreground break-words">{t("Clear activity logs or reset your privacy score and its history")}</p>
                              </div>
-                             <div className="flex-shrink-0 flex flex-wrap gap-2">
-                                 <AlertDialog>
+                            <div className="flex flex-wrap gap-2">
+                                <AlertDialog>
                                      <AlertDialogTrigger asChild>
-                                         <Button variant="outline">
-                                             <Trash2 className="mr-2 h-4 w-4" />
-                                             {t("Clear Activity Logs")}
-                                         </Button>
+                                        <Button variant="outline">
+                                            {t("Clear Activity Logs")}
+                                        </Button>
                                      </AlertDialogTrigger>
                                      <AlertDialogContent>
                                          <AlertDialogHeader>
@@ -1095,10 +1116,9 @@ export function SettingsModal() {
                                  </AlertDialog>
                                  <AlertDialog>
                                      <AlertDialogTrigger asChild>
-                                         <Button variant="outline">
-                                             <RotateCcw className="mr-2 h-4 w-4" />
-                                             {t("Reset Privacy Score")}
-                                         </Button>
+                                        <Button variant="outline">
+                                            {t("Reset Privacy Score")}
+                                        </Button>
                                      </AlertDialogTrigger>
                                      <AlertDialogContent>
                                          <AlertDialogHeader>
@@ -1113,19 +1133,18 @@ export function SettingsModal() {
                                          </AlertDialogFooter>
                                      </AlertDialogContent>
                                  </AlertDialog>
-                             </div>
+                            </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-                            <div className="space-y-0.5 flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border p-4">
+                            <div className="min-w-0 flex-1 basis-[240px] space-y-0.5">
                                 <Label className="text-base font-medium">{t("Reset to Defaults")}</Label>
-                                <p className="text-sm text-muted-foreground break-words">{t("Restore every setting to its factory value. Your activity logs and site lists are kept.")}</p>
+                                <p className="text-sm text-muted-foreground break-words">{t("Restore default settings. Activity logs and site lists stay unchanged.")}</p>
                             </div>
-                            <div className="flex-shrink-0">
+                            <div className="flex justify-end">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="outline">
-                                            <RotateCcw className="mr-2 h-4 w-4" />
                                             {t("Reset to Defaults")}
                                         </Button>
                                     </AlertDialogTrigger>
@@ -1145,27 +1164,23 @@ export function SettingsModal() {
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/50 p-4">
-                             <div className="space-y-0.5 flex-1 min-w-0">
-                                 <Label className="text-base font-medium text-destructive flex items-center gap-2">
-                                     <AlertTriangle className="h-4 w-4" />
-                                     {t("Danger Zone")}
-                                 </Label>
-                                 <p className="text-sm text-muted-foreground break-words">{t("Irreversible actions that will delete your data")}</p>
+                        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-destructive/50 p-4">
+                            <div className="min-w-0 flex-1 basis-[240px] space-y-0.5">
+                                 <Label className="text-base font-medium text-destructive">{t("Danger Zone")}</Label>
+                                 <p className="text-sm text-muted-foreground break-words">{t("Permanently remove all TraceGuard data from this browser")}</p>
                              </div>
-                             <div className="flex-shrink-0">
-                                 <AlertDialog>
-                                     <AlertDialogTrigger asChild>
-                                         <Button variant="destructive">
-                                             <Trash2 className="mr-2 h-4 w-4" />
-                                             {t("Delete All Data")}
-                                         </Button>
+                            <div className="flex justify-end">
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive">
+                                            {t("Delete All Data")}
+                                        </Button>
                                      </AlertDialogTrigger>
                                      <AlertDialogContent>
                                          <AlertDialogHeader>
                                              <AlertDialogTitle>{t("Are you absolutely sure?")}</AlertDialogTitle>
                                              <AlertDialogDescription>
-                                                 {t("This action cannot be undone. This will permanently delete your account, activity logs, settings, and remove your data from the local device.")}
+                                                 {t("This removes all TraceGuard data stored in this browser, including activity, settings, and local vault data. It cannot be undone.")}
                                              </AlertDialogDescription>
                                          </AlertDialogHeader>
                                          <AlertDialogFooter>
@@ -1180,14 +1195,16 @@ export function SettingsModal() {
                 </TabsContent>
 
                 {/* About Tab */}
-                <TabsContent value="about" className="space-y-6 mt-0">
+                <TabsContent value="about" className="min-w-0 w-full space-y-6 mt-0">
                     <div>
                         <h3 className="text-lg font-medium">{t("About TraceGuard")}</h3>
-                        <p className="text-sm text-muted-foreground">{t("Information about TraceGuard Privacy Extension")}</p>
+                        <p className="text-sm text-muted-foreground">
+                            {t("Version details and local diagnostics")}
+                        </p>
                     </div>
                     <Separator />
                     <div className="rounded-lg border p-4 space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid min-w-0 grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                             <div>
                                 <p className="text-muted-foreground text-xs">{t("Version")}</p>
                                 <p className="font-mono font-medium">{manifestVersion}</p>
@@ -1199,24 +1216,24 @@ export function SettingsModal() {
                         </div>
                         <Separator />
                         <p className="text-sm text-muted-foreground">
-                            {t("TraceGuard keeps a local journal of trackers, cookies, and privacy scores so you can review and improve your browsing habits. Everything stays on your device unless you enable Live rating updates, which checks tosdr.org for fresh ratings when our local data is stale.")}
+                            {t("TraceGuard stores site-analysis results, personal-info entry events, and privacy scores on this device. Local AI summaries send selected site and score details to Ollama on this device. When Local Policy Reports is enabled, viewing an unrated site in the popup or side panel starts a report automatically if no saved report exists and a capable Ollama model is loaded. TraceGuard first fetches up to four policy pages without cookies or site credentials; those hosts receive ordinary requests and can observe network metadata. If their static HTML cannot be read, it may briefly open one inactive tab as a fallback, using the browser's normal session and possibly sending applicable cookies or appearing in history. Policy text and its page address are sent only to Ollama on this device. Separately, the scheduled ToS;DR catalog refresh and signed threat-feed refresh download public data and do not include sites you visit. If Live Rating Lookup is on, TraceGuard sends a site's domain to ToS;DR when its local rating is missing or over a week old.")}
                         </p>
                     </div>
 
-                    <div className="rounded-lg border p-4 space-y-3">
-                        <Label className="text-base font-medium flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                    <section aria-labelledby="diagnostics-heading" className="space-y-4 rounded-lg border bg-card p-4 sm:p-5">
+                        <h4 id="diagnostics-heading" className="text-base font-medium">
                             {t("Diagnostics")}
-                        </Label>
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="space-y-1">
+                        </h4>
+                        <div className="flex min-w-0 flex-col items-start gap-3 rounded-md bg-muted/30 p-3 sm:flex-row sm:justify-between sm:gap-4">
+                            <div className="min-w-0 flex-1 space-y-1">
                                 <Label htmlFor="dev-mode" className="text-sm font-medium">{t("Developer mode")}</Label>
-                                <p className="text-sm text-muted-foreground break-words">
-                                    {t("Developer mode captures detailed diagnostics for troubleshooting. It is off by default, stays on this device, and is cleared when the browser closes. Use it only when you understand what is being logged.")}
+                                <p className="break-words text-sm text-muted-foreground">
+                                    {t("Developer mode captures detailed diagnostics for troubleshooting. It is off by default, kept only for this browser session, and cleared when the browser closes. Turn it on while troubleshooting.")}
                                 </p>
                             </div>
                             <Switch
                                 id="dev-mode"
+                                className="mt-0.5"
                                 checked={devMode}
                                 onCheckedChange={(checked) => {
                                     // Apply immediately so the log starts filling
@@ -1227,26 +1244,25 @@ export function SettingsModal() {
                                 }}
                             />
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" size="sm" onClick={copyDiagnostics}>
-                                <Copy className="mr-2 h-3 w-3" />
-                                {t("Copy diagnostics")}
+                        <div className="flex flex-wrap items-center gap-2">                                <Button variant="outline" size="sm" onClick={copyDiagnostics}>
+                                    {t("Copy diagnostics")}
                             </Button>
                             {sessionEvents.length > 0 && (
                                 <Button variant="ghost" size="sm" onClick={clearSessionLog}>
                                     {t("Clear")}
                                 </Button>
                             )}
+                            <span className="ml-auto text-xs text-muted-foreground">{t("Session only")}</span>
                         </div>
                         {devMode && (
                             sessionEvents.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">{t("No events recorded.")}</p>
+                                <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">{t("No events recorded.")}</p>
                             ) : (
-                                <div className="rounded-md border max-h-40 overflow-y-auto divide-y">
+                                <div role="region" aria-label={t("Session diagnostics")} className="max-h-40 divide-y overflow-y-auto rounded-md border">
                                     {sessionEvents.slice(-80).reverse().map((entry) => (
-                                        <div key={entry.id} className="p-2 text-xs">
+                                        <div key={entry.id} className="space-y-1 p-3 text-xs">
                                             <span className="text-muted-foreground">{new Date(entry.timestamp).toLocaleTimeString()}</span>
-                                            <p className="font-medium break-words">
+                                            <p className="break-words font-medium">
                                                 [{entry.level}] {entry.area}/{entry.event}: {entry.message}
                                             </p>
                                         </div>
@@ -1255,34 +1271,43 @@ export function SettingsModal() {
                             )
                         )}
                         <Separator />
-                        <p className="text-sm text-muted-foreground break-words">
-                            {t("Recent errors are stored locally on this device to help troubleshoot. They never leave your browser.")}
-                        </p>
-                        {errorLog.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">{t("No errors recorded.")}</p>
-                        ) : (
-                            <>
-                                <div className="rounded-md border max-h-40 overflow-y-auto divide-y">
+                        <div className="space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium">{t("Recent errors")}</p>
+                                    <p className="break-words text-sm text-muted-foreground">
+                                        {t("Recent errors are stored locally on this device to help troubleshoot. They never leave your browser.")}
+                                    </p>
+                                </div>
+                                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                                    {errorLog.length === 1 ? t("1 error") : t("{{count}} errors", { count: errorLog.length })}
+                                </span>
+                            </div>
+                            {errorLog.length === 0 ? (
+                                <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">{t("No errors recorded.")}</p>
+                            ) : (
+                                <div role="region" aria-label={t("Recent errors")} className="max-h-40 divide-y overflow-y-auto rounded-md border">
                                     {errorLog.map((entry, i) => (
-                                        <div key={i} className="p-2 text-xs">
-                                            <span className="text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</span>
-                                            <p className="font-medium break-words">{entry.message}</p>
-                                            {entry.context && <p className="text-muted-foreground break-all">{entry.context}</p>}
+                                        <div key={i} className="space-y-1 p-3 text-xs">
+                                            <time dateTime={new Date(entry.timestamp).toISOString()} className="text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</time>
+                                            <p className="break-all font-medium">{entry.message}</p>
+                                            {entry.context && <p className="break-all text-muted-foreground">{entry.context}</p>}
                                         </div>
                                     ))}
                                 </div>
+                            )}
+                            {errorLog.length > 0 && (
                                 <div className="flex flex-wrap gap-2">
                                     <Button variant="outline" size="sm" onClick={exportErrorLog}>
-                                        <Download className="mr-2 h-3 w-3" />
                                         {t("Export error log")}
                                     </Button>
                                     <Button variant="ghost" size="sm" onClick={clearErrorLogs}>
                                         {t("Clear")}
                                     </Button>
                                 </div>
-                            </>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    </section>
                 </TabsContent>
                         </div>
                     </div>
@@ -1306,8 +1331,12 @@ export function SettingsModal() {
                         <AlertDialogCancel>{t("Keep editing")}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
+                                // Restore the stored values as well as closing:
+                                // the component stays mounted, so leaving the
+                                // draft in place would show discarded edits the
+                                // next time the modal opens.
                                 setDiscardOpen(false)
-                                setHasChanges(false)
+                                revertChanges()
                                 setSettingsOpen(false)
                             }}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
