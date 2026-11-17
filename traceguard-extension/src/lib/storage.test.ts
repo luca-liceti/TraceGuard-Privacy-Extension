@@ -380,8 +380,8 @@ describe('storage.addExposure (no key)', () => {
         await storage.addExposure('email', 'a.com');
         await storage.addExposure('phone', 'b.com');
         const all = await storage.getAllExposure();
-        expect(all.email).toContain('a.com');
-        expect(all.phone).toContain('b.com');
+        expect(all?.email).toContain('a.com');
+        expect(all?.phone).toContain('b.com');
     });
 });
 
@@ -481,5 +481,66 @@ describe('storage.seedScoreHistoryBaseline', () => {
         const history = await decryptData<import('./types').ScoreHistoryEntry[]>(key, scoreHistory);
         expect(history).toHaveLength(1);
         expect(history![0].ups).toBe(42);
+    });
+});
+
+// =============================================================================
+// Encrypted read-modify-write safety
+// =============================================================================
+describe('encrypted read-modify-write safety', () => {
+    it('does not overwrite notifications when the key cannot decrypt them', async () => {
+        const key = await makeKey();
+        const wrong = await makeKey();
+        const original = await encryptData(key, [{
+            id: 'n1',
+            timestamp: 1,
+            type: 'pii_detected',
+            title: 'Title',
+            message: 'Message',
+            severity: 'info',
+            read: false,
+        }]);
+        await chrome.storage.local.set({ notifications: original });
+
+        await storage.markAsRead('n1', wrong);
+
+        const stored = await chrome.storage.local.get('notifications');
+        expect(stored.notifications).toBe(original);
+    });
+
+    it('does not overwrite detector logs when the key cannot decrypt them', async () => {
+        const key = await makeKey();
+        const wrong = await makeKey();
+        const original = await encryptData(key, [{
+            id: 'l1',
+            timestamp: 1,
+            detector: 'reputation',
+            domain: 'example.com',
+            score: 100,
+            details: {},
+            message: 'Clean',
+        }]);
+        await chrome.storage.local.set({ detectorLogs: original });
+
+        await storage.removeDetectorLogs(() => true, wrong);
+
+        const stored = await chrome.storage.local.get('detectorLogs');
+        expect(stored.detectorLogs).toBe(original);
+    });
+
+    it('returns null instead of an empty ledger when the key cannot decrypt it', async () => {
+        const key = await makeKey();
+        const wrong = await makeKey();
+        const original = await encryptData(key, { email: ['example.com'] });
+        await chrome.storage.local.set({ crossSiteExposure: original });
+
+        expect(await storage.getAllExposure(wrong)).toBeNull();
+        const stored = await chrome.storage.local.get('crossSiteExposure');
+        expect(stored.crossSiteExposure).toBe(original);
+    });
+
+    it('rejects an unreadable session buffer instead of treating it as empty', async () => {
+        await chrome.storage.session.set({ bufferedPii: 'not-a-ciphertext' });
+        await expect(readBuffer('bufferedPii')).rejects.toThrow('unreadable');
     });
 });

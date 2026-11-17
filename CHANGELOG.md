@@ -2,6 +2,18 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.25.2
+
+**What was fixed**
+
+- Pausing TraceGuard now stops new personal-info events as well as site analysis. The personal-info path no longer keeps recording and scoring entries while the extension is off.
+- The personal-info confirmation card now translates the field type and the other data the site already holds, instead of showing English labels inside Spanish, French, and German text. It also no longer repeats the field type in the sentence.
+- A page can no longer reach the confirmation card's **Trust this site** button and click it. The card uses a closed shadow root, so only the user can vouch for the site.
+- Encrypted notifications, detector logs, and the cross-site ledger are no longer rewritten as empty when the vault cannot decrypt them. The read-modify-write paths stop and record the failure instead of deleting stored records.
+- A failed vault flush now reports back to the UI instead of leaving the unlock request unanswered.
+- The network monitor caps the per-tab `Set-Cookie` list at 500 entries, so a page cannot grow it without bound.
+- Chrome 114 or newer is required, matching the side-panel API the extension already uses.
+
 ## v1.25.1
 
 **What was fixed**

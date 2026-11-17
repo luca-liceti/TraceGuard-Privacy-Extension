@@ -43,7 +43,7 @@
  */
 
 import { StorageSchema, UserSettings, AppState } from './types';
-import { encryptData, decryptData, decryptDataStrict, generateAesKey, exportKey, importKey, DECRYPT_FAILED } from './crypto';
+import { encryptData, decryptDataStrict, generateAesKey, exportKey, importKey, DECRYPT_FAILED } from './crypto';
 import { captureError, logEvent } from './diagnostics';
 import { MAX_EXPOSURE_DOMAINS_PER_TYPE, trimExposureDomains } from './exposure';
 import { removeSiteCache } from './site-cache';
@@ -84,7 +84,15 @@ export async function readBuffer<T = any>(name: string): Promise<T | null> {
     if (raw === undefined) return null;
     if (typeof raw === 'string') {
         const key = await getBufferKey();
-        return (await decryptData<T>(key, raw)) ?? null;
+        const decrypted = await decryptDataStrict<T>(key, raw);
+        if (decrypted === DECRYPT_FAILED) {
+            // A lock or a corrupt buffer must not read as an empty one: the
+            // flush path clears buffers it believes were merged, so silence
+            // here would delete the buffered records.
+            captureError('storage', new Error(`buffered ${name} could not be decrypted`), 'buffer_read_failed', { name });
+            throw new Error(`Buffered ${name} is unreadable`);
+        }
+        return decrypted ?? null;
     }
     return raw as T;
 }
@@ -215,6 +223,28 @@ async function notificationsWritable(key: CryptoKey | null): Promise<boolean> {
     return false;
 }
 
+/**
+ * Reads notifications for a read-modify-write cycle. Returns null when the
+ * stored list exists but cannot be decrypted, so the caller must not write an
+ * empty list over the user's notifications.
+ */
+async function readNotificationsForWrite(
+    key: CryptoKey | null
+): Promise<import('./types').NotificationEvent[] | null> {
+    const result = await chrome.storage.local.get('notifications');
+    const raw = result.notifications;
+    if (key && typeof raw === 'string') {
+        const decrypted = await decryptDataStrict<import('./types').NotificationEvent[]>(key, raw);
+        if (decrypted === DECRYPT_FAILED) {
+            captureError('storage', new Error('notifications could not be decrypted'), 'notifications_write_unreadable');
+            return null;
+        }
+        return decrypted || [];
+    }
+    if (typeof raw === 'string') return null;
+    return (raw || []) as import('./types').NotificationEvent[];
+}
+
 export const storage = {
     get: async <K extends keyof StorageSchema>(keys: K | K[]): Promise<Pick<StorageSchema, K>> => {
         return chrome.storage.local.get(keys) as Promise<Pick<StorageSchema, K>>;
@@ -332,7 +362,14 @@ export const storage = {
     getDetectorLogs: async (key?: CryptoKey | null): Promise<any[]> => {
         const result = await chrome.storage.local.get('detectorLogs');
         const raw = result.detectorLogs;
-        if (key && typeof raw === 'string') return (await decryptData(key, raw)) || [];
+        if (key && typeof raw === 'string') {
+            const decrypted = await decryptDataStrict<any[]>(key, raw);
+            if (decrypted === DECRYPT_FAILED) {
+                captureError('storage', new Error('detectorLogs could not be decrypted'), 'detector_logs_read_failed');
+                return [];
+            }
+            return decrypted || [];
+        }
         if (typeof raw === 'string') return []; // locked, cannot decrypt
         return (raw || []) as any[];
     },
@@ -342,7 +379,21 @@ export const storage = {
         predicate: (log: any) => boolean,
         key?: CryptoKey | null
     ): Promise<void> => {
-        const logs = await storage.getDetectorLogs(key);
+        const result = await chrome.storage.local.get('detectorLogs');
+        const raw = result.detectorLogs;
+        let logs: any[];
+        if (key && typeof raw === 'string') {
+            const decrypted = await decryptDataStrict<any[]>(key, raw);
+            if (decrypted === DECRYPT_FAILED) {
+                captureError('storage', new Error('detectorLogs could not be decrypted'), 'detector_logs_remove_unreadable');
+                return;
+            }
+            logs = decrypted || [];
+        } else if (typeof raw === 'string') {
+            return; // locked, cannot safely rewrite an encrypted journal
+        } else {
+            logs = (raw || []) as any[];
+        }
         const filtered = logs.filter((log) => !predicate(log));
         if (key) {
             await storage.set({ detectorLogs: await encryptData(key, filtered) as any });
@@ -523,7 +574,12 @@ export const storage = {
         const raw = result.crossSiteExposure;
         let exposure: import('./types').CrossSiteExposure;
         if (key && typeof raw === 'string') {
-            exposure = (await decryptData(key, raw)) || {};
+            const decrypted = await decryptDataStrict<import('./types').CrossSiteExposure>(key, raw);
+            if (decrypted === DECRYPT_FAILED) {
+                captureError('storage', new Error('crossSiteExposure could not be decrypted'), 'exposure_count_unreadable');
+                return 0;
+            }
+            exposure = decrypted || {};
         } else {
             exposure = (typeof raw === 'string' ? {} : raw || {}) as import('./types').CrossSiteExposure;
         }
@@ -539,7 +595,12 @@ export const storage = {
         const raw = result.crossSiteExposure;
         let exposure: import('./types').CrossSiteExposure;
         if (key && typeof raw === 'string') {
-            exposure = (await decryptData(key, raw)) || {};
+            const decrypted = await decryptDataStrict<import('./types').CrossSiteExposure>(key, raw);
+            if (decrypted === DECRYPT_FAILED) {
+                captureError('storage', new Error('crossSiteExposure could not be decrypted'), 'exposure_sites_unreadable');
+                return [];
+            }
+            exposure = decrypted || {};
         } else {
             exposure = (typeof raw === 'string' ? {} : raw || {}) as import('./types').CrossSiteExposure;
         }
@@ -550,13 +611,18 @@ export const storage = {
      * Get all cross-site exposure data.
      * Pass `key` to decrypt if the data is stored encrypted.
      */
-    getAllExposure: async (key?: CryptoKey | null): Promise<import('./types').CrossSiteExposure> => {
+    getAllExposure: async (key?: CryptoKey | null): Promise<import('./types').CrossSiteExposure | null> => {
         const result = await chrome.storage.local.get('crossSiteExposure');
         const raw = result.crossSiteExposure;
         if (key && typeof raw === 'string') {
-            return (await decryptData(key, raw)) || {};
+            const decrypted = await decryptDataStrict<import('./types').CrossSiteExposure>(key, raw);
+            if (decrypted === DECRYPT_FAILED) {
+                captureError('storage', new Error('crossSiteExposure could not be decrypted'), 'exposure_read_unreadable');
+                return null;
+            }
+            return decrypted || {};
         }
-        return (typeof raw === 'string' ? {} : raw || {}) as import('./types').CrossSiteExposure;
+        return (typeof raw === 'string' ? null : raw || {}) as import('./types').CrossSiteExposure;
     },
 
     // ============================================
@@ -631,7 +697,12 @@ export const storage = {
         const raw = result.notifications;
         let notifications: import('./types').NotificationEvent[];
         if (key && typeof raw === 'string') {
-            notifications = (await decryptData(key, raw)) || [];
+            const decrypted = await decryptDataStrict<import('./types').NotificationEvent[]>(key, raw);
+            if (decrypted === DECRYPT_FAILED) {
+                captureError('storage', new Error('notifications could not be decrypted'), 'notifications_read_unreadable');
+                return [];
+            }
+            notifications = decrypted || [];
         } else {
             notifications = (typeof raw === 'string' ? [] : raw || []) as import('./types').NotificationEvent[];
         }
@@ -657,7 +728,8 @@ export const storage = {
         // back an empty plaintext array.
         const k = key === undefined ? await storage.getVaultKey() : key;
         if (!(await notificationsWritable(k))) return;
-        const notifications = await storage.getNotifications(undefined, k);
+        const notifications = await readNotificationsForWrite(k);
+        if (!notifications) return;
         const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
         if (k) {
             await storage.set({ notifications: await encryptData(k, updated) as any });
@@ -673,7 +745,8 @@ export const storage = {
     markAllAsRead: async (key?: CryptoKey | null): Promise<void> => {
         const k = key === undefined ? await storage.getVaultKey() : key;
         if (!(await notificationsWritable(k))) return;
-        const notifications = await storage.getNotifications(undefined, k);
+        const notifications = await readNotificationsForWrite(k);
+        if (!notifications) return;
         const updated = notifications.map(n => ({ ...n, read: true }));
         if (k) {
             await storage.set({ notifications: await encryptData(k, updated) as any });
@@ -697,7 +770,8 @@ export const storage = {
     removeNotification: async (id: string, key?: CryptoKey | null): Promise<void> => {
         const k = key === undefined ? await storage.getVaultKey() : key;
         if (!(await notificationsWritable(k))) return;
-        const notifications = await storage.getNotifications(undefined, k);
+        const notifications = await readNotificationsForWrite(k);
+        if (!notifications) return;
         const filtered = notifications.filter(n => n.id !== id);
         if (k) {
             await storage.set({ notifications: await encryptData(k, filtered) as any });

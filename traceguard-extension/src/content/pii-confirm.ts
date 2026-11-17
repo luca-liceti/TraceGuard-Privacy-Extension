@@ -141,7 +141,10 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
     const host = document.createElement('div');
     host.id = HOST_ID;
 
-    const shadow = host.attachShadow({ mode: 'open' });
+    // Closed: the page can neither inspect the card's controls nor click
+    // "Trust this site" on the user's behalf. The page can still remove the
+    // host, but that leaves the background's fail-safe timeout in place.
+    const shadow = host.attachShadow({ mode: 'closed' });
 
     const style = document.createElement('style');
     style.textContent = `
@@ -286,8 +289,8 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
     const text = data.texts ?? {
         title: 'Is this website safe?',
         dismissLabel: 'Dismiss',
-        bodyPrefix: 'TraceGuard detected personal info (',
-        bodySuffix: ') and this site doesn\u2019t meet our security checks. Make sure it\u2019s the real site before entering anything.',
+        bodyPrefix: `TraceGuard detected personal info (${data.fieldType}) on`,
+        bodySuffix: 'and this site doesn\u2019t meet our security checks. Make sure it\u2019s the real site before entering anything.',
         confirm: 'Trust this site',
         notSure: 'Keep warning me',
         note: 'Trusting this site adds it to your allow list and skips the penalty here. Keeping the warning means TraceGuard keeps warning you and the penalty applies.',
@@ -311,7 +314,7 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
     const body = document.createElement('p');
     body.className = 'tg-body';
     body.append(
-        text.bodyPrefix + data.fieldType,
+        text.bodyPrefix,
         ' ',
         (() => { const s = document.createElement('span'); s.className = 'tg-domain'; s.textContent = data.domain; return s; })(),
         ' ',

@@ -39,6 +39,10 @@ interface TabNetworkData extends NetworkSnapshot {
 // Stores network data per tab
 const tabData = new Map<number, TabNetworkData>();
 
+// A page can return a Set-Cookie header on every request. Cap the snapshot so
+// a hostile page cannot grow this list far beyond the request cap.
+const MAX_SET_COOKIES_PER_TAB = 500;
+
 // Mirror of the user's "Enabled" master toggle. When disabled, the monitor
 // observes nothing: no requests, cookies, or headers are recorded.
 let monitorEnabled = true;
@@ -171,7 +175,7 @@ export function initNetworkMonitor() {
                         try {
                             const reqUrl = new URL(details.url);
                             const parsed = parseSetCookie(header.value, reqUrl.hostname);
-                            if (parsed) data.setCookies.push(parsed);
+                            if (parsed && data.setCookies.length < MAX_SET_COOKIES_PER_TAB) data.setCookies.push(parsed);
                         } catch {
                             // Ignore invalid URLs/headers
                         }

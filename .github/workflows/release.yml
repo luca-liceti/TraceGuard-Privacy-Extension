@@ -37,6 +37,14 @@ jobs:
     - name: Install dependencies
       working-directory: ./traceguard-extension
       run: npm ci --legacy-peer-deps
+
+    - name: Security audit
+      working-directory: ./traceguard-extension
+      run: npm audit --omit=dev --audit-level=high
+
+    - name: Run ESLint
+      working-directory: ./traceguard-extension
+      run: npm run lint
       
     - name: Run Tests
       working-directory: ./traceguard-extension
@@ -84,7 +92,8 @@ jobs:
 
     - name: Build extension
       working-directory: ./traceguard-extension
-      run: npx vite build
+      # Use the npm script so the prebuild version sync runs before packaging.
+      run: npm run build
       
     - name: Package Extension
       working-directory: ./traceguard-extension

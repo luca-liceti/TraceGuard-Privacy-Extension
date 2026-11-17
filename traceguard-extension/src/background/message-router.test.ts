@@ -65,4 +65,40 @@ describe('background message router', () => {
             visitCount: 1,
         });
     });
+
+    it('does not record PII while the extension is paused', async () => {
+        await import('./index');
+        await chrome.storage.local.set({
+            settings: { enabled: false, wssThreshold: 60, whitelist: [], blacklist: [], theme: 'system' },
+            state: { ups: 100, sitesAnalyzed: 0, trackersDetected: 0, piiEventsCount: 0 },
+        });
+
+        const onMessage = registeredMessageListener();
+        const response = await new Promise<unknown>((resolve) => {
+            const keepChannelOpen = onMessage(
+                {
+                    type: 'PII_DETECTED',
+                    data: {
+                        site: 'paused-site.com',
+                        fieldType: 'password',
+                        sensitivity: 'HIGH',
+                        pageContext: { isLoginPage: true, isCheckoutPage: false },
+                    },
+                },
+                { id: chrome.runtime.id, tab: { id: 7 } } as chrome.runtime.MessageSender,
+                resolve,
+            );
+            expect(keepChannelOpen).toBe(true);
+        });
+
+        const stored = await chrome.storage.local.get(['piiDetections', 'notifications', 'state']) as {
+            piiDetections?: unknown;
+            notifications?: unknown;
+            state: { piiEventsCount: number };
+        };
+        expect(response).toEqual({ success: true });
+        expect(stored.piiDetections).toBeUndefined();
+        expect(stored.notifications).toBeUndefined();
+        expect(stored.state.piiEventsCount).toBe(0);
+    });
 });

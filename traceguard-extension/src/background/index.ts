@@ -364,6 +364,7 @@ async function deriveUps(key: CryptoKey | null): Promise<number | null> {
     if (!key) return null;
     try {
         const exposure = await storage.getAllExposure(key);
+        if (exposure === null) return null;
         const stored = await chrome.storage.local.get<Record<string, any>>('piiDetections');
         const decrypted = await readEncryptedArray<PIIDetectionEvent>(key, stored.piiDetections);
         const events = decrypted === READ_FAILED ? [] : (decrypted ?? []);
@@ -1075,7 +1076,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             .then(() => settleAbandonedPIIConfirmations().catch(error => {
                 captureError('pii', error, 'abandoned_settle_failed');
             }))
-            .then(() => sendResponse({ success: true }));
+            .then(() => sendResponse({ success: true }))
+            .catch(error => {
+                // A failed flush must not leave the unlock request unanswered.
+                captureError('storage', error, 'unlock_flush_failed');
+                sendResponse({ success: false, error: String(error) });
+            });
         return true;
     }
 
@@ -1221,31 +1227,32 @@ function formatPIILedgerNote(
     fieldType: string,
 ): string | undefined {
     if (!context) return undefined;
+    const field = i18n.t(fieldType);
 
     if (context.siteHasField) {
         if (context.otherHolders === 0) {
-            return i18n.t('This site already has your {{field}}.', { field: fieldType });
+            return i18n.t('This site already has your {{field}}.', { field });
         }
         return i18n.t('This site already has your {{field}}. It is held by {{count}} in total.', {
-            field: fieldType,
+            field,
             count: siteCountLabel(context.otherHolders + 1),
         });
     }
 
     if (context.otherHolders > 0) {
         return i18n.t('Your {{field}} is already held by {{count}} besides this one.', {
-            field: fieldType,
+            field,
             count: siteCountLabel(context.otherHolders),
         });
     }
 
     if (context.otherFields.length > 0) {
         return i18n.t('This site already has other data from you: {{fields}}.', {
-            fields: context.otherFields.join(', '),
+            fields: context.otherFields.map((other) => i18n.t(other)).join(', '),
         });
     }
 
-    return i18n.t('This is the first {{field}} TraceGuard has seen you enter.', { field: fieldType });
+    return i18n.t('This is the first {{field}} TraceGuard has seen you enter.', { field });
 }
 
 /**
@@ -1293,10 +1300,11 @@ async function askForSiteConfirmation(
         // background tab can't produce a confusing prompt on an unrelated page.
         // Translate the card here (i18n is already loaded in this worker) and
         // ship the strings with the message, keeping the content script slim.
+        const fieldLabel = i18n.t(event.fieldType);
         const texts = {
             title: i18n.t('Is this website safe?'),
             dismissLabel: i18n.t('Dismiss'),
-            bodyPrefix: i18n.t('TraceGuard detected personal info ({{fieldType}}) on', { fieldType: event.fieldType }),
+            bodyPrefix: i18n.t('TraceGuard detected personal info ({{fieldType}}) on', { fieldType: fieldLabel }),
             bodySuffix: i18n.t('and this site doesn\u2019t meet our security checks. Make sure it\u2019s the real site before entering anything.'),
             confirm: i18n.t('Trust this site'),
             notSure: i18n.t('Keep warning me'),
@@ -1486,6 +1494,11 @@ async function handlePIIDetection(message: any, tabId?: number) {
         return;
     }
     const event = parsed.data.data;
+    const settings = await storage.getSettings();
+    // The master switch covers the whole extension, including this path. The
+    // content script can still emit a PII event while paused, so the worker must
+    // refuse it here rather than record and score a paused browsing session.
+    if (!settings.enabled) return;
     logEvent('pii', 'debug', 'pii_detected', 'PII entry detected', {
         host: event.site,
         fieldType: event.fieldType,
@@ -1507,7 +1520,6 @@ async function handlePIIDetection(message: any, tabId?: number) {
     // should be gated on the confirmation card. The final UPS decision is made
     // in finalizePIIDetection against freshly-read state.
     const key = await getCryptoKey();
-    const settings = await storage.getSettings();
 
     // Resolve the emitting site's safety score from the site cache - the active
     // tab's state may point at a different site. Use ?? so a genuine WSS of 0
@@ -1783,7 +1795,7 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
         type: 'pii_detected',
         title: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
         titleKey: event.sensitivity === 'HIGH' ? 'Sensitive Data Detected!' : 'Personal Data Entered',
-        message: `${event.fieldType} entered on ${event.site} (${scoreImpact} pts). ${i18n.t(decision.message)}`,
+        message: `${i18n.t(event.fieldType)} entered on ${event.site} (${scoreImpact} pts). ${i18n.t(decision.message)}`,
         messageKey: '{{fieldType}} entered on {{site}} ({{scoreImpact}} pts). {{reason}}',
         params: { fieldType: event.fieldType, site: event.site, scoreImpact, reason: i18n.t(decision.message) },
         domain: event.site,

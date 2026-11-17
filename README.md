@@ -57,7 +57,7 @@ The private key must **never** be committed. Store it as a GitHub Actions secret
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v20.19+ or v22.12+)
 - [npm](https://www.npmjs.com/) (v9 or higher)
-- Google Chrome or a Chromium-based browser
+- Google Chrome 114 or newer (or a Chromium-based browser with the side-panel API)
 
 ### Installation & Setup
 
