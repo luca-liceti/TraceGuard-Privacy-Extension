@@ -48,7 +48,7 @@ describe('content script loads and analyzes', () => {
             siteWSS: 40,
         });
         const shadow = document.getElementById('traceguard-pii-confirm-host')!.shadowRoot!;
-        const confirmBtn = Array.from(shadow.querySelectorAll('button')).find(b => b.textContent?.includes('allow list'))!;
+        const confirmBtn = Array.from(shadow.querySelectorAll('button')).find(b => b.textContent?.includes('Trust this site'))!;
         confirmBtn.click();
         expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
             type: 'PII_CONFIRM_RESULT',
@@ -68,7 +68,7 @@ describe('content script loads and analyzes', () => {
             siteWSS: 40,
         });
         const shadow = document.getElementById('traceguard-pii-confirm-host')!.shadowRoot!;
-        const dismissBtn = Array.from(shadow.querySelectorAll('button')).find(b => b.textContent?.includes('Not sure'))!;
+        const dismissBtn = Array.from(shadow.querySelectorAll('button')).find(b => b.textContent?.includes('Keep warning me'))!;
         dismissBtn.click();
         expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
             type: 'PII_CONFIRM_RESULT',

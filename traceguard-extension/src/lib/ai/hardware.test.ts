@@ -7,6 +7,7 @@ import {
     SUMMARY_ONLY_MODEL,
     classifyRenderer,
     cleanGpuName,
+    isPolicyCapableModel,
     detectHardware,
     pullCommand,
     recommendFor,
@@ -61,6 +62,17 @@ describe('classifyRenderer', () => {
         const result = classifyRenderer('Some Future GPU 9000');
         expect(result.kind).toBe('unknown');
         expect(result.vramGb).toBeNull();
+    });
+});
+
+describe('isPolicyCapableModel', () => {
+    it('allows only the recommended policy-capable model tiers', () => {
+        expect(isPolicyCapableModel(FUNCTIONAL_MODEL)).toBe(true);
+        expect(isPolicyCapableModel(BETTER_MODEL)).toBe(true);
+        expect(isPolicyCapableModel(OUTSTANDING_MODEL)).toBe(true);
+        expect(isPolicyCapableModel(SUMMARY_ONLY_MODEL)).toBe(false);
+        expect(isPolicyCapableModel(IMPROVED_SUMMARY_MODEL)).toBe(false);
+        expect(isPolicyCapableModel('')).toBe(false);
     });
 });
 

@@ -17,16 +17,16 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 - **Real-Time Tracker Detection**: Identifies third-party trackers using a curated list plus bundled databases (DuckDuckGo Tracker Radar, EasyPrivacy, Disconnect).
 - **PII Monitoring**: Detects sensitive form inputs and warns you when you start typing into one on a low-trust site. The detector fires on the first character entered into a field, never on the value itself.
 - **Cookie Auditing**: Detects tracking cookies from `Set-Cookie` headers and the DOM, cookie names and metadata only, never values (no `cookies` permission required).
-- **Policy Grading**: A hybrid ToS;DR integration, a bundled database by default, with an optional (off-by-default) live lookup for unrated sites.
+- **Policy Grading**: Bundled ToS;DR ratings, optional live lookups, and off-by-default local policy reports for unrated sites when no saved report exists and a capable Ollama model is loaded.
 - **Footprint Ledger**: A dashboard page showing what you have handed over, by field type and site, plus which tracker companies covered how much of your browsing. Built entirely from data already stored locally.
 - **Modern Dashboard**: An interactive, responsive control center built with React, Vite, Tailwind CSS, and shadcn/ui.
-- **Local-First**: Everything runs on-device, no accounts, no telemetry, and sensitive data is encrypted behind a master password (the "vault").
+- **Local-First**: Core analysis runs on-device, with no accounts or telemetry. Optional AI uses your local Ollama server; optional policy reports fetch policy pages from the sites being checked. Sensitive data is encrypted behind a master password (the "vault").
 
 ## What TraceGuard does not do
 
 - **It does not block anything.** TraceGuard observes and scores. It has no blocking permission, and a request recorded as blocked was blocked by your browser or by another extension.
 - **It never sees what you type.** It records the type of field you interacted with, never the value, and it records on the first keystroke, so an abandoned form looks the same as a submitted one.
-- **It has no account, no backend, and no telemetry.** Nothing about your browsing is sent anywhere.
+- **It has no account, backend, or telemetry.** Optional ToS;DR lookups reveal the requested site domain to ToS;DR. When Local Policy Reports is enabled, TraceGuard requests policy pages directly from those sites; the static fetch omits cookies, but a rendered-tab fallback may use your browser session and send applicable cookies. Policy text and selected summary facts go only to Ollama on your device.
 - **It cannot see what a site did with your data afterwards**, or whether you reuse passwords.
 
 ## Screenshots
@@ -37,7 +37,7 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 
 ## Threat Feed & Signed Updates
 
-The malware/phishing blocklist is built locally from public, no-account feeds ([OpenPhish](https://openphish.com/feed.txt) and [phishunt](https://phishunt.io)), matching is done entirely on-device, so your browsing is never sent to a third party.
+The malware/phishing blocklist is built locally from public, no-account feeds ([OpenPhish](https://openphish.com/feed.txt) and [phishunt](https://phishunt.io)), and matching is done on-device. Separately, Local Policy Reports, when enabled, request policy pages from the sites being checked; Live Rating Lookup can send a site's domain to ToS;DR. See [PRIVACY.md](PRIVACY.md) for all network requests.
 
 To keep that blocklist fresh between extension releases, the background worker periodically fetches a **signed** update (`phishlist.signed.json`) and only accepts it when its Ed25519 signature verifies against an embedded public key, it is fresher than the last accepted feed, and it is newer than what is already stored. Any failure falls back to the bundled snapshot.
 

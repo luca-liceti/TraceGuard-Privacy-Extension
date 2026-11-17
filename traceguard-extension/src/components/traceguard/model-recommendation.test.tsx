@@ -37,37 +37,31 @@ beforeEach(() => {
 
 describe('ModelRecommendation', () => {
     it('shows the detected card and the model it can run', async () => {
-        render(<ModelRecommendation installedModels={[]} selectedModel="qwen3.5:0.8b" onSelect={vi.fn()} />);
+        render(<ModelRecommendation installedModels={[]} />);
 
-        await waitFor(() => expect(screen.getByText('gemma4:12b · 8.0 GB download')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('gemma4:12b')).toBeInTheDocument());
+        expect(screen.getByText('8.0 GB download')).toBeInTheDocument();
         expect(screen.getByText('Detected: NVIDIA GeForce RTX 4070 (about 12 GB)')).toBeInTheDocument();
         expect(screen.getByText(profile.note)).toBeInTheDocument();
     });
 
     it('copies the pull command instead of trying to install anything', async () => {
         mocks.writeText.mockResolvedValue(undefined);
-        render(<ModelRecommendation installedModels={[]} selectedModel="qwen3.5:0.8b" onSelect={vi.fn()} />);
+        render(<ModelRecommendation installedModels={[]} />);
 
         await waitFor(() => expect(screen.getByText('ollama pull gemma4:12b')).toBeInTheDocument());
-        fireEvent.click(screen.getByRole('button', { name: 'Copy command' }));
+        const copyButton = screen.getByRole('button', { name: 'Copy install command' });
+        expect(copyButton).toHaveTextContent('');
+        fireEvent.click(copyButton);
 
         await waitFor(() => expect(mocks.writeText).toHaveBeenCalledWith('ollama pull gemma4:12b'));
         expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
     });
 
-    it('offers the recommended model once it is installed', async () => {
-        const onSelect = vi.fn();
-        render(<ModelRecommendation installedModels={['gemma4:12b', 'qwen3.5:0.8b']} selectedModel="qwen3.5:0.8b" onSelect={onSelect} />);
+    it('shows when the recommended model is installed for selection in the picker', async () => {
+        render(<ModelRecommendation installedModels={['gemma4:12b']} />);
 
-        const select = await screen.findByRole('button', { name: 'Use this model' });
-        fireEvent.click(select);
-        expect(onSelect).toHaveBeenCalledWith('gemma4:12b');
-    });
-
-    it('does not offer a select action for the model already in use', async () => {
-        render(<ModelRecommendation installedModels={['gemma4:12b']} selectedModel="gemma4:12b" onSelect={vi.fn()} />);
-
-        expect(await screen.findByText('Currently selected')).toBeInTheDocument();
+        await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Installed in Ollama. Select it in the model list.'));
         expect(screen.queryByRole('button', { name: 'Use this model' })).not.toBeInTheDocument();
     });
 });

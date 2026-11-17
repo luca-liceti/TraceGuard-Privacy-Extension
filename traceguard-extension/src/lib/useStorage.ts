@@ -56,7 +56,28 @@ import { storage } from './storage';
 import { AppState, UserSettings, SiteRiskData, CrossSiteExposure, PIIDetectionEvent } from './types';
 import { buildExposureReport, ExposureReport } from './exposure';
 import { importKey, decryptData } from './crypto';
+import {
+    SITE_CACHE_PREFIX,
+    decryptSiteCacheShard,
+    flattenSiteCacheShards,
+    parseSiteCacheShardKey,
+    readSiteCacheShards,
+    readSiteEntry,
+    siteCacheShard,
+    siteCacheShardKey,
+} from './site-cache';
 import { logEvent } from './diagnostics';
+import { POLICY_REPORT_CACHE_KEY, readCachedPolicyReports } from './ai/policy-report-cache';
+
+async function getSessionKey(): Promise<CryptoKey | null> {
+    try {
+        const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
+        return session.cryptoKeyHex ? importKey(session.cryptoKeyHex) : null;
+    } catch (error) {
+        logEvent('storage', 'warn', 'vault_key_unavailable', error instanceof Error ? error.message : String(error));
+        return null;
+    }
+}
 
 // Helper to decrypt data if it was encrypted
 async function decryptIfNeeded(data: any): Promise<any> {
@@ -256,27 +277,27 @@ function asArray<T>(value: any): T[] {
 export function useExposureReport(): { report: ExposureReport; isLoading: boolean } {
     const [exposure, setExposure] = useState<CrossSiteExposure>({});
     const [piiEvents, setPiiEvents] = useState<PIIDetectionEvent[]>([]);
-    const [siteCache, setSiteCache] = useState<Record<string, SiteRiskData>>({});
+    // The site cache has its own subscription; reuse it instead of decrypting
+    // every shard a second time here.
+    const { siteCache, isLoading: isSiteCacheLoading } = useSiteCache();
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         let isMounted = true;
 
         const load = async (raw: Record<string, any>) => {
-            const [decryptedExposure, decryptedPii, decryptedCache] = await Promise.all([
+            const [decryptedExposure, decryptedPii] = await Promise.all([
                 decryptIfNeeded(raw.crossSiteExposure),
                 decryptIfNeeded(raw.piiDetections),
-                decryptIfNeeded(raw.siteCache),
             ]);
             if (!isMounted) return;
             setExposure(asObject<CrossSiteExposure>(decryptedExposure));
             setPiiEvents(asArray<PIIDetectionEvent>(decryptedPii));
-            setSiteCache(asObject<Record<string, SiteRiskData>>(decryptedCache));
             setIsLoading(false);
         };
 
         chrome.storage.local
-            .get(['crossSiteExposure', 'piiDetections', 'siteCache'])
+            .get(['crossSiteExposure', 'piiDetections'])
             .then(load)
             .catch((error) => {
                 // A read failure must not leave the page spinning forever; show an
@@ -291,7 +312,7 @@ export function useExposureReport(): { report: ExposureReport; isLoading: boolea
             areaName: string
         ) => {
             if (areaName !== 'local') return;
-            const touched = ['crossSiteExposure', 'piiDetections', 'siteCache'];
+            const touched = ['crossSiteExposure', 'piiDetections'];
             if (!touched.some(k => changes[k])) return;
             await load(await chrome.storage.local.get(touched));
         };
@@ -310,7 +331,52 @@ export function useExposureReport(): { report: ExposureReport; isLoading: boolea
         [exposure, piiEvents, siteCache]
     );
 
-    return { report, isLoading };
+    return { report, isLoading: isLoading || isSiteCacheLoading };
+}
+
+/**
+ * Reads the timestamped personal-info events without building the full
+ * footprint report. The weekly digest needs only this list and the site cache;
+ * keeping it separate avoids aggregating every exposure on each dashboard load.
+ */
+export function usePiiEvents(): { piiEvents: PIIDetectionEvent[]; isLoading: boolean } {
+    const [piiEvents, setPiiEvents] = useState<PIIDetectionEvent[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const load = async (raw: Record<string, any>) => {
+            const decrypted = await decryptIfNeeded(raw.piiDetections);
+            if (!isMounted) return;
+            setPiiEvents(asArray<PIIDetectionEvent>(decrypted));
+            setIsLoading(false);
+        };
+
+        chrome.storage.local
+            .get('piiDetections')
+            .then(load)
+            .catch((error) => {
+                logEvent('storage', 'warn', 'pii_events_read_failed', error instanceof Error ? error.message : String(error));
+                if (isMounted) setIsLoading(false);
+            });
+
+        const listener = async (
+            changes: { [key: string]: chrome.storage.StorageChange },
+            areaName: string
+        ) => {
+            if (areaName !== 'local' || !changes.piiDetections) return;
+            await load(await chrome.storage.local.get('piiDetections'));
+        };
+
+        chrome.storage.onChanged.addListener(listener);
+        return () => {
+            isMounted = false;
+            chrome.storage.onChanged.removeListener(listener);
+        };
+    }, []);
+
+    return { piiEvents, isLoading };
 }
 
 export function useDetectorLogs() {
@@ -423,44 +489,54 @@ export function useNotifications() {
  *   - isLoading: Whether the initial load is still in progress
  */
 export function useSiteCache() {
-    const [siteCache, setSiteCache] = useState<Record<string, SiteRiskData>>({});
+    const [shards, setShards] = useState<Record<number, Record<string, SiteRiskData>>>({});
     const [isLoading, setIsLoading] = useState(true);
-    const lastUpdateRef = useRef<number>(0);
+    const shardsRef = useRef(shards);
 
     useEffect(() => {
         let isMounted = true;
-        // Capture timestamp BEFORE fetch to correctly guard against stale data
-        const fetchTimestamp = Date.now();
-        chrome.storage.local.get('siteCache').then(async res => {
-            const decrypted = await decryptIfNeeded(res.siteCache);
-            if (isMounted && fetchTimestamp >= lastUpdateRef.current) {
-                lastUpdateRef.current = fetchTimestamp;
-                let finalCache = decrypted || {};
-                if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
-                    finalCache = {};
-                }
-                setSiteCache(finalCache as Record<string, SiteRiskData>);
-                setIsLoading(false);
-            }
+
+        const loadAll = async () => {
+            const key = await getSessionKey();
+            const next = await readSiteCacheShards(key);
+            if (!isMounted) return;
+            shardsRef.current = next;
+            setShards(next);
+            setIsLoading(false);
+        };
+
+        loadAll().catch((error) => {
+            logEvent('storage', 'warn', 'site_cache_read_failed', error instanceof Error ? error.message : String(error));
+            if (isMounted) setIsLoading(false);
         });
 
-        // Listen for changes
+        // A shard change decrypts only that shard. A legacy `siteCache` change
+        // means the one-time migration is still running, so reload everything.
         const listener = async (
             changes: { [key: string]: chrome.storage.StorageChange },
             areaName: string
         ) => {
-            if (areaName === 'local' && changes.siteCache) {
-                const timestamp = Date.now();
-                const decrypted = await decryptIfNeeded(changes.siteCache.newValue);
-                if (isMounted && timestamp >= lastUpdateRef.current) {
-                    lastUpdateRef.current = timestamp;
-                    let finalCache = decrypted || {};
-                    if (typeof finalCache === 'string' || (finalCache && typeof finalCache === 'object' && typeof finalCache[0] === 'string')) {
-                        finalCache = {};
-                    }
-                    setSiteCache(finalCache as Record<string, SiteRiskData>);
-                }
+            if (areaName !== 'local') return;
+            if (changes.siteCache) {
+                await loadAll();
+                return;
             }
+            const touched = Object.keys(changes).filter(key => key.startsWith(SITE_CACHE_PREFIX));
+            if (touched.length === 0) return;
+
+            const key = await getSessionKey();
+            const next = { ...shardsRef.current };
+            for (const storageKey of touched) {
+                const shard = parseSiteCacheShardKey(storageKey);
+                if (shard === null) continue;
+                const raw = changes[storageKey].newValue;
+                next[shard] = raw === undefined
+                    ? {}
+                    : await decryptSiteCacheShard(raw, key, shard);
+            }
+            if (!isMounted) return;
+            shardsRef.current = next;
+            setShards(next);
         };
 
         chrome.storage.onChanged.addListener(listener);
@@ -470,7 +546,8 @@ export function useSiteCache() {
         };
     }, []);
 
-    // Pre-compute the entries array for convenience
+    // Flattening is cheap and only runs when a shard changed.
+    const siteCache = useMemo(() => flattenSiteCacheShards(shards), [shards]);
     const sites = Object.entries(siteCache);
 
     return {
@@ -478,6 +555,48 @@ export function useSiteCache() {
         sites,
         isLoading
     };
+}
+
+/**
+ * Policy grades this device generated for a site, keyed by domain.
+ *
+ * A site's own record only carries a ToS;DR rating. The local report lives in
+ * its own cache, written by the side panel and the dashboard's details panel,
+ * so a list that shows a grade (the activity log) reads it here. The hook
+ * follows the cache, so a report that finishes while the dashboard is open
+ * replaces `N/A` without a reload.
+ */
+export function useLocalPolicyGrades(): Record<string, string> {
+    const [grades, setGrades] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const load = () => {
+            readCachedPolicyReports().then((reports) => {
+                if (!isMounted) return;
+                const next: Record<string, string> = {};
+                for (const [domain, report] of Object.entries(reports)) {
+                    if (report?.grade) next[domain] = report.grade;
+                }
+                setGrades(next);
+            });
+        };
+
+        load();
+
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+            if (areaName === 'local' && changes[POLICY_REPORT_CACHE_KEY]) load();
+        };
+
+        chrome.storage.onChanged.addListener(listener);
+        return () => {
+            isMounted = false;
+            chrome.storage.onChanged.removeListener(listener);
+        };
+    }, []);
+
+    return grades;
 }
 
 /**
@@ -490,6 +609,7 @@ export function useCurrentSite(): SiteRiskData | undefined {
     const state = useAppState();
     const [site, setSite] = useState<SiteRiskData | undefined>(undefined);
     const domain = state?.currentSite?.domain;
+    const shardKey = domain ? siteCacheShardKey(siteCacheShard(domain)) : null;
 
     useEffect(() => {
         if (!domain) {
@@ -499,25 +619,26 @@ export function useCurrentSite(): SiteRiskData | undefined {
         let isMounted = true;
 
         const load = async () => {
-            const res = await chrome.storage.local.get('siteCache');
-            const decrypted = await decryptIfNeeded(res.siteCache);
-            const cache = (decrypted && typeof decrypted === 'object' && !Array.isArray(decrypted))
-                ? decrypted as Record<string, SiteRiskData>
-                : {};
-            if (isMounted) setSite(cache[domain]);
+            const key = await getSessionKey();
+            const entry = await readSiteEntry(domain, key);
+            if (isMounted) setSite(entry);
         };
 
-        load();
+        load().catch((error) => {
+            logEvent('storage', 'warn', 'current_site_read_failed', error instanceof Error ? error.message : String(error));
+        });
 
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-            if (areaName === 'local' && changes.siteCache) load();
+            if (areaName !== 'local') return;
+            // `siteCache` is the legacy key removed by the one-time migration.
+            if (changes.siteCache || (shardKey && changes[shardKey])) load();
         };
         chrome.storage.onChanged.addListener(listener);
         return () => {
             isMounted = false;
             chrome.storage.onChanged.removeListener(listener);
         };
-    }, [domain]);
+    }, [domain, shardKey]);
 
     return site;
 }

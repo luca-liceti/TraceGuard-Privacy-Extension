@@ -285,7 +285,8 @@ export interface UserSettings {
     enableCloudTosdr?: boolean;          // Live rating updates toggle (runtime tosdr.org lookups)
     enableLocalSummaries?: boolean;      // Send summary facts to the user's own localhost Ollama server (off by default)
     localSummaryModel?: string;          // Exact model name installed in Ollama (default qwen3.5:0.8b)
-    enableLocalPolicyReports?: boolean;  // Allow explicit policy-page text analysis by the user's local Ollama model (off by default)
+    enableLocalPolicyReports?: boolean;  // Allow automatic policy reports for viewed unrated sites via local Ollama (off by default)
+    weeklyDigest?: boolean;              // Show the once-a-week in-app summary toast (on by default)
     devMode?: boolean;                   // Developer mode: verbose on-device diagnostics (off by default)
 }
 
@@ -360,7 +361,8 @@ export interface StorageSchema {
     schemaVersion?: number;                        // For handling upgrades
     settings: UserSettings;                        // User preferences
     state: AppState;                               // Current runtime state
-    siteCache: Record<string, SiteRiskData>;       // Cached site analyses
+    /** Legacy single-blob cache. Split into encrypted shards by site-cache.ts. */
+    siteCache?: Record<string, SiteRiskData>;
     logs: LogEntry[];                              // General log entries
     detectorLogs?: DetectorLogEntry[];             // Detector-specific logs
     scoreHistory?: ScoreHistoryEntry[];            // Score changes over time

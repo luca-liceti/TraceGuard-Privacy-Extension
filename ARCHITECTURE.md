@@ -6,8 +6,9 @@ How TraceGuard is put together, and why. Decisions and their reasoning live in
 ## What it is
 
 A Manifest V3 Chrome extension that scores the privacy practices of every site a user visits and
-tracks the user's own footprint over time. It runs entirely on the device: no backend, no account,
-no telemetry. Two scores are produced:
+tracks the user's own footprint over time. Core analysis and storage run on the device, with no
+backend, account, or telemetry. Optional network features can contact ToS;DR, Ollama on the same
+device, threat-feed hosts, and policy-page hosts, as described in `PRIVACY.md`. Two scores are produced:
 
 - **Website Safety Score (WSS)**, 0 to 100, per site, per analysis.
 - **User Privacy Score (UPS)**, 0 to 100, derived from the user's handovers rather than from browsing, and decaying with age.
@@ -22,16 +23,18 @@ through `chrome.storage`.
 
 | Context | Entry point | Responsibility |
 |---|---|---|
-| Background service worker | `src/background/index.ts` | The only writer of authoritative state. Holds the vault key. Runs enrichment, scoring, migrations, retention, alarms, and the threat-feed refresh. |
+| Background service worker | `src/background/index.ts` | The only writer of authoritative state. Holds the vault key. Runs enrichment, scoring, migrations, retention, alarms, and the threat-feed refresh. Page analysis is extracted to `src/background/handlers/page-analysis.ts`; the worker injects the vault key, notification, and per-domain score helpers. |
 | Content script | `src/content/index.ts` | Runs on every page (`*://*/*`, `document_idle`). Runs the page detectors, extracts candidates, shows the in-page PII confirmation card, and relays diagnostics to the worker. |
 | Popup | `src/popup/index.html` | The toolbar popup: current-site summary. |
 | Side panel | `src/sidepanel/index.html` | The persistent panel: current-site detail while switching tabs. |
 | Dashboard | `src/dashboard/index.html` | The React app with routes: Overview, Rankings and Stats, Footprint. |
 
 The extension requests `storage`, `unlimitedStorage`, `sidePanel`, `tabs`, `notifications`,
-`alarms`, `downloads`, and `webRequest`, plus host permission `*://*/*`. `webRequest` is used in its
-observational form only: the extension monitors network activity and never blocks anything. See
-record [0002](adr/0002-no-cookies-permission.md) for why `cookies` is deliberately absent.
+`alarms`, `downloads`, and `webRequest`, plus host permission `*://*/*`. The manifest's
+`connect-src` permits HTTP(S) requests to arbitrary hosts for policy pages; remote scripts remain
+blocked. `webRequest` is used in its observational form only: the extension monitors network
+activity and never blocks anything. See record [0002](adr/0002-no-cookies-permission.md) for why
+`cookies` is deliberately absent.
 
 ## How a page is analyzed
 
@@ -47,10 +50,14 @@ record [0002](adr/0002-no-cookies-permission.md) for why `cookies` is deliberate
 4. **Scoring.** `explainWSS` in `src/lib/scoring.ts` combines detector results with the weights below
    and returns both the score and the arithmetic behind it. `calculateWSS` wraps it so a score and
    its audit trail cannot disagree.
-5. **Write.** The worker writes `siteCache`, `detectorLogs`, `scoreHistory`, `crossSiteExposure`, and
-   `piiDetections`, encrypting them with the vault key.
-6. **Read.** UI code reads through the hooks in `src/lib/useStorage.ts`, which decrypt and subscribe
-   to `chrome.storage.onChanged`.
+5. **Write.** The worker writes the current domain's site cache shard, `detectorLogs`,
+   `scoreHistory`, `crossSiteExposure`, and `piiDetections`, encrypting them with the vault key.
+6. **Read.** UI code reads through the hooks in `src/lib/useStorage.ts`, which decrypt the shards
+   they need and subscribe to `chrome.storage.onChanged`.
+
+The PII confirmation card reads prior exposure before the new handover is recorded, so its
+context describes what the ledger already knew. The weekly digest is an in-app toast, not a
+system notification, and is built only when its local seven-day timestamp is due.
 
 ## Storage model
 
@@ -61,7 +68,7 @@ Everything is in `chrome.storage.local` except the two vault keys, which live in
 |---|---|---|
 | `settings` | Theme, notification preferences, whitelist and blacklist | No |
 | `state` | UPS, sites analyzed, PII event count | No |
-| `siteCache` | Per-domain analysis: WSS, detector details, enriched trackers, cookies, headers | Yes |
+| `siteCache:v1:00` to `siteCache:v1:63` | Per-domain analysis split into 64 encrypted shards: WSS, detector details, enriched trackers, cookies, headers. A navigation writes one shard. Legacy `siteCache` is migrated once | Yes |
 | `detectorLogs` | Per-detector results over time, capped | Yes |
 | `scoreHistory` | UPS changes over time | Yes |
 | `piiDetections` | Field-type interaction events (capped at 100) | Yes |
@@ -69,10 +76,11 @@ Everything is in `chrome.storage.local` except the two vault keys, which live in
 | `notifications` | Alerts shown to the user | Yes |
 | `logs` | General log entries | Varies |
 | `tosdr_cache` | Optional ToS;DR lookup results, domain to grade. Plaintext by design, it holds no page data | No |
+| `weeklyDigestAt` | When the in-app weekly digest was last shown. A timestamp only; the digest itself is built on demand from the stores above | No |
 
 Session keys: `cryptoKeyHex` (the vault key) and `bufferKeyHex` (the buffer key below). Session
-storage is restricted to trusted contexts via `chrome.storage.session.setAccessLevel`; a content
-script must never be able to read the master key.
+storage keeps its default trusted-context access level, so a content script cannot read the master
+key. Do not widen it with `chrome.storage.session.setAccessLevel`.
 
 ## The vault and the buffer
 
@@ -151,9 +159,10 @@ falling back to the bundled snapshot on any failure. See the README for the key-
 ## Diagnostics
 
 `src/lib/diagnostics.ts` is the only failure-reporting path. `captureError` records a genuine fault
-to a durable log; `logEvent` records a transient or expected condition to the session log. Developer
-mode, off by default, makes verbose events persist; they go to `chrome.storage.session`, are wiped
-when the browser closes, and are never written to disk.
+to the 100-entry error log in `chrome.storage.local`, which is cleared when the browser starts.
+`logEvent` records a transient or expected condition to the session log. The Diagnostics toggle in
+Settings > About, off by default, makes verbose events persist to `chrome.storage.session` and shows
+the error list; session events are wiped when the browser closes and are never written to disk.
 
 Content scripts cannot write session storage because that would expose the vault key, so they batch
 events and relay them with `DIAGNOSTIC_EVENTS`; the worker is the only writer.

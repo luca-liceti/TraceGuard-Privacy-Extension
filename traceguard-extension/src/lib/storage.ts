@@ -46,6 +46,7 @@ import { StorageSchema, UserSettings, AppState } from './types';
 import { encryptData, decryptData, decryptDataStrict, generateAesKey, exportKey, importKey, DECRYPT_FAILED } from './crypto';
 import { captureError, logEvent } from './diagnostics';
 import { MAX_EXPOSURE_DOMAINS_PER_TYPE, trimExposureDomains } from './exposure';
+import { removeSiteCache } from './site-cache';
 
 // =============================================================================
 // IN-MEMORY BUFFER (vault locked)
@@ -115,7 +116,8 @@ const DEFAULT_SETTINGS: UserSettings = {
     displayMode: 'sidebar',       // Open the side panel when clicking the extension icon
     enableLocalSummaries: false,  // Local-model requests are opt-in
     localSummaryModel: 'qwen3.5:0.8b', // Edit to the exact model name installed in Ollama
-    enableLocalPolicyReports: false, // Policy text is sent only after an explicit request
+    enableLocalPolicyReports: false, // Policy text is sent only when opted in and an unrated site is viewed
+    weeklyDigest: true,           // Once-a-week in-app summary; computed from local data only
     devMode: false               // Verbose diagnostics are off until explicitly enabled
 };
 
@@ -417,10 +419,10 @@ export const storage = {
         // leave the score disagreeing with the ledger.
         await chrome.storage.local.remove([
             'scoreHistory',
-            'siteCache',
             'crossSiteExposure',
             'piiDetections',
         ]);
+        await removeSiteCache();
         await chrome.storage.session.remove([
             'bufferedScoreHistory',
             'bufferedSiteCache',

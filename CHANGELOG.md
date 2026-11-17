@@ -2,6 +2,51 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.25.0
+
+**What's new**
+
+- The personal-info confirmation card now shows what the ledger already knows before you choose: whether this site already has this data, how many other sites hold it, and what else this site already has. **Keep warning me** is the primary action; **Trust this site** is secondary.
+- A weekly privacy digest appears as an in-app toast at most once a week. It summarizes recent personal-info entries, low-scoring sites, and tracker companies from data already on this device. Settings, **Notifications** has a **Weekly digest** switch.
+- A missing privacy policy is explicitly a red flag in the WSS: it scores 25 at full weight, and the policy row shows its grade instead of a dash. Only a policy that exists but has no ToS;DR rating (50) is neutral and excluded from the calculation.
+
+**What was fixed**
+
+- The network monitor stores requests under opaque keys and keeps full URLs only in an in-memory lookup used for error updates. Request paths, queries, and fragments no longer appear in stored network data.
+- The background page-analysis handler now lives in `src/background/handlers/page-analysis.ts`. A new message-route test covers the listener, telemetry queue, and handler together.
+- CI runs on `dev` as well as `main`.
+
+## v1.24.4
+
+**What was fixed**
+
+- Export now asks for your existing vault password and verifies it before writing a file, instead of accepting a separate export password. An encrypted backup uses that password, so the same password that unlocks TraceGuard restores it. A wrong password is rejected before anything is written, and a plaintext export still requires the password as confirmation.
+- Settings, **About** lists recorded errors newest first, so the latest failure is at the top of the list instead of the bottom.
+
+## v1.24.3
+
+**What was fixed**
+
+- The site cache is now split into 64 encrypted shards. A page analysis writes one shard instead of decrypting and re-encrypting the entire cache, so navigating no longer gets slower as the cache fills. Existing caches are migrated once on the next unlock.
+- Settings, **About** has one **Diagnostics** toggle instead of a developer stream, a copy button, an export button, and two separate clear buttons. Turn it on to see recorded errors; turn it off to clear them. The list also clears when the browser restarts.
+- Export is encrypted by default and asks for a password. A plaintext backup is now an explicit choice, and an export while the vault is locked is refused instead of producing a backup that silently leaves the encrypted history out.
+- Policy discovery no longer follows a page's policy link to a different registrable site or to a private, loopback, or link-local host. ToS;DR document links are still allowed, and private hosts are filtered there too.
+- Updated `dompurify` and `zod` to patched releases so the production dependency audit passes, and fixed the three lint errors in the response reader, the policy sentence splitter, and the policy report callback.
+
+## v1.24.2
+
+**What was fixed**
+
+- Settings, **Domain Lists** shows the trash can on each allowed and flagged site again, instead of a **Delete** text button on every row. The icon keeps an accessible label and a tooltip naming the domain, so the row still says which site it removes.
+- The three stat cards on **Overview** now sit on the same grid as the score and trend charts above them. They used to switch column count at their own widths and space themselves 16px apart while the charts used 24px, so at most window sizes three cards were squeezed into two columns and the third sat alone on a row of its own.
+
+## v1.24.1
+
+**What was fixed**
+
+- Automatic local policy reports now check that the selected, policy-capable Ollama model is actually loaded before reading a policy page. A stopped Ollama server, an unloaded model, or the summaries-only `qwen3.5:0.8b` will not open a policy tab.
+- Local policy reports now fetch and parse static policy pages without opening tabs first. A rendered tab is used only as a fallback when the fetched HTML does not contain readable policy text.
+
 ## v1.24.0
 
 **What's new**
@@ -11,12 +56,16 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 - The feature is off by default. Turn it on in Settings, set the installed `qwen3.5:0.8b` model, and allow the installed browser extension's origin in Ollama's `OLLAMA_ORIGINS`. No new permission prompt is needed because the extension already has broad site-analysis host access.
 - This uses Ollama rather than a browser-specific built-in model, so the implementation can be tested across Chromium-based browsers. The next provider checkpoint is the bundled WebGPU model, after this Ollama checkpoint works.
 - A local policy report now follows the shape ToS;DR's Docbot uses, on device: the model picks from a closed list of cases and points at the numbered sentence that supports each one, the extension resolves the sentence, and the score and letter grade are computed from the selected cases. Quotes are exact by construction and the grade is reproducible. The case list is this project's own wording, and `CREDITS.md` records the debt to Docbot and ToS;DR.
-- A local policy report no longer requires opening the policy page first. One button in the policy section finds the site's policy (ToS;DR's document links, then a link on the page, then common paths such as `/privacy-policy`), reads it in an inactive tab, closes the tab, and runs the selected model on the text. Capture tabs carry a marker so reading a policy never records its domain as a visit.
+- A local policy report no longer requires opening the policy page or pressing a button. The policy section finds the site's policy (ToS;DR's document links, then a link on the page, then common paths such as `/privacy-policy`), first reads static HTML without opening a tab, and uses a marked inactive tab only as a fallback for pages that need browser rendering. The selected model runs on the policy text, and capture tabs never record their domain as a visit.
+- The report is kept on this device for seven days, keyed by site, so revisiting a site shows the same points without reading the policy or running the model again. Turning the setting off deletes the stored reports.
+- The Dashboard's Privacy Policy section now shows the same local report, with the grade, the points and the model that produced it, instead of `N/A` and zero points. The activity log's **Policy** column reads the same report when ToS;DR has not rated the site, so a row and the panel it opens no longer disagree, and a report that finishes while the dashboard is open fills the column without a reload.
+- The report renders in the same rows as a ToS;DR rating, with one line noting that it was generated on this device and has no ToS;DR rating. The model now answers a fixed checklist of cases instead of choosing which ones to report, because a free selection returned one or two points on the same long policy on one run and ten on the next.
 - Settings now checks this device's graphics hardware when the local model picker opens, and names the model it can actually run, with the `ollama pull` command to copy. Browsers do not report graphics memory, so the card name is read from WebGL and matched against a table of common GPUs; when the card is unknown, the suggestion stays conservative instead of guessing high. Detect a recommended model already installed and it offers to select it.
 - The Settings and Help text now name the models a policy report needs, instead of leaving users on the summary default. `qwen3.5:0.8b` stays the summaries-only default for underpowered laptops. Machines with a discrete GPU or Apple Silicon get three options that all handle summaries, overviews, and policy reports: `qwen3.5:9b` (6.6 GB) is functional from 10 GB of memory, `gemma4:12b` (8.0 GB) is better from 12 GB, and `gemma4:26b` (18.7 GB) is outstanding from 24 GB. All four are Apache 2.0.
 
 **What was fixed**
 
+- Every progress message now moves instead of showing a static `Loading...` or `…`, and the policy report puts a spinner where its grade will appear. Each place shows one indicator, not two: a line of text inside a row or button gets animated dots only, and a page, panel or card that is still loading gets the animated circle only. The dots reflect the real request: they stop when it succeeds or fails, and a failed policy analysis marks the Privacy Policy row so the failure is visible without opening the section.
 - The On-device summary no longer stops with "the summary facts are missing or too large to send safely" on the Overview when a busy site has a long domain. The Overview facts are now built within the same 300-character value limit the request checks, so whole findings are kept and the request reaches Ollama instead of being rejected before it is sent. A refusal for missing or oversized facts is now recorded in the diagnostics log instead of failing silently.
 - A summary rejected by the evidence check used to be retried with no explanation, so the model repeated the same mistake and the second attempt was discarded too. The retry now names the failure (too long, an unsupported number or domain, or an unsupported claim), and the length bound matches the model's own output budget. The check also accepts `bbc.co.uk` for a fact recorded as `www.bbc.co.uk`, no longer reads an unrelated good score as praise for entering data, and no longer treats the correct disclaimer "not submitted" as a submission claim.
 - The summary evidence check no longer discards a valid audit when it says that no form entries were recorded on any site, refers to a site by the numbered label inside its domain, or begins a formatted line with a heading word. The retry now names the exact values the model invented, and the reply budget leaves room to close the JSON object, so a long first answer no longer comes back as invalid JSON.

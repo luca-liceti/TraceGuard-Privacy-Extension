@@ -18,8 +18,8 @@
  * still recorded.
  *
  * TWO TIERS OF PERSISTENCE:
- * - Errors always land in `errorLog` in `chrome.storage.local` (unchanged
- *   behavior, still shown in Settings, Diagnostics, capped at 100 entries).
+ * - Errors always land in `errorLog` in `chrome.storage.local` (capped at 100
+ *   entries, shown in Settings > Diagnostics, cleared when the browser starts).
  * - Verbose events (debug and info) are only retained when developer mode is
  *   on. When it is on, the full event stream is mirrored into
  *   `chrome.storage.session`, so the dashboard can show what the service
@@ -69,7 +69,7 @@ export interface DiagnosticEvent {
     data?: Record<string, unknown>;
 }
 
-/** Persisted in `chrome.storage.local` under `errorLog` (unchanged shape). */
+/** Persisted in `chrome.storage.local` under `errorLog`; cleared at browser startup. */
 export interface ErrorLogEntry {
     timestamp: number;
     message: string;
@@ -288,8 +288,8 @@ export function normalizeError(error: unknown): { message: string; stack?: strin
 }
 
 /**
- * Records a failure. Always writes to the durable error log and keeps the
- * event in memory, regardless of developer mode.
+ * Records a failure. Always writes to the error log and keeps the event in
+ * memory, regardless of developer mode.
  */
 export function captureError(
     area: DiagnosticArea,
@@ -496,8 +496,8 @@ export async function clearSessionEvents(): Promise<void> {
 // -----------------------------------------------------------------------------
 
 /**
- * Appends an entry to the durable error log and records it as an error event.
- * Preserved signature so existing call sites and the Settings panel keep working.
+ * Appends an entry to the error log and records it as an error event.
+ * Preserved signature so existing call sites keep working.
  */
 export async function recordError(
     message: string,
@@ -516,7 +516,7 @@ export async function getErrorLog(): Promise<ErrorLogEntry[]> {
     return Array.isArray(result[ERROR_LOG_KEY]) ? result[ERROR_LOG_KEY] : [];
 }
 
-/** Clears the durable error log and the session log. */
+/** Clears the error log and the session log. */
 export async function clearErrorLog(): Promise<void> {
     // Queued behind any pending append so a just-captured error cannot land
     // after the clear and reappear.
@@ -542,10 +542,10 @@ export async function clearErrorLog(): Promise<void> {
  * The first real diagnostics bundle exported from a 1.5.0 install contained
  * exactly one "error", `ResizeObserver loop completed with undelivered
  * notifications.`, which Chrome fires as a window `error` event on any layout
- * with a ResizeObserver. Nothing is broken, but it lands in the durable error
- * log (capped at 100 entries) and crowds out real crashes. These are recorded
- * at debug instead, so developer mode can still prove they happened while the
- * durable log stays meaningful.
+ * with a ResizeObserver. Nothing is broken, but it lands in the error log
+ * (capped at 100 entries) and crowds out real crashes. These are recorded at
+ * debug instead, so developer mode can still prove they happened while the
+ * error log stays meaningful.
  */
 const BENIGN_ERROR_PATTERNS: RegExp[] = [
     /^ResizeObserver loop (limit exceeded|completed with undelivered notifications)/,
@@ -580,7 +580,7 @@ export function installGlobalErrorHandlers(): void {
             line: event?.lineno,
             column: event?.colno,
         };
-        // Keep the durable error log free of browser noise that is not a failure.
+        // Keep the error log free of browser noise that is not a failure.
         if (!error && typeof event?.message === 'string' && isBenignBrowserNoise(event.message)) {
             logEvent(diagnosticContext, 'debug', 'benign_browser_noise', event.message, location);
             return;

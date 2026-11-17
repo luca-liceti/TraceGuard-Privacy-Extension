@@ -72,6 +72,7 @@ describe('allow control on Your Footprint', () => {
         })
         renderPage()
 
+        expect(screen.queryByText('Allowing a site exempts it from the handover penalty. Nothing is deleted.')).not.toBeInTheDocument()
         const allow = await screen.findByRole('button', { name: 'Allow: once.com' })
         expect(allow).toHaveAttribute('aria-pressed', 'false')
         fireEvent.click(allow)

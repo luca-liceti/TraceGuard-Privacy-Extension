@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { listOllamaModels, summarizeWithOllama } from './ollama';
+import { listOllamaModels, listRunningOllamaModels, summarizeWithOllama } from './ollama';
 import type { SummaryRequest } from './types';
 
 const request: SummaryRequest = {
@@ -67,6 +67,30 @@ describe('Ollama model discovery', () => {
         vi.stubGlobal('fetch', fetchMock);
         await expect(listOllamaModels()).rejects.toThrow('only from a TraceGuard extension view');
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+});
+
+describe('Ollama loaded model discovery', () => {
+    it('returns model names currently loaded in Ollama', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ models: [
+            { name: 'qwen3.5:9b' },
+            { name: 'gemma4:12b' },
+            { name: 'qwen3.5:9b' },
+        ] }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(listRunningOllamaModels()).resolves.toEqual(['gemma4:12b', 'qwen3.5:9b']);
+        expect(fetchMock).toHaveBeenCalledWith('http://localhost:11434/api/ps', expect.objectContaining({ method: 'GET' }));
+    });
+
+    it('returns an empty list when no model is loaded', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"models":[]}', { status: 200 })));
+        await expect(listRunningOllamaModels()).resolves.toEqual([]);
+    });
+
+    it('fails closed when Ollama cannot report its loaded models', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+        await expect(listRunningOllamaModels()).rejects.toThrow('Could not reach Ollama');
     });
 });
 

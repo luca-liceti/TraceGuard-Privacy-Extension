@@ -1,7 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_POLICY_TEXT_CHARS, preparePrivacyPolicyText } from './policy-text';
+import { extractPolicyDocument, findReadablePolicyText, MAX_POLICY_TEXT_CHARS, preparePrivacyPolicyText } from './policy-text';
 
 const policyText = `${'This Privacy Policy describes the personal data we collect and how we use it. '.repeat(20)}`;
+
+describe('findReadablePolicyText', () => {
+    it('falls back to visible body text when semantic content containers are empty', () => {
+        expect(findReadablePolicyText(['Navigation links only'], policyText)).toBe(policyText.trim());
+    });
+
+    it('prefers policy text in a semantic container over unrelated body text', () => {
+        const article = `${'This Privacy Policy describes personal data and how we use it. '.repeat(12)}`;
+        expect(findReadablePolicyText([article], `${article} ${'unrelated footer '.repeat(100)}`)).toBe(article.trim());
+    });
+
+    it('rejects generic body content without policy text', () => {
+        expect(findReadablePolicyText([], 'Sign in to continue. '.repeat(50))).toBeNull();
+    });
+});
+
+describe('extractPolicyDocument', () => {
+    it('parses static policy HTML, decodes entities, and skips scripts and page chrome', () => {
+        const policy = 'This Privacy Policy describes the personal data we collect and how we use it. '.repeat(12);
+        const html = `<html><head><title>Privacy &amp; Data</title></head><body><nav>Privacy menu</nav><main><h1>Privacy Policy</h1><article><p>${policy.replace(/&/g, '&amp;')}</p></article><script>document.body.innerText = 'fake privacy policy';</script><footer>Footer</footer></main></body></html>`;
+
+        expect(extractPolicyDocument(html)).toEqual({
+            title: 'Privacy & Data',
+            text: `Privacy Policy ${policy.trim()}`,
+        });
+    });
+
+    it('rejects pages without a title or enough policy text', () => {
+        expect(extractPolicyDocument('<html><body><main>Privacy policy</main></body></html>')).toBeNull();
+    });
+});
 
 describe('preparePrivacyPolicyText', () => {
     it('accepts bounded visible text only from an HTTP privacy-policy page', () => {

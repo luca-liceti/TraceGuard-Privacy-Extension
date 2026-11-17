@@ -36,6 +36,7 @@ describe('SummaryCard', () => {
         mocks.summarize.mockResolvedValue({ text: 'The site has a score of 72 out of 100.', model: 'qwen3.5:0.8b', generatedAt: 1000 });
         render(<SummaryCard request={request} />);
 
+        expect(screen.getByText('Uses stored findings and browsing patterns. Checks for invented details. Runs only through Ollama on this device. Form entries mean typing began, not that data was submitted.')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Create summary' }));
         await waitFor(() => expect(screen.getByText('The site has a score of 72 out of 100.')).toBeInTheDocument());
         expect(mocks.summarize).toHaveBeenCalledWith(request, 'qwen3.5:0.8b');

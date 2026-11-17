@@ -21,6 +21,13 @@ export const OUTSTANDING_MODEL = 'gemma4:26b';
 /** Roughly 10 GB of graphics memory, including the policy report's context. */
 export const POLICY_REPORT_VRAM_GB = 10;
 
+const POLICY_CAPABLE_MODELS = new Set([FUNCTIONAL_MODEL, BETTER_MODEL, OUTSTANDING_MODEL]);
+
+/** Whether a selected Ollama model is one of the policy-report-capable recommendations. */
+export function isPolicyCapableModel(model: string): boolean {
+    return POLICY_CAPABLE_MODELS.has(model.trim());
+}
+
 export type GpuKind = 'integrated' | 'discrete' | 'apple' | 'software' | 'unknown';
 
 export type ModelTier = 'summaries' | 'functional' | 'better' | 'outstanding';

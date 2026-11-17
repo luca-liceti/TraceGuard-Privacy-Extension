@@ -15,9 +15,11 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 
 import { exportAllData } from "@/lib/export"
 import { captureError } from "@/lib/diagnostics"
+import { verifyVaultPassword } from "@/lib/vault-password"
 
 export function ExportDataDialog({
     open,
@@ -27,43 +29,54 @@ export function ExportDataDialog({
     onOpenChange: (open: boolean) => void
 }) {
     const { t } = useTranslation()
-    const [password, setPassword] = useState("")
-    const [confirmPassword, setConfirmPassword] = useState("")
+    const [encrypt, setEncrypt] = useState(true)
+    const [vaultPassword, setVaultPassword] = useState("")
     const [error, setError] = useState("")
     const [exporting, setExporting] = useState(false)
 
     const reset = () => {
-        setPassword("")
-        setConfirmPassword("")
+        setEncrypt(true)
+        setVaultPassword("")
         setError("")
     }
 
     const handleExport = async () => {
         setError("")
-        if (password.length > 0 && password.length < 8) {
-            setError(t("The export password must be at least 8 characters."))
+        if (!vaultPassword) {
+            setError(t("Enter your vault password to confirm the export."))
             return
         }
-        if (password !== confirmPassword) {
-            setError(t("Passwords do not match"))
-            return
-        }
+
         setExporting(true)
         try {
-            await exportAllData(password.length > 0 ? password : null)
+            // Verify the password the vault already knows, rather than accepting
+            // a separate password that proves nothing about who is exporting.
+            const verification = await verifyVaultPassword(vaultPassword)
+            if (!verification.ok) {
+                setError(verification.reason === "not-set-up"
+                    ? t("Vault not set up.")
+                    : t("Incorrect vault password."))
+                return
+            }
+
+            await exportAllData(encrypt ? vaultPassword : null, verification.key)
             onOpenChange(false)
             reset()
             toast.add({
                 type: "success",
                 title: t("Data Exported"),
-                description: t("Your data has been exported."),
+                description: encrypt
+                    ? t("Your data has been exported and can be restored with your vault password.")
+                    : t("Your data has been exported in plaintext."),
             })
         } catch (e) {
             captureError('dashboard', e, 'export_failed')
+            const message = e instanceof Error ? e.message : t("Could not export data. Please try again.")
+            setError(message)
             toast.add({
                 type: "error",
                 title: t("Export Failed"),
-                description: t("Could not export data. Please try again."),
+                description: message,
                 priority: "high",
             })
         } finally {
@@ -83,42 +96,58 @@ export function ExportDataDialog({
                 <DialogHeader>
                     <DialogTitle>{t("Export Data")}</DialogTitle>
                     <DialogDescription>
-                        {t("Export a JSON backup of all your data (optionally password-protected)")}
+                        {t("Export a JSON backup of all your data. It is encrypted with your vault password by default.")}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-4 py-2">
-                    <div className="grid gap-2">
-                        <Label htmlFor="export-password">{t("Encryption password (optional)")}</Label>
-                        <Input
-                            id="export-password"
-                            type="password"
-                            autoFocus
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder={t("Leave blank to export without encryption")}
+                    <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+                        <div className="min-w-0 space-y-0.5">
+                            <Label htmlFor="export-encrypt" className="text-sm font-medium">
+                                {t("Encrypt backup")}
+                            </Label>
+                            <p className="break-words text-sm text-muted-foreground">
+                                {t("Recommended. The file cannot be read without your vault password.")}
+                            </p>
+                        </div>
+                        <Switch
+                            id="export-encrypt"
+                            checked={encrypt}
+                            onCheckedChange={(checked) => {
+                                setEncrypt(checked)
+                                setError("")
+                            }}
                         />
                     </div>
 
-                    {password.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                            {t("Warning: without a password, this export contains your unencrypted browsing analysis in plaintext.")}
+                    <div className="grid gap-2">
+                        <Label htmlFor="export-vault-password">{t("Vault password")}</Label>
+                        <Input
+                            id="export-vault-password"
+                            type="password"
+                            autoComplete="current-password"
+                            autoFocus
+                            value={vaultPassword}
+                            onChange={(e) => {
+                                setVaultPassword(e.target.value)
+                                setError("")
+                            }}
+                            placeholder={t("Enter your vault password")}
+                        />
+                        <p className="break-words text-sm text-muted-foreground">
+                            {encrypt
+                                ? t("The backup is encrypted with this password.")
+                                : t("Required to confirm. A plaintext backup is not encrypted.")}
+                        </p>
+                    </div>
+
+                    {!encrypt && (
+                        <p className="break-words rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                            {t("Without encryption, this file contains your browsing analysis in plaintext. Anyone who opens it can read it.")}
                         </p>
                     )}
 
-                    {password.length > 0 && (
-                        <div className="grid gap-2">
-                            <Label htmlFor="export-password-confirm">{t("Confirm password")}</Label>
-                            <Input
-                                id="export-password-confirm"
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                            />
-                        </div>
-                    )}
-
-                    {error && <p className="text-sm text-destructive">{error}</p>}
+                    {error && <p className="break-words text-sm text-destructive">{error}</p>}
                 </div>
 
                 <DialogFooter>
@@ -131,8 +160,12 @@ export function ExportDataDialog({
                     >
                         {t("Cancel")}
                     </Button>
-                    <Button onClick={handleExport} disabled={exporting}>
-                        {t("Export")}
+                    <Button
+                        onClick={handleExport}
+                        disabled={exporting}
+                        variant={encrypt ? "default" : "outline"}
+                    >
+                        {encrypt ? t("Export") : t("Export unencrypted")}
                     </Button>
                 </DialogFooter>
             </DialogContent>

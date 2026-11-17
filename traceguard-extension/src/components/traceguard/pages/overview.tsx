@@ -4,7 +4,7 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable, SiteVisit } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { RadialChartScore } from "@/components/radial-chart-score"
-import { useActivityLogs, useDetectorLogs, useSiteCache } from "@/lib/useStorage"
+import { useActivityLogs, useDetectorLogs, useLocalPolicyGrades, useSiteCache } from "@/lib/useStorage"
 import { DetectorType } from "@/lib/types"
 import { WSS_WEIGHTS } from "@/lib/scoring"
 import { SummaryCard } from "@/components/sidepanel/summary-card"
@@ -15,6 +15,8 @@ export default function OverviewPage() {
   const detectorLogs = useDetectorLogs()
   const handovers = useActivityLogs()
   const { siteCache } = useSiteCache()
+  // Grades from the local policy report, for sites ToS;DR has not rated.
+  const localPolicyGrades = useLocalPolicyGrades()
   const [timeRange, setTimeRange] = React.useState("1d")
 
   const groupedVisits = useMemo(() => {
@@ -116,7 +118,12 @@ export default function OverviewPage() {
       const cookiesCount = enriched?.cookies?.summary?.total ?? cookiesDetails?.tracking ?? 0
       const sensitiveInputsCount = inputsDetails?.sensitive ?? 0
       const reputationStatus = reputationDetails?.status ?? "Unknown"
-      const policyGrade = policyDetails?.grade ?? "N/A"
+      // A ToS;DR rating wins; otherwise show the grade this device generated,
+      // which is what the site details panel already shows.
+      const policyRatedByTosdr = policyDetails?.source === 'tosdr' && Boolean(policyDetails?.grade)
+      const policyGrade = policyRatedByTosdr
+        ? String(policyDetails.grade)
+        : localPolicyGrades[group.domain] ?? policyDetails?.grade ?? "N/A"
 
       const finalDetails = {
          tracking: { details: trackingDetails },
@@ -147,7 +154,7 @@ export default function OverviewPage() {
     }
 
     return visits
-  }, [detectorLogs, siteCache])
+  }, [detectorLogs, siteCache, localPolicyGrades])
 
   // The denominator behind every count on this page, stated as provenance rather
   // than shown as a metric. It lets the reader interpret a small number as "few

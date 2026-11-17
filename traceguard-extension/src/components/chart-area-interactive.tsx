@@ -42,6 +42,7 @@ const chartConfig = {
 
 import { Activity, AlertCircle } from "lucide-react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
+import { LoadingSpinner } from "@/components/ui/pending"
 
 // Stable reference so chart memos don't recompute while history is loading.
 const EMPTY_HISTORY: ScoreHistoryLike[] = []
@@ -149,7 +150,7 @@ export function ChartAreaInteractive({
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         {history === null ? (
           <div className="flex h-64 w-full items-center justify-center text-sm text-muted-foreground pb-6">
-            {t("Loading...")}
+            <LoadingSpinner label={t("Loading...")} />
           </div>
         ) : history.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 w-full gap-3 text-center pb-6">

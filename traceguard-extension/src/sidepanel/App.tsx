@@ -4,6 +4,7 @@ import { useAuth } from "@/components/traceguard/auth-provider"
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "react-i18next"
 import { Toaster } from "@/components/ui/toast"
+import { LoadingSpinner } from "@/components/ui/pending"
 import { cn } from "@/lib/utils"
 
 import { ScoreRing } from "@/components/sidepanel/score-ring"
@@ -51,7 +52,7 @@ function App({ variant = 'sidepanel' }: AppProps) {
     const isPopup = variant === 'popup';
 
     if (!state) {
-        return <div className="p-4 text-foreground bg-background">{t("Loading TraceGuard...")}</div>;
+        return <div className="p-4 text-foreground bg-background"><LoadingSpinner label={t("Loading TraceGuard...")} /></div>;
     }
 
     return (

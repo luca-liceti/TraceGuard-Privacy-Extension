@@ -18,23 +18,36 @@ page and discarded the list, keeping only a boolean for the policy score.
 
 ## Decision
 
-**One button in the policy section of the site card finds and reads the policy.** No notification,
-no prompt, no new permission.
+**An opt-in setting enables automatic reports for unrated sites shown in the popup or side panel.**
+When enabled, and no saved report exists, TraceGuard finds and reads the policy if a
+policy-capable Ollama model is loaded, without a separate report button or prompt. No new permission is needed.
 
-**Capture reads a page in an inactive tab, not with `fetch`.** A service-worker fetch is blocked by
-this extension's own `connect-src`, returns unrendered HTML, and arrives without `SameSite=Lax`
-cookies. An inactive tab is governed by none of those: it renders JavaScript-built policies, carries
-the user's session, and reuses the content script's existing extraction. The tab is closed in a
-`finally`, including on load failure or timeout.
+**Capture is fetch-first and tab-free by default.** The service worker fetches up to four candidate
+pages using the extension's existing broad host permission. A bounded response body is parsed with
+`parse5`, which reads static HTML without creating a live page or running its scripts. The manifest
+permits HTTP(S) connections under `connect-src` for this request, without allowing remote scripts.The fetch omits cookies and other site credentials, so a policy host still receives an ordinary page
+request and can observe its network metadata, including the user's IP address. Redirects are rejected
+by the fetch path; server rendering and browser privacy controls can still make a page unavailable or
+return content different from what a normal tab displays.
+
+**One inactive-tab fallback is retained.** If none of the fetched candidates produces enough
+validated policy text, the highest-ranked candidate is opened in an inactive tab so JavaScript-built
+text can render and the existing content-script extraction can read it. It is closed in a `finally`,
+even after a failed or timed-out read. This means most static policies do not open a tab, but a
+rendered fallback uses the normal browser session and may send applicable cookies; it can briefly
+appear in the tab strip or browser history. No browser API provides a
+general-purpose hidden, fully rendered page that avoids those effects.
 
 **Discovery is tiered, cheapest first:**
 
 1. ToS;DR's own `documents` URLs, when the service is catalogued. Already fetched; previously unused.
 2. Policy anchors on the page, ranked by link text and path.
-3. Common paths on the site's origin: `/privacy`, `/privacy-policy`, `/privacy-notice`,
-   `/legal/privacy`, `/legal/privacy-policy`, `/policies/privacy`, `/terms`, `/terms-of-service`,
-   `/legal/terms`, `/cookie-policy`. At most eight, only when the first two tiers found nothing.
-4. Pasted URL, only when all three fail.
+3. Common paths on the site's origin, tried only when ToS;DR documents and page links found no
+   candidates. The list includes `/privacy`, `/privacy-policy`, `/privacy-notice`, `/legal/privacy`,
+   `/legal/privacy-policy`, `/policies/privacy`, `/terms`, `/terms-of-service`, `/legal/terms`, and
+   `/cookie-policy`; up to eight candidates are considered, and the capture still fetches at most four.
+
+There is no manual URL-entry step.
 
 A candidate counts only if it renders at least 500 characters that look like policy text. That is what
 rejects soft 404s, redirects to the homepage, and consent or geo-gate pages.
@@ -44,11 +57,17 @@ a generated rating may do, so [0006](0006-asymmetric-policy-ratings.md) still go
 
 ## Consequences
 
-- **New behaviour to disclose.** Pressing the button opens a URL the user did not choose to open.
-  `PRIVACY.md` and `PRIVACY_AND_PERMISSIONS.md` must say so, including that the page can appear in
-  browser history. Nothing is sent anywhere except the user's own Ollama server.
-- **Capture tabs must not be analyzed.** A hidden tab would otherwise record the policy's domain as a
-  visited site. Capture tabs carry a `#tg-policy-capture` fragment, and the content script returns
+- **Network behaviour to disclose.** When Local Policy Reports is enabled, no saved report exists, a
+  capable model is loaded, and an unrated site is shown in the popup or side panel, the extension
+  fetches up to four policy candidates. This uses existing host access and sends no cookies or site
+  credentials; each policy host receives an ordinary request and can observe its network metadata,
+  including the user's IP address. Static HTML is parsed locally; only the selected policy text and
+  address are sent to the user's Ollama server on this device. An inactive tab is opened only as a
+  fallback for pages that cannot be read from fetched HTML. That fallback uses the browser session,
+  may send applicable cookies, and can appear in the tab strip or history. `PRIVACY.md` and
+  `PRIVACY_AND_PERMISSIONS.md` describe both paths.
+- **Capture tabs must not be analyzed.** A fallback tab would otherwise record the policy's domain
+  as a visited site. Capture tabs carry a `#tg-policy-capture` fragment, and the content script returns
   before analysis when it sees it. The fragment is stripped from the URL recorded with the report.
 - **A page can be policy-shaped and still unreadable.** Login walls, bot challenges, PDF policies and
   iframe-only text are reported as "could not read" rather than retried forever.

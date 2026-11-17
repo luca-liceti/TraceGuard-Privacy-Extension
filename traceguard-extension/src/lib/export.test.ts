@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { importAllData } from './export';
-import { generateAesKey, exportKey, deriveKeyFromPassword, encryptData, generateSalt } from './crypto';
+import { exportAllData, importAllData } from './export';
+import { generateAesKey, exportKey, deriveKeyFromPassword, encryptData, generateSalt, importKey } from './crypto';
+import { readSiteCache } from './site-cache';
 
 async function unlockVault(): Promise<void> {
     const key = await generateAesKey();
@@ -36,8 +37,11 @@ describe('importAllData', () => {
         expect([...restored].sort()).toEqual(['settings', 'siteCache', 'state'].sort());
 
         const local = (await chrome.storage.local.get(null)) as Record<string, any>;
-        // Vault fields are re-encrypted to a ciphertext string, not stored raw.
-        expect(typeof local.siteCache).toBe('string');
+        // The legacy blob is gone; the site is in an encrypted shard.
+        expect(local.siteCache).toBeUndefined();
+        const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
+        const cache = await readSiteCache(await importKey(session.cryptoKeyHex as string));
+        expect(cache['example.com']).toMatchObject({ domain: 'example.com', wss: 80 });
         // Plaintext fields are written through unchanged.
         expect(local.settings).toEqual({ theme: 'dark' });
         expect(local.state).toEqual({ ups: 90 });
@@ -57,6 +61,12 @@ describe('importAllData', () => {
 
         const restored = await importAllData(envelope, 'correct horse battery staple');
         expect(restored).toContain('settings');
+    });
+
+    it('refuses to export vault data while the vault is locked', async () => {
+        await chrome.storage.local.set({ crossSiteExposure: 'ciphertext' });
+        await chrome.storage.session.remove('cryptoKeyHex');
+        await expect(exportAllData(null)).rejects.toThrow('Unlock your vault');
     });
 
     it('rejects a password-protected backup without a password', async () => {

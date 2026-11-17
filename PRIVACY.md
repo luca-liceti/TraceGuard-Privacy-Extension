@@ -38,9 +38,10 @@ in Chrome extension storage. It has no backend and no user accounts.
 
 ## External network requests
 
-TraceGuard is local-first. Each external request to ToS;DR (`api.tosdr.org`) is a separate choice
-in Settings. The per-site lookup is **off by default**; the ratings-catalog refresh is **on by
-default for new installs** and runs on the schedule you choose.
+TraceGuard is local-first. Live rating lookups and Local Policy Reports are optional. The per-site
+ToS;DR lookup is **off by default**; its public ratings-catalog refresh is **on by default for new
+installs** and runs on the schedule you choose. Signed threat-feed updates also run automatically;
+these shared catalog and threat-feed requests do not include the sites you visit.
 
 - **Look up a site's rating when I visit it.** When enabled, TraceGuard sends the domain of a site
   that is missing from its local data, or whose rating is old, to ToS;DR to look up a
@@ -48,32 +49,43 @@ default for new installs** and runs on the schedule you choose.
   and you can disable it at any time. If it is disabled, missing sites are shown as having no
   rating rather than being looked up.
 - **Keep the ratings database current.** On by default for new installs, running on a schedule you
-  choose. TraceGuard fetches ToS;DR's public ratings catalog. This request is the same for every user and does **not** include,
-or reveal, the sites you visit. It only updates ratings the extension already knows about.
+  choose. TraceGuard fetches ToS;DR's public ratings catalog. This request is the same for every
+  user and does **not** include or reveal the sites you visit. It only updates ratings the extension
+  already knows about.
 
 Ratings returned by either request are cached locally in `tosdr_cache`, a plaintext map of domain to
-grade that holds no page data. If both are off, ratings only change when a new version of the
-extension ships.  - **Local AI summaries.** Off by default. If you turn it on, TraceGuard uses its existing website
+grade that holds no page data. If both ToS;DR options are off, ratings only change when a new version
+of the extension ships.
+
+- **Local AI summaries.** Off by default. If you turn it on, TraceGuard uses its existing website
   access permission to contact Ollama at `http://localhost:11434`. When you request a current-site
-  audit, it sends that site's domain, overall and detector scores, tracker/cookie counts and
-  categories, fingerprinting attempts and techniques, missing security-header names, ToS;DR grade,
-  and up to three adverse ToS;DR point titles. When you request the Overview audit, it sends counts
-  and score bands across analyzed sites, the lowest- and highest-scoring sample of sites with their
-  recorded findings, and aggregated counts and scores for recorded form entries. These records mean
-  typing started, not that data was submitted or received. It never sends page text, sensitive field
-  types, typed values, the personal-data ledger, raw URLs, tracker URLs, cookie names, or activity
-  logs. The server and model are chosen and run by you; Ollama may keep prompts according to its own
-  local settings. Returned text is checked against supplied facts and discarded if it introduces
-  unsupported numbers, domains, names, or claims about a form entry being submitted. Audits exist
-  only in the open view and are not saved. Turning the setting off stops future requests.
-- **Local policy report.** Off by default, and only reachable while local AI is on. When you ask for a
-  report on a site with no ToS;DR rating, TraceGuard finds the site's privacy policy, using ToS;DR's
-  published document links, a policy link on the page, or a common path such as `/privacy-policy`.
-  It opens that page in an inactive tab, reads its visible text, and closes the tab again; the page
-  may appear in your browser history. Up to 30,000 characters of that text and the page address are
-  sent to your Ollama model on this device and nowhere else. The report is provisional, always shows
-  the quotes it was based on, and never changes the site's score. If no policy can be found or read,
-  it says so instead of guessing.
+audit, it sends that site's domain, overall and detector scores, tracker/cookie counts and
+categories, fingerprinting attempts and techniques, missing security-header names, ToS;DR grade,
+and up to three adverse ToS;DR point titles. When you request the Overview audit, it sends counts
+and score bands across analyzed sites, the lowest- and highest-scoring sample of sites with their
+recorded findings, and aggregated counts and scores for recorded form entries. These records mean
+typing started, not that data was submitted or received. It never sends page text, sensitive field
+types, typed values, the personal-data ledger, raw URLs, tracker URLs, cookie names, or activity
+logs. The server and model are chosen and run by you; Ollama may keep prompts according to its own
+local settings. Returned text is checked against supplied facts and discarded if it introduces
+unsupported numbers, domains, names, or claims about a form entry being submitted. Audits exist
+only in the open view and are not saved. Turning the setting off stops future requests.
+- **Local policy report.** Off by default. When enabled, TraceGuard automatically starts a report
+  for an unrated site shown in the side panel or popup when no saved report exists and the selected
+  policy-capable Ollama model is loaded on this device. It looks for a policy using ToS;DR document
+  links, links on the page, or common paths such as `/privacy-policy`, then fetches up to four
+  candidates without
+  cookies or other site credentials. Each policy host receives an ordinary page request and can
+  observe its network metadata, including your IP address. TraceGuard reads static HTML locally
+  without running page scripts. If none of those pages contains readable policy text, it may briefly
+  open one inactive tab so the browser can render the highest-ranked candidate. That fallback uses
+  your browser session and may send applicable cookies; it may appear in the tab strip or history, and
+  the tab is closed after reading. Up to 30,000 characters of the selected policy text and its page
+  address are sent only to Ollama on this device. The report is provisional, keeps the quotes it was
+  based on, and never changes the site's score. It is stored on this device for seven days, so
+  revisiting that site uses the saved report rather than reading the policy or running the model
+  again. Turning the setting off deletes stored reports. If no policy can be found or read, it says
+  so instead of guessing.
 
 Threat-intelligence data (phishing/malware domain lists from public feeds such as OpenPhish) is
 bundled at release time and refreshed from the publisher via signed updates. That refresh is always

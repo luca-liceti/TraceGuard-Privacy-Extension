@@ -7,6 +7,7 @@ import {
   Bug,
   Check,
   ChevronsUpDown,
+  ExternalLink,
   Globe,
   HelpCircle,
   Lock,
@@ -133,7 +134,8 @@ export function NavFooter({ user }: { user: { name: string, email: string } }) {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => openIssues()}>
                 <Bug className="mr-2 size-4" />
-                {t("Report an Issue")}
+                <span>{t("Report an Issue")}</span>
+                <ExternalLink aria-hidden="true" className="ml-auto size-3.5 text-muted-foreground" />
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

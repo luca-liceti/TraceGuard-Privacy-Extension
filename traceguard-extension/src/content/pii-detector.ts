@@ -149,8 +149,8 @@ class PIIDetector {
 
         // Create detection event. The background worker owns the authoritative
         // site WSS (it holds the vault key and decrypted current-site state);
-        // reading siteCache here returns the encrypted blob once the vault is
-        // set up, so WSS is never derived in the content script.
+        // the site cache shards are ciphertext here once the vault is set up,
+        // so WSS is never derived in the content script.
         const event: PIIEvent = {
             timestamp: Date.now(),
             site: domain,

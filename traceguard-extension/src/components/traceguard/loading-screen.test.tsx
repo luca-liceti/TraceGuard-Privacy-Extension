@@ -9,10 +9,15 @@ import { LoadingScreen } from './loading-screen'
 
 describe('LoadingScreen', () => {
   it('renders the shared accessible TraceGuard loading state', () => {
-    render(<LoadingScreen />)
+    const { container } = render(<LoadingScreen />)
 
     const status = screen.getByRole('status')
-    expect(status).toHaveClass('startup-loading')
-    expect(status).toHaveTextContent('Loading TraceGuard...')
+    expect(container.querySelector('.startup-loading')).toContainElement(status)
+    expect(status).toHaveTextContent('Loading TraceGuard')
+    // The wrapper CSS draws the animated circle, so the label adds neither a
+    // second circle nor animated dots of its own.
+    expect(status).not.toHaveTextContent('...')
+    expect(status.querySelector('[class*="animate-spin"]')).toBeNull()
+    expect(status.querySelectorAll('[class*="animate-bounce"]')).toHaveLength(0)
   })
 })

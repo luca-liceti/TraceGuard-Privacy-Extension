@@ -17,7 +17,7 @@ apart.
 
 > Persist the user's settings, privacy-score history, cached per-site scores, and notifications locally on-device (chrome.storage.local/session). Sensitive history is encrypted.
 
-**Why it is needed:** TraceGuard runs entirely on the user's local device with no backend. `storage`
+**Why it is needed:** Core analysis runs on the user's local device with no backend. `storage`
 persists the local activity journal, privacy-score history, cached domain scores, and user settings.
 The session area holds the vault key and the locked-vault buffer, both of which are memory only and
 are gone when the browser closes.
@@ -58,10 +58,15 @@ resolve the domain being scored, and uses those events to update the badge and t
 context for the newly active tab. This is the permission behind Chrome's "Read your browsing history"
 warning, so the form text should say plainly that the tab URL is read. The broad website host permission already includes localhost, so Local AI summaries request no additional permission.
 
-It is also how a local policy report reaches a policy the user did not open: the worker creates an
-inactive tab for the candidate policy URL (`chrome.tabs.create`), reads it through the content
-script, and removes it in a `finally` (`chrome.tabs.remove`), so a failed or timed-out read cannot
-leave a tab behind. No new permission is involved.
+When Local Policy Reports is enabled, viewing an unrated site in the popup or side panel starts a
+report automatically if there is no saved report and a capable local Ollama model is loaded. The extension worker fetches up to four candidate policy pages without cookies or site
+credentials, then extracts static HTML without running page scripts. This uses the existing broad
+host permission and does not need a new permission; each policy host receives an ordinary request
+and can observe network metadata, including the user's IP address. If no fetched page has readable
+text, one inactive tab may open as a fallback so the browser can render JavaScript-built text. That
+fallback uses the browser's normal session and may send applicable cookies; it may briefly appear in
+the tab strip or history, and is closed after reading. Policy text and its page address go only to the
+user's Ollama server on this device.
 
 ## `notifications`
 
@@ -124,8 +129,20 @@ traffic entirely, and no requests, cookies, or headers are recorded while paused
 
 **Form text:**
 
-> TraceGuard scores the privacy practices of every site a user visits. Broad host access is required to inject the analysis content script and observe third-party network requests (trackers, cookies, headers) across the web. All analysis happens locally. If the user enables Local AI summaries, the same access also permits requests to their own Ollama server at localhost:11434.
+> TraceGuard scores the privacy practices of every site a user visits. Broad host access is required to inject the analysis content script and observe third-party network requests (trackers, cookies, headers) across the web. It also lets the extension worker fetch candidate policy pages for an automatic local report when the user enables the feature; those policy sites receive ordinary page requests. If Local AI is enabled, selected facts or policy text go only to the user's Ollama server at localhost:11434.
 
 **Why it is needed:** The content script is declared for `*://*/*` because the extension scores
-whatever site the user opens, and the observational `webRequest` listener needs the same scope to see
-third-party requests. Site analysis does not send browsing data to a server. If Local AI summaries are enabled, only the bounded detector findings and audit aggregates described in `PRIVACY.md` are sent to the user's own localhost Ollama server.
+whatever site the user opens, the observational `webRequest` listener needs the same scope to see
+third-party requests, and the service worker needs host access to fetch policy candidates.The manifest's `connect-src http: https:` allows the worker to contact policy hosts whose domains are
+not known in advance; it allows network connections, not remote scripts. The same broad host access
+also supports Ollama on localhost and Live Rating Lookup; the scheduled public-feed refreshes use
+fixed publisher hosts. Site analysis does not send
+ordinary browsing-analysis data to an external server, but optional network features are separate:
+Live Rating Lookup can send a domain to ToS;DR, and policy-page requests reach the policy hosts.
+When the user enables Local Policy Reports, policy-page requests are made automatically for eligible
+unrated sites viewed in the popup or side panel when no saved report exists and a capable model is loaded. The static fetch omits cookies, but
+each policy host receives an ordinary request and can observe network metadata, including the user's
+IP address. A rendered-tab fallback may send applicable cookies through the browser's normal session
+and may appear in browser history. Local AI sends selected
+detector findings or policy text only to the user's own localhost Ollama server, as described in
+`PRIVACY.md`.

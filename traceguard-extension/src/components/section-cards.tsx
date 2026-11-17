@@ -30,7 +30,11 @@ export function SectionCards() {
   )
 
   return (
-    <div className="@xl/main:grid-cols-2 @5xl/main:grid-cols-3 grid grid-cols-1 gap-4">
+    // Same grid as the score and trend row in overview.tsx: the same breakpoint and
+    // the same gaps, so the card edges line up with the columns above them. Different
+    // breakpoints or a narrower gap put these cards on their own invisible grid, and
+    // three cards in two columns left the third one stranded on a row of its own.
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
       <StatCard
         title={t("Trackers Detected")}
         value={totalTrackers.toLocaleString()}

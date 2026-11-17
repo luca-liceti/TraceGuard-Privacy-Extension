@@ -43,6 +43,7 @@
 
 import { getSiteSector, isGovernmentDomain, isHighTierField, isSecurityCodeField, isTrustedDomain, sectorNeedsField, normalizeFieldType } from './pii-sectors';
 import { logEvent } from './diagnostics';
+import type { CrossSiteExposure } from './types';
 
 // ============================================================================
 // PII PATTERNS (for content scanning)
@@ -262,6 +263,61 @@ export interface PIIEntryDecision {
     reason: PIIEntryReason;
     /** Human-readable explanation, for notifications and the dashboard. */
     message: string;
+}
+
+/** Prior ledger context shown on the PII confirmation card. */
+export interface PIILedgerContext {
+    /** The current field typed has already been seen on this site. */
+    siteHasField: boolean;
+    /** Other sites that already hold this field type. */
+    otherHolders: number;
+    /** Other field types this site already holds. */
+    otherFields: string[];
+}
+
+/**
+ * Builds the pre-entry ledger context for the PII card. Call this BEFORE
+ * recording the new handover: the point is to show what was already known, not
+ * to count the entry the user is deciding about.
+ *
+ * Field keys are compared through `normalizeFieldType` so "credit card" and
+ * "creditcard" are the same exposure, and domain comparisons are
+ * case-insensitive.
+ */
+export function buildPIILedgerContext(
+    exposure: CrossSiteExposure,
+    site: string,
+    fieldType: string,
+): PIILedgerContext {
+    const normalizedField = normalizeFieldType(fieldType);
+    const host = site.toLowerCase();
+    const keysForField = Object.keys(exposure).filter(key => normalizeFieldType(key) === normalizedField);
+
+    const siteHasField = keysForField.some(key =>
+        (exposure[key] ?? []).some(domain => domain.toLowerCase() === host)
+    );
+
+    const otherHolders = new Set(
+        keysForField.flatMap(key =>
+            (exposure[key] ?? [])
+                .filter(domain => domain.toLowerCase() !== host)
+                .map(domain => domain.toLowerCase())
+        )
+    ).size;
+
+    const otherFieldKeys = new Map<string, string>();
+    for (const key of Object.keys(exposure)) {
+        const normalized = normalizeFieldType(key);
+        if (normalized === normalizedField) continue;
+        if (!(exposure[key] ?? []).some(domain => domain.toLowerCase() === host)) continue;
+        if (!otherFieldKeys.has(normalized)) otherFieldKeys.set(normalized, key);
+    }
+
+    return {
+        siteHasField,
+        otherHolders,
+        otherFields: [...otherFieldKeys.values()].sort(),
+    };
 }
 
 /**

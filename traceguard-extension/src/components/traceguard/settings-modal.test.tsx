@@ -115,8 +115,8 @@ describe('settings modal', () => {
 
         fireEvent.mouseDown(within(dialog).getByRole('tab', { name: 'About' }))
         const diagnosticsToggleRow = dialog.querySelector('#dev-mode')?.parentElement
-        expect(diagnosticsToggleRow).toHaveClass('flex-col')
-        expect(diagnosticsToggleRow?.firstElementChild).toHaveClass('flex-1')
+        expect(diagnosticsToggleRow).toHaveClass('flex')
+        expect(diagnosticsToggleRow?.firstElementChild).toHaveClass('min-w-0')
     })
 
     it('reverts discarded edits when the modal is closed and reopened', async () => {
@@ -187,18 +187,21 @@ describe('settings modal', () => {
         expect(within(confirmation).queryByText(/delete your account/i)).not.toBeInTheDocument()
     })
 
-    it('shows errors recorded after the dashboard mounted', async () => {
-        await open({})
+    it('shows errors recorded after the dashboard mounted, newest first', async () => {
+        await open({ devMode: true })
         fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
         await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 
+        await recordError('earlier failure')
         await recordError('late failure observed')
 
         fireEvent.click(screen.getByRole('button', { name: 'open settings' }))
         const reopened = await screen.findByRole('dialog')
         fireEvent.mouseDown(within(reopened).getByRole('tab', { name: 'About' }))
-        expect(await within(reopened).findByText('late failure observed')).toBeInTheDocument()
-        expect(within(reopened).getByRole('region', { name: 'Recent errors' })).toHaveTextContent('late failure observed')
-        expect(within(reopened).getByText('1 error')).toBeInTheDocument()
+        const region = within(reopened).getByRole('region', { name: 'Recorded errors' })
+        expect(region).toHaveTextContent('late failure observed')
+        const messages = [...region.querySelectorAll('p.font-medium')].map(node => node.textContent)
+        expect(messages).toEqual(['late failure observed', 'earlier failure'])
+        expect(within(reopened).getByText('2 errors')).toBeInTheDocument()
     })
 })

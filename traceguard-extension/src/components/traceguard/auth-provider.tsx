@@ -19,9 +19,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { deriveKeyFromPassword, generateSalt, exportKey, verifySaltUniqueness } from "@/lib/crypto"
+import { verifyVaultPassword } from "@/lib/vault-password"
 import { storage } from "@/lib/storage"
 import { captureError } from "@/lib/diagnostics"
 import { LoadingScreen } from "@/components/traceguard/loading-screen"
+import { PendingLabel } from "@/components/ui/pending"
 
 import PrivacyPolicyPage from "@/components/traceguard/pages/privacy-policy"
 import { useTranslation } from "react-i18next";
@@ -167,40 +169,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
     setError("")
     try {
-      const local = await chrome.storage.local.get<{ cryptoSalt?: number[]; validator?: string }>(["cryptoSalt", "validator"])
-      if (!local.cryptoSalt || !local.validator) {
-        setError(t("Vault not set up"))
-        setLoading(false)
-        return false
-      }
-      const salt = new Uint8Array(local.cryptoSalt)
-      
-      const key = await deriveKeyFromPassword(pwd, salt)
-      
-      // Verify password by decrypting the validator
-      const binary = atob(local.validator)
-      const combined = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i++) combined[i] = binary.charCodeAt(i)
-      
-      const iv = combined.slice(0, 12)
-      const ciphertext = combined.slice(12)
-      
-      try {
-        const decryptedBuffer = await crypto.subtle.decrypt(
-          { name: "AES-GCM", iv },
-          key,
-          ciphertext
-        )
-        const decoder = new TextDecoder()
-        if (decoder.decode(decryptedBuffer) !== "TraceGuardValidator") {
-          throw new Error("Invalid password")
+      const verification = await verifyVaultPassword(pwd)
+      if (!verification.ok) {
+        if (verification.reason === "not-set-up") {
+          setError(t("Vault not set up"))
+          setLoading(false)
+          return false
         }
-      } catch {
         throw new Error("Invalid password")
       }
 
       // Valid! Save to session
-      const keyHex = await exportKey(key)
+      const keyHex = await exportKey(verification.key)
       await chrome.storage.session.set({ cryptoKeyHex: keyHex })
       
       // Notify background to flush buffers
@@ -375,7 +355,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? t("Encrypting...") : t("Create Vault")}
+                  {loading ? <PendingLabel label={t("Encrypting...")} /> : t("Create Vault")}
                 </Button>
               </div>
             </form>
@@ -428,7 +408,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   <Key className="mr-2 h-4 w-4" />
                   {backoffSeconds > 0
                     ? t("Retrying in {{seconds}}s", { seconds: backoffSeconds })
-                    : loading ? t("Unlocking...") : t("Unlock Vault")}
+                    : loading ? <PendingLabel label={t("Unlocking...")} /> : t("Unlock Vault")}
                 </Button>
               </div>
             </form>

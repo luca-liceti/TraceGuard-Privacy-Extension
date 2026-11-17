@@ -17,11 +17,23 @@ import { isLocalUrl } from '../../lib/utils';
 import { isTrackerDomain, lookupTrackerDomain, getDisconnectEntity } from './database-loader';
 import { parseSetCookie, SetCookieRecord } from '../../lib/set-cookie';
 
-interface TabNetworkData {
+/** What callers receive. Full request URLs never leave this module. */
+export interface NetworkSnapshot {
     url: string; // The URL of the main frame
-    requests: Record<string, NetworkRequestDetail>; // URL -> Detail
+    requests: Record<string, NetworkRequestDetail>; // Opaque key -> Detail
     responseHeaders: { name: string; value: string }[];
     setCookies: SetCookieRecord[];
+}
+
+interface TabNetworkData extends NetworkSnapshot {
+    /**
+     * Ephemeral lookup for onErrorOccurred: full URL -> opaque request key.
+     * This map exists only in memory, is never returned, and is discarded on
+     * navigation or tab close. It is what lets us update a request's status
+     * without ever keying the stored data by its path, query, or fragment.
+     */
+    requestKeys: Record<string, string>;
+    nextRequestId: number;
 }
 
 // Stores network data per tab
@@ -60,7 +72,9 @@ export function initNetworkMonitor() {
                     url: details.url,
                     requests: {},
                     responseHeaders: [],
-                    setCookies: []
+                    setCookies: [],
+                    requestKeys: {},
+                    nextRequestId: 0
                 });
                 return;
             }
@@ -80,17 +94,32 @@ export function initNetworkMonitor() {
                 const mainUrl = new URL(data.url);
                 const isThirdParty = reqUrl.hostname !== mainUrl.hostname && !reqUrl.hostname.endsWith('.' + mainUrl.hostname);
 
-                data.requests[details.url] = {
-                    url: reqUrl.origin, // Origin only, never store the request path
-                    domain: reqUrl.hostname,
-                    resourceType: details.type,
-                    organization: null, // Populated during enrichment
-                    isTracker: false,   // Populated during enrichment
-                    isThirdParty,
-                    status: 'completed', // Defaults to completed, updated by onErrorOccurred
-                    blockedReason: null,
-                    timestamp: details.timeStamp
-                };
+                // Store under an opaque key. The full URL lives only in the
+                // ephemeral requestKeys map so onErrorOccurred can find this
+                // entry; the entry itself keeps the origin only.
+                let requestKey = data.requestKeys[details.url];
+                if (!requestKey) {
+                    requestKey = `r${data.nextRequestId++}`;
+                    data.requestKeys[details.url] = requestKey;
+                    data.requests[requestKey] = {
+                        url: reqUrl.origin, // Origin only, never store the request path
+                        domain: reqUrl.hostname,
+                        resourceType: details.type,
+                        organization: null, // Populated during enrichment
+                        isTracker: false,   // Populated during enrichment
+                        isThirdParty,
+                        status: 'completed', // Defaults to completed, updated by onErrorOccurred
+                        blockedReason: null,
+                        timestamp: details.timeStamp
+                    };
+                } else {
+                    const existing = data.requests[requestKey];
+                    if (existing) {
+                        existing.status = 'completed';
+                        existing.blockedReason = null;
+                        existing.timestamp = details.timeStamp;
+                    }
+                }
             } catch {
                 // Invalid URL, ignore
             }
@@ -107,7 +136,8 @@ export function initNetworkMonitor() {
             const data = tabData.get(details.tabId);
             if (!data) return;
 
-            const req = data.requests[details.url];
+            const requestKey = data.requestKeys[details.url];
+            const req = requestKey ? data.requests[requestKey] : undefined;
             if (req) {
                 req.status = details.error === 'net::ERR_BLOCKED_BY_CLIENT' ? 'blockedByBrowser' : 'failed';
                 req.blockedReason = details.error;
@@ -163,7 +193,7 @@ export function initNetworkMonitor() {
  * Retrieves the collected network data for a tab, and cleans it up.
  * Call this when page analysis is complete.
  */
-export async function getAndClearNetworkData(tabId: number): Promise<TabNetworkData | null> {
+export async function getAndClearNetworkData(tabId: number): Promise<NetworkSnapshot | null> {
     if (!monitorEnabled) return null;
     const data = tabData.get(tabId);
     if (!data) return null;
@@ -179,6 +209,12 @@ export async function getAndClearNetworkData(tabId: number): Promise<TabNetworkD
     }));
     
     // We don't delete it immediately in case multiple analysis events fire,
-    // but the next main_frame navigation will reset it.
-    return data;
+    // but the next main_frame navigation will reset it. Return only the
+    // publishable fields: the ephemeral URL lookup must not leave this module.
+    return {
+        url: data.url,
+        requests: data.requests,
+        responseHeaders: data.responseHeaders,
+        setCookies: data.setCookies,
+    };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateFingerprintingScore, calculateTrackingScore, calculateWSS, explainWSS } from './scoring';
+import { calculateFingerprintingScore, calculateTrackingScore, calculateWSS, explainWSS, POLICY_MISSING_SCORE, POLICY_UNRATED_SCORE } from './scoring';
 import type { ScoreBreakdown } from './types';
 
 const perfect: ScoreBreakdown = {
@@ -20,8 +20,18 @@ describe('calculateWSS', () => {
     });
 
     it('redistributes the policy weight when ToS;DR has no rating', () => {
-        expect(calculateWSS({ ...perfect, policy: 50 })).toBe(100);
-        expect(calculateWSS({ ...perfect, tracking: 0, policy: 50 })).toBe(72);
+        expect(calculateWSS({ ...perfect, policy: POLICY_UNRATED_SCORE })).toBe(100);
+        expect(calculateWSS({ ...perfect, tracking: 0, policy: POLICY_UNRATED_SCORE })).toBe(72);
+    });
+
+    it('keeps a missing policy in the score as a red flag', () => {
+        // No policy (25) must lower the score at full weight. Only the
+        // "policy exists but is unrated" sentinel (50) is neutral and excluded.
+        expect(calculateWSS({ ...perfect, policy: POLICY_MISSING_SCORE })).toBe(93);
+        expect(calculateWSS({ ...perfect, policy: POLICY_MISSING_SCORE }))
+            .toBeLessThan(calculateWSS({ ...perfect, policy: POLICY_UNRATED_SCORE }));
+        expect(calculateWSS({ ...perfect, policy: POLICY_MISSING_SCORE }))
+            .toBeLessThan(calculateWSS({ ...perfect, policy: 100 }));
     });
 
     it('clamps invalid scores and treats missing legacy fingerprinting as neutral', () => {
@@ -48,7 +58,7 @@ describe('explainWSS', () => {
     });
 
     it('flags the policy fallback and redistributes its weight', () => {
-        const explanation = explainWSS({ ...perfect, policy: 50 });
+        const explanation = explainWSS({ ...perfect, policy: POLICY_UNRATED_SCORE });
 
         expect(explanation.policyFallback).toBe(true);
         expect(explanation.weights.policy).toBe(0);
@@ -58,9 +68,17 @@ describe('explainWSS', () => {
         expect(explanation.total).toBe(100);
     });
 
+    it('keeps the missing-policy score at full weight instead of excluding it', () => {
+        const explanation = explainWSS({ ...perfect, policy: POLICY_MISSING_SCORE });
+
+        expect(explanation.policyFallback).toBe(false);
+        expect(explanation.weights.policy).toBeCloseTo(0.10);
+        expect(explanation.contributions.policy).toBeCloseTo(2.5);
+    });
+
     it('agrees with calculateWSS for every combination of reputation and policy', () => {
         for (const reputation of [0, 45, 100]) {
-            for (const policy of [50, 70, 100]) {
+            for (const policy of [POLICY_MISSING_SCORE, POLICY_UNRATED_SCORE, 70, 100]) {
                 const breakdown = { ...perfect, reputation, tracking: 30, policy };
                 expect(calculateWSS(breakdown)).toBe(explainWSS(breakdown).total);
             }

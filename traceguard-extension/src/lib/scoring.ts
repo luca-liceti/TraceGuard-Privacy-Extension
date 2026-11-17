@@ -27,9 +27,15 @@
  * - Few cookies: 80 × 15% = 12
  * - A canvas fingerprinting attempt: 70 × 15% = 10.5
  * - Login form: 65 × 10% = 6.5
- * - No policy rating: excluded, and its 10% weight is redistributed
+ * - Policy exists but ToS;DR has no rating: 50, excluded, and its 10% weight
+ *   is redistributed
  * Those five contributions total 69. Excluding policy rescales them by 1 / 0.9,
  * so the reported WSS is 69 / 0.9 = 77 (generally safe), not 69.
+ *
+ * A missing policy is different. If no privacy policy is found at all, the
+ * policy detector scores 25 and that score STAYS in the WSS at full 10% weight.
+ * Absence of a policy is a red flag, not an unknown, so it must never read as
+ * neutral or improve a site's score.
  * =============================================================================
  */
 
@@ -44,6 +50,16 @@ export const WSS_WEIGHTS = {
     input: 0.10,
     policy: 0.10,
 } as const;
+
+/**
+ * A policy link exists, but ToS;DR has no rating for it. Neutral: the policy
+ * score is excluded and its weight is redistributed. This is the ONLY policy
+ * value that is excluded.
+ */
+export const POLICY_UNRATED_SCORE = 50;
+
+/** No privacy policy was found at all. A red flag, included at full weight. */
+export const POLICY_MISSING_SCORE = 25;
 
 const FINGERPRINTING_WEIGHTS: Record<string, number> = {
     canvas: 5, webgl: 4, audio: 3, font: 2, navigator: 1,
@@ -145,9 +161,6 @@ export interface WssExplanation {
  * combines them into a single overall score. Think of it like calculating
  * a weighted average for a class - some tests count more than others!
  * 
- * combines them into a single overall score. Think of it like calculating
- * a weighted average for a class - some tests count more than others!
- * 
  * @param breakdown - An object containing scores from each detector
  * @returns The overall Website Safety Score (0-100)
  */
@@ -163,11 +176,11 @@ export function explainWSS(breakdown: ScoreBreakdown): WssExplanation {
         policy: validateScore(breakdown.policy)
     };
 
-    // STEP 2: Check if the policy score is a "fallback" (neutral) score
-    // Score 50 means "we found a privacy link but no ToS;DR rating"
-    // In this case, we exclude policy from the calculation to avoid penalizing
-    // sites that simply don't have a ToS;DR rating yet
-    const isPolicyFallback = validatedBreakdown.policy === 50;
+    // STEP 2: Check if the policy score is the neutral "not rated" sentinel.
+    // 50 means "we found a privacy link but ToS;DR has no rating", so we exclude
+    // it rather than penalizing an unrated policy. A missing policy scores 25
+    // and is deliberately NOT excluded: no policy is a red flag, not neutral.
+    const isPolicyFallback = validatedBreakdown.policy === POLICY_UNRATED_SCORE;
 
     // STEP 3: Define the weights for each detector
     // These add up to 100% (1.0)

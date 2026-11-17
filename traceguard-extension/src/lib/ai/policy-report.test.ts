@@ -6,8 +6,8 @@ const response = (content: string) => new Response(JSON.stringify({ message: { c
     status: 200,
     headers: { 'Content-Type': 'application/json' },
 });
-const selection = (points: unknown[], summary = 'The policy describes collection and deletion rights.') =>
-    response(JSON.stringify({ summary, points }));
+const selection = (cases: unknown[], summary = 'The policy describes collection and deletion rights.') =>
+    response(JSON.stringify({ summary, cases }));
 const verification = (checks: Array<{ caseId: string; verdict: string }>) =>
     response(JSON.stringify({ checks }));
 
@@ -29,8 +29,8 @@ describe('ratePrivacyPolicyLocally', () => {
     it('resolves confirmed sentences and derives the score from the cases', async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce(selection([
-                { caseId: 'deletion-right', sentence: 2, confidence: 0.9 },
-                { caseId: 'data-shared', sentence: 3, confidence: 0.7 },
+                { caseId: 'deletion-right', sentence: 2 },
+                { caseId: 'data-shared', sentence: 3 },
             ]))
             .mockResolvedValueOnce(verification([
                 { caseId: 'deletion-right', verdict: 'supported' },
@@ -62,7 +62,7 @@ describe('ratePrivacyPolicyLocally', () => {
 
     it('asks for case ids and sentence numbers, not for quotes or a score', async () => {
         const fetchMock = vi.fn()
-            .mockResolvedValueOnce(selection([{ caseId: 'deletion-right', sentence: 2, confidence: 0.9 }]))
+            .mockResolvedValueOnce(selection([{ caseId: 'deletion-right', sentence: 2 }]))
             .mockResolvedValueOnce(verification([{ caseId: 'deletion-right', verdict: 'supported' }]));
         vi.stubGlobal('fetch', fetchMock);
 
@@ -78,11 +78,11 @@ describe('ratePrivacyPolicyLocally', () => {
         expect(JSON.stringify(init.body)).not.toContain('chrome-extension://');
     });
 
-    it('keeps the highest-confidence sentence when a case is selected twice', async () => {
+    it('keeps one sentence when a case is answered twice', async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce(selection([
-                { caseId: 'deletion-right', sentence: 2, confidence: 0.4 },
-                { caseId: 'deletion-right', sentence: 3, confidence: 0.9 },
+                { caseId: 'deletion-right', sentence: 2 },
+                { caseId: 'deletion-right', sentence: 2 },
             ]))
             .mockResolvedValueOnce(verification([{ caseId: 'deletion-right', verdict: 'supported' }]));
         vi.stubGlobal('fetch', fetchMock);
@@ -90,14 +90,14 @@ describe('ratePrivacyPolicyLocally', () => {
         const result = await ratePrivacyPolicyLocally({ url: 'https://example.com/privacy-policy', title: 'Privacy Policy', text, model: 'qwen3.5:9b' });
 
         expect(result.points).toHaveLength(1);
-        expect(result.points[0].quote).toBe('We collect personal data to provide our services.');
+        expect(result.points[0].quote).toBe('You may request deletion of your information.');
     });
 
     it('drops a case the verification pass does not confirm', async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce(selection([
-                { caseId: 'deletion-right', sentence: 2, confidence: 0.9 },
-                { caseId: 'data-sold', sentence: 3, confidence: 0.9 },
+                { caseId: 'deletion-right', sentence: 2 },
+                { caseId: 'data-sold', sentence: 3 },
             ]))
             .mockResolvedValueOnce(verification([
                 { caseId: 'deletion-right', verdict: 'supported' },
@@ -114,7 +114,7 @@ describe('ratePrivacyPolicyLocally', () => {
 
     it('fails closed when nothing survives verification', async () => {
         const fetchMock = vi.fn()
-            .mockResolvedValueOnce(selection([{ caseId: 'data-sold', sentence: 3, confidence: 0.9 }]))
+            .mockResolvedValueOnce(selection([{ caseId: 'data-sold', sentence: 3 }]))
             .mockResolvedValueOnce(verification([{ caseId: 'data-sold', verdict: 'denied' }]));
         vi.stubGlobal('fetch', fetchMock);
 
@@ -124,8 +124,9 @@ describe('ratePrivacyPolicyLocally', () => {
 
     it('rejects invented case ids and out-of-range sentence numbers', async () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue(selection([
-            { caseId: 'invented-case', sentence: 2, confidence: 0.9 },
-            { caseId: 'deletion-right', sentence: 999, confidence: 0.9 },
+            { caseId: 'invented-case', sentence: 2 },
+            { caseId: 'deletion-right', sentence: 999 },
+            { caseId: 'data-sold', sentence: 0 },
         ])));
 
         await expect(ratePrivacyPolicyLocally({ url: 'https://example.com/privacy-policy', title: 'Privacy Policy', text, model: 'qwen3.5:9b' }))

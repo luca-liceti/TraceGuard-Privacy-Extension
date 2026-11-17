@@ -95,6 +95,46 @@ export async function listOllamaModels(): Promise<string[]> {
     }
 }
 
+/** Return the models currently loaded in Ollama's memory. */
+export async function listRunningOllamaModels(): Promise<string[]> {
+    if (!isTrustedExtensionView()) {
+        throw new OllamaSummaryError('Local model requests are allowed only from a TraceGuard extension view.', 'permission');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), MODEL_LIST_TIMEOUT_MS);
+    try {
+        const response = await fetch(`${OLLAMA_ORIGIN}/api/ps`, {
+            method: 'GET',
+            signal: controller.signal,
+        });
+        if (!response.ok) {
+            throw new OllamaSummaryError(`Ollama returned HTTP ${response.status} while checking loaded models.`, 'unreachable');
+        }
+        const payload = await response.json() as { models?: unknown };
+        if (!Array.isArray(payload?.models)) {
+            throw new OllamaSummaryError('Ollama returned an unexpected loaded model list.', 'invalid-output');
+        }
+        return [...new Set(payload.models.flatMap((model) => {
+            if (!model || typeof model !== 'object' || !('name' in model)) return [];
+            const name = (model as { name?: unknown }).name;
+            return typeof name === 'string' && name.trim().length > 0 && name.length <= 100 ? [name] : [];
+        }))].sort((a, b) => a.localeCompare(b));
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logEvent('ui', 'warn', 'ai_policy_loaded_models_failed', 'Could not check currently loaded Ollama models', {
+            error: message,
+        });
+        if (error instanceof OllamaSummaryError) throw error;
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            throw new OllamaSummaryError('Ollama took too long to check loaded models.', 'unreachable');
+        }
+        throw new OllamaSummaryError('Could not reach Ollama to check loaded models. Check that the server is running and allows this extension origin.', 'unreachable');
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 /** The instruction prompt for a summary: fixed review rules followed by the facts. */
 export function buildSummaryPrompt(request: SummaryRequest): string {
     const facts = request.facts.map(item => `- ${item.label}: ${item.value}`).join('\n');

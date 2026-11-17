@@ -4,7 +4,8 @@ import {
   BookOpen,
   Database,
   Eye,
-  EyeOff,
+  ScanEye,
+  ClipboardX,
   FileText,
   Lock,
   MessageSquare,
@@ -52,11 +53,11 @@ export default function HelpPage() {
     websiteAccess: "Website access",
     websiteAccessDescription: "Page access is used to inspect visible site signals, identify form field types, and observe resources needed for local analysis. TraceGuard does not save the text you enter.",
     tabs: "Tabs and side panel",
-    tabsDescription: "Tab access follows the active site and opens the dashboard for setup or when you choose it. The sidePanel permission lets the extension show its side panel when selected.",
+    tabsDescription: "Tab access follows the active site and opens the dashboard for setup or when you choose it. A local policy report may briefly open one inactive tab only when a page needs browser rendering. The sidePanel permission lets the extension show its side panel when selected.",
     localStorage: "Local storage",
     localStorageDescription: "Storage keeps settings, site analysis, activity records, and score history on this device. Vault data is encrypted after you set a Master Password.",
     optionalRequests: "Optional requests",
-    optionalRequestsDescription: "Live Rating Lookup sends a site domain to ToS;DR when enabled. Local AI features send selected facts or, for a requested policy report, visible policy text to Ollama on your device.",
+    optionalRequestsDescription: "Live Rating Lookup sends a site domain to ToS;DR when enabled. When Local Policy Reports is enabled, viewing an unrated site starts a report automatically if no saved report exists and a capable Ollama model is loaded. It fetches up to four policy pages without cookies or site credentials; those hosts receive ordinary requests and can observe network metadata. If browser rendering is needed, one inactive tab may open as a fallback using your normal session and may send applicable cookies. Policy text goes only to Ollama on your device.",
     moreHelp: "Need more help?",
     reportDescription: "Report a reproducible problem or suggest an improvement.",
     searchEmpty: "Try another search term or clear your search.",
@@ -69,6 +70,7 @@ export default function HelpPage() {
       scoreChange: "Why did my Privacy Score change?",
       missingRating: "Why is a site's privacy rating missing?",
       trackers: "What does tracker detection show?",
+      pii: "What does personal information detection show?",
       vault: "What does the Privacy Vault protect?",
       stored: "What is stored on this device?",
       network: "Does TraceGuard send my browsing data to a server?",
@@ -93,9 +95,9 @@ export default function HelpPage() {
       pii: "PII means personally identifiable information. Detection checks recognized form fields and can warn when sensitive information is entered on a site with a low safety score. TraceGuard does not read or save the text you type into a field.",
       vault: "Your master password encrypts private logs and other vault data stored by TraceGuard. The encryption key stays in temporary browser session storage while the vault is unlocked. If you forget the password, it cannot be recovered.",
       stored: "TraceGuard stores your settings, site analysis cache, detector logs, score history, and any enabled activity records in browser extension storage. Vault data is encrypted when the vault is set up. You can review, export, or delete stored data in Settings.",
-      network: "Most checks run on this device using bundled data. Optional Live Rating Lookup sends a site's domain to ToS;DR. Optional local AI summaries send selected analysis facts to Ollama on your device. A local policy report sends policy-page text and its page address to your Ollama model only after you request it and enable the feature.",
+      network: "Most checks run on this device using bundled data. Optional Live Rating Lookup sends a site's domain to ToS;DR. Optional local AI summaries send selected analysis facts to Ollama on your device. When Local Policy Reports is enabled, viewing an unrated site in the popup or side panel starts a report automatically if no saved report exists and a capable Ollama model is loaded. TraceGuard fetches up to four policy pages without cookies or site credentials; those policy hosts receive ordinary requests and can observe network metadata. If static HTML cannot be read, one inactive tab may open as a fallback using your browser's normal session, possibly sending applicable cookies and appearing in history. Policy text and its page address go only to Ollama on your device.",
       ai: "When enabled, a summary request sends selected site analysis facts to an Ollama service on your device. Overview summaries use aggregate counts and a limited list of site domains, visits, and scores. They do not send page text or sensitive field types. Ollama must be running and allow the extension origin.",
-      report: "A local policy report is an optional, provisional estimate based on visible privacy-policy text sent to your local Ollama model after you request it. The model picks from a fixed list of cases and points at the sentence that supports each one; the score and grade come from those cases. The cases follow the idea of ToS;DR's taxonomy, but the report is generated locally and was not reviewed by ToS;DR. It is not a ToS;DR rating and never changes the site's score.",
+      report: "When Local Policy Reports is enabled, TraceGuard automatically starts a provisional estimate for unrated sites shown in the popup or side panel if no saved report exists and a capable Ollama model is loaded. It fetches policy pages without cookies or site credentials when possible, then sends the selected text to Ollama on your device. If browser rendering is needed, one inactive tab may open as a fallback using your normal session. The model picks from a fixed list of cases and points at the sentence that supports each one; the score and grade come from those cases. The report is not a ToS;DR rating and never changes the site's score.",
       blank: "Reload the extension from the browser's Extensions page, then reopen the panel. If it stays blank, open Settings → About and copy diagnostics to help find the error.",
       update: "The score changes in response to recognized personal information entered on a risky site, and recovers gradually as older events age. Visiting sites alone does not change it. Check that PII Detection is enabled in Settings → Privacy.",
       wrong: "Detection depends on locally bundled lists and the signals visible to the extension. A missing tracker or rating does not prove there is no risk. Check when the site's analysis was last updated, and use Settings → About to copy diagnostics if the issue persists.",
@@ -155,7 +157,7 @@ export default function HelpPage() {
     },
     {
       category: t(helpText.categories.trackers),
-      icon: EyeOff,
+      icon: ClipboardX,
       items: [
         {
           question: t(helpText.questions.trackers),
@@ -356,7 +358,7 @@ export default function HelpPage() {
           <Card>
             <CardContent className="grid gap-6 p-6 md:grid-cols-2">
               <div className="flex gap-3">
-                <Eye className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <ScanEye className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <div><h3 className="font-medium">{t(helpText.websiteAccess)}</h3><p className="mt-1 text-sm text-muted-foreground">{t(helpText.websiteAccessDescription)}</p></div>
               </div>
               <div className="flex gap-3">

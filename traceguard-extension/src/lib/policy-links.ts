@@ -30,10 +30,55 @@ export interface RawPolicyLink {
     text?: unknown;
 }
 
-/** Two labels, with `www.` removed. Good enough for ranking, not for security decisions. */
-function registrableHint(hostname: string): string {
-    const labels = hostname.toLowerCase().replace(/^www\./, '').split('.');
-    return labels.length <= 2 ? labels.join('.') : labels.slice(-2).join('.');
+/**
+ * True for loopback, link-local, and private hosts.
+ *
+ * A page-controlled candidate must never make the worker fetch a local or LAN
+ * address, so page links are also restricted to the page's registrable site.
+ * ToS;DR document URLs are not page-controlled, but they are filtered here too.
+ */
+export function isPrivateHost(hostname: string): boolean {
+    const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (!host) return true;
+    if (host === 'localhost' || host.endsWith('.localhost')) return true;
+    if (host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.home.arpa')) return true;
+    if (host === '0.0.0.0' || host === '::1') return true;
+
+    if (host.includes(':')) {
+        const first = host.split(':')[0];
+        if (/^f[cd][0-9a-f]{0,2}$/.test(first)) return true; // fc00::/7
+        if (/^fe[89ab][0-9a-f]?$/.test(first)) return true; // fe80::/10
+        return false;
+    }
+
+    const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!ipv4) return false;
+    const a = Number(ipv4[1]);
+    const b = Number(ipv4[2]);
+    return a === 0
+        || a === 10
+        || a === 127
+        || (a === 169 && b === 254)
+        || (a === 172 && b >= 16 && b <= 31)
+        || (a === 192 && b === 168);
+}
+
+/**
+ * Best-effort same-site check for page-controlled links.
+ *
+ * Without a public suffix list, this keeps the strictest useful rule: the two
+ * hosts must be equal, or one must be a subdomain of the other after removing
+ * `www.`. A policy on `policies.example.com` is accepted from `example.com`;
+ * an unrelated `evil.co.uk` is not accepted from `shop.example.co.uk`.
+ */
+function isSameSiteHost(candidateHostname: string, pageHostname: string): boolean {
+    const normalize = (host: string) => host.toLowerCase().replace(/^www\./, '');
+    const candidate = normalize(candidateHostname);
+    const page = normalize(pageHostname);
+    if (!candidate.includes('.') || !page.includes('.')) return false;
+    return candidate === page
+        || candidate.endsWith(`.${page}`)
+        || page.endsWith(`.${candidate}`);
 }
 
 function isSamePageAnchor(candidate: URL, page: URL): boolean {
@@ -46,9 +91,9 @@ function isSamePageAnchor(candidate: URL, page: URL): boolean {
 /**
  * Rank candidate links from a page, strongest first.
  *
- * Links to another registrable domain are kept only when the link itself says
- * "privacy policy", because a footer "Privacy" link to a marketing page is
- * common and a policy hosted on a sibling domain is not.
+ * Only links on the page's own site are kept: equality, or one host is a
+ * subdomain of the other. A page cannot make the worker fetch an unrelated
+ * host just by labelling the link "Privacy Policy".
  */
 export function rankPolicyLinks(raw: readonly RawPolicyLink[], pageUrl: string): string[] {
     let page: URL;
@@ -59,7 +104,6 @@ export function rankPolicyLinks(raw: readonly RawPolicyLink[], pageUrl: string):
     }
 
     const pageHost = page.hostname.toLowerCase();
-    const pageSite = registrableHint(pageHost);
     const seen = new Set<string>();
     const scored: Array<{ url: string; score: number; order: number }> = [];
 
@@ -89,10 +133,12 @@ export function rankPolicyLinks(raw: readonly RawPolicyLink[], pageUrl: string):
         else if (/\/privacy(?:\/|$)/.test(path)) score += 3;
         if (/\/legal(?:\/|$)|\/policies(?:\/|$)|\/terms(?:\/|$)/.test(path)) score += 1;
 
-        const sameSite = registrableHint(candidate.hostname) === pageSite;
+        const sameSite = isSameSiteHost(candidate.hostname, pageHost);
         if (candidate.hostname.toLowerCase() === pageHost) score += 1;
-        // Off-site links need an explicit policy label; a bare "Legal" off-site is not worth a tab.
-        if (!sameSite && score < 4) return;
+        // Only the page's own site may be probed from a page link. Otherwise a
+        // page could label a local or unrelated URL "Privacy Policy" and make
+        // the worker fetch it.
+        if (!sameSite) return;
         if (score <= 0) return;
 
         const key = `${candidate.origin}${candidate.pathname.replace(/\/$/, '')}${candidate.search}`;
@@ -125,6 +171,7 @@ export function documentUrls(documents: readonly { url?: unknown }[] | undefined
             continue;
         }
         if (candidate.protocol !== 'https:' && candidate.protocol !== 'http:') continue;
+        if (isPrivateHost(candidate.hostname)) continue;
         const key = `${candidate.origin}${candidate.pathname}`;
         if (seen.has(key)) continue;
         seen.add(key);

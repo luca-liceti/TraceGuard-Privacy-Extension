@@ -36,7 +36,7 @@ import { piiDetector } from './pii-detector';  // Monitors sensitive input field
 import { showPIIConfirmCard } from './pii-confirm';  // "Is this website safe?" popup
 import { showToast } from './toast';                 // In-page toast notifications
 import { isLocalUrl } from '../lib/utils'; // Helps identify local network addresses
-import { POLICY_MARKER, POLICY_PAGE_MARKER } from '../lib/ai/policy-text';
+import { findReadablePolicyText, POLICY_PAGE_MARKER } from '../lib/ai/policy-text';
 import { captureError, installGlobalErrorHandlers, logEvent, setDevMode, setDiagnosticContext } from '../lib/diagnostics';
 
 
@@ -50,9 +50,9 @@ import { captureError, installGlobalErrorHandlers, logEvent, setDevMode, setDiag
  * The 'async' keyword lets us use 'await' for operations that take time.
  */
 /**
- * The background opens policy pages in an inactive tab, marked with this
- * fragment. Analysis is skipped there so that reading a policy does not record
- * the policy's domain as a visited site.
+ * The background marks a rendered policy fallback tab with this fragment.
+ * Analysis is skipped there so reading a policy does not record its domain as a
+ * visited site. Most policy captures now use tab-free static HTML fetching.
  */
 const POLICY_CAPTURE_HASH = '#tg-policy-capture';
 const isPolicyCaptureTab = window.location.hash === POLICY_CAPTURE_HASH;
@@ -256,17 +256,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ ok: false, reason: 'not-policy-page' });
             return false;
         }
-        const candidates = Array.from(document.querySelectorAll<HTMLElement>('main, article, [role="main"]'))
-            .map((element) => ({ text: element.innerText.replace(/\s+/g, ' ').trim() }))
-            .filter((candidate) => candidate.text.length >= 500)
-            .sort((a, b) => b.text.length - a.text.length);
-        const candidate = candidates[0];
-        if (!candidate) {
+        const containers = Array.from(document.querySelectorAll<HTMLElement>('main, article, [role="main"]'))
+            .map((element) => element.innerText);
+        // Some policy pages use generic divs rather than semantic main/article
+        // containers, so use rendered body text as a validated fallback.
+        const policyText = findReadablePolicyText(containers, document.body?.innerText ?? '');
+        if (!policyText) {
             sendResponse({ ok: false, reason: 'no-readable-policy-content' });
-            return false;
-        }
-        if (!POLICY_MARKER.test(candidate.text)) {
-            sendResponse({ ok: false, reason: 'not-policy-text' });
             return false;
         }
         sendResponse({
@@ -274,7 +270,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // The capture marker is an internal detail; the report cites the page.
             url: `${pageUrl.origin}${pageUrl.pathname}${pageUrl.search}`,
             title: document.title,
-            text: candidate.text.slice(0, 30_000),
+            text: policyText,
         });
         return false;
     }

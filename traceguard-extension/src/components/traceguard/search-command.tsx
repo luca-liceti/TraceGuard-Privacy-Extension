@@ -52,12 +52,11 @@ import { storage } from "@/lib/storage"
 import { ExportDataDialog } from "./export-data-dialog"
 import { useSettingsModal } from "./settings-context"
 import { SiteDetailsPanel } from "./site-details-panel"
-import { getSafetyTextColor } from "@/lib/theme-utils"
 import { getSafetyLabel, getSafetyLevel } from "@/lib/risk-utils"
+import { getSafetyBgColor, getSafetyTextColor } from "@/lib/theme-utils"
 import { SiteRiskData } from "@/lib/types"
 import { useAuth } from "@/components/traceguard/auth-provider"
 
-const MAX_VISIBLE_SITES = 5
 
 /** A destructive quick action the user must confirm before it runs. */
 interface ConfirmAction {
@@ -70,6 +69,7 @@ interface ConfirmAction {
 export function SearchCommand() {
   const { t } = useTranslation()
   const [open, setOpen] = React.useState(false)
+  const [siteSearch, setSiteSearch] = React.useState("")
   const { sites } = useSiteCache()
   const { setSettingsOpen, setActiveTab } = useSettingsModal()
   const navigate = useNavigate()
@@ -183,7 +183,7 @@ export function SearchCommand() {
 
   // ── Data processing ────────────────────────────────────────────────────────
 
-  // Top 3 most recently analyzed sites for the Suggestions section
+  // Top 3 most recently analyzed sites for the Most Recent Sites section.
   const recentSites = React.useMemo(() => {
     if (!sites || sites.length === 0) return []
     return [...sites]
@@ -191,18 +191,27 @@ export function SearchCommand() {
       .slice(0, 3)
   }, [sites])
 
-  // All sites capped for the Analyzed Sites section
+  // Browse the ten highest-visit sites, while keeping every cached site
+  // available when the user searches. Omit recent sites to avoid duplicate
+  // cmdk values across the two groups.
   const visibleSites = React.useMemo(() => {
     if (!sites) return []
-    return sites.slice(0, MAX_VISIBLE_SITES)
-  }, [sites])
+    const recentDomains = new Set(recentSites.map(([domain]) => String(domain)))
+    return [...sites]
+      .filter(([domain]) => !recentDomains.has(String(domain)))
+      .sort(([, a], [, b]) =>
+        (Number(b.visitCount) || 0) - (Number(a.visitCount) || 0)
+        || (Number(b.lastAnalyzed) || 0) - (Number(a.lastAnalyzed) || 0)
+      )
+  }, [sites, recentSites])
 
   // ── Render helpers ─────────────────────────────────────────────────────────
 
   const SiteItem = ({ domain, data }: { domain: string; data: SiteRiskData }) => {
     const wss = data.wss || 0
-    const safetyLevelStr = getSafetyLevel(wss)
-    const colorClass = getSafetyTextColor(safetyLevelStr)
+    const safetyLevel = getSafetyLevel(wss)
+    const colorClass = getSafetyTextColor(safetyLevel)
+    const badgeBackgroundClass = getSafetyBgColor(safetyLevel)
     return (
       <CommandItem
         key={String(domain)}
@@ -214,12 +223,9 @@ export function SearchCommand() {
           <Globe className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="truncate font-medium">{domain}</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-xs font-semibold tabular-nums ${colorClass}`}>{wss}</span>
-          <Badge variant="outline" className={`text-[10px] uppercase tracking-wide ${colorClass}`}>
-            {t(getSafetyLabel(safetyLevelStr))}
-          </Badge>
-        </div>
+        <Badge variant="secondary" className={`shrink-0 px-2.5 py-0.5 ${badgeBackgroundClass} ${colorClass}`}>
+          {t(getSafetyLabel(safetyLevel))}
+        </Badge>
       </CommandItem>
     )
   }
@@ -241,15 +247,24 @@ export function SearchCommand() {
         </kbd>
       </Button>
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder={t("Type a command or search...")} />
+      <CommandDialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen)
+          if (!nextOpen) setSiteSearch("")
+        }}
+      >
+        <CommandInput
+          placeholder={t("Type a command or search...")}
+          onValueChange={setSiteSearch}
+        />
         <CommandList className="max-h-[420px]">
           <CommandEmpty>{t("No results found.")}</CommandEmpty>
 
-          {/* ── Suggestions: top 3 most recent sites ─────────────────────── */}
+          {/* ── Most Recent Sites: top 3 by analysis time ────────────────── */}
           {recentSites.length > 0 && (
             <>
-              <CommandGroup heading={t("Suggestions")}>
+              <CommandGroup heading={t("Most Recent Sites")}>
                 {recentSites.map(([domain, data]) => (
                   <SiteItem key={String(domain)} domain={domain} data={data} />
                 ))}
@@ -380,10 +395,10 @@ export function SearchCommand() {
 
           <CommandSeparator />
 
-          {/* ── Analyzed Sites (capped) ───────────────────────────────────── */}
-          {sites && sites.length > 0 && (
+          {/* ── Analyzed Sites: top 10 by visit count, or all matches in search ─ */}
+          {visibleSites.length > 0 && (
             <CommandGroup heading={t("Analyzed Sites")}>
-              {visibleSites.map(([domain, data]) => (
+              {(siteSearch.trim() ? visibleSites : visibleSites.slice(0, 10)).map(([domain, data]) => (
                 <SiteItem key={String(domain)} domain={domain} data={data} />
               ))}
             </CommandGroup>

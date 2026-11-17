@@ -50,6 +50,8 @@ import {
 } from "@/lib/theme-utils"
 import { getSafetyLabel } from "@/lib/risk-utils"
 import { filterPolicyPoints, normalizePolicyPointClassification, type PolicyPointFilter } from "@/lib/policy-points"
+import { readCachedPolicyReport } from "@/lib/ai/policy-report-cache"
+import type { PolicyReportResult } from "@/lib/ai/policy-report"
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { SectionTitle, SectionDescription, SummaryStat, InsightRow } from "./site-details-helpers";
@@ -200,13 +202,45 @@ export function SiteDetailsPanel({
     const pluralize = (count: number, singularKey: string, pluralKey: string) =>
         count === 1 ? t(singularKey) : t(pluralKey)
     const [policyFilter, setPolicyFilter] = React.useState<PolicyPointFilter>("all")
+    // The local model's report lives in its own per-site cache, written by the
+    // side panel, so the dashboard reads it here instead of from the site record.
+    const [localPolicyReport, setLocalPolicyReport] = React.useState<PolicyReportResult | null>(null)
+    React.useEffect(() => {
+        if (!domain) {
+            setLocalPolicyReport(null)
+            return
+        }
+        let active = true
+        void readCachedPolicyReport(domain).then((cached) => {
+            if (active) setLocalPolicyReport(cached)
+        })
+        return () => {
+            active = false
+        }
+    }, [domain])
     const enriched = siteData?.enrichedDetails
 
     const cookiesLegacy = legacyDetails?.cookies?.details ?? legacyDetails?.cookies
     const trackingLegacy = legacyDetails?.tracking?.details ?? legacyDetails?.tracking
     const inputsLegacy = legacyDetails?.inputs?.details ?? legacyDetails?.inputs
     const reputationLegacy = legacyDetails?.reputation?.details ?? legacyDetails?.reputation
-    const policyLegacy = legacyDetails?.policy?.details ?? legacyDetails?.policy
+    const policyStored = legacyDetails?.policy?.details ?? legacyDetails?.policy
+    const policyRatedByTosdr = policyStored?.source === 'tosdr' && Boolean(policyStored?.grade)
+    // A ToS;DR rating wins; otherwise show the report this device generated.
+    const policyLegacy = policyStored && (policyRatedByTosdr || !localPolicyReport)
+        ? policyStored
+        : localPolicyReport
+            ? {
+                grade: localPolicyReport.grade,
+                source: 'local-model',
+                points: localPolicyReport.points.map((point) => ({
+                    title: point.title,
+                    classification: point.classification,
+                })),
+                capturedAt: localPolicyReport.generatedAt,
+                documents: policyStored?.documents,
+            }
+            : policyStored
 
     // Network requests: tracker first, then third-party, then rest, capped at 50
     const networkItems: NetworkRequestDetail[] = React.useMemo(() => {
@@ -864,7 +898,11 @@ export function SiteDetailsPanel({
                         ══════════════════════════════════════════════════════ */}
                         <div id="details-section-policy" className={sectionClass('policy')}>
                             <SectionTitle icon={FileText}>{t("Privacy Policy")}</SectionTitle>
-                            <SectionDescription>{t("How this site says it handles your data, graded by community reviewers.")}</SectionDescription>
+                            <SectionDescription>
+                                {policyLegacy?.source === 'local-model'
+                                    ? t("How this site says it handles your data, read on this device.")
+                                    : t("How this site says it handles your data, graded by community reviewers.")}
+                            </SectionDescription>
                             {policyLegacy ? (
                                 <div className="space-y-3">
                                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm">
@@ -873,9 +911,18 @@ export function SiteDetailsPanel({
                                                 <span className="text-muted-foreground">{t("Grade:")}</span>
                                                 <span className={getGradeTextColor(policyLegacy.grade)}>{policyLegacy.grade || t("N/A")}</span>
                                             </span>
-                                            <SummaryStat label={t("Source")} value={policyLegacy.source === 'tosdr' ? t('ToS;DR database') : t('Local detection')} />
+                                            <SummaryStat
+                                                label={t("Source")}
+                                                value={policyLegacy.source === 'tosdr'
+                                                    ? t('ToS;DR database')
+                                                    : policyLegacy.source === 'local-model'
+                                                        ? t('Generated on this device')
+                                                        : t('Local detection')}
+                                            />
                                             <SummaryStat label={t("Points")} value={policyLegacy.points?.length || 0} />
-                                            {policyLegacy.serviceId ? (
+                                            {policyLegacy.serviceId
+                                                && policyLegacy.source === 'tosdr'
+                                                && (policyLegacy.grade || policyLegacy.points?.length > 0) ? (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -910,6 +957,11 @@ export function SiteDetailsPanel({
                                     {Number.isFinite(policyLegacy.capturedAt) && (
                                         <p className="text-xs text-muted-foreground">
                                             {t("Ratings data from {{date}}", { date: format(new Date(policyLegacy.capturedAt), "MMM d, yyyy") })}
+                                        </p>
+                                    )}
+                                    {policyLegacy.source === 'local-model' && localPolicyReport && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {t('No ToS;DR rating. Generated on this device by {{model}}.', { model: localPolicyReport.model })}
                                         </p>
                                     )}
 
@@ -974,7 +1026,7 @@ export function SiteDetailsPanel({
                                 </div>
                             ) : (
                                 <InsightRow icon={Info} iconClass="text-muted-foreground">
-                                    {t("No privacy policy information available.")}</InsightRow>
+                                    {t("No privacy policy found. This counts against the site's score.")}</InsightRow>
                             )}
                         </div>
 

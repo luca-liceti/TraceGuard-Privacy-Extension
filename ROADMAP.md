@@ -208,7 +208,8 @@ decidable:
 1. A **holder** is a site, not a field type, so a site holding an email and a password counts once.
 2. **Completeness** is scoped: no holder missing that the ledger could have recorded, with either
    cap named when it trims (`MAX_EXPOSURE_DOMAINS_PER_TYPE` in `src/lib/exposure.ts`, and the site
-   cache eviction above 5000 domains in `src/background/index.ts`).
+   cache cap enforced by `enforceSiteCacheCap` in `src/lib/site-cache.ts` from the worker's daily
+   cleanup alarm).
 3. **Criterion 1 is re-measured** from a fresh export at the next release, with the same command, and
    the result written here. If a month of real use names nothing new, the kill criterion stands.
 

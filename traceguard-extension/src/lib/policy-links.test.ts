@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     MAX_POLICY_CANDIDATES,
     documentUrls,
+    isPrivateHost,
     policyCandidates,
     probeUrls,
     rankPolicyLinks,
@@ -36,11 +37,39 @@ describe('rankPolicyLinks', () => {
         expect(ranked).toEqual([]);
     });
 
-    it('keeps a policy hosted on a sibling domain when the label says so', () => {
+    it('keeps a policy hosted on a subdomain of the page\u2019s site', () => {
         const ranked = rankPolicyLinks([
             { href: 'https://policies.example.com/privacy', text: 'Privacy Policy' },
         ], page);
         expect(ranked).toEqual(['https://policies.example.com/privacy']);
+    });
+
+    it('rejects a labelled policy link to an unrelated domain', () => {
+        const ranked = rankPolicyLinks([
+            { href: 'https://unrelated.example.net/privacy', text: 'Privacy Policy' },
+        ], page);
+        expect(ranked).toEqual([]);
+    });
+
+    it('rejects a policy link to a private host', () => {
+        const ranked = rankPolicyLinks([
+            { href: 'http://127.0.0.1/privacy', text: 'Privacy Policy' },
+        ], page);
+        expect(ranked).toEqual([]);
+    });
+
+    it('rejects a sibling subdomain that is not under the page host', () => {
+        const ranked = rankPolicyLinks([
+            { href: 'https://policies.other.example.com/privacy', text: 'Privacy Policy' },
+        ], 'https://shop.example.com/about');
+        expect(ranked).toEqual([]);
+    });
+
+    it('does not treat every .co.uk site as one site', () => {
+        const ranked = rankPolicyLinks([
+            { href: 'https://policies.example.co.uk/privacy', text: 'Privacy Policy' },
+        ], 'https://shop.other.co.uk/about');
+        expect(ranked).toEqual([]);
     });
 
     it('de-duplicates the same path reached two ways', () => {
@@ -75,8 +104,34 @@ describe('documentUrls', () => {
         ])).toEqual(['https://example.com/privacy', 'https://example.com/terms']);
     });
 
+    it('drops private and loopback document URLs', () => {
+        expect(documentUrls([
+            { url: 'http://127.0.0.1/privacy' },
+            { url: 'http://192.168.1.10/privacy' },
+            { url: 'http://[::1]/privacy' },
+            { url: 'https://example.com/privacy' },
+        ])).toEqual(['https://example.com/privacy']);
+    });
+
     it('tolerates a missing document list', () => {
         expect(documentUrls(undefined)).toEqual([]);
+    });
+});
+
+describe('isPrivateHost', () => {
+    it('recognizes private IPv4, IPv6, and special names', () => {
+        for (const host of [
+            '127.0.0.1', '10.1.2.3', '192.168.0.5', '172.16.0.1', '172.31.255.255',
+            '169.254.1.1', '0.0.0.0', 'localhost', 'printer.local', '[::1]', 'fd00::1', 'fe80::1',
+        ]) {
+            expect(isPrivateHost(host), host).toBe(true);
+        }
+    });
+
+    it('allows public hosts that merely start with private prefixes', () => {
+        expect(isPrivateHost('fcbarcelona.com')).toBe(false);
+        expect(isPrivateHost('example.com')).toBe(false);
+        expect(isPrivateHost('172.32.0.1')).toBe(false);
     });
 });
 

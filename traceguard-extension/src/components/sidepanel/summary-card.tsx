@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { PendingLabel } from '@/components/ui/pending'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSettings } from '@/lib/useStorage'
 import { logEvent } from '@/lib/diagnostics'
@@ -42,7 +43,7 @@ export function SummaryCard({ request }: { request: SummaryRequest | null }) {
             <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm">{t('On-device summary')}</CardTitle>
                 <CardDescription className="text-xs">
-                    {t('A local audit of recorded privacy findings and your browsing patterns. Based only on stored evidence, checked for invented details, and sent only to Ollama on this device. Form entries mean typing began, not that data was submitted.')}
+                    {t('Uses stored findings and browsing patterns. Checks for invented details. Runs only through Ollama on this device. Form entries mean typing began, not that data was submitted.')}
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-2 space-y-2">
@@ -59,7 +60,9 @@ export function SummaryCard({ request }: { request: SummaryRequest | null }) {
                 )}
                 {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
                 <Button size="sm" variant="outline" onClick={generate} disabled={busy}>
-                    {busy ? t('Creating summary…') : summary && summaryKey === currentKey ? t('Refresh summary') : t('Create summary')}
+                    {busy
+                        ? <PendingLabel label={t('Creating summary…')} />
+                        : summary && summaryKey === currentKey ? t('Refresh summary') : t('Create summary')}
                 </Button>
             </CardContent>
         </Card>

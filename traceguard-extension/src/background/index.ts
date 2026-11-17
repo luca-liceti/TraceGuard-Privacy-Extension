@@ -30,32 +30,30 @@
  */
 
 import { storage, readBuffer, writeBuffer } from '../lib/storage';
-import { recordError } from '../lib/error-log';
+import { clearErrorLog, recordError } from '../lib/error-log';
+import { enforceSiteCacheCap, ensureSiteCacheMigrated, mergeSiteCacheEntries, readSiteCache, readSiteEntry } from '../lib/site-cache';
 import { appendRelayedEvents, captureError, installGlobalErrorHandlers, logEvent, setDevMode, setDiagnosticContext } from '../lib/diagnostics';
 import { z } from 'zod';
 import { loadBlacklist, checkReputation, refreshBlacklistFromRemote } from './services/reputation';
-import { calculateWSS, calculateTrackingScore, explainWSS } from '../lib/scoring';
-import { SiteRiskData, ScoreHistoryEntry, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry, PIIDetectionEvent } from '../lib/types';
-import { slimSiteData, resolveSyncCurrentSite } from '../lib/site-sync';
+import { SiteRiskData, ScoreHistoryEntry, PIIDetectionEvent, CrossSiteExposure } from '../lib/types';
+import { resolveSyncCurrentSite } from '../lib/site-sync';
 import { checkTosDR, refreshTosdrCatalog } from './tosdr-api';
 import { capturePolicyText, type PolicyCaptureDeps, type PolicyPageReply } from './policy-capture';
+import { extractPolicyDocument } from '../lib/ai/policy-text';
 import { policyCandidates } from '../lib/policy-links';
 import { evaluateNotificationBudget, readShownNotifications } from '../lib/notification-budget';
-import { calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision } from '../lib/pii';
+import { buildPIILedgerContext, calculatePIIPenalty, evaluatePIIEntry, PIIEntryDecision, type PIILedgerContext } from '../lib/pii';
 import { scoreUps, buildHandovers, handoverBaseWeight } from '../lib/ups';
 import { applyVerdict, findRecordIndex, isDuplicate, isPending, settleAbandonedRecords, stageHandover, type PIIJournalRecord } from '../lib/pii-journal';
-import { isStoppedBeforeLoading } from '../lib/tracker-status';
 import { trimExposureDomains } from '../lib/exposure';
 import { encryptData, decryptData, decryptDataStrict, importKey, DECRYPT_FAILED } from '../lib/crypto';
-import { preWarmDatabases, lookupTrackerDomain } from './services/database-loader';
-import { initNetworkMonitor, getAndClearNetworkData, setNetworkMonitorEnabled } from './services/network-monitor';
-import { enrichCookies } from './services/cookie-enricher';
-import { enrichTrackers } from './services/tracker-enricher';
-import { analyzeHeaders, computeHeaderGrade } from './services/header-analyzer';
+import { preWarmDatabases } from './services/database-loader';
+import { handlePageAnalysis as runPageAnalysis } from './handlers/page-analysis';
+import { initNetworkMonitor, setNetworkMonitorEnabled } from './services/network-monitor';
 import { isLocalUrl } from '../lib/utils';
 import { runDataMigrations } from './services/migrations';
 import i18n from '../lib/i18n';
-import { updateTabBadge, clearTabBadge, reapplyTabBadge, evictTabBadge } from './badge-icon';
+import { clearTabBadge, reapplyTabBadge, evictTabBadge } from './badge-icon';
 
 // The User Privacy Score chart offers Today / 7-day / 30-day views, so the
 // rolling score history must cover at least a month of visits (one entry is
@@ -172,18 +170,13 @@ async function syncActiveTabSiteData(tabUrl: string | undefined) {
     try {
         const domain = new URL(tabUrl).hostname;
         const key = await getCryptoKey();
-        let siteCache: Record<string, import('../lib/types').SiteRiskData> = {};
-        
+        let siteData: SiteRiskData | undefined;
         if (key) {
-            const result = await chrome.storage.local.get<Record<string, any>>('siteCache');
-            siteCache = typeof result.siteCache === 'string' 
-                ? await decryptData(key, result.siteCache) || {} 
-                : result.siteCache || {};
+            siteData = await readSiteEntry(domain, key);
         } else {
-            siteCache = (await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
+            const buffered = (await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
+            siteData = buffered[domain];
         }
-
-        const siteData = siteCache[domain];
         const currentState = await storage.getState();
 
         // Only update if it actually changed to avoid unnecessary re-renders.
@@ -283,7 +276,7 @@ async function flushBufferedTelemetry() {
         readBuffer<any[]>('bufferedNotifications'),
         readBuffer<Record<string, string[]>>('bufferedExposure'),
     ]);
-    const local = await chrome.storage.local.get<Record<string, any>>(['piiDetections', 'scoreHistory', 'siteCache', 'detectorLogs', 'notifications', 'crossSiteExposure']);
+    const local = await chrome.storage.local.get<Record<string, any>>(['piiDetections', 'scoreHistory', 'detectorLogs', 'notifications', 'crossSiteExposure']);
 
     // Buffers whose target could not be decrypted stay in place: clearing them
     // would drop the buffered entries on top of an unreadable collection.
@@ -313,17 +306,12 @@ async function flushBufferedTelemetry() {
     await mergeArray('detectorLogs', 'bufferedDetectorLogs', bufferedDetectorLogs, 5000);
     await mergeArray('notifications', 'bufferedNotifications', bufferedNotifications, 100);
 
-    // Flush Site Cache
+    // Flush Site Cache. The sharded writer touches only the shards it needs.
     if (bufferedSiteCache && Object.keys(bufferedSiteCache).length > 0) {
-        const current = typeof local.siteCache === 'string'
-            ? await decryptDataStrict<Record<string, SiteRiskData>>(key, local.siteCache)
-            : (local.siteCache || {});
-        if (current === DECRYPT_FAILED) {
+        const merged = await mergeSiteCacheEntries(bufferedSiteCache, key);
+        if (!merged) {
             unflushed.push('bufferedSiteCache');
-            captureError('storage', new Error('siteCache could not be decrypted'), 'telemetry_flush_decrypt_failed');
-        } else {
-            const cache = { ...(current || {}), ...bufferedSiteCache };
-            await chrome.storage.local.set({ siteCache: await encryptData(key, cache) });
+            captureError('storage', new Error('siteCache shards could not be written'), 'telemetry_flush_decrypt_failed');
         }
     }
 
@@ -513,6 +501,11 @@ chrome.runtime.onInstalled.addListener(async () => {
  * It makes sure the extension is ready to work with fresh data.
  */
 chrome.runtime.onStartup.addListener(async () => {
+    // Diagnostics are session-scoped. Clear the error list at the stable
+    // "browser started" boundary: the service worker restarts far more often,
+    // and clearing on every wake would erase errors before they are read.
+    await clearErrorLog();
+
     // Run data migrations before initializing anything else
     try {
         await runDataMigrations();
@@ -577,28 +570,13 @@ async function syncStateWithCache() {
         }
 
         const state = await storage.getState();
-        const result = await chrome.storage.local.get<Record<string, any>>('siteCache');
-        
-        let siteCacheData = result.siteCache;
-        
-        if (typeof siteCacheData === 'string') {
-            const decrypted = await decryptDataStrict<Record<string, SiteRiskData>>(key, siteCacheData);
-            if (decrypted === DECRYPT_FAILED) {
-                captureError('storage', new Error('siteCache could not be decrypted'), 'state_sync_decrypt_failed');
-                return;
-            }
-            siteCacheData = decrypted || {};
-        }
-        // Failsafe healing for corrupted siteCache
-        if (siteCacheData && typeof siteCacheData === 'object' && typeof siteCacheData[0] === 'string') {
-            logEvent('storage', 'warn', 'site_cache_corrupted', 'Detected corrupted siteCache; healing');
-            siteCacheData = {};
-            await chrome.storage.local.set({ siteCache: await encryptData(key, siteCacheData) });
+        const ready = await ensureSiteCacheMigrated(key);
+        if (!ready) {
+            logEvent('storage', 'warn', 'state_sync_cache_unreadable', 'State sync skipped: the site cache could not be read');
+            return;
         }
 
-        const siteCache = (siteCacheData || {}) as Record<string, SiteRiskData>;
-        
-        const sites = Object.values(siteCache);
+        const sites = Object.values(await readSiteCache(key));
         let updated = false;
 
         // Sync sitesAnalyzed
@@ -666,12 +644,84 @@ async function armAutoLock(force = false): Promise<void> {
 /**
  * Browser wiring for policy capture.
  *
- * Each candidate opens in an inactive tab because a service-worker `fetch` is
- * blocked by this extension's own `connect-src`, returns unrendered HTML, and
- * carries no `SameSite=Lax` cookies. The tab is always closed by the capture
- * orchestrator, including when the read throws.
+ * Fetch static policy HTML first, then use an inactive tab only when no fetched
+ * candidate yields enough valid text. The background fetch uses the existing
+ * host permission, omits cookies, and does not execute page scripts. The fallback
+ * uses the browser session and may send applicable cookies.
  */
+async function readLimitedResponseText(response: Response, maxChars: number): Promise<string | null> {
+    if (!response.body) return null;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let text = '';
+    try {
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done) return text + decoder.decode();
+            text += decoder.decode(value, { stream: true });
+            if (text.length > maxChars) {
+                await reader.cancel();
+                return null;
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+}
+
 const policyCaptureDeps: PolicyCaptureDeps = {
+    async fetchPage(url, timeoutMs) {
+        const target = new URL(url);
+        if ((target.protocol !== 'https:' && target.protocol !== 'http:') || isLocalUrl(url)) {
+            return { ok: false, reason: 'invalid-candidate' };
+        }
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'omit',
+                redirect: 'error',
+                signal: controller.signal,
+                headers: { Accept: 'text/html,application/xhtml+xml' },
+            });
+            if (!response.ok) return { ok: false, reason: `http-${response.status}` };
+            const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+            if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+                return { ok: false, reason: 'not-html' };
+            }
+            const rawLength = response.headers.get('content-length');
+            const declaredLength = rawLength === null ? null : Number(rawLength);
+            if (declaredLength !== null && (!Number.isFinite(declaredLength) || declaredLength < 0 || declaredLength > 1_000_000)) {
+                return { ok: false, reason: 'response-too-large' };
+            }
+            const html = await readLimitedResponseText(response, 1_000_000);
+            if (html === null) return { ok: false, reason: 'response-too-large' };
+            const pageUrl = response.url || url;
+            let page: URL;
+            try {
+                page = new URL(pageUrl);
+            } catch {
+                return { ok: false, reason: 'invalid-response-url' };
+            }
+            if ((page.protocol !== 'https:' && page.protocol !== 'http:') || isLocalUrl(pageUrl)) {
+                return { ok: false, reason: 'invalid-response-url' };
+            }
+            const document = extractPolicyDocument(html);
+            if (!document || !document.title) {
+                return { ok: false, reason: 'unreadable-html' };
+            }
+            return { ok: true, url: pageUrl, title: document.title, text: document.text };
+        } catch (error) {
+            logEvent('background', 'warn', 'policy_fetch_failed', 'Could not fetch a static policy document', {
+                host: target.hostname,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return { ok: false, reason: 'fetch-failed' };
+        } finally {
+            clearTimeout(timeout);
+        }
+    },
     async openTab(url) {
         try {
             // The fragment makes the content script skip analysis, so reading a
@@ -679,7 +729,10 @@ const policyCaptureDeps: PolicyCaptureDeps = {
             const marked = url.includes('#') ? url : `${url}#tg-policy-capture`;
             const tab = await chrome.tabs.create({ url: marked, active: false });
             return typeof tab?.id === 'number' ? tab.id : null;
-        } catch {
+        } catch (error) {
+            logEvent('background', 'warn', 'policy_fallback_tab_open_failed', 'Could not open a rendered policy fallback tab', {
+                error: error instanceof Error ? error.message : String(error),
+            });
             return null;
         }
     },
@@ -705,8 +758,10 @@ const policyCaptureDeps: PolicyCaptureDeps = {
     async closeTab(tabId) {
         try {
             await chrome.tabs.remove(tabId);
-        } catch {
-            // Already closed, or its window went away.
+        } catch (error) {
+            logEvent('background', 'warn', 'policy_fallback_tab_close_failed', 'Could not close a rendered policy fallback tab', {
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     },
 };
@@ -1079,35 +1134,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // =============================================================================
 
 /**
- * Processes the complete privacy analysis from a webpage.
- * This is one of the most important functions in the extension!
- * 
- * When you visit a website, the content script analyzes it and sends the results here.
- * This function:
- * 1. Gets the website's reputation score
- * 2. Calculates the overall Website Safety Score (WSS)
- * 3. Updates your User Privacy Score (UPS) based on whether the site was safe or risky
- * 4. Stores all the data so you can see it in the dashboard
- * 5. Creates notifications if the site is dangerous
- * 
- * @param message - The analysis data from the content script
- * @param sender - Information about where the message came from
+ * Supplies the worker-scoped helpers to the extracted page-analysis handler.
+ * Keeping this wrapper preserves the message-listener and test entry point.
  */
-const PageAnalysisSchema = z.object({
-    url: z.string(),
-    isInitialLoad: z.boolean().optional(),
-    scores: z.record(z.string(), z.number()),
-    detectionDetails: z.record(z.string(), z.any()).optional(),
-    rawForEnrichment: z.object({
-        cookies:        z.array(z.any()).max(500).optional(),
-        trackers:       z.array(z.any()).max(500).optional(),
-        fingerprinting: z.array(z.any()).max(200).optional(),
-    }).optional()
-}).passthrough();
-
-// The PII path stores what it receives and repeats some of it in notifications,
-// so the fields the content script contributes are validated the same way as a
-// page analysis payload.
+export async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSender) {
+    return runPageAnalysis(message, sender, {
+        getCryptoKey,
+        createNotification,
+        resolveSiteScore,
+    });
+}
 const PiiDetectionSchema = z.object({
     data: z.object({
         timestamp: z.number().finite().optional(),
@@ -1132,482 +1168,84 @@ const SettingsChangedSchema = z.object({
     }).passthrough(),
 });
 
-async function handlePageAnalysis(message: any, sender: chrome.runtime.MessageSender) {
-    const parsed = PageAnalysisSchema.safeParse(message);
-    if (!parsed.success) {
-        logEvent('content', 'warn', 'page_analysis_invalid', 'Rejected a malformed page analysis payload', { issues: parsed.error.issues.map(issue => issue.path.join('.')).join(', ') });
-        return;
-    }
-    const validMessage = parsed.data;
-
-    if (!validMessage.url || isLocalUrl(validMessage.url)) {
-        logEvent('content', 'warn', 'page_analysis_local_url', 'Page analysis skipped for a missing or local URL');
-        return;
-    }
-    message = validMessage;
-
-    // A genuine navigation (the content script's initial analysis of a
-    // document load) is scoreable. Mutation-triggered re-analyses of the same
-    // page (isInitialLoad === false) must not re-apply penalties or duplicate
-    // history, logs, counters, or notifications.
-    const isNewNavigation = message.isInitialLoad !== false;
-
-    // Honor the master on/off toggle, ignore analysis while paused.
-    const preSettings = await storage.getSettings();
-    if (!preSettings.enabled) return;
-
-    // Step 1: Check the website's reputation (is it on any blacklists?)
-    const reputationResult = await checkReputation(message.url);
-    const reputationScore = typeof reputationResult === 'number' ? reputationResult : reputationResult.score;
-    const reputationChecks = typeof reputationResult === 'number' ? [] : reputationResult.checks;
-
-    // Combine all the individual detector scores into one object (tracking may
-    // be corrected later from the bundled databases, so it stays a `const` with
-    // mutable fields rather than being reassigned).
-    const finalScores = { ...message.scores, reputation: reputationScore };
-
-    if (!message.detectionDetails) {
-        message.detectionDetails = {};
-    }
-    message.detectionDetails.reputation = {
-        status: reputationScore === 100 ? 'Clean' : 'Suspicious',
-        checks: reputationChecks
-    };
-
-    // Step 2: Calculate the Website Safety Score (WSS)
-    // This combines all 6 detector scores with different weights
-    let wss = calculateWSS(finalScores);
-
-    // Extract just the domain name from the full URL
-    // For example: "https://www.example.com/page" becomes "www.example.com"
-    const domain = new URL(message.url).hostname;
-    // Retrieve network data for this tab
-    const tabId = sender.tab?.id;
-    let networkData = null;
-    if (tabId) {
-        networkData = await getAndClearNetworkData(tabId);
-    }
-
-    // Build enriched data if raw data is provided
-    let enrichedDetails: EnrichedDetectionDetails | undefined = undefined;
-    if (message.rawForEnrichment) {
-        const cookies = await enrichCookies(message.url, message.rawForEnrichment.cookies, networkData?.setCookies || []);
-        const trackers = await enrichTrackers(message.url, message.rawForEnrichment.trackers, networkData?.requests || {});
-        const headers = analyzeHeaders(networkData?.responseHeaders || []);
-        
-        const fpRaw = message.rawForEnrichment.fingerprinting || [];
-        const fingerprintingItems: FingerprintingDetail[] = await Promise.all(fpRaw.map(async (f: any) => {
-            let org = null;
-            if (f.scriptUrl) {
-                try {
-                    const radar = await lookupTrackerDomain(new URL(f.scriptUrl).hostname);
-                    org = radar?.owner || radar?.displayName || null;
-                } catch (e) {
-                    logEvent('enrich', 'warn', 'fingerprint_lookup_failed', 'Tracker lookup for a fingerprint script failed', { error: String(e) });
-                }
-            }
-            return {
-                technique: f.technique,
-                detected: true,
-                scriptDomain: f.scriptUrl ? new URL(f.scriptUrl).hostname : null,
-                organization: org,
-                description: `Detected ${f.technique} fingerprinting attempt`,
-                risk: 'medium'
-            };
-        }));
-        
-        enrichedDetails = {
-            cookies: {
-                items: cookies.slice(0, 100), // cap stored detail; summary keeps full totals
-                summary: {
-                    total: cookies.length,
-                    active: cookies.filter(c => c.status === 'active').length,
-                    blockedByBrowser: cookies.filter(c => isStoppedBeforeLoading(c.status)).length,
-                    byCategory: cookies.reduce((acc, c) => { acc[c.category] = (acc[c.category] || 0) + 1; return acc; }, {} as Record<string, number>)
-                }
-            },
-            trackers: {
-                items: trackers.slice(0, 200), // cap stored detail; summary keeps full totals
-                summary: {
-                    total: trackers.length,
-                    active: trackers.filter(t => t.status === 'active').length,
-                    blockedByBrowser: trackers.filter(t => isStoppedBeforeLoading(t.status)).length,
-                    byCategory: trackers.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + 1; return acc; }, {} as Record<string, number>)
-                }
-            },
-            networkRequests: {
-                items: (networkData ? Object.values(networkData.requests) : []).slice(0, 200), // cap stored detail
-                summary: {
-                    total: networkData ? Object.keys(networkData.requests).length : 0,
-                    thirdParty: networkData ? Object.values(networkData.requests).filter(r => r.isThirdParty).length : 0,
-                    blockedByBrowser: networkData ? Object.values(networkData.requests).filter(r => isStoppedBeforeLoading(r.status)).length : 0,
-                    trackerRequests: networkData ? Object.values(networkData.requests).filter(r => r.isTracker).length : 0
-                }
-            },
-            headers: {
-                items: headers,
-                summary: (() => {
-                    const { score, grade } = computeHeaderGrade(headers);
-                    return {
-                        score,
-                        present: headers.filter(h => h.present).length,
-                        missing: headers.filter(h => !h.present).length,
-                        grade
-                    };
-                })()
-            },
-            fingerprinting: {
-                items: fingerprintingItems.slice(0, 100), // cap stored detail
-                summary: {
-                    totalAttempts: fpRaw.length,
-                    techniques: fpRaw.map((f: any) => f.technique),
-                    riskLevel: fpRaw.length > 0 ? 'medium' : 'none'
-                }
-            },
-            capturedAt: Date.now()
-        };
-    }
-
-    // The bundled tracker databases (Tracker Radar / EasyPrivacy / Disconnect)
-    // are the authoritative tracker list. When enrichment ran, replace the
-    // content script's small hardcoded-list score with a score derived from the
-    // actual tracked domains, then recompute WSS against that correction.
-    if (enrichedDetails) {
-        const uniqueTrackers = new Set(enrichedDetails.trackers.items.map(t => t.domain));
-        finalScores.tracking = calculateTrackingScore(uniqueTrackers.size);
-        wss = calculateWSS(finalScores);
-    }
-
-    // Step 3: Create a data object with all the site's information
-    const siteData: SiteRiskData = {
-        domain,                                    // The website's domain name
-        wss,                                       // Website Safety Score (0-100, higher = safer)
-        breakdown: finalScores,                    // Individual scores for each detector
-        lastAnalyzed: Date.now(),                  // When we analyzed it (timestamp)
-        detectionDetails: message.detectionDetails,// Detailed info about what was detected
-        enrichedDetails                            // NEW: Rich per-item analysis
-    };
-
-    // Step 4: Save this site's data to the cache
-    const key = await getCryptoKey();
-    let siteCache: Record<string, SiteRiskData> = {};
-    let siteCacheWritable = true;
-
-    if (key) {
-        const result = await chrome.storage.local.get<Record<string, any>>('siteCache');
-        if (typeof result.siteCache === 'string') {
-            const decrypted = await decryptDataStrict<Record<string, SiteRiskData>>(key, result.siteCache);
-            if (decrypted === DECRYPT_FAILED) {
-                // Writing here would replace every stored analysis with this one
-                // site, so skip the cache write and leave the blob untouched.
-                siteCacheWritable = false;
-                captureError('storage', new Error('siteCache could not be decrypted'), 'site_cache_unreadable');
-            } else {
-                siteCache = decrypted || {};
-            }
-        } else {
-            siteCache = result.siteCache || {};
-        }
-    } else {
-        siteCache = (await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
-    }
-
-    // Keep track of how many times you've visited this site
-    const existingSite = siteCache[domain];
-
-    // Determine if this is a unique domain visit today
-    const now = Date.now();
-    let isUniqueDomain = false;
-    if (!existingSite || !existingSite.lastVisit) {
-        isUniqueDomain = true;
-    } else {
-        const lastVisitDate = new Date(existingSite.lastVisit).toDateString();
-        const todayDate = new Date(now).toDateString();
-        if (lastVisitDate !== todayDate) {
-            isUniqueDomain = true;
-        }
-    }
-
-    // Add visit tracking to the site data. Count one visit per genuine
-    // navigation; SPA re-analyses of the same page must not inflate the count.
-    const visitCount = (existingSite?.visitCount || 0) + (isNewNavigation ? 1 : 0);
-    siteData.visitCount = visitCount;
-    siteData.lastVisit = now;  // Current time in milliseconds
-
-    // Save the updated site data
-    siteCache[domain] = siteData;
-    // LRU-style cap: retain the most recently analyzed 5000 domains.
-    const cacheEntries = Object.entries(siteCache);
-    if (cacheEntries.length > 5000) {
-        cacheEntries.sort(([, a], [, b]) => Number(a.lastAnalyzed) - Number(b.lastAnalyzed));
-        for (const [expiredDomain] of cacheEntries.slice(0, cacheEntries.length - 5000)) delete siteCache[expiredDomain];
-    }
-    
-    if (siteCacheWritable) {
-        if (key) {
-            await chrome.storage.local.set({ siteCache: await encryptData(key, siteCache) });
-        } else {
-            await writeBuffer('bufferedSiteCache', siteCache);
-        }
-    }
-
-    // Step 5: Update the user's privacy state
-
-    // Check if the tab that sent this analysis is the currently active tab
-    let isActiveTab = true;
-    if (sender.tab?.id) {
-        try {
-            const currentTab = await chrome.tabs.get(sender.tab.id);
-            isActiveTab = currentTab.active;
-        } catch {
-            // Tab might be closed
-            isActiveTab = false;
-        }
-    }
-
-    // The User Privacy Score is derived from the handover record, not from
-    // visits (see lib/ups.ts). Visiting a site never moves it: only a handover
-    // does, in finalizePIIDetection. So nothing here scores the navigation.
-
-    // Save the updated state
-    // Count enriched trackers detected on this visit (both loaded and stopped)
-    const newTrackersCount = enrichedDetails ? enrichedDetails.trackers.items.length : 0;
-    
-    // Only update currentSite if the analysis is from the active tab.
-    // Persist only the non-sensitive fields to plaintext state, the full
-    // analysis lives (encrypted) in siteCache. The reducer form recomputes
-    // counters from the freshest state inside the serialized write chain so
-    // concurrent tab analyses can never lose an increment.
-    await storage.updateState((current) => ({
-        sitesAnalyzed: current.sitesAnalyzed + (isUniqueDomain ? 1 : 0),           // Increment the counter only for unique sites today
-        trackersDetected: (current.trackersDetected || 0) + (isNewNavigation ? newTrackersCount : 0), // Accumulate once per genuine navigation
-        ...(isActiveTab ? { currentSite: slimSiteData(siteData) } : {}),
-    }));
-
-    // Update the toolbar badge for this tab now that the final WSS is known.
-    if (tabId !== undefined) {
-        await updateTabBadge(tabId, wss);
-    }
-
-    // Step 6: Prepare the detector journal for this visit. The journal holds
-    // real detector events only; the UPS is derived from handovers elsewhere.
-    const detectorLogsToWrite: Array<Omit<DetectorLogEntry, 'id' | 'timestamp'>> = [];
-
-    // Step 7: Log detailed information from each detector
-    // This creates activity logs that show up in the "Activity Logs" page
-
-    // Prefer the enriched tracker list (from the bundled databases) when it is
-    // available; otherwise fall back to the content script's hardcoded-list
-    // detection details.
-    const enrichedTrackerDomains = enrichedDetails
-        ? Array.from(new Set(enrichedDetails.trackers.items.map(t => t.domain)))
-        : null;
-    const trackingDetails = enrichedTrackerDomains
-        ? {
-            trackerCount: enrichedTrackerDomains.length,
-            knownTrackers: enrichedTrackerDomains,
-            suspiciousTrackers: [],
-          }
-        : (message.detectionDetails?.tracking
-            ? {
-                trackerCount: message.detectionDetails.tracking.count || 0,
-                knownTrackers: Array.isArray(message.detectionDetails.tracking.known)
-                    ? message.detectionDetails.tracking.known
-                    : new Array(message.detectionDetails.tracking.known || 0).fill('unknown'),
-                suspiciousTrackers: Array.isArray(message.detectionDetails.tracking.suspicious)
-                    ? message.detectionDetails.tracking.suspicious
-                    : new Array(message.detectionDetails.tracking.suspicious || 0).fill('unknown')
-              }
-            : { trackerCount: 0, knownTrackers: [], suspiciousTrackers: [] });
-    const trackingMessage = trackingDetails.trackerCount === 0
-        ? 'No third-party trackers detected'
-        : `${trackingDetails.trackerCount} trackers detected (${trackingDetails.knownTrackers.length} known)`;
-
-    // Create human-readable messages for each detector
-    const detectorMessages = {
-        reputation: reputationScore === 100 ? 'Not on any known threat list' : reputationScore === 0 ? 'Domain blacklisted!' : `Domain reputation score: ${reputationScore}`,
-        tracking: trackingMessage,
-        cookies: finalScores.cookies >= 80 ? 'No tracking cookies detected' : `Tracking cookies detected (safety: ${finalScores.cookies})`,
-        inputs: finalScores.input >= 80 ? 'No sensitive input fields' : `Sensitive input fields detected (safety: ${finalScores.input})`,
-        policy: finalScores.policy >= 80 ? 'Good privacy policy' : finalScores.policy <= 25 ? 'No privacy policy found' : `Privacy policy concerns (safety: ${finalScores.policy})`
-    };
-
-    // Log each detector's findings to storage (6 logs total, one for each detector)
-
-    // REPUTATION: Is this domain known to be dangerous?
-    detectorLogsToWrite.push({
-        detector: 'reputation',
-        domain,
-        score: reputationScore,
-        details: { isBlacklisted: reputationScore === 0, status: reputationScore === 100 ? 'Clean' : reputationScore === 0 ? 'Blacklisted' : 'Suspicious' },
-        message: detectorMessages.reputation
-    });
-
-    // TRACKING: How many third-party trackers are on this page?
-    detectorLogsToWrite.push({
-        detector: 'tracking',
-        domain,
-        score: finalScores.tracking,
-        details: {
-            trackerCount: trackingDetails.trackerCount,
-            knownTrackers: trackingDetails.knownTrackers,
-            suspiciousTrackers: trackingDetails.suspiciousTrackers
-        },
-        message: detectorMessages.tracking
-    });
-
-    // COOKIES: Are there tracking or third-party cookies?
-    detectorLogsToWrite.push({
-        detector: 'cookies',
-        domain,
-        score: finalScores.cookies,
-        details: message.detectionDetails?.cookies || {},
-        message: detectorMessages.cookies
-    });
-
-    // INPUTS: Are there sensitive input fields (password, credit card, etc.)?
-    detectorLogsToWrite.push({
-        detector: 'inputs',
-        domain,
-        score: finalScores.input,
-        details: message.detectionDetails?.input || {},
-        message: detectorMessages.inputs
-    });
-
-    // POLICY: What's the privacy policy rating (from ToS;DR)?
-    detectorLogsToWrite.push({
-        detector: 'policy',
-        domain,
-        score: finalScores.policy,
-        details: message.detectionDetails?.policy || {},
-        message: detectorMessages.policy
-    });
-
-    // Single batched write: avoids six read-decrypt-encrypt-write cycles of the
-    // full (up to 1,000-entry) detector log array per page visit. Only write
-    // once per genuine navigation so SPA re-analyses don't spam the journal.
-    if (isNewNavigation && detectorLogsToWrite.length > 0) {
-        await storage.addDetectorLogs(detectorLogsToWrite, key);
-    }
-
-    // Step 8: Create notifications for risky sites
-    const settings = await storage.getSettings();
-    const threshold = settings.wssThreshold || 60;  // User's custom safety threshold
-
-    // Check if this site is dangerous enough to warn the user
-    // WSS is a safety score: lower = more dangerous
-
-    // Notify on each genuine navigation, SPA re-analyses must not spam alerts.
-    if (isNewNavigation && wss <= 20) {
-        // CRITICAL RISK: Score is 20 or below - this site is very dangerous!
-        await createNotification({
-            type: 'high_risk_site',
-            title: 'Critical Risk Site!',
-            titleKey: 'Critical Risk Site!',
-            message: `${domain} has been flagged as a critical risk with a safety score of ${wss}`,
-            messageKey: '{{domain}} has been flagged as a critical risk with a safety score of {{wss}}',
-            params: { domain, wss },
-            domain,
-            severity: 'critical',
-            actionUrl: `/overview?viewSite=${encodeURIComponent(domain)}`
-        });
-    } else if (isNewNavigation && wss < threshold) {
-        // WARNING: Site falls below the user's personal safety threshold
-        await createNotification({
-            type: 'high_risk_site',
-            title: 'High Risk Site Detected',
-            titleKey: 'High Risk Site Detected',
-            message: `${domain} falls below your safety threshold (Score: ${wss})`,
-            messageKey: '{{domain}} falls below your safety threshold (Score: {{wss}})',
-            params: { domain, wss },
-            domain,
-            severity: 'warning',
-            actionUrl: `/overview?viewSite=${encodeURIComponent(domain)}`
-        });
-    }
-
-    // Verbose scoring summary. The 1.4.3 cleanup deleted the console.log that
-    // printed this, which left the final WSS and its detector breakdown
-    // unobservable. Developer mode is now the only place to read them without
-    // attaching a debugger. Note that a 100 here can mean a clean page or a
-    // detector that threw and fell back to a neutral score.
-    const explanation = explainWSS(finalScores);
-    logEvent('scoring', 'debug', 'page_analysis_complete', `${domain} scored ${wss}`, {
-        host: domain,
-        wss,
-        isNewNavigation,
-        detectorScores: {
-            reputation: finalScores.reputation,
-            tracking: finalScores.tracking,
-            cookies: finalScores.cookies,
-            fingerprinting: finalScores.fingerprinting,
-            input: finalScores.input,
-            policy: finalScores.policy,
-        },
-        // The audit trail: which weights were applied (policy's weight is
-        // redistributed when ToS;DR had no rating) and what each detector
-        // actually contributed to the total.
-        policyFallback: explanation.policyFallback,
-        weights: explanation.weights,
-        contributions: Object.fromEntries(
-            Object.entries(explanation.contributions).map(([key, value]) => [key, Math.round(value * 10) / 10])
-        ),
-    });
-
-}
-
-// =============================================================================
-// PII DETECTION HANDLER  
-// Processes personal information detection events
-// =============================================================================
-
-/**
- * Handles when the user enters personal information (PII) on a website.
- * 
- * "PII" stands for Personally Identifiable Information - things like:
- * - Your email address
- * - Your password
- * - Your phone number
- * - Your credit card number
- * 
- * This function:
- * 1. Records that you entered personal info (without storing what you typed!)
- * 2. Applies a penalty to your privacy score (more penalty on risky sites)
- * 3. Tracks which sites have seen your information
- * 4. Creates a notification to keep you informed
- * 
- * IMPORTANT: We NEVER store what you actually typed - only the TYPE of field
- * (e.g., "password field" or "email field"), not the actual values.
- * 
- * @param message - Information about the PII event from the content script
- */
 // Domains we've already asked the user to vouch for this browser session.
 // Prevents the confirmation popup from spamming on every PII event.
 const promptedPIIConfirmDomains = new Set<string>();
 
-/**
- * Resolves the safety score and reputation for the domain that emitted a PII
- * event from the site cache (the authoritative per-domain analysis), rather
- * than from `state.currentSite` (which tracks the active tab and may point at
- * a different site). Falls back to 50/unknown when no analysis exists yet.
- */
 async function resolveSiteScore(domain: string, key: CryptoKey | null): Promise<{ wss: number; reputation: number | undefined }> {
     try {
-        let siteCache: Record<string, SiteRiskData> = {};
-        if (key) {
-            const result = await chrome.storage.local.get<Record<string, any>>('siteCache');
-            siteCache = typeof result.siteCache === 'string'
-                ? await decryptData(key, result.siteCache) || {}
-                : result.siteCache || {};
-        } else {
-            siteCache = (await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {};
-        }
-        const site = siteCache[domain];
+        const site = key
+            ? await readSiteEntry(domain, key)
+            : ((await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {})[domain];
         return { wss: site?.wss ?? 50, reputation: site?.breakdown?.reputation };
     } catch (error) {
         captureError('pii', error, 'site_score_resolve_failed');
         return { wss: 50, reputation: undefined };
     }
+}
+
+/**
+ * Reads the exposure ledger for the PII card. This must happen before the new
+ * handover is recorded, otherwise every card would claim the site already has
+ * the data because the current entry had just been written.
+ */
+async function readPIILedgerContext(
+    key: CryptoKey | null,
+    site: string,
+    fieldType: string,
+): Promise<PIILedgerContext | null> {
+    if (!key) return null;
+    try {
+        const local = await chrome.storage.local.get<Record<string, any>>('crossSiteExposure');
+        if (local.crossSiteExposure === undefined) return null;
+        const exposure = typeof local.crossSiteExposure === 'string'
+            ? await decryptDataStrict<CrossSiteExposure>(key, local.crossSiteExposure)
+            : (local.crossSiteExposure as CrossSiteExposure);
+        if (exposure === DECRYPT_FAILED) return null;
+        return buildPIILedgerContext(exposure ?? {}, site, fieldType);
+    } catch (error) {
+        logEvent('pii', 'warn', 'pii_ledger_context_failed', 'Could not read the ledger context for the PII card', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+    }
+}
+
+function siteCountLabel(count: number): string {
+    return count === 1 ? i18n.t('1 site') : i18n.t('{{count}} sites', { count });
+}
+
+/** Turns the prior-exposure counts into the one line shown on the card. */
+function formatPIILedgerNote(
+    context: PIILedgerContext | null | undefined,
+    fieldType: string,
+): string | undefined {
+    if (!context) return undefined;
+
+    if (context.siteHasField) {
+        if (context.otherHolders === 0) {
+            return i18n.t('This site already has your {{field}}.', { field: fieldType });
+        }
+        return i18n.t('This site already has your {{field}}. It is held by {{count}} in total.', {
+            field: fieldType,
+            count: siteCountLabel(context.otherHolders + 1),
+        });
+    }
+
+    if (context.otherHolders > 0) {
+        return i18n.t('Your {{field}} is already held by {{count}} besides this one.', {
+            field: fieldType,
+            count: siteCountLabel(context.otherHolders),
+        });
+    }
+
+    if (context.otherFields.length > 0) {
+        return i18n.t('This site already has other data from you: {{fields}}.', {
+            fields: context.otherFields.join(', '),
+        });
+    }
+
+    return i18n.t('This is the first {{field}} TraceGuard has seen you enter.', { field: fieldType });
 }
 
 /**
@@ -1626,14 +1264,15 @@ const PII_CONFIRM_TIMEOUT_MS = 120_000; // 2 minutes
 /**
  * Shows the confirmation card for an outlier site and waits for the user's
  * answer. Resolves `true` only when the user confirms the site is safe; a
- * "Not sure", dismissal, missing content script, or timeout resolves `false`
- * so the entry is still penalized (fail-safe for risky sites).
+ * "Keep warning me", dismissal, missing content script, or timeout resolves
+ * `false` so the entry is still penalized (fail-safe for risky sites).
  */
 async function askForSiteConfirmation(
     event: { site: string; fieldType: string },
     decision: PIIEntryDecision,
     siteWSS: number,
-    tabId?: number
+    tabId?: number,
+    ledgerContext?: PIILedgerContext | null,
 ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
         const finish = (safe: boolean) => {
@@ -1659,9 +1298,9 @@ async function askForSiteConfirmation(
             dismissLabel: i18n.t('Dismiss'),
             bodyPrefix: i18n.t('TraceGuard detected personal info ({{fieldType}}) on', { fieldType: event.fieldType }),
             bodySuffix: i18n.t('and this site doesn\u2019t meet our security checks. Make sure it\u2019s the real site before entering anything.'),
-            confirm: i18n.t('It\u2019s safe - add to allow list'),
-            notSure: i18n.t('Not sure'),
-            note: i18n.t('If this is the real site, confirm to skip the penalty and add it to your allow list. Check the address bar carefully - lookalike domains are a common trick.'),
+            confirm: i18n.t('Trust this site'),
+            notSure: i18n.t('Keep warning me'),
+            note: i18n.t('Trusting this site adds it to your allow list and skips the penalty here. Keeping the warning means TraceGuard keeps warning you and the penalty applies.'),
             added: i18n.t('Added to allow list'),
             addedNote: i18n.t('{{domain}} was added to your allow list. TraceGuard won\u2019t penalize personal info here anymore.', { domain: event.site }),
         };
@@ -1682,6 +1321,7 @@ async function askForSiteConfirmation(
                     message: i18n.t(decision.message),
                     siteWSS,
                     costNote: i18n.t('Here it costs {{cost}} points. On a site we could vouch for, {{safeCost}}.', { cost, safeCost }),
+                    ledgerNote: formatPIILedgerNote(ledgerContext, event.fieldType),
                     texts,
                 }
             }).catch((error) => {
@@ -1915,6 +1555,10 @@ async function handlePIIDetection(message: any, tabId?: number) {
     if (decision.penalize && siteReputation !== 0
         && (decision.reason === 'risky' || decision.reason === 'unnecessary')
         && !promptedPIIConfirmDomains.has(event.site)) {
+        // Read the ledger before writing the handover. The card is asking about
+        // prior exposure, so the entry it is gating must not count itself.
+        const ledgerContext = await readPIILedgerContext(key, event.site, event.fieldType);
+
         // Write the handover before the card, not after. The card decides the
         // penalty; it must never decide whether the entry exists.
         const recorded = await recordPIIDetection(event, siteWSS);
@@ -1929,7 +1573,7 @@ async function handlePIIDetection(message: any, tabId?: number) {
                 recordError('PII finalize failed', String(error));
             });
         };
-        askForSiteConfirmation(event, decision, siteWSS, tabId)
+        askForSiteConfirmation(event, decision, siteWSS, tabId, ledgerContext)
             .then(finalizeQueued)
             .catch((error) => {
                 recordError('PII confirmation failed', String(error));
@@ -2192,6 +1836,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     } else if (alarm.name === CLEANUP_ALARM) {
         const key = await getCryptoKey();
         await storage.cleanupOldLogs(key);
+        if (key) await enforceSiteCacheCap(key);
         await recordUpsSnapshot(key);
     }
 });

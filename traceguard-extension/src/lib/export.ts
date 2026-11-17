@@ -25,12 +25,13 @@ import {
     generateSalt,
     importKey,
 } from './crypto';
+import { readSiteCache, replaceSiteCache, SITE_CACHE_PREFIX } from './site-cache';
+import type { SiteRiskData } from './types';
 
 const PBKDF2_ITERATIONS = 600000;
 
 // Fields that are stored AES-GCM-encrypted when the vault is unlocked.
 const VAULT_FIELDS: Array<[string, 'object' | 'array']> = [
-    ['siteCache', 'object'],
     ['crossSiteExposure', 'object'],
     ['scoreHistory', 'array'],
     ['piiDetections', 'array'],
@@ -90,25 +91,45 @@ async function triggerDownload(json: string, passwordProtected: boolean): Promis
 /**
  * Gathers, sanitizes, optionally encrypts, and downloads a full data backup.
  * Pass a non-empty `password` to encrypt the backup, or `null` for a plaintext
- * export. Throws on failure; the caller handles cancellation and toasts.
+ * export. `vaultKey` is the key already verified from the vault password; when
+ * it is omitted, the unlocked session key is used. Throws on failure; the
+ * caller handles cancellation and toasts.
  */
-export async function exportAllData(password: string | null): Promise<void> {
+export async function exportAllData(password: string | null, vaultKey?: CryptoKey): Promise<void> {
     const allData: Record<string, unknown> = await chrome.storage.local.get(null);
 
-    // Never export the raw buffer key, it would let a reader decrypt
-    // locked-vault buffered telemetry.
+    // Never export vault credential material. The backup envelope carries its
+    // own salt, and importing these would break the current vault.
     delete allData.bufferKeyHex;
-    delete allData.cryptoKeyHex; // defensive: should never be in local anyway
+    delete allData.cryptoKeyHex;
+    delete allData.cryptoSalt;
+    delete allData.validator;
 
-    // Decrypt vault fields (only possible while unlocked) so the backup is usable.
-    const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
-    if (session.cryptoKeyHex) {
-        const key = await importKey(session.cryptoKeyHex);
+    // Shards are an internal storage shape. The backup keeps the stable
+    // `siteCache` object and never includes the shard keys.
+    for (const key of Object.keys(allData)) {
+        if (key.startsWith(SITE_CACHE_PREFIX)) delete allData[key];
+    }
+
+    // Decrypt vault fields with the verified key, or fall back to the unlocked
+    // session key for callers that do not provide one.
+    let key = vaultKey ?? null;
+    if (!key) {
+        const session = await chrome.storage.session.get<{ cryptoKeyHex?: string }>('cryptoKeyHex');
+        if (session.cryptoKeyHex) key = await importKey(session.cryptoKeyHex);
+    }
+    if (!key) {
+        const hasVaultData = VAULT_FIELDS.some(([field]) => allData[field] !== undefined);
+        if (hasVaultData) {
+            throw new Error('Unlock your vault before exporting, or the backup will not contain your encrypted history.');
+        }
+    } else {
         for (const [field, kind] of VAULT_FIELDS) {
             if (typeof allData[field] === 'string') {
                 allData[field] = (await decryptData(key, allData[field] as string)) ?? (kind === 'object' ? {} : []);
             }
         }
+        allData.siteCache = await readSiteCache(key);
     }
 
     // Defensively strip legacy cookie values / query strings.
@@ -288,7 +309,14 @@ export async function importAllData(text: string, password: string | null): Prom
 
     const restored: string[] = [];
     for (const [k, value] of vault) {
-        await chrome.storage.local.set({ [k]: await encryptData(key, value) });
+        if (k === 'siteCache') {
+            // Replace, do not merge: an import is a restore, not a union with
+            // whatever this installation had before.
+            const written = await replaceSiteCache(value as Record<string, SiteRiskData>, key);
+            if (!written) throw new Error('The backup site cache could not be written.');
+        } else {
+            await chrome.storage.local.set({ [k]: await encryptData(key, value) });
+        }
         restored.push(k);
     }
     for (const [k, value] of plain) {

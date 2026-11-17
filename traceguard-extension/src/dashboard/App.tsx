@@ -2,6 +2,7 @@ import React, { Suspense } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toast"
+import { WeeklyDigestToast } from "@/components/traceguard/weekly-digest-toast"
 import Layout from "@/components/traceguard/layout"
 import { useSettings } from "@/lib/useStorage"
 import { AuthProvider } from "@/components/traceguard/auth-provider"
@@ -77,10 +78,11 @@ function AppContent() {
         return () => {
             window.removeEventListener('QUOTA_EXCEEDED', handleQuotaExceeded)
             chrome.runtime.onMessage.removeListener(messageListener);
-        }    }, [t])
+        }    }, [t])
     return (
         <>
             <Toaster />
+            <WeeklyDigestToast />
             <Router>
                 <DeepLinkHandler />
                 <SiteDetailsProvider>

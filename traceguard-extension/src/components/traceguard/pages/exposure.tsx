@@ -12,7 +12,8 @@ import { Toggle } from "@/components/ui/toggle"
 import { useSiteDetails } from "@/components/traceguard/site-details-context"
 import { categoryLabelKey } from "@/lib/exposure"
 import type { ExposureSite, HandoverGroup, SurpriseReason, Watcher } from "@/lib/exposure"
-import { ChevronDown, Clock, Eye, KeyRound, ShieldCheck } from "lucide-react"
+import { ChevronDown, Clock, ShieldCheck } from "lucide-react"
+import { LoadingSpinner } from "@/components/ui/pending"
 
 /**
  * FOOTPRINT LEDGER - what you handed over, and who has seen you.
@@ -454,7 +455,7 @@ export default function ExposurePage() {
             </div>
 
             {isLoading ? (
-                <div className="text-sm text-muted-foreground">{t("Loading...")}</div>
+                <div className="text-sm text-muted-foreground"><LoadingSpinner label={t("Loading...")} /></div>
             ) : !report.hasData ? (
                 <Card>
                     <CardHeader className="flex flex-row items-center gap-2 space-y-0">
@@ -473,12 +474,8 @@ export default function ExposurePage() {
                     {/* What you handed over */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <KeyRound className="h-4 w-4 text-muted-foreground" />
                             <h2 className="text-lg font-semibold">{t("What you have handed over")}</h2>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            {t("Allowing a site exempts it from the handover penalty. Nothing is deleted.")}
-                        </p>
                         {report.handedOver.length === 0 ? (
                             <Card>
                                 <CardContent className="p-4 text-sm text-muted-foreground">
@@ -503,7 +500,6 @@ export default function ExposurePage() {
                         about something no reader can act on directly. */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <Eye className="h-4 w-4 text-muted-foreground" />
                             <h2 className="text-lg font-semibold">{t("Tracker companies on your sites")}</h2>
                         </div>
                         <Card>

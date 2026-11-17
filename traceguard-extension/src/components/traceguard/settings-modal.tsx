@@ -52,14 +52,7 @@ import { logEvent } from "@/lib/diagnostics"
 import { clearCachedPolicyReports } from "@/lib/ai/policy-report-cache"
 import { LoadingSpinner } from "@/components/ui/pending"
 import { getErrorLog, clearErrorLog, type ErrorLogEntry } from "@/lib/error-log"
-import {
-    clearSessionEvents,
-    copyDiagnosticsToClipboard,
-    refreshSessionEvents,
-    setDevMode,
-    subscribeEvents,
-    type DiagnosticEvent,
-} from "@/lib/diagnostics"
+import { setDevMode } from "@/lib/diagnostics"
 import { toast } from '@/components/ui/toast'
 import { Bell, Database, Info, OctagonAlert, Palette, ShieldUser, Trash2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
@@ -189,6 +182,7 @@ export function SettingsModal() {
     const [wssThreshold, setWssThreshold] = useState(settings?.wssThreshold || 60)
     const [enabled, setEnabled] = useState(settings?.enabled ?? true)
     const [enablePIIDetection, setEnablePIIDetection] = useState(settings?.enablePIIDetection ?? true)
+    const [weeklyDigest, setWeeklyDigest] = useState(settings?.weeklyDigest ?? true)
     const [enableCloudTosdr, setEnableCloudTosdr] = useState(settings?.enableCloudTosdr ?? false)
     const [enableLocalSummaries, setEnableLocalSummaries] = useState(settings?.enableLocalSummaries ?? false)
     const [localSummaryModel, setLocalSummaryModel] = useState(settings?.localSummaryModel ?? 'qwen3.5:0.8b')
@@ -207,7 +201,6 @@ export function SettingsModal() {
     const [blacklist, setBlacklist] = useState<string[]>(settings?.blacklist || [])
     const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([])
     const [devMode, setDevModeLocal] = useState(settings?.devMode === true)
-    const [sessionEvents, setSessionEvents] = useState<DiagnosticEvent[]>([])
     const [exportOpen, setExportOpen] = useState(false)
     const [importOpen, setImportOpen] = useState(false)
 
@@ -257,21 +250,19 @@ export function SettingsModal() {
         return () => clearInterval(interval)
     }, [])
 
-    // Refresh the local-only error log whenever the modal opens. The component
-    // stays mounted for the life of the dashboard, so a one-time read would
-    // keep showing the errors that existed when the dashboard first loaded.
+    // Refresh the local-only error list whenever the modal opens, and follow new
+    // errors while it stays open. The list is cleared when the browser starts.
     useEffect(() => {
         if (!isSettingsOpen) return
         getErrorLog().then(setErrorLog)
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+            if (areaName === 'local' && changes.errorLog) {
+                getErrorLog().then(setErrorLog)
+            }
+        }
+        chrome.storage.onChanged.addListener(listener)
+        return () => chrome.storage.onChanged.removeListener(listener)
     }, [isSettingsOpen])
-
-    // Live developer-mode stream: subscribe for new events and pull in whatever
-    // the service worker, content script, or another view already recorded.
-    useEffect(() => {
-        const unsubscribe = subscribeEvents(setSessionEvents)
-        void refreshSessionEvents()
-        return unsubscribe
-    }, [])
 
     // Copies the stored settings into the form's local state. Used on load and
     // when the user discards unsaved edits, so both paths apply the same values.
@@ -283,6 +274,7 @@ export function SettingsModal() {
         setWssThreshold(s.wssThreshold || 60)
         setEnabled(s.enabled ?? true)
         setEnablePIIDetection(s.enablePIIDetection ?? true)
+        setWeeklyDigest(s.weeklyDigest ?? true)
         setEnableCloudTosdr(s.enableCloudTosdr ?? false)
         setEnableLocalSummaries(s.enableLocalSummaries ?? false)
         setLocalSummaryModel(s.localSummaryModel ?? 'qwen3.5:0.8b')
@@ -324,6 +316,7 @@ export function SettingsModal() {
             databaseRefreshDays: databaseRefreshDays as 0 | 1 | 3 | 7 | 14 | 30,
             wssThreshold,
             enablePIIDetection,
+            weeklyDigest,
             enableCloudTosdr,
             enableLocalSummaries,
             localSummaryModel,
@@ -364,6 +357,7 @@ export function SettingsModal() {
             databaseRefreshDays: 7 as const,
             wssThreshold: 60,
             enablePIIDetection: true,
+            weeklyDigest: true,
             enableCloudTosdr: false,
             enableLocalSummaries: false,
             localSummaryModel: 'qwen3.5:0.8b',
@@ -382,6 +376,7 @@ export function SettingsModal() {
         setDatabaseRefreshDays(defaultPreferences.databaseRefreshDays)
         setWssThreshold(defaultPreferences.wssThreshold)
         setEnablePIIDetection(defaultPreferences.enablePIIDetection)
+        setWeeklyDigest(defaultPreferences.weeklyDigest)
         setEnableCloudTosdr(defaultPreferences.enableCloudTosdr)
         setEnableLocalSummaries(defaultPreferences.enableLocalSummaries)
         setLocalSummaryModel(defaultPreferences.localSummaryModel)
@@ -453,37 +448,6 @@ export function SettingsModal() {
     const storagePercentage = storageInfo.quota > 0
         ? Math.min(100, (storageInfo.bytesInUse / storageInfo.quota) * 100)
         : 0
-
-    const exportErrorLog = async () => {
-        try {
-            const entries = await getErrorLog()
-            const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `traceguard-errors-${new Date().toISOString().split('T')[0]}.json`
-            a.click()
-            URL.revokeObjectURL(url)
-        } catch {
-            toast.add({ type: 'error', title: t('Could not export error log.'), priority: 'high' })
-        }
-    }
-
-    const clearErrorLogs = async () => {
-        await clearErrorLog()
-        setErrorLog([])
-    }
-
-    const clearSessionLog = async () => {
-        await clearSessionEvents()
-    }
-
-    const copyDiagnostics = async () => {
-        const { copied } = await copyDiagnosticsToClipboard()
-        toast.add(copied
-            ? { type: 'success', title: t('Diagnostics copied to clipboard.') }
-            : { type: 'error', title: t('Could not copy diagnostics.'), priority: 'high' })
-    }
 
     return (
         <>
@@ -881,6 +845,21 @@ export function SettingsModal() {
                                 </SelectContent>
                             </Select>
                         </SettingItem>
+
+                        <SettingItem
+                            label={t("Weekly digest")}
+                            description={t("Show a once-a-week summary of personal-info entries, low-scoring sites, and tracker companies. Computed on this device.")}
+                            controlId="weekly-digest"
+                        >
+                            <Switch
+                                id="weekly-digest"
+                                checked={weeklyDigest}
+                                onCheckedChange={(checked) => {
+                                    setWeeklyDigest(checked)
+                                    handleChange()
+                                }}
+                            />
+                        </SettingItem>
                     </div>
                 </TabsContent>
 
@@ -1221,92 +1200,57 @@ export function SettingsModal() {
                     </div>
 
                     <section aria-labelledby="diagnostics-heading" className="space-y-4 rounded-lg border bg-card p-4 sm:p-5">
-                        <h4 id="diagnostics-heading" className="text-base font-medium">
-                            {t("Diagnostics")}
-                        </h4>
-                        <div className="flex min-w-0 flex-col items-start gap-3 rounded-md bg-muted/30 p-3 sm:flex-row sm:justify-between sm:gap-4">
+                        <div className="flex min-w-0 items-start justify-between gap-4">
                             <div className="min-w-0 flex-1 space-y-1">
-                                <Label htmlFor="dev-mode" className="text-sm font-medium">{t("Developer mode")}</Label>
+                                <h4 id="diagnostics-heading" className="text-base font-medium">
+                                    {t("Diagnostics")}
+                                </h4>
                                 <p className="break-words text-sm text-muted-foreground">
-                                    {t("Developer mode captures detailed diagnostics for troubleshooting. It is off by default, kept only for this browser session, and cleared when the browser closes. Turn it on while troubleshooting.")}
+                                    {t("Record local errors while you troubleshoot. The list clears when the browser restarts and is never sent anywhere.")}
                                 </p>
                             </div>
                             <Switch
                                 id="dev-mode"
+                                aria-label={t("Diagnostics")}
                                 className="mt-0.5"
                                 checked={devMode}
                                 onCheckedChange={(checked) => {
-                                    // Apply immediately so the log starts filling
+                                    // Apply immediately so the list starts filling
                                     // right away; persisted with the other settings.
                                     setDevModeLocal(checked)
                                     setDevMode(checked)
                                     handleChange()
+                                    if (!checked) {
+                                        // Turning diagnostics off discards the
+                                        // errors rather than leaving a hidden log.
+                                        void clearErrorLog().then(() => setErrorLog([]))
+                                    }
                                 }}
                             />
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">                                <Button variant="outline" size="sm" onClick={copyDiagnostics}>
-                                    {t("Copy diagnostics")}
-                            </Button>
-                            {sessionEvents.length > 0 && (
-                                <Button variant="ghost" size="sm" onClick={clearSessionLog}>
-                                    {t("Clear")}
-                                </Button>
-                            )}
-                            <span className="ml-auto text-xs text-muted-foreground">{t("Session only")}</span>
-                        </div>
                         {devMode && (
-                            sessionEvents.length === 0 ? (
-                                <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">{t("No events recorded.")}</p>
-                            ) : (
-                                <div role="region" aria-label={t("Session diagnostics")} className="max-h-40 divide-y overflow-y-auto rounded-md border">
-                                    {sessionEvents.slice(-80).reverse().map((entry) => (
-                                        <div key={entry.id} className="space-y-1 p-3 text-xs">
-                                            <span className="text-muted-foreground">{new Date(entry.timestamp).toLocaleTimeString()}</span>
-                                            <p className="break-words font-medium">
-                                                [{entry.level}] {entry.area}/{entry.event}: {entry.message}
-                                            </p>
-                                        </div>
-                                    ))}
+                            <div className="space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-sm font-medium">{t("Recorded errors")}</p>
+                                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                                        {errorLog.length === 1 ? t("1 error") : t("{{count}} errors", { count: errorLog.length })}
+                                    </span>
                                 </div>
-                            )
-                        )}
-                        <Separator />
-                        <div className="space-y-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div className="min-w-0">
-                                    <p className="text-sm font-medium">{t("Recent errors")}</p>
-                                    <p className="break-words text-sm text-muted-foreground">
-                                        {t("Recent errors are stored locally on this device to help troubleshoot. They never leave your browser.")}
-                                    </p>
-                                </div>
-                                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                                    {errorLog.length === 1 ? t("1 error") : t("{{count}} errors", { count: errorLog.length })}
-                                </span>
+                                {errorLog.length === 0 ? (
+                                    <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">{t("No errors recorded.")}</p>
+                                ) : (
+                                    <div role="region" aria-label={t("Recorded errors")} className="max-h-64 divide-y overflow-y-auto rounded-md border">
+                                        {[...errorLog].reverse().map((entry, i) => (
+                                            <div key={i} className="space-y-1 p-3 text-xs">
+                                                <time dateTime={new Date(entry.timestamp).toISOString()} className="text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</time>
+                                                <p className="break-all font-medium">{entry.message}</p>
+                                                {entry.context && <p className="break-all text-muted-foreground">{entry.context}</p>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            {errorLog.length === 0 ? (
-                                <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">{t("No errors recorded.")}</p>
-                            ) : (
-                                <div role="region" aria-label={t("Recent errors")} className="max-h-40 divide-y overflow-y-auto rounded-md border">
-                                    {errorLog.map((entry, i) => (
-                                        <div key={i} className="space-y-1 p-3 text-xs">
-                                            <time dateTime={new Date(entry.timestamp).toISOString()} className="text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</time>
-                                            <p className="break-all font-medium">{entry.message}</p>
-                                            {entry.context && <p className="break-all text-muted-foreground">{entry.context}</p>}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {errorLog.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    <Button variant="outline" size="sm" onClick={exportErrorLog}>
-                                        {t("Export error log")}
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={clearErrorLogs}>
-                                        {t("Clear")}
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </section>
                 </TabsContent>
                         </div>

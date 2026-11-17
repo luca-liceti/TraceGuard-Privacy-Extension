@@ -12,21 +12,21 @@ user believing what it says, which is difficult to sustain if data leaves the de
 
 ## Decision
 
-All detection, scoring, and storage happen on the user's device in `chrome.storage.local`. There is
-no backend, no account, and no analytics, telemetry, or crash reporting.
-
-Two network requests exist, and both carry data rather than browsing history:
-
-1. The signed threat-feed refresh, which downloads a phishing blocklist and sends nothing.
-2. Live rating updates (shipped as "Enhanced Policy Analysis"), off by default, which sends only the
-   domain of an unrated site to ToS;DR.
+Core detection, scoring, and storage happen on the user's device in `chrome.storage.local`. There is
+no backend, no account, and no analytics, telemetry, or crash reporting. Optional network features
+are explicit exceptions to "local-first": the threat-feed refresh and shared catalog updates download
+public data, Live Rating Lookup can send a site domain to ToS;DR, local AI sends selected facts to the
+user's Ollama server on the same device, and Local Policy Reports fetch policy pages from the sites
+being checked before sending selected policy text to that Ollama server. A browser-rendered policy
+fallback may use the site's cookies. See `PRIVACY.md` for the full data and trigger details.
 
 ## Consequences
 
-- The privacy policy can make absolute claims, and the store questionnaire can answer "no browsing
-  data is transmitted" with a single named exception.
-- Features that need a server are out of scope by construction: cross-user reputation, community
-  blocklists, server-side policy analysis.
+- Documentation must distinguish core on-device analysis from optional network requests. It must not
+  claim that browsing data is never sent anywhere: a domain can go to ToS;DR, policy-page requests
+  reach the policy hosts, and user-selected AI features send facts or policy text to local Ollama.
+- Features that need a backend remain out of scope by construction: cross-user reputation, community
+  blocklists, and server-side policy analysis.
 - Debugging happens through the local diagnostics log. There is no remote error stream, so a bug a
   user hits is only visible if they report it.
 - Adding any further network call changes what the product is. That requires a new record rather

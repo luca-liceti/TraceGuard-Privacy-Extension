@@ -52,6 +52,12 @@ export interface PIIConfirmData {
      * safer browsing is visible at the moment of the decision.
      */
     costNote?: string;
+    /**
+     * What the ledger already knows, translated and interpolated by the worker:
+     * whether this site or other sites already hold this data. Computed before
+     * the new handover is recorded, so it reflects the decision, not its result.
+     */
+    ledgerNote?: string;
 }
 
 const HOST_ID = 'traceguard-pii-confirm-host';
@@ -197,6 +203,15 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
             color: ${p.mutedFg};
             margin: 8px 0 12px;
         }
+        .tg-ledger {
+            font-size: 12px;
+            line-height: 1.4;
+            color: ${p.cardFg};
+            background: ${p.mutedBg};
+            border-radius: 0.375rem;
+            padding: 8px 10px;
+            margin: 0 0 12px;
+        }
         .tg-domain {
             font-weight: 600;
             color: ${p.cardFg};
@@ -273,9 +288,9 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
         dismissLabel: 'Dismiss',
         bodyPrefix: 'TraceGuard detected personal info (',
         bodySuffix: ') and this site doesn\u2019t meet our security checks. Make sure it\u2019s the real site before entering anything.',
-        confirm: 'It\u2019s safe - add to allow list',
-        notSure: 'Not sure',
-        note: 'If this is the real site, confirm to skip the penalty and add it to your allow list. Check the address bar carefully - lookalike domains are a common trick.',
+        confirm: 'Trust this site',
+        notSure: 'Keep warning me',
+        note: 'Trusting this site adds it to your allow list and skips the penalty here. Keeping the warning means TraceGuard keeps warning you and the penalty applies.',
         added: '\u2713 Added',
         addedNote: '{{domain}} was added to your allow list. TraceGuard won\u2019t penalize personal info here anymore.',
     };
@@ -306,21 +321,32 @@ function buildCard(data: PIIConfirmData, theme: ThemeName): HTMLElement {
     const actions = document.createElement('div');
     actions.className = 'tg-actions';
 
+    // The safe default is primary. Trusting the site is the exception, so it
+    // stays secondary even though it is the action that clears the warning.
     const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'tg-btn tg-btn-primary';
+    confirmBtn.className = 'tg-btn tg-btn-secondary';
     confirmBtn.textContent = text.confirm;
 
     const dismissBtn = document.createElement('button');
-    dismissBtn.className = 'tg-btn tg-btn-secondary';
+    dismissBtn.className = 'tg-btn tg-btn-primary';
     dismissBtn.textContent = text.notSure;
 
-    actions.append(confirmBtn, dismissBtn);
+    actions.append(dismissBtn, confirmBtn);
 
     const note = document.createElement('p');
     note.className = 'tg-note';
     note.textContent = text.note;
 
-    card.append(header, body, actions, note);
+    card.append(header, body);
+
+    if (data.ledgerNote) {
+        const ledger = document.createElement('p');
+        ledger.className = 'tg-ledger';
+        ledger.textContent = data.ledgerNote;
+        card.append(ledger);
+    }
+
+    card.append(actions, note);
 
     if (data.costNote) {
         const costNote = document.createElement('p');
