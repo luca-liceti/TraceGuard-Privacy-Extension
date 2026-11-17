@@ -33,7 +33,7 @@
 - `dev` is the integration branch: feature branches are cut from `dev` and merged back into `dev`, and `main` is merged into `dev` weekly so `dev` is tested against current code.
 - Target by the kind of change, not its size: a fix or a small already-tested change goes to `main`; work in progress, and anything described in `ROADMAP.md`, goes to `dev`.
 - Versions on `dev` run ahead of `main`. That is expected rather than drift, because tagging happens on `main`. Never restore the match by tagging `dev`.
-- CI (`.github/workflows/ci.yml`) runs on pushes and pull requests to `main` only, so code merged to `dev` has not been through CI yet.
+- CI (`.github/workflows/ci.yml`) runs on pushes and pull requests to `main` and `dev`, so a change is tested on either branch. A pull request into `main` still needs a green run before merge.
 - Full reasoning: record [0009](adr/0009-dev-branch-workflow.md).
 
 ## Commits
