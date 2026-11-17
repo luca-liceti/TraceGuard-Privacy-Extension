@@ -1,6 +1,6 @@
 # TraceGuard Roadmap
 
-**Updated:** October 14, 2026
+**Updated:** November 17, 2026
 **Branch:** `dev`, the integration branch. Releases are cut from `main` by tagging, so `dev` runs
 ahead of `main` between releases.
 
@@ -230,9 +230,16 @@ Unblocked on October 14, 2026, when the ledger was kept.
   the same `settings.whitelist` the confirmation card and the settings screen write, shows the state
   on the row, and takes it back on a second click. The row reads the list the way the engine does, so
   an entry covering a subdomain is what removal takes out.
-- **Memory in the PII gate.** The gate currently asks "is this site safe?" with no history. Feed the
-  ledger into it so it can say "you have shared this with 12 sites, 3 of them one-off". This is
-  where behaviour actually changes, because it appears while the user is typing.
+- **Memory in the PII gate. Shipped in v1.25.0.** The confirmation card now reads the ledger before
+  the new entry and says whether this site already holds the field type, how many other sites do,
+  and what else the site holds. **Keep warning me** stays the primary action and **Trust this site**
+  is secondary. This is persuasion at the decision point, because it appears while the user is
+  typing.
+- **Weekly digest. Shipped in v1.25.0, context not persuasion.** An in-app toast, at most once a
+  week, summarizes recent personal-info entries, low-scoring sites, and tracker companies. It reads
+  records that already exist, creates no new activity record, and can be turned off in Settings,
+  **Notifications**. It is informing rather than a decision-point warning, so it is not claimed as a
+  behaviour change.
 
 **There is deliberately no delete action.** Record [0013](adr/0013-no-forget-action.md) settles it: a
 site does not forget because the user clears a note on their own device, so deleting a record would
@@ -298,9 +305,11 @@ ratings remain blocked from shipping until the calibration against known ToS;DR 
 # Track B: Policy rating for unrated sites
 
 Fixes a defect that exists today: when ToS;DR has no rating, the policy detector is excluded and
-its weight is redistributed, which inflates the WSS for unrated sites. Record
-[0006](adr/0006-asymmetric-policy-ratings.md) governs what a generated rating may and may not
-do.
+its weight is redistributed, which inflates the WSS for unrated sites. This applies only to score
+50, a policy that exists but has no ToS;DR rating. A site with no policy link scores 25 at full
+weight and is not neutral; record [0018](adr/0018-missing-policy-red-flag.md) settles that
+distinction. Record [0006](adr/0006-asymmetric-policy-ratings.md) governs what a generated rating
+may and may not do.
 
 ## Gate B: measure before building
 

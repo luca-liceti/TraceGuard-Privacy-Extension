@@ -32,3 +32,5 @@ Format follows Michael Nygard's original ADR shape: status, context, decision, c
 | [0014](0014-background-ratings-refresh-default.md) | The background privacy-ratings catalog refresh is on by default |
 | [0015](0015-ai-ships-no-model.md) | AI is opt-in and the extension ships no model |
 | [0016](0016-bundled-summarization-model.md) | Summarization ships a bundled small model |
+| [0017](0017-background-policy-capture.md) | A policy report finds and reads the policy itself |
+| [0018](0018-missing-policy-red-flag.md) | A missing policy is a red flag; an unrated policy is neutral |

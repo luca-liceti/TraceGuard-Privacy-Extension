@@ -15,10 +15,11 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 
 ### Key Features
 - **Real-Time Tracker Detection**: Identifies third-party trackers using a curated list plus bundled databases (DuckDuckGo Tracker Radar, EasyPrivacy, Disconnect).
-- **PII Monitoring**: Detects sensitive form inputs and warns you when you start typing into one on a low-trust site. The detector fires on the first character entered into a field, never on the value itself.
+- **PII Monitoring**: Detects sensitive form inputs and warns you when you start typing into one on a low-trust site. The warning shows what the ledger already knows: whether this site already holds that field type, how many other sites do, and what else the site holds. The detector fires on the first character entered into a field, never on the value itself.
 - **Cookie Auditing**: Detects tracking cookies from `Set-Cookie` headers and the DOM, cookie names and metadata only, never values (no `cookies` permission required).
 - **Policy Grading**: Bundled ToS;DR ratings, optional live lookups, and off-by-default local policy reports for unrated sites when no saved report exists and a capable Ollama model is loaded.
 - **Footprint Ledger**: A dashboard page showing what you have handed over, by field type and site, plus which tracker companies covered how much of your browsing. Built entirely from data already stored locally.
+- **Weekly Privacy Digest**: An in-app toast, at most once a week, summarizing recent personal-info entries, low-scoring sites, and tracker companies from data already on the device. Turn it off in Settings, **Notifications**.
 - **Modern Dashboard**: An interactive, responsive control center built with React, Vite, Tailwind CSS, and shadcn/ui.
 - **Local-First**: Core analysis runs on-device, with no accounts or telemetry. Optional AI uses your local Ollama server; optional policy reports fetch policy pages from the sites being checked. Sensitive data is encrypted behind a master password (the "vault").
 
@@ -54,7 +55,7 @@ The private key must **never** be committed. Store it as a GitHub Actions secret
 ## Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher)
+- [Node.js](https://nodejs.org/) (v20.19+ or v22.12+)
 - [npm](https://www.npmjs.com/) (v9 or higher)
 - Google Chrome or a Chromium-based browser
 

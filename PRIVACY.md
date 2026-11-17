@@ -1,6 +1,6 @@
 # TraceGuard Privacy Policy
 
-Effective date: September 30, 2026
+Effective date: November 17, 2026
 
 TraceGuard is a **local-first privacy journal**. It analyzes the pages you visit on your own
 device to help you understand and change your browsing habits, and stores that analysis locally
@@ -23,6 +23,13 @@ in Chrome extension storage. It has no backend and no user accounts.
   hold an email, a card number, and so on. This is what the Footprint page in the dashboard reads.
   It is derived from the entries above, stored encrypted alongside them, never transmitted, and
   removed when you clear your data.
+- The timestamp of the last weekly digest shown, so the digest appears at most once a week. The
+  digest itself is built on demand from the records above and shown as an in-app toast; it creates
+  no new record of your activity and is never transmitted.
+
+The personal-info confirmation card reads the existing cross-site record before it adds the new
+entry, so its context describes what the ledger already knew. It does not create a separate
+history.
 
 ## What TraceGuard does NOT do
 

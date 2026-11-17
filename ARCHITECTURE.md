@@ -33,8 +33,9 @@ The extension requests `storage`, `unlimitedStorage`, `sidePanel`, `tabs`, `noti
 `alarms`, `downloads`, and `webRequest`, plus host permission `*://*/*`. The manifest's
 `connect-src` permits HTTP(S) requests to arbitrary hosts for policy pages; remote scripts remain
 blocked. `webRequest` is used in its observational form only: the extension monitors network
-activity and never blocks anything. See record [0002](adr/0002-no-cookies-permission.md) for why
-`cookies` is deliberately absent.
+activity and never blocks anything. Stored request records are keyed opaquely; the full URL is held
+only in memory while the page is open and is not persisted. See record
+[0002](adr/0002-no-cookies-permission.md) for why `cookies` is deliberately absent.
 
 ## How a page is analyzed
 

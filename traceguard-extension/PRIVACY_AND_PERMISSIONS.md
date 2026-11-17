@@ -15,12 +15,12 @@ apart.
 
 **Form text:**
 
-> Persist the user's settings, privacy-score history, cached per-site scores, and notifications locally on-device (chrome.storage.local/session). Sensitive history is encrypted.
+> Persist the user's settings, the last weekly digest timestamp, privacy-score history, cached per-site scores, and notifications locally on-device (chrome.storage.local/session). Sensitive history is encrypted.
 
 **Why it is needed:** Core analysis runs on the user's local device with no backend. `storage`
-persists the local activity journal, privacy-score history, cached domain scores, and user settings.
-The session area holds the vault key and the locked-vault buffer, both of which are memory only and
-are gone when the browser closes.
+persists the local activity journal, privacy-score history, cached domain scores, and user settings,
+including the last weekly digest timestamp. The session area holds the vault key and the
+locked-vault buffer, both of which are memory only and are gone when the browser closes.
 
 ## `unlimitedStorage`
 
@@ -76,7 +76,8 @@ user's Ollama server on this device.
 
 **Why it is needed:** TraceGuard alerts in real time on a risky site or a sensitive entry, and the
 user controls the alert level (`Silent`, `Balanced`, `Aggressive`) in Settings. Rationing was added in
-v1.13.0 so navigating across a few poor sites does not produce an alert per page.
+v1.13.0 so navigating across a few poor sites does not produce an alert per page. The weekly digest
+is an in-app toast and does not use the notifications permission; it has its own switch in Settings.
 
 ## `alarms`
 
@@ -113,7 +114,9 @@ analytics scripts, and third-party origins. It records only the request **origin
 or query string) and whether the browser stopped it. It also observes `Set-Cookie` response
 headers to derive cookie **names** and metadata (HttpOnly, Secure, SameSite flags, expiry date,
 and domain) for tracking-cookie detection. It never reads cookie **values**, never modifies
-cookies, and never sends cookie data to an external server. (The `cookies` permission is
+cookies, and never sends cookie data to an external server. Stored request records are keyed
+opaquely, and the full URL is held only in memory while the page is open, not persisted. (The
+`cookies` permission is
 intentionally NOT requested because TraceGuard only needs cookie names/metadata, which
 `Set-Cookie` headers already provide.)
 
