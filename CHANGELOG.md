@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.25.1
+
+**What was fixed**
+
+- The three Overview stat cards now use the width actually available instead of the 1024px viewport breakpoint. They stay in three columns in a compressed window and wrap only when a card would be narrower than 220px.
+
 ## v1.25.0
 
 **What's new**

@@ -30,11 +30,11 @@ export function SectionCards() {
   )
 
   return (
-    // Same grid as the score and trend row in overview.tsx: the same breakpoint and
-    // the same gaps, so the card edges line up with the columns above them. Different
-    // breakpoints or a narrower gap put these cards on their own invisible grid, and
-    // three cards in two columns left the third one stranded on a row of its own.
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+    // Use the width the cards actually have, not the viewport. The sidebar can
+    // leave room for three cards below the `lg` breakpoint, so fit as many
+    // 220px cards as the row can hold and wrap only when a card would be
+    // narrower than that.
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 lg:gap-6">
       <StatCard
         title={t("Trackers Detected")}
         value={totalTrackers.toLocaleString()}
