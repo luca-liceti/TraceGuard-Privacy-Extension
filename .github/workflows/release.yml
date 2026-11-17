@@ -41,6 +41,12 @@ jobs:
     - name: Run Tests
       working-directory: ./traceguard-extension
       run: npm run test:run
+
+    - name: Check release translations
+      working-directory: ./traceguard-extension
+      env:
+        CHECK_TRANSLATION_COVERAGE: '1'
+      run: npm run test:run -- src/lib/translations.test.ts
       
     - name: Typecheck
       working-directory: ./traceguard-extension

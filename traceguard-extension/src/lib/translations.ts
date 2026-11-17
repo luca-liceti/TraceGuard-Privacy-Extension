@@ -1,4 +1,6 @@
-export const resources = {
+import { extraTranslations } from './translations-extra';
+
+const baseResources = {
   "es": {
     "translation": {
       "Added to allow list": "Añadido a la lista de permitidos",
@@ -3131,4 +3133,17 @@ export const resources = {
       "security code": "Sicherheitscode",
     }
   }
+};
+
+const withExtra = (language: 'es' | 'fr' | 'de') => ({
+  translation: {
+    ...baseResources[language].translation,
+    ...extraTranslations[language],
+  },
+});
+
+export const resources = {
+  es: withExtra('es'),
+  fr: withExtra('fr'),
+  de: withExtra('de'),
 };
