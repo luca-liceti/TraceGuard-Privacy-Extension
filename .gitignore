@@ -120,3 +120,9 @@ key.pem
 # Exception: .agents/AGENTS.md holds the project rules and IS tracked.
 .freebuff/
 
+# Local UI QA artifacts (screenshots and generated previews)
+settings-cards-*.png
+traceguard-extension/settings-*.png
+traceguard-extension/settings-preview.html
+traceguard-extension/.tmp-*
+
