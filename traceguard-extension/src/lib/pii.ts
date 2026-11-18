@@ -242,12 +242,19 @@ export interface PIIEntryContext {
         isLoginPage?: boolean;
         isCheckoutPage?: boolean;
     };
+    /**
+     * True when the site has a privacy policy the extension could verify (a
+     * ToS;DR grade). A login form alone is not evidence: a fresh phishing page
+     * serves the same form, and the page cannot prove where the password goes.
+     */
+    hasVerifiedPolicy?: boolean;
 }
 
 export type PIIEntryReason =
     | 'blacklisted'      // Penalize: site is on a blacklist, exemptions never apply
     | 'risky'            // Penalize: risky site - we can't verify where the data goes
     | 'unnecessary'      // Penalize: site has no business collecting this data
+    | 'unverified'       // Penalize: looks safe, but no policy we could verify
     | 'whitelisted'      // Exempt: user explicitly vouched for this site
     | 'otp'              // Exempt: one-time codes are ephemeral (verified/safe site)
     | 'government'       // Exempt: government sites legally require this data
@@ -343,8 +350,10 @@ export function buildPIILedgerContext(
  * 4. Verified domains (curated sectors + trusted platforms):
  *    exempt expected use, except Tier 1 data (e.g. SSN) the sector has no
  *    business collecting -> penalize
- * 5. Safe sites (WSS >= 70): expected use exempt (login/2FA/checkout), with
- *    the SSN red-flag rule and keyword-sector exemptions
+ * 5. Safe sites (WSS >= 70) with a verified policy: expected use exempt
+ *    (login/2FA/checkout), with the SSN red-flag rule and keyword-sector
+ *    exemptions. Without a verified policy, safe-page structure alone exempts
+ *    nothing, because a phishing page can serve the same login form.
  * 6. Everything on risky sites (WSS < 70, not blacklisted, not verified,
  *    not whitelisted) -> penalize, no exemptions
  */
@@ -418,6 +427,18 @@ export function evaluatePIIEntry(ctx: PIIEntryContext): PIIEntryDecision {
                 penalize: true,
                 reason: 'unnecessary',
                 message: 'This type of site has no business asking for this data.',
+            };
+        }
+
+        // A clean score is not enough on its own. A fresh phishing page loads
+        // no trackers and publishes no policy, so it scores well while being
+        // exactly where a login is most dangerous. Expected use is only exempt
+        // when the site has a policy the extension could verify.
+        if (!ctx.hasVerifiedPolicy) {
+            return {
+                penalize: true,
+                reason: 'unverified',
+                message: 'This site has no verified privacy policy, so entering personal info here is treated as unverified.',
             };
         }
 

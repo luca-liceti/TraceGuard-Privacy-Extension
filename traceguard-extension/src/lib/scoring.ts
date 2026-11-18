@@ -61,6 +61,31 @@ export const POLICY_UNRATED_SCORE = 50;
 /** No privacy policy was found at all. A red flag, included at full weight. */
 export const POLICY_MISSING_SCORE = 25;
 
+/**
+ * A site with no privacy policy at all cannot read as "Excellent".
+ *
+ * Its 10% weight alone only costs 2.5 points, so a page that loads no trackers
+ * scored 93 ("Excellent"). That is exactly the profile of a fresh phishing
+ * page: nothing to track you with, and no policy to read. The cap keeps the
+ * best band for sites that at least publish a policy.
+ */
+export const MAX_WSS_WITHOUT_POLICY = 79;
+
+/**
+ * A page served over plain HTTP cannot read as safe.
+ *
+ * Credentials and card numbers entered on an unencrypted page are readable by
+ * anyone on the network. Its detector scores can still be perfect, so the cap
+ * is applied to the total rather than to one detector.
+ */
+export const MAX_WSS_WITHOUT_HTTPS = 49;
+
+/** Facts about the page that are not detector scores. */
+export interface WssContext {
+    /** False when the page was served over plain HTTP. Omit when unknown. */
+    secure?: boolean;
+}
+
 const FINGERPRINTING_WEIGHTS: Record<string, number> = {
     canvas: 5, webgl: 4, audio: 3, font: 2, navigator: 1,
     webrtc: 3, screen: 1, battery: 1,
@@ -149,6 +174,14 @@ export interface WssExplanation {
     weights: Record<keyof ScoreBreakdown, number>;
     contributions: Record<keyof ScoreBreakdown, number>;
     total: number;
+    /**
+     * The ceiling each missing piece of evidence applied, or null when it did
+     * not apply. The score is the smallest of the weighted total and these.
+     */
+    caps: {
+        https: number | null;
+        policy: number | null;
+    };
 }
 
 /**
@@ -164,7 +197,7 @@ export interface WssExplanation {
  * @param breakdown - An object containing scores from each detector
  * @returns The overall Website Safety Score (0-100)
  */
-export function explainWSS(breakdown: ScoreBreakdown): WssExplanation {
+export function explainWSS(breakdown: ScoreBreakdown, context: WssContext = {}): WssExplanation {
     // STEP 1: Validate all input scores to ensure they're usable
     // This prevents weird bugs from invalid numbers
     const validatedBreakdown = {
@@ -224,8 +257,20 @@ export function explainWSS(breakdown: ScoreBreakdown): WssExplanation {
         contributions.input +
         contributions.policy;
 
-    // Validate the final score (round it and ensure it's 0-100)
-    const total = validateScore(totalWeightedScore);
+    // Validate the weighted total (round it and ensure it's 0-100)
+    const weightedTotal = validateScore(totalWeightedScore);
+
+    // Two pieces of evidence are not detector scores but still bound what the
+    // score may claim: plain HTTP, and no policy at all. A cap can only lower
+    // the score. The audit trail records both so a capped score is explainable.
+    const caps = {
+        https: context.secure === false ? MAX_WSS_WITHOUT_HTTPS : null,
+        policy: validatedBreakdown.policy === POLICY_MISSING_SCORE ? MAX_WSS_WITHOUT_POLICY : null,
+    };
+    const capValues = [caps.https, caps.policy].filter((value): value is number => value !== null);
+    const total = capValues.length > 0
+        ? Math.min(weightedTotal, ...capValues)
+        : weightedTotal;
 
     return {
         validated: validatedBreakdown,
@@ -233,6 +278,7 @@ export function explainWSS(breakdown: ScoreBreakdown): WssExplanation {
         weights,
         contributions,
         total,
+        caps,
     };
 }
 
@@ -240,6 +286,6 @@ export function explainWSS(breakdown: ScoreBreakdown): WssExplanation {
  * The Website Safety Score (0-100) for a website. Thin wrapper over
  * `explainWSS`, which owns the math.
  */
-export function calculateWSS(breakdown: ScoreBreakdown): number {
-    return explainWSS(breakdown).total;
+export function calculateWSS(breakdown: ScoreBreakdown, context: WssContext = {}): number {
+    return explainWSS(breakdown, context).total;
 }

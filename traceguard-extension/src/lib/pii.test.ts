@@ -188,14 +188,26 @@ describe('PII Penalty System', () => {
             expect(result.reason).toBe('blacklisted');
         });
 
-        it('exempts one-time security codes on safe sites (ephemeral, single-use)', () => {
+        it('exempts one-time security codes on safe, rated sites (ephemeral, single-use)', () => {
             const result = evaluatePIIEntry({
                 fieldType: 'security code',
                 domain: 'example.com',
                 siteWSS: 80,
+                hasVerifiedPolicy: true,
             });
             expect(result.penalize).toBe(false);
             expect(result.reason).toBe('otp');
+        });
+
+        it('penalizes 2FA codes on a safe site with no verified policy', () => {
+            // A phishing page can score well and still ask for the code.
+            const result = evaluatePIIEntry({
+                fieldType: 'security code',
+                domain: 'fresh-login.xyz',
+                siteWSS: 90,
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('unverified');
         });
 
         it('penalizes 2FA codes on risky non-blacklisted sites (OTP-scam catch)', () => {
@@ -302,14 +314,26 @@ describe('PII Penalty System', () => {
             expect(result.reason).toBe('whitelisted');
         });
 
-        it('exempts email entry on a safe site (expected use)', () => {
+        it('exempts email entry on a safe, rated site (expected use)', () => {
             const result = evaluatePIIEntry({
                 fieldType: 'email',
                 domain: 'newsletter.example',
                 siteWSS: 85,
+                hasVerifiedPolicy: true,
             });
             expect(result.penalize).toBe(false);
             expect(result.reason).toBe('safe-site');
+        });
+
+        it('penalizes personal info on a safe site with no verified policy', () => {
+            const result = evaluatePIIEntry({
+                fieldType: 'password',
+                domain: 'brand-new-shop.com',
+                siteWSS: 93,
+                pageContext: { isLoginPage: true },
+            });
+            expect(result.penalize).toBe(true);
+            expect(result.reason).toBe('unverified');
         });
 
         it('penalizes SSN entry on a safe site whose sector has no business asking', () => {
@@ -355,11 +379,12 @@ describe('PII Penalty System', () => {
             expect(result.reason).toBe('risky');
         });
 
-        it('exempts keyword-matched sectors on safe sites', () => {
+        it('exempts keyword-matched sectors on safe, rated sites', () => {
             const result = evaluatePIIEntry({
                 fieldType: 'ssn',
                 domain: 'myinsurancesite.com',
                 siteWSS: 80,
+                hasVerifiedPolicy: true,
             });
             expect(result.penalize).toBe(false);
             expect(result.reason).toBe('keyword-sector');

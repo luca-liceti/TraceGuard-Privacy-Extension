@@ -9,7 +9,7 @@
 import { z } from 'zod';
 import { storage, readBuffer, writeBuffer } from '../../lib/storage';
 import { captureError, logEvent } from '../../lib/diagnostics';
-import { calculateWSS, calculateTrackingScore, explainWSS } from '../../lib/scoring';
+import { calculateWSS, calculateTrackingScore, explainWSS, type WssContext } from '../../lib/scoring';
 import { SiteRiskData, EnrichedDetectionDetails, FingerprintingDetail, DetectorLogEntry } from '../../lib/types';
 import { checkReputation } from '../services/reputation';
 import { readSiteEntry, writeSiteCacheEntry } from '../../lib/site-cache';
@@ -71,6 +71,10 @@ export async function handlePageAnalysis(message: any, sender: chrome.runtime.Me
     // history, logs, counters, or notifications.
     const isNewNavigation = message.isInitialLoad !== false;
 
+    // Transport is not a detector score, but a plain-HTTP page cannot read as
+    // safe no matter how clean its detectors are (see MAX_WSS_WITHOUT_HTTPS).
+    const scoreContext: WssContext = { secure: new URL(message.url).protocol === 'https:' };
+
     // Honor the master on/off toggle, ignore analysis while paused.
     const preSettings = await storage.getSettings();
     if (!preSettings.enabled) return;
@@ -89,13 +93,15 @@ export async function handlePageAnalysis(message: any, sender: chrome.runtime.Me
         message.detectionDetails = {};
     }
     message.detectionDetails.reputation = {
-        status: reputationScore === 100 ? 'Clean' : 'Suspicious',
+        // Name the worst case. A score of 0 means the domain matched a threat
+        // list, which is materially different from a merely low score.
+        status: reputationScore === 0 ? 'Blacklisted' : reputationScore === 100 ? 'Clean' : 'Suspicious',
         checks: reputationChecks
     };
 
     // Step 2: Calculate the Website Safety Score (WSS)
     // This combines all 6 detector scores with different weights
-    let wss = calculateWSS(finalScores);
+    let wss = calculateWSS(finalScores, scoreContext);
 
     // Extract just the domain name from the full URL
     // For example: "https://www.example.com/page" becomes "www.example.com"
@@ -194,7 +200,7 @@ export async function handlePageAnalysis(message: any, sender: chrome.runtime.Me
     if (enrichedDetails) {
         const uniqueTrackers = new Set(enrichedDetails.trackers.items.map(t => t.domain));
         finalScores.tracking = calculateTrackingScore(uniqueTrackers.size);
-        wss = calculateWSS(finalScores);
+        wss = calculateWSS(finalScores, scoreContext);
     }
 
     // Step 3: Create a data object with all the site's information
@@ -431,7 +437,7 @@ export async function handlePageAnalysis(message: any, sender: chrome.runtime.Me
     // unobservable. Developer mode is now the only place to read them without
     // attaching a debugger. Note that a 100 here can mean a clean page or a
     // detector that threw and fell back to a neutral score.
-    const explanation = explainWSS(finalScores);
+    const explanation = explainWSS(finalScores, scoreContext);
     logEvent('scoring', 'debug', 'page_analysis_complete', `${domain} scored ${wss}`, {
         host: domain,
         wss,
@@ -448,6 +454,7 @@ export async function handlePageAnalysis(message: any, sender: chrome.runtime.Me
         // redistributed when ToS;DR had no rating) and what each detector
         // actually contributed to the total.
         policyFallback: explanation.policyFallback,
+        caps: explanation.caps,
         weights: explanation.weights,
         contributions: Object.fromEntries(
             Object.entries(explanation.contributions).map(([key, value]) => [key, Math.round(value * 10) / 10])

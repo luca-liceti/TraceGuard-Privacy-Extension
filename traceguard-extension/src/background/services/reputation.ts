@@ -54,6 +54,11 @@ interface Blacklist {
 // A Set is like an array but automatically prevents duplicates and is faster to search
 let staticBlacklist: Set<string> = new Set();
 
+// Whether the bundled list has been read successfully. An empty feed still
+// counts as loaded; a failed fetch does not, so the next check retries.
+let blacklistLoaded = false;
+let blacklistLoadPromise: Promise<void> | null = null;
+
 
 // =============================================================================
 // BLACKLIST LOADING
@@ -83,6 +88,7 @@ export async function loadBlacklist() {
         // Store domains in a Set for fast lookup
         // (Checking if something is in a Set is much faster than searching an array)
         staticBlacklist = new Set(data.domains);
+        blacklistLoaded = true;
 
         logEvent('enrich', 'debug', 'blacklist_loaded', 'Threat blocklist loaded', {
             domains: staticBlacklist.size,
@@ -100,6 +106,32 @@ export interface ReputationResult {
 }
 
 /**
+ * Loads the bundled blocklist on first use, and retries after a failed load.
+ *
+ * The blocklist used to be loaded only from `onInstalled` and `onStartup`. A
+ * Manifest V3 service worker is stopped when idle and restarted to handle a
+ * navigation, and neither event runs on that restart, so the module-level Set
+ * came back empty. Every site then scored 100 for reputation, including
+ * domains in the bundled feed. Every reputation check now awaits this first.
+ */
+export async function ensureBlacklistLoaded(): Promise<void> {
+    if (blacklistLoaded) return;
+    if (!blacklistLoadPromise) {
+        blacklistLoadPromise = loadBlacklist().finally(() => {
+            blacklistLoadPromise = null;
+        });
+    }
+    await blacklistLoadPromise;
+}
+
+/** Test helper: forget the loaded list so a suite can exercise the first load. */
+export function __resetBlacklistForTests(): void {
+    staticBlacklist = new Set();
+    blacklistLoaded = false;
+    blacklistLoadPromise = null;
+}
+
+/**
  * Refresh the static blacklist from the signed remote threat feed.
  * Keeps the bundled snapshot on any failure (offline, stale, forged, replay).
  */
@@ -107,6 +139,7 @@ export async function refreshBlacklistFromRemote(): Promise<boolean> {
     const domains = await refreshThreatFeed();
     if (domains && domains.length > 0) {
         staticBlacklist = new Set(domains);
+        blacklistLoaded = true;
         logEvent('enrich', 'debug', 'blacklist_refreshed', 'Threat blocklist refreshed', {
             domains: staticBlacklist.size,
         });
@@ -129,6 +162,9 @@ export async function refreshBlacklistFromRemote(): Promise<boolean> {
  */
 export async function checkReputation(url: string): Promise<ReputationResult> {
     try {
+        // A worker wake does not fire onStartup, so this is the only reliable
+        // point at which the bundled list is guaranteed to be in memory.
+        await ensureBlacklistLoaded();
         const domain = new URL(url).hostname;
 
         // One event per check, naming the layer that decided the score and the

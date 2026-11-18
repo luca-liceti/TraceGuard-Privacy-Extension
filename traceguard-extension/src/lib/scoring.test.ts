@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateFingerprintingScore, calculateTrackingScore, calculateWSS, explainWSS, POLICY_MISSING_SCORE, POLICY_UNRATED_SCORE } from './scoring';
+import { calculateFingerprintingScore, calculateTrackingScore, calculateWSS, explainWSS, MAX_WSS_WITHOUT_HTTPS, MAX_WSS_WITHOUT_POLICY, POLICY_MISSING_SCORE, POLICY_UNRATED_SCORE } from './scoring';
 import type { ScoreBreakdown } from './types';
 
 const perfect: ScoreBreakdown = {
@@ -27,11 +27,24 @@ describe('calculateWSS', () => {
     it('keeps a missing policy in the score as a red flag', () => {
         // No policy (25) must lower the score at full weight. Only the
         // "policy exists but is unrated" sentinel (50) is neutral and excluded.
-        expect(calculateWSS({ ...perfect, policy: POLICY_MISSING_SCORE })).toBe(93);
+        // The weighted total would be 93, so the cap is what stops a page with
+        // no policy at all from reading as "Excellent".
+        expect(calculateWSS({ ...perfect, policy: POLICY_MISSING_SCORE })).toBe(MAX_WSS_WITHOUT_POLICY);
         expect(calculateWSS({ ...perfect, policy: POLICY_MISSING_SCORE }))
             .toBeLessThan(calculateWSS({ ...perfect, policy: POLICY_UNRATED_SCORE }));
         expect(calculateWSS({ ...perfect, policy: POLICY_MISSING_SCORE }))
             .toBeLessThan(calculateWSS({ ...perfect, policy: 100 }));
+    });
+
+    it('caps plain HTTP pages even when every detector is perfect', () => {
+        // Credentials typed into an unencrypted page are readable in transit,
+        // so transport bounds the score independently of the detectors.
+        expect(calculateWSS(perfect, { secure: false })).toBe(MAX_WSS_WITHOUT_HTTPS);
+        expect(calculateWSS(perfect, { secure: true })).toBe(100);
+        // A genuinely low score is never raised by a cap.
+        const broken = { ...perfect, reputation: 0, tracking: 0, cookies: 0, fingerprinting: 0, input: 0, policy: 0 };
+        expect(calculateWSS(broken, { secure: false })).toBe(calculateWSS(broken));
+        expect(calculateWSS(broken)).toBe(0);
     });
 
     it('clamps invalid scores and treats missing legacy fingerprinting as neutral', () => {
@@ -74,6 +87,16 @@ describe('explainWSS', () => {
         expect(explanation.policyFallback).toBe(false);
         expect(explanation.weights.policy).toBeCloseTo(0.10);
         expect(explanation.contributions.policy).toBeCloseTo(2.5);
+        expect(explanation.caps.policy).toBe(MAX_WSS_WITHOUT_POLICY);
+        expect(explanation.caps.https).toBeNull();
+        expect(explanation.total).toBe(MAX_WSS_WITHOUT_POLICY);
+    });
+
+    it('records both caps when the page is HTTP and has no policy', () => {
+        const explanation = explainWSS({ ...perfect, policy: POLICY_MISSING_SCORE }, { secure: false });
+
+        expect(explanation.caps).toEqual({ https: MAX_WSS_WITHOUT_HTTPS, policy: MAX_WSS_WITHOUT_POLICY });
+        expect(explanation.total).toBe(MAX_WSS_WITHOUT_HTTPS);
     });
 
     it('agrees with calculateWSS for every combination of reputation and policy', () => {

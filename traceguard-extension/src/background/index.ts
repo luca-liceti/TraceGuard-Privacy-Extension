@@ -1177,15 +1177,25 @@ const SettingsChangedSchema = z.object({
     }).passthrough(),
 });
 
-async function resolveSiteScore(domain: string, key: CryptoKey | null): Promise<{ wss: number; reputation: number | undefined }> {
+async function resolveSiteScore(
+    domain: string,
+    key: CryptoKey | null,
+): Promise<{ wss: number; reputation: number | undefined; hasVerifiedPolicy: boolean }> {
     try {
         const site = key
             ? await readSiteEntry(domain, key)
             : ((await readBuffer<Record<string, SiteRiskData>>('bufferedSiteCache')) || {})[domain];
-        return { wss: site?.wss ?? 50, reputation: site?.breakdown?.reputation };
+        // Only a ToS;DR grade is evidence a policy was read and rated. A policy
+        // link on the page is not: a phishing page can include one.
+        const policy = (site?.detectionDetails as any)?.policy as { grade?: unknown; source?: unknown } | undefined;
+        return {
+            wss: site?.wss ?? 50,
+            reputation: site?.breakdown?.reputation,
+            hasVerifiedPolicy: policy?.source === 'tosdr' && typeof policy.grade === 'string' && policy.grade.length > 0,
+        };
     } catch (error) {
         captureError('pii', error, 'site_score_resolve_failed');
-        return { wss: 50, reputation: undefined };
+        return { wss: 50, reputation: undefined, hasVerifiedPolicy: false };
     }
 }
 
@@ -1522,7 +1532,7 @@ async function handlePIIDetection(message: any, tabId?: number) {
     // Resolve the emitting site's safety score from the site cache - the active
     // tab's state may point at a different site. Use ?? so a genuine WSS of 0
     // (blacklisted) is never collapsed into the neutral 50 fallback.
-    const { wss: siteWSS, reputation: siteReputation } = await resolveSiteScore(event.site, key);
+    const { wss: siteWSS, reputation: siteReputation, hasVerifiedPolicy } = await resolveSiteScore(event.site, key);
 
     // A card is already open for this site. Record the handover and settle it
     // with the same verdict when the card closes, rather than dropping it: an
@@ -1564,6 +1574,7 @@ async function handlePIIDetection(message: any, tabId?: number) {
         isBlacklisted: siteReputation === 0,
         isWhitelisted,
         pageContext: event.pageContext,
+        hasVerifiedPolicy,
     });
 
     // The gate decision, recorded before anything is applied. Previously the only
@@ -1575,10 +1586,11 @@ async function handlePIIDetection(message: any, tabId?: number) {
         siteWSS,
         siteReputation,
         isWhitelisted,
+        hasVerifiedPolicy,
         penalize: decision.penalize,
         reason: decision.reason,
         willAskForConfirmation: decision.penalize && siteReputation !== 0
-            && (decision.reason === 'risky' || decision.reason === 'unnecessary'),
+            && (decision.reason === 'risky' || decision.reason === 'unnecessary' || decision.reason === 'unverified'),
     });
 
     // Outlier sites (risky WSS or an unnecessary data ask, not blacklisted):
@@ -1587,7 +1599,7 @@ async function handlePIIDetection(message: any, tabId?: number) {
     // entry; dismissing (or no answer) applies the penalty. Blacklisted sites
     // are never offered - they're dangerous, not debatable.
     if (decision.penalize && siteReputation !== 0
-        && (decision.reason === 'risky' || decision.reason === 'unnecessary')) {
+        && (decision.reason === 'risky' || decision.reason === 'unnecessary' || decision.reason === 'unverified')) {
         // Read the ledger before writing the handover. The card is asking about
         // prior exposure, so the entry it is gating must not count itself.
         const ledgerContext = await readPIILedgerContext(key, event.site, event.fieldType);
@@ -1685,7 +1697,7 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
     // Resolve the emitting site's safety score from the site cache - the active
     // tab's state may point at a different site. Use ?? so a genuine WSS of 0
     // (blacklisted) is never collapsed into the neutral 50 fallback.
-    const { wss: siteWSS, reputation: siteReputation } = await resolveSiteScore(event.site, key);
+    const { wss: siteWSS, reputation: siteReputation, hasVerifiedPolicy } = await resolveSiteScore(event.site, key);
 
     // Does the user's allow list already vouch for this domain?
     const domainMatches = (dom: string, pattern: string) => dom === pattern || dom.endsWith('.' + pattern);
@@ -1702,6 +1714,7 @@ async function finalizePIIDetection(event: any, confirmedSafe: boolean, tabId?: 
         isBlacklisted: siteReputation === 0,
         isWhitelisted,
         pageContext: event.pageContext,
+        hasVerifiedPolicy,
     });
 
     // The user vouched for the site from the confirmation card: add it to the

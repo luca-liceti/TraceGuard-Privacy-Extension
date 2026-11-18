@@ -118,6 +118,12 @@ weight is set to zero and the remaining weights are scaled up so the total stays
 documented here because it is the mechanism by which unrated sites score higher than they should,
 which record [0006](adr/0006-asymmetric-policy-ratings.md) exists to address.
 
+Two facts that are not detector scores cap the total in `explainWSS`. A page served over plain HTTP
+caps at 49, because credentials entered there are readable in transit. A page with no privacy policy
+at all caps at 79, because its 10% weight only costs 2.5 points and the weighted total would
+otherwise rate a fresh phishing page **Excellent**. A cap only lowers a score; it never raises one,
+and both caps appear in the `page_analysis_complete` audit trail.
+
 ### User Privacy Score
 
 The score is derived, not accumulated. `scoreUps` and `buildHandovers` in `src/lib/ups.ts` read the
@@ -157,6 +163,11 @@ The blocklist is refreshed between releases as a signed `phishlist.signed.json`,
 Ed25519 against an embedded public key, accepted only when it is newer than what is stored, and
 falling back to the bundled snapshot on any failure. See the README for the key-management commands.
 
+The bundled list is loaded by `ensureBlacklistLoaded` on the first reputation check, as well as at
+install and browser startup. The lazy load is required: Chrome stops an idle Manifest V3 worker and
+wakes it for a navigation without firing `onInstalled` or `onStartup`, so relying on those events
+alone left the list empty and every site reading **Clean**.
+
 ## Diagnostics
 
 `src/lib/diagnostics.ts` is the only failure-reporting path. `captureError` records a genuine fault
@@ -188,3 +199,7 @@ These are properties of the design, not bugs to be fixed quietly:
   type, trimming the oldest and logging when it does. The footprint ledger reads it, so a domain you
   visited long ago can age out of the record even though the site still holds your data.
 - **The ledger is empty on install** until the user types into a sensitive field somewhere.
+- **A brand-new domain is not on any blocklist yet.** Reputation only matches known malicious
+domains, so a fresh phishing site scores 100 for reputation. Expected-use exemptions therefore
+require a ToS;DR-rated policy: without one, the personal-data confirmation card is shown instead of
+exempting the entry.

@@ -2,6 +2,14 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.25.5
+
+**What was fixed**
+
+- The phishing blocklist now loads on the first reputation check, not only at install and browser startup. Chrome stops an idle service worker and wakes it for a navigation without firing either event, so the list came back empty and every site, including domains in the bundled feed, read as **Clean**. A domain from `phishlist.json` now scores 0 for reputation.
+- A page served over plain HTTP is capped at 49 (Fair), and a page with no privacy policy at all is capped at 79 (Good). Detector scores alone used to let a fresh HTTP page with a card form reach 93 (**Excellent**).
+- Expected-use exemptions for personal data now require a privacy policy the extension can verify through ToS;DR. A login form on an unrated site no longer exempts a password or 2FA code, which is the shape of a fresh phishing page. The confirmation card appears instead, and trusting the site still adds it to the allow list.
+
 ## v1.25.4
 
 **What was fixed**
