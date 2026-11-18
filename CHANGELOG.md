@@ -7,6 +7,7 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 **What was fixed**
 
 - The weekly digest at the top of Your Footprint now fixes its seven-day window at the moment the page opens. The window used to be recomputed during render, so the week could shift while you were reading it.
+- Spanish, French, and German now translate the weekly digest and the password show and hide controls, so those strings no longer fall back to English.
 
 ## v1.25.6
 
