@@ -70,8 +70,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div className="flex min-w-0 flex-1 items-center text-left text-sm leading-tight">
                 {/* One truncation point for the whole title: long translations
                     such as "Tableau de bord" used to be cut mid-word. */}
+                {/* 16px, not 18px: the sidebar gives the title about 200px, and
+                    the wider fallback face used when Inter is not installed
+                    pushed 18px past that, so the last letters were ellipsized. */}
                 <span
-                  className="truncate font-semibold text-lg text-foreground"
+                  className="truncate font-semibold text-base text-foreground"
                   title={`${t("TraceGuard")} ${t("Dashboard")}`}
                 >
                   {t("TraceGuard")} <span className="text-muted-foreground">{t("Dashboard")}</span>

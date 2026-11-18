@@ -908,7 +908,7 @@ export function SiteDetailsPanel({
                                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm">
                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                             <span>
-                                                <span className="text-muted-foreground">{t("Grade:")}</span>
+                                                <span className="text-muted-foreground mr-1">{t("Grade:")}</span>
                                                 <span className={getGradeTextColor(policyLegacy.grade)}>{policyLegacy.grade || t("N/A")}</span>
                                             </span>
                                             <SummaryStat
@@ -1047,7 +1047,7 @@ export function SiteDetailsPanel({
                                     <div className="space-y-2">
                                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                                             <span className="font-medium">
-                                                <span className="text-muted-foreground">{t("Grade:")}</span>
+                                                <span className="text-muted-foreground mr-1">{t("Grade:")}</span>
                                                 <span className={`font-semibold ${getGradeTextColor(summary.grade)}`}>{summary.grade}</span>
                                             </span>
                                             <SummaryStat label={t("Present")} value={`${summary.present}/${summary.present + summary.missing}`} />
