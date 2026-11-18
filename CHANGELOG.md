@@ -8,6 +8,7 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 - The weekly digest at the top of Your Footprint now fixes its seven-day window at the moment the page opens. The window used to be recomputed during render, so the week could shift while you were reading it.
 - Spanish, French, and German now translate the weekly digest and the password show and hide controls, so those strings no longer fall back to English.
+- The dashboard sidebar header now shows the full **TraceGuard Dashboard** title. At 18px the string needed 199px in a 200px slot, so any font wider than Inter, or a scrollbar, cut it to **Dashbo** followed by an ellipsis.
 
 ## v1.25.6
 
