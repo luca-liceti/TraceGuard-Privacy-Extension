@@ -24,8 +24,9 @@ in Chrome extension storage. It has no backend and no user accounts.
   It is derived from the entries above, stored encrypted alongside them, never transmitted, and
   removed when you clear your data.
 - The timestamp of the last weekly digest shown, so the digest appears at most once a week. The
-  digest itself is built on demand from the records above and shown as an in-app toast; it creates
-  no new record of your activity and is never transmitted.
+  digest itself is built on demand from the records above. It is shown as an in-app toast,
+  recorded as a notification entry, and available as a section at the top of Your Footprint;
+  beyond that entry it creates no new record of your activity and is never transmitted.
 
 The personal-info confirmation card reads the existing cross-site record before it adds the new
 entry, so its context describes what the ledger already knew. It does not create a separate

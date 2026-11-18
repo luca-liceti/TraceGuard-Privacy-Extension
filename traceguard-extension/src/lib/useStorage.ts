@@ -272,9 +272,18 @@ function asArray<T>(value: any): T[] {
  * The aggregation itself is pure, so all of the logic worth testing lives in
  * `exposure.ts` rather than here.
  *
- * @returns { report, isLoading }
+ * The raw `siteCache` and `piiEvents` are returned with the report so a page
+ * that also builds the weekly digest from the same records does not decrypt
+ * every shard and the personal-info list a second time.
+ *
+ * @returns { report, siteCache, piiEvents, isLoading }
  */
-export function useExposureReport(): { report: ExposureReport; isLoading: boolean } {
+export function useExposureReport(): {
+    report: ExposureReport;
+    siteCache: Record<string, SiteRiskData>;
+    piiEvents: PIIDetectionEvent[];
+    isLoading: boolean;
+} {
     const [exposure, setExposure] = useState<CrossSiteExposure>({});
     const [piiEvents, setPiiEvents] = useState<PIIDetectionEvent[]>([]);
     // The site cache has its own subscription; reuse it instead of decrypting
@@ -331,7 +340,7 @@ export function useExposureReport(): { report: ExposureReport; isLoading: boolea
         [exposure, piiEvents, siteCache]
     );
 
-    return { report, isLoading: isLoading || isSiteCacheLoading };
+    return { report, siteCache, piiEvents, isLoading: isLoading || isSiteCacheLoading };
 }
 
 /**

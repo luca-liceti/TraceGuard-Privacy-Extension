@@ -163,7 +163,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
   return (
     <span
       data-slot="toast-icon"
-      className="shrink-0"
+      className="mt-0.5 shrink-0"
     >
       {icon}
     </span>
@@ -173,19 +173,48 @@ function ToastIcon({ type }: { type: string | undefined }) {
 function ToastList() {
   const { toasts } = ToastPrimitive.useToastManager()
 
-  return toasts.map((toastItem) => (
-    <Toast key={toastItem.id} toast={toastItem}>
-      <ToastContent>
-        <ToastIcon type={toastItem.type} />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <ToastTitle />
-          <ToastDescription />
-        </div>
-        <ToastAction />
-        <ToastClose />
-      </ToastContent>
-    </Toast>
-  ))
+  return toasts.map((toastItem) => {
+    // A toast can carry an activation handler, so clicking its body opens what
+    // it is about. The root is focusable, so Enter and Space do the same for a
+    // keyboard user without a second, visible control. A click or key press on
+    // a button inside the toast belongs to that button, not the body.
+    const onActivate = (toastItem.data as { onActivate?: () => void } | undefined)?.onActivate
+
+    return (
+      <Toast
+        key={toastItem.id}
+        toast={toastItem}
+        onClick={onActivate
+          ? (event) => {
+              if ((event.target as HTMLElement).closest('button')) return
+              onActivate()
+            }
+          : undefined}
+        onKeyDown={onActivate
+          ? (event) => {
+              if (event.target !== event.currentTarget) return
+              if (event.key !== 'Enter' && event.key !== ' ') return
+              event.preventDefault()
+              onActivate()
+            }
+          : undefined}
+        className={onActivate ? "cursor-pointer" : undefined}
+      >
+        {/* Title, summary, and action stack in one column so a long summary
+            gets the full width instead of sharing a row with the button. The
+            close button stays on the right, aligned with the title. */}
+        <ToastContent className="items-start">
+          <ToastIcon type={toastItem.type} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <ToastTitle />
+            <ToastDescription />
+            <ToastAction className="mt-2 self-start" />
+          </div>
+          <ToastClose />
+        </ToastContent>
+      </Toast>
+    )
+  })
 }
 
 function Toaster({

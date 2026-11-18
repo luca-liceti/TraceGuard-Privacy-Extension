@@ -12,6 +12,8 @@ import { Toggle } from "@/components/ui/toggle"
 import { useSiteDetails } from "@/components/traceguard/site-details-context"
 import { categoryLabelKey } from "@/lib/exposure"
 import type { ExposureSite, HandoverGroup, SurpriseReason, Watcher } from "@/lib/exposure"
+import { buildWeeklyDigest } from "@/lib/digest"
+import type { WeeklyDigest } from "@/lib/digest"
 import { ChevronDown, Clock, ShieldCheck } from "lucide-react"
 import { LoadingSpinner } from "@/components/ui/pending"
 
@@ -419,10 +421,118 @@ function WatcherRow({ watcher, totalSites }: { watcher: Watcher; totalSites: num
     )
 }
 
+/**
+ * THE WEEK'S DIGEST, AT THE TOP OF THE PAGE THAT OWNS THE DATA
+ *
+ * This was its own page, reachable only from a toast or a notification. It
+ * shows the same records as the ledger below, limited to seven days, so it
+ * lives here. The window is stated in the header: the ledger is all-time and
+ * the two must not blur together.
+ */
+function WeeklyDigestSection({ digest, threshold }: { digest: WeeklyDigest; threshold: number }) {
+    const { t } = useTranslation()
+    const { openSiteDetails } = useSiteDetails()
+    const plural = usePlural()
+
+    return (
+        <Card role="region" aria-label={t("Weekly digest")}>
+            <CardHeader className="p-4 pb-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <CardTitle className="text-sm font-medium">{t("Weekly digest")}</CardTitle>
+                    <span className="shrink-0 text-xs text-muted-foreground">{t("Last 7 days")}</span>
+                </div>
+                <CardDescription className="text-xs">
+                    {t("What TraceGuard recorded this week, from data stored on this device.")}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 p-4 pt-0 md:grid-cols-3">
+                <div>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {t("Personal information you entered")}
+                    </p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums">{digest.handovers}</p>
+                    <p className="text-xs text-muted-foreground">
+                        {plural(digest.handoverSites, "{{count}} site", "{{count}} sites")}
+                    </p>
+                    {digest.fields.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                            {digest.fields.map((fieldType) => (
+                                <Badge key={fieldType} variant="outline" className="text-[10px] shadow-none">
+                                    {t(fieldType)}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {t("Sites below {{threshold}}", { threshold })}
+                    </p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums">{digest.lowScoreSites}</p>
+                    {digest.lowScoreSiteList.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                            {t("No site scored below {{threshold}} this week.", { threshold })}
+                        </p>
+                    ) : (
+                        <ul className="mt-2 space-y-1">
+                            {digest.lowScoreSiteList.map((site) => (
+                                <li key={site.domain}>
+                                    <button
+                                        type="button"
+                                        title={t("View details")}
+                                        aria-label={`${t("View details")}: ${site.domain}`}
+                                        onClick={() => openSiteDetails(site.domain)}
+                                        className="flex w-full items-center justify-between gap-2 text-left text-xs hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    >
+                                        <span className="truncate">{site.domain}</span>
+                                        <span className={cn("shrink-0 font-bold tabular-nums", getSafetyConfig(site.wss).color)}>
+                                            {site.wss}
+                                        </span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {t("Tracker companies seen")}
+                    </p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums">{digest.trackerOrganizations.length}</p>
+                    {digest.trackerOrganizations.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                            {t("No tracker companies were recorded this week.")}
+                        </p>
+                    ) : (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                            {digest.trackerOrganizations.map((organization) => (
+                                <Badge key={organization} variant="outline" className="text-[10px] shadow-none">
+                                    {organization}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function ExposurePage() {
     const { t } = useTranslation()
-    const { report, isLoading } = useExposureReport()
+    const { report, siteCache, piiEvents, isLoading } = useExposureReport()
     const reasonLabel = useReasonLabel()
+    const settings = useSettings()
+    const threshold = settings?.wssThreshold ?? 60
+
+    // The digest shares the records the page already decrypted, so opening Your
+    // Footprint does not read the site cache twice.
+    const digest = React.useMemo(
+        () => buildWeeklyDigest({ piiEvents, siteCache, now: Date.now(), threshold }),
+        [piiEvents, siteCache, threshold]
+    )
 
     // One allow list for the whole page rather than a subscription per row, and a
     // stable object so the memoized rows below are not invalidated each render.
@@ -453,6 +563,10 @@ export default function ExposurePage() {
                     {t("What you have handed over, and which tracker companies loaded on those sites. Built from your own browsing, stored only on this device.")}
                 </p>
             </div>
+
+            {!isLoading && digest.hasActivity && (
+                <WeeklyDigestSection digest={digest} threshold={threshold} />
+            )}
 
             {isLoading ? (
                 <div className="text-sm text-muted-foreground"><LoadingSpinner label={t("Loading...")} /></div>

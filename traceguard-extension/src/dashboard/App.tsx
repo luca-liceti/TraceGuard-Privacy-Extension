@@ -81,8 +81,9 @@ function AppContent() {
     return (
         <>
             <Toaster />
-            <WeeklyDigestToast />
             <Router>
+                {/* Inside the router: the toast navigates to the digest page. */}
+                <WeeklyDigestToast />
                 <DeepLinkHandler />
                 <SiteDetailsProvider>
                 <Suspense fallback={<LoadingScreen />}>
