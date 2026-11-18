@@ -19,7 +19,7 @@ Unlike traditional blockers that operate silently, TraceGuard provides transpare
 - **Cookie Auditing**: Detects tracking cookies from `Set-Cookie` headers and the DOM, cookie names and metadata only, never values (no `cookies` permission required).
 - **Policy Grading**: Bundled ToS;DR ratings, optional live lookups, and off-by-default local policy reports for unrated sites when no saved report exists and a capable Ollama model is loaded.
 - **Footprint Ledger**: A dashboard page showing what you have handed over, by field type and site, plus which tracker companies covered how much of your browsing. Built entirely from data already stored locally.
-- **Weekly Privacy Digest**: An in-app toast, at most once a week, summarizing recent personal-info entries, low-scoring sites, and tracker companies from data already on the device. Turn it off in Settings, **Notifications**.
+- **Weekly Privacy Digest**: A once-a-week summary of recent personal-info entries, low-scoring sites, and tracker companies from data already on the device. It appears as an in-app toast, opens Your Footprint where the digest sits at the top, and is also kept in the notification list. Turn it off in Settings, **Notifications**.
 - **Modern Dashboard**: An interactive, responsive control center built with React, Vite, Tailwind CSS, and shadcn/ui.
 - **Local-First**: Core analysis runs on-device, with no accounts or telemetry. Optional AI uses your local Ollama server; optional policy reports fetch policy pages from the sites being checked. Sensitive data is encrypted behind a master password (the "vault").
 

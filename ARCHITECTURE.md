@@ -57,8 +57,10 @@ only in memory while the page is open and is not persisted. See record
    they need and subscribe to `chrome.storage.onChanged`.
 
 The PII confirmation card reads prior exposure before the new handover is recorded, so its
-context describes what the ledger already knew. The weekly digest is an in-app toast, not a
-system notification, and is built only when its local seven-day timestamp is due.
+context describes what the ledger already knew. The weekly digest is an in-app toast, a
+notification entry, and a section at the top of Your Footprint, not a system notification. It is
+built only when its local seven-day timestamp is due, and the section recomputes the same
+seven-day window from the stores above.
 
 ## Storage model
 

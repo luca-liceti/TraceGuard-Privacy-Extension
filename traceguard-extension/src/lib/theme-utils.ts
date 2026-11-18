@@ -17,21 +17,6 @@ export function getGradeTextColor(grade: string | undefined | null): string {
 }
 
 /**
- * Standardized background styles for letter grades
- */
-export function getGradeBgColor(grade: string | undefined | null): string {
-    switch (grade?.toUpperCase()) {
-        case "A": return "bg-success/10 border-transparent"
-        case "B": return "bg-success/10 border-transparent"
-        case "C": return "bg-warning/10 border-transparent"
-        case "D": return "bg-alert/10 border-transparent"
-        case "E":
-        case "F": return "bg-destructive/10 border-transparent"
-        default: return "bg-muted/20 border-transparent"
-    }
-}
-
-/**
  * Standardized text colors for safety levels
  */
 export function getSafetyTextColor(level: string | undefined | null): string {
@@ -56,20 +41,6 @@ export function getSafetyBgColor(level: string | undefined | null): string {
         case "poor":      return "bg-alert/15 border-alert/30"
         case "critical":  return "bg-destructive/15 border-destructive/30"
         default: return "bg-muted/25 border-muted-foreground/20"
-    }
-}
-
-/**
- * Standardized border styles for safety levels
- */
-export function getSafetyBorderColor(level: string | undefined | null): string {
-    switch (level?.toLowerCase()) {
-        case "excellent": return "border-l-success"
-        case "good":      return "border-l-success"
-        case "fair":      return "border-l-warning"
-        case "poor":      return "border-l-alert"
-        case "critical":  return "border-l-destructive"
-        default: return "border-l-muted-foreground"
     }
 }
 
@@ -136,14 +107,3 @@ export function getHeaderRatingBadge(rating: string | undefined | null): { varia
     }
 }
 
-/**
- * Standardized text colors based on numerical WSS score (0-100)
- * Aligned with SAFETY_CONFIGS in risk-utils.ts
- */
-export function getSafetyColorFromScore(score: number): string {
-    if (score >= 80) return SAFETY_CONFIGS.excellent.color
-    if (score >= 60) return SAFETY_CONFIGS.good.color
-    if (score >= 40) return SAFETY_CONFIGS.fair.color
-    if (score >= 20) return SAFETY_CONFIGS.poor.color
-    return SAFETY_CONFIGS.critical.color
-}

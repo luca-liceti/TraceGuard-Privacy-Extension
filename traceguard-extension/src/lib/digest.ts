@@ -13,12 +13,20 @@ export interface WeeklyDigestInput {
     windowMs?: number;
 }
 
+/** One site that scored below the threshold during the digest window. */
+export interface LowScoreSite {
+    domain: string;
+    wss: number;
+}
+
 export interface WeeklyDigest {
     since: number;
     handovers: number;
     handoverSites: number;
     analyzedSites: number;
     lowScoreSites: number;
+    /** The same sites as `lowScoreSites`, worst first, for the digest page. */
+    lowScoreSiteList: LowScoreSite[];
     trackerOrganizations: string[];
     fields: string[];
     threshold: number;
@@ -55,15 +63,18 @@ export function buildWeeklyDigest({
     const handoverSites = new Set(recentEvents.map((event) => event.site).filter(Boolean));
     const fields = [...new Set(recentEvents.map((event) => event.fieldType).filter(Boolean))].sort();
 
-    const recentSites = Object.values(siteCache).filter((site) => {
+    const recentSites = Object.entries(siteCache).filter(([, site]) => {
         const analyzed = analyzedAt(site);
         return analyzed >= since && analyzed <= now;
     });
 
-    const lowScoreSites = recentSites.filter((site) => site.wss < threshold).length;
+    const lowScoreSiteList = recentSites
+        .filter(([, site]) => site.wss < threshold)
+        .map(([domain, site]) => ({ domain, wss: site.wss }))
+        .sort((a, b) => a.wss - b.wss || a.domain.localeCompare(b.domain));
 
     const organizations = new Map<string, string>();
-    for (const site of recentSites) {
+    for (const [, site] of recentSites) {
         for (const tracker of site.enrichedDetails?.trackers?.items ?? []) {
             const name = tracker.organization?.trim();
             if (!name) continue;
@@ -77,7 +88,8 @@ export function buildWeeklyDigest({
         handovers: recentEvents.length,
         handoverSites: handoverSites.size,
         analyzedSites: recentSites.length,
-        lowScoreSites,
+        lowScoreSites: lowScoreSiteList.length,
+        lowScoreSiteList,
         trackerOrganizations: [...organizations.values()].sort((a, b) => a.localeCompare(b)),
         fields,
         threshold,

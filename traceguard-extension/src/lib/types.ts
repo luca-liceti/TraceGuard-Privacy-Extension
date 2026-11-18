@@ -394,7 +394,7 @@ export interface LogEntry {
 export interface NotificationEvent {
     id: string;              // Unique identifier
     timestamp: number;       // When it was created
-    type: 'high_risk_site' | 'pii_detected' | 'tracker_alert' | 'daily_summary' | 'info';
+    type: 'high_risk_site' | 'pii_detected' | 'tracker_alert' | 'daily_summary' | 'weekly_digest' | 'info';
     title: string;           // Short title for the notification (English fallback)
     message: string;         // Detailed message (English fallback)
     titleKey?: string;       // i18n key for the title (translated at display time)

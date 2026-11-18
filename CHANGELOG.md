@@ -2,6 +2,20 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.25.7
+
+**What was fixed**
+
+- The weekly digest at the top of Your Footprint now fixes its seven-day window at the moment the page opens. The window used to be recomputed during render, so the week could shift while you were reading it.
+
+## v1.25.6
+
+**What was fixed**
+
+- The weekly digest toast now opens Your Footprint instead of doing nothing when clicked, and its redundant **View digest** button is gone: the whole toast is the control, including with the keyboard. The digest is a **Last 7 days** section at the top of Your Footprint: the personal-info entries by field type, the sites below your safety threshold with their scores, and the tracker companies seen on those sites.
+- Each weekly digest is now kept in the notification list, so it stays readable after the toast has gone. Its entry in the bell opens Your Footprint.
+- The weekly digest toast now stacks its title and summary instead of squeezing them into one row, and its summary uses the right singular or plural wording, so a single site reads "1 site" rather than "1 sites".
+
 ## v1.25.5
 
 **What was fixed**

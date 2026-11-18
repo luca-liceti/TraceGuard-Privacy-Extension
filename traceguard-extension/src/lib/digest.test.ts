@@ -73,6 +73,7 @@ describe('buildWeeklyDigest', () => {
 
         expect(digest.analyzedSites).toBe(2);
         expect(digest.lowScoreSites).toBe(1);
+        expect(digest.lowScoreSiteList).toEqual([{ domain: 'alpha-site.com', wss: 45 }]);
         expect(digest.trackerOrganizations).toEqual(['Acme Trackers', 'Beta Metrics']);
         expect(digest.hasActivity).toBe(true);
     });
@@ -83,6 +84,7 @@ describe('buildWeeklyDigest', () => {
         expect(digest.handovers).toBe(0);
         expect(digest.analyzedSites).toBe(0);
         expect(digest.lowScoreSites).toBe(0);
+        expect(digest.lowScoreSiteList).toEqual([]);
         expect(digest.trackerOrganizations).toEqual([]);
         expect(digest.hasActivity).toBe(false);
     });

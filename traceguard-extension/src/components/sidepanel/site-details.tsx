@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2 } from "lucide-react"
 import { PendingLabel } from "@/components/ui/pending"
 import { getSafetyConfig, scoreToGrade, SAFETY_CONFIGS } from "@/lib/risk-utils"
-import { POLICY_UNRATED_SCORE } from "@/lib/scoring"
+import { POLICY_UNRATED_SCORE, WSS_WEIGHTS } from "@/lib/scoring"
 import { getGradeTextColor } from "@/lib/theme-utils"
 import { SiteRiskData } from "@/lib/types"
 import { stoppedCount } from "@/lib/tracker-status"
@@ -35,42 +35,44 @@ function getWSSIcon(wss: number) {
     return <XCircle className="h-5 w-5" />;
 }
 
+const percentLabel = (weight: number) => `${Math.round(weight * 100)}%`;
+
 const getDetectorInfo = (t: any): Record<string, { icon: React.ComponentType<any>; label: string; description: string; weight: string }> => ({
     reputation: {
         icon: BadgeCheck,
         label: t("Reputation"),
         description: t("Domain trustworthiness"),
-        weight: "25%"
+        weight: percentLabel(WSS_WEIGHTS.reputation)
     },
     tracking: {
         icon: Activity,
         label: t("Tracking"),
         description: t("Third-party trackers"),
-        weight: "25%"
+        weight: percentLabel(WSS_WEIGHTS.tracking)
     },
     cookies: {
         icon: Cookie,
         label: t("Cookies"),
         description: t("Tracking cookies"),
-        weight: "15%"
+        weight: percentLabel(WSS_WEIGHTS.cookies)
     },
     fingerprinting: {
         icon: Fingerprint,
         label: t("Fingerprinting"),
         description: t("Device identification attempts"),
-        weight: "15%"
+        weight: percentLabel(WSS_WEIGHTS.fingerprinting)
     },
     input: {
         icon: Key,
         label: t("Input Fields"),
         description: t("Sensitive form fields"),
-        weight: "10%"
+        weight: percentLabel(WSS_WEIGHTS.input)
     },
     policy: {
         icon: FileText,
         label: t("Privacy Policy"),
         description: t("ToS;DR rating"),
-        weight: "10%"
+        weight: percentLabel(WSS_WEIGHTS.policy)
     }
 });
 

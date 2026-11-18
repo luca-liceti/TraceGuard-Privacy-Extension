@@ -637,13 +637,18 @@ export const storage = {
         notification: Omit<import('./types').NotificationEvent, 'id' | 'timestamp' | 'read'>,
         key?: CryptoKey | null
     ): Promise<string> => {
+        // UI callers omit the key. Resolve it here, the same way markAsRead does,
+        // so a notification written from the dashboard while the vault is
+        // unlocked is encrypted and stored now instead of waiting in the
+        // locked-vault buffer.
+        const k = key === undefined ? await storage.getVaultKey() : key;
         const result = await chrome.storage.local.get('notifications');
         const raw = result.notifications;
 
         // Decrypt existing notifications if they are encrypted
         let notifications: import('./types').NotificationEvent[];
-        if (key && typeof raw === 'string') {
-            const decrypted = await decryptDataStrict<import('./types').NotificationEvent[]>(key, raw);
+        if (k && typeof raw === 'string') {
+            const decrypted = await decryptDataStrict<import('./types').NotificationEvent[]>(k, raw);
             if (decrypted === DECRYPT_FAILED) {
                 // Writing an empty list would drop every stored notification.
                 captureError('storage', new Error('notifications could not be decrypted'), 'notifications_unreadable');
@@ -680,8 +685,8 @@ export const storage = {
         // Keep max 100 notifications
         const trimmedNotifications = notifications.slice(0, 100);
 
-        if (key) {
-            await storage.set({ notifications: await encryptData(key, trimmedNotifications) as any });
+        if (k) {
+            await storage.set({ notifications: await encryptData(k, trimmedNotifications) as any });
         } else {
             await storage.set({ notifications: trimmedNotifications });
         }
