@@ -1,6 +1,6 @@
 {
   "name": "traceguard-extension",
-  "version": "1.25.2",
+  "version": "1.25.3",
   "description": "Real-time privacy scoring and tracking alerts Chrome extension with WSS/UPS metrics",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "data:refresh": "npm run build:phishlist && npm run build:tosdr",
     "build:phishlist": "node scripts/build-phishlist.js",
     "sign:phishlist": "node scripts/sign-phishlist.js",
-    "upload:store": "chrome-webstore-upload upload --source traceguard-extension-v$npm_package_version.zip",
+    "upload:store": "chrome-webstore-upload --source traceguard-extension-v$npm_package_version.zip",
     "generate:threat-keys": "node scripts/generate-threat-keys.js",
     "build:tosdr": "node scripts/build-tosdr.js",
     "preview": "vite preview",

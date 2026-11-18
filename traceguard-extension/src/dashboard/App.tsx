@@ -117,6 +117,7 @@ function App() {
 
     return (
         <ThemeProvider
+            key={settings?.theme || "system"}
             attribute="class"
             defaultTheme={settings?.theme || "system"}
             enableSystem={true}

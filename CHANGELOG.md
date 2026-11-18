@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.25.3
+
+**What was fixed**
+
+- The dashboard now applies the saved theme as soon as settings load. It used to stay light when the saved theme was dark, because the theme provider kept its initial system value.
+
 ## v1.25.2
 
 **What was fixed**
