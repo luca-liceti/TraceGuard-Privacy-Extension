@@ -40,11 +40,6 @@
 export type SafetyLevel = 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
 
 /**
- * @deprecated Use SafetyLevel instead. WRS is deprecated.
- */
-export type RiskLevel = SafetyLevel;
-
-/**
  * Status levels for UPS/positive scores (higher = better)
  */
 export type ScoreStatus = 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
@@ -60,11 +55,6 @@ export interface SafetyConfig {
     bgColor: string;    // Background color class
     borderColor: string; // Border color class
 }
-
-/**
- * @deprecated Use SafetyConfig instead
- */
-export type RiskConfig = SafetyConfig;
 
 /**
  * Configuration for a score status (for positive scores like UPS)
@@ -125,11 +115,6 @@ export const SAFETY_CONFIGS: Record<SafetyLevel, SafetyConfig> = {
         borderColor: 'border-destructive/30',
     },
 };
-
-/**
- * @deprecated Use SAFETY_CONFIGS instead. Provided for backward compatibility.
- */
-export const RISK_CONFIGS = SAFETY_CONFIGS;
 
 // =============================================================================
 // SCORE STATUS CONFIGURATIONS
@@ -220,40 +205,6 @@ export function getSafetyLabel(level: string | null | undefined): string {
     return (key && SAFETY_CONFIGS[key]?.label) || (level ?? '');
 }
 
-/**
- * Get just the color class for a WSS score.
- * Useful when you only need the text color.
- * 
- * @param wss - Website Safety Score (0-100)
- * @returns Tailwind text color class
- */
-export function getSafetyColor(wss: number): string {
-    return getSafetyConfig(wss).color;
-}
-
-/**
- * @deprecated Use getSafetyLevel instead. WRS is deprecated.
- * Provided for backward compatibility - converts WSS to old WRS logic.
- */
-export function getRiskLevel(wssOrWrs: number): SafetyLevel {
-    // Assume the input is already WSS (higher = safer)
-    return getSafetyLevel(wssOrWrs);
-}
-
-/**
- * @deprecated Use getSafetyConfig instead. WRS is deprecated.
- */
-export function getRiskConfig(wss: number): SafetyConfig {
-    return getSafetyConfig(wss);
-}
-
-/**
- * @deprecated Use getSafetyColor instead. WRS is deprecated.
- */
-export function getRiskColor(wss: number): string {
-    return getSafetyColor(wss);
-}
-
 // =============================================================================
 // SCORE STATUS FUNCTIONS (for UPS - higher = better)
 // =============================================================================
@@ -313,50 +264,9 @@ export function getScoreColor(ups: number): string {
 // CONVERSION UTILITIES (DEPRECATED - WSS is now the only metric)
 // =============================================================================
 
-/**
- * @deprecated WRS is deprecated. Use WSS directly.
- * Convert WSS (safety) to WRS (risk).
- */
-export function wssToWrs(wss: number): number {
-    console.warn('wssToWrs is deprecated. Use WSS directly.');
-    return 100 - wss;
-}
-
-/**
- * @deprecated WRS is deprecated. Use WSS directly.
- * Convert WRS (risk) to WSS (safety).
- */
-export function wrsToWss(wrs: number): number {
-    console.warn('wrsToWss is deprecated. Use WSS directly.');
-    return 100 - wrs;
-}
-
 // =============================================================================
-// TRACKING SCORE UTILITIES
-// Tracking detector scores follow WSS semantics: higher means fewer trackers
-// and therefore a safer result.
+// DETECTOR LOG UTILITIES
 // =============================================================================
-
-/**
- * Get safety level for tracking.
- * Tracking score is 0-100 where higher = fewer trackers (safer).
- * 
- * @param trackingScore - Tracking score (0-100, higher = fewer trackers)
- * @returns Safety level (aligned with WSS - excellent = few/no trackers)
- */
-export function getTrackingLevel(trackingScore: number): SafetyLevel {
-    return getSafetyLevel(trackingScore);
-}
-
-/**
- * Get color for tracking score display.
- * 
- * @param trackingScore - Tracking score (0-100, higher = fewer trackers)
- * @returns Tailwind text color class
- */
-export function getTrackingColor(trackingScore: number): string {
-    return SAFETY_CONFIGS[getTrackingLevel(trackingScore)].color;
-}
 
 /**
  * True when a detector log entry represents an actual privacy finding, as
