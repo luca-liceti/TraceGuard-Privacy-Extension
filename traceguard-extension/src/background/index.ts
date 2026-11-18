@@ -374,6 +374,9 @@ async function deriveUps(key: CryptoKey | null): Promise<number | null> {
             total: breakdown.total,
             handovers: breakdown.contributions.length,
             undated: breakdown.undated,
+            // Provisional entries are recorded but not priced until the card is
+            // answered. Showing the count makes a wrong score traceable.
+            pending: events.filter(event => (event as { penaltyPending?: boolean }).penaltyPending === true).length,
         });
         return breakdown.score;
     } catch (error) {
@@ -1174,10 +1177,6 @@ const SettingsChangedSchema = z.object({
     }).passthrough(),
 });
 
-// Domains we've already asked the user to vouch for this browser session.
-// Prevents the confirmation popup from spamming on every PII event.
-const promptedPIIConfirmDomains = new Set<string>();
-
 async function resolveSiteScore(domain: string, key: CryptoKey | null): Promise<{ wss: number; reputation: number | undefined }> {
     try {
         const site = key
@@ -1266,6 +1265,15 @@ interface PendingPIIConfirm {
     timer: ReturnType<typeof setTimeout> | null;
 }
 const pendingPIIConfirms = new Map<string, PendingPIIConfirm>();
+
+/**
+ * Handovers recorded while a card is open for the same site. The card answers
+ * whether the site is safe, so its verdict covers every field typed on that
+ * site while it is open. These entries are settled with that answer instead of
+ * being dropped while the user reads the card.
+ */
+const pendingPIIEvents = new Map<string, Array<{ event: any; tabId?: number }>>();
+
 const PII_CONFIRM_TIMEOUT_MS = 120_000; // 2 minutes
 
 /**
@@ -1506,16 +1514,6 @@ async function handlePIIDetection(message: any, tabId?: number) {
         pageContext: event.pageContext,
     });
 
-    // A confirmation is already pending for this site - the pending event will
-    // cover any further entries, so ignore this duplicate.
-    if (pendingPIIConfirms.has(event.site)) {
-        logEvent('pii', 'debug', 'pii_confirmation_pending', 'Duplicate PII event ignored, a confirmation is already pending', {
-            host: event.site,
-            fieldType: event.fieldType,
-        });
-        return;
-    }
-
     // Get the settings and site score needed to decide whether this entry
     // should be gated on the confirmation card. The final UPS decision is made
     // in finalizePIIDetection against freshly-read state.
@@ -1525,6 +1523,31 @@ async function handlePIIDetection(message: any, tabId?: number) {
     // tab's state may point at a different site. Use ?? so a genuine WSS of 0
     // (blacklisted) is never collapsed into the neutral 50 fallback.
     const { wss: siteWSS, reputation: siteReputation } = await resolveSiteScore(event.site, key);
+
+    // A card is already open for this site. Record the handover and settle it
+    // with the same verdict when the card closes, rather than dropping it: an
+    // entry must never disappear because another one is waiting on a decision.
+    if (pendingPIIConfirms.has(event.site)) {
+        const recorded = await recordPIIDetection(event, siteWSS);
+        if (recorded === 'recorded') {
+            if (pendingPIIConfirms.has(event.site)) {
+                const queued = pendingPIIEvents.get(event.site) ?? [];
+                queued.push({ event, tabId });
+                pendingPIIEvents.set(event.site, queued);
+            } else {
+                // The card closed while this entry was being written, so its
+                // verdict is already applied. Settle this one fail-safe now
+                // instead of leaving it provisional with no card to answer it.
+                await finalizePIIDetection(event, false, tabId);
+            }
+        }
+        logEvent('pii', 'debug', 'pii_queued_behind_confirmation', 'PII entry settled with the open confirmation card', {
+            host: event.site,
+            fieldType: event.fieldType,
+            recorded,
+        });
+        return;
+    }
 
     // Does the user's allow list already vouch for this domain?
     const domainMatches = (dom: string, pattern: string) => dom === pattern || dom.endsWith('.' + pattern);
@@ -1555,8 +1578,7 @@ async function handlePIIDetection(message: any, tabId?: number) {
         penalize: decision.penalize,
         reason: decision.reason,
         willAskForConfirmation: decision.penalize && siteReputation !== 0
-            && (decision.reason === 'risky' || decision.reason === 'unnecessary')
-            && !promptedPIIConfirmDomains.has(event.site),
+            && (decision.reason === 'risky' || decision.reason === 'unnecessary'),
     });
 
     // Outlier sites (risky WSS or an unnecessary data ask, not blacklisted):
@@ -1565,8 +1587,7 @@ async function handlePIIDetection(message: any, tabId?: number) {
     // entry; dismissing (or no answer) applies the penalty. Blacklisted sites
     // are never offered - they're dangerous, not debatable.
     if (decision.penalize && siteReputation !== 0
-        && (decision.reason === 'risky' || decision.reason === 'unnecessary')
-        && !promptedPIIConfirmDomains.has(event.site)) {
+        && (decision.reason === 'risky' || decision.reason === 'unnecessary')) {
         // Read the ledger before writing the handover. The card is asking about
         // prior exposure, so the entry it is gating must not count itself.
         const ledgerContext = await readPIILedgerContext(key, event.site, event.fieldType);
@@ -1575,13 +1596,21 @@ async function handlePIIDetection(message: any, tabId?: number) {
         // penalty; it must never decide whether the entry exists.
         const recorded = await recordPIIDetection(event, siteWSS);
         if (recorded !== 'recorded') return;
-        promptedPIIConfirmDomains.add(event.site);
         // Don't block the telemetry queue while the user reads the card;
         // finalize the event when they answer (or the timeout fires). The
         // finalize queue is handled separately so a storage failure there can
         // never re-trigger a second finalize with a different decision.
         const finalizeQueued = (safe: boolean) => {
-            queueTelemetryWrite(() => finalizePIIDetection(event, safe, tabId)).catch((error) => {
+            queueTelemetryWrite(async () => {
+                await finalizePIIDetection(event, safe, tabId);
+                // Settle every handover recorded while the card was open with
+                // the answer the user gave for this site.
+                const queued = pendingPIIEvents.get(event.site) ?? [];
+                pendingPIIEvents.delete(event.site);
+                for (const entry of queued) {
+                    await finalizePIIDetection(entry.event, safe, entry.tabId);
+                }
+            }).catch((error) => {
                 recordError('PII finalize failed', String(error));
             });
         };

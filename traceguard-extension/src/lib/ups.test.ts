@@ -243,6 +243,30 @@ describe('buildHandovers', () => {
         expect(handovers[0]).toMatchObject({ wss: 40, lastSeen: NOW });
     });
 
+    it('does not price a handover whose verdict is still pending', () => {
+        const handovers = buildHandovers(
+            { email: ['a.com'] },
+            [{ fieldType: 'email', site: 'a.com', timestamp: NOW, siteWSS: 40, penaltyPending: true }]
+        );
+
+        expect(handovers).toEqual([]);
+        expect(scoreUps(handovers, NOW).score).toBe(100);
+    });
+
+    it('prices the same handover once the verdict is settled', () => {
+        const pending = buildHandovers(
+            { email: ['a.com'] },
+            [{ fieldType: 'email', site: 'a.com', timestamp: NOW, siteWSS: 40, penaltyPending: true }]
+        );
+        const settled = buildHandovers(
+            { email: ['a.com'] },
+            [{ fieldType: 'email', site: 'a.com', timestamp: NOW, siteWSS: 40 }]
+        );
+
+        expect(scoreUps(pending, NOW).score).toBe(100);
+        expect(scoreUps(settled, NOW).score).toBeLessThan(100);
+    });
+
     it('carries the exemption verdict from the event', () => {
         const handovers = buildHandovers(
             { password: ['a.com'] },

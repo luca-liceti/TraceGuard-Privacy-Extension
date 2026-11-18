@@ -469,7 +469,7 @@ export function SettingsModal() {
                 // bottom. The base 520px is the preferred height; max-h wins when the
                 // viewport is shorter. Width keeps a small margin on narrow screens
                 // instead of spanning edge to edge.
-                className="max-w-4xl w-[calc(100vw-1rem)] sm:w-full h-[520px] max-h-[calc(100dvh-2rem)] p-0 overflow-hidden gap-0 bg-background border shadow-2xl flex flex-col"
+                className="max-w-4xl w-[calc(100vw-1rem)] sm:w-full h-[600px] max-h-[calc(100dvh-2rem)] p-0 overflow-hidden gap-0 bg-background border shadow-2xl flex flex-col"
                 onEscapeKeyDown={(e) => {
                     if (hasChanges) {
                         e.preventDefault()

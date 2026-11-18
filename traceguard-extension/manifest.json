@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "TraceGuard Privacy Extension",
-    "version": "1.25.3",
+    "version": "1.25.4",
     "description": "Real-time privacy scoring and tracking alerts.",
     "minimum_chrome_version": "114",
     "icons": {

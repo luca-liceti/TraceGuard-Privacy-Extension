@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { Eye, EyeOff } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -16,6 +17,8 @@ const PasswordInput = React.forwardRef<
   React.ComponentProps<typeof Input>
 >(({ className, ...props }, ref) => {
   const [visible, setVisible] = React.useState(false)
+  const { t } = useTranslation()
+  const revealLabel = visible ? t("Hide password") : t("Show password")
 
   return (
     <div className="relative">
@@ -30,13 +33,13 @@ const PasswordInput = React.forwardRef<
         variant="ghost"
         size="icon"
         tabIndex={-1}
-        aria-label={visible ? "Hide password" : "Show password"}
+        aria-label={revealLabel}
         aria-pressed={visible}
         onClick={() => setVisible((v) => !v)}
         className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
       >
         {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-        <span className="sr-only">{visible ? "Hide password" : "Show password"}</span>
+        <span className="sr-only">{revealLabel}</span>
       </Button>
     </div>
   )

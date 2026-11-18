@@ -1,6 +1,6 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider, useTheme } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toast"
 import { WeeklyDigestToast } from "@/components/traceguard/weekly-digest-toast"
 import Layout from "@/components/traceguard/layout"
@@ -35,7 +35,6 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
     )
 }
 
-import { useEffect } from 'react'
 import { toast } from "@/components/ui/toast"
 import { useTranslation } from "react-i18next"
 
@@ -112,17 +111,34 @@ function AppContent() {
     )
 }
 
+/**
+ * Applies the saved theme when settings load.
+ *
+ * The provider used to be keyed on the theme, which remounted the whole tree
+ * and closed whatever dialog was open, including Settings. Syncing through
+ * `setTheme` applies the saved theme on load without remounting.
+ */
+function ThemeSync({ theme }: { theme?: string }) {
+    const { setTheme } = useTheme();
+
+    useEffect(() => {
+        if (theme) setTheme(theme);
+    }, [theme, setTheme]);
+
+    return null;
+}
+
 function App() {
     const settings = useSettings();
 
     return (
         <ThemeProvider
-            key={settings?.theme || "system"}
             attribute="class"
             defaultTheme={settings?.theme || "system"}
             enableSystem={true}
             disableTransitionOnChange
         >
+            <ThemeSync theme={settings?.theme} />
             <AuthProvider>
                 <SettingsProvider>
                     <AppContent />

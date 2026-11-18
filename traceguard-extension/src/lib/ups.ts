@@ -75,6 +75,8 @@ export interface HandoverEvent {
     timestamp?: number;
     siteWSS?: number;
     exempt?: boolean;
+    /** True while the entry waits on the confirmation card's verdict. */
+    penaltyPending?: boolean;
 }
 
 export interface HandoverContribution {
@@ -247,6 +249,10 @@ export function buildHandovers(
         for (const domain of domains) {
             if (typeof domain !== 'string' || domain.length === 0) continue;
             const event = latestEvent.get(`${fieldType}\u0000${domain}`);
+            // A provisional entry is already recorded, but its verdict is not
+            // in yet. Pricing it would move the score before the card is
+            // answered, and trusting the site would visibly undo the drop.
+            if (event?.penaltyPending === true) continue;
             handovers.push({
                 fieldType,
                 domain,

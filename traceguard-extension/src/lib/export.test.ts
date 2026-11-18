@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeEach } from 'vitest';
-import { exportAllData, importAllData } from './export';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { downloadJson, exportAllData, importAllData } from './export';
 import { generateAesKey, exportKey, deriveKeyFromPassword, encryptData, generateSalt, importKey } from './crypto';
 import { readSiteCache } from './site-cache';
 
@@ -7,6 +7,62 @@ async function unlockVault(): Promise<void> {
     const key = await generateAesKey();
     await chrome.storage.session.set({ cryptoKeyHex: await exportKey(key) });
 }
+
+describe('downloadJson', () => {
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+
+    beforeEach(() => {
+        URL.createObjectURL = vi.fn(() => 'blob:test');
+        URL.revokeObjectURL = vi.fn();
+        (chrome.downloads.search as unknown as { mockResolvedValue: (value: unknown) => void })
+            .mockResolvedValue([]);
+    });
+
+    function captureListener(): Array<(delta: chrome.downloads.DownloadDelta) => void> {
+        const listeners: Array<(delta: chrome.downloads.DownloadDelta) => void> = [];
+        vi.mocked(chrome.downloads.onChanged.addListener).mockImplementation((listener) => {
+            listeners.push(listener);
+        });
+        return listeners;
+    }
+
+    it('resolves after in_progress becomes complete', async () => {
+        const listeners = captureListener();
+        const done = downloadJson('{}', 'backup.json');
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(listeners).toHaveLength(1);
+        listeners.forEach((listener) => listener({ id: 1, state: { current: 'in_progress' } } as chrome.downloads.DownloadDelta));
+        listeners.forEach((listener) => listener({ id: 1, state: { current: 'complete' } } as chrome.downloads.DownloadDelta));
+
+        await expect(done).resolves.toBeUndefined();
+        expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test');
+    });
+
+    it('rejects only when the download is interrupted', async () => {
+        const listeners = captureListener();
+        const done = downloadJson('{}', 'backup.json');
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        listeners.forEach((listener) => listener({ id: 1, state: { current: 'interrupted' } } as chrome.downloads.DownloadDelta));
+
+        await expect(done).rejects.toThrow('interrupted');
+    });
+
+    it('resolves when the file finished before the listener attached', async () => {
+        captureListener();
+        (chrome.downloads.search as unknown as { mockResolvedValue: (value: unknown) => void })
+            .mockResolvedValue([{ id: 1, state: 'complete' }]);
+
+        await expect(downloadJson('{}', 'backup.json')).resolves.toBeUndefined();
+    });
+
+    afterEach(() => {
+        URL.createObjectURL = originalCreate;
+        URL.revokeObjectURL = originalRevoke;
+    });
+});
 
 describe('importAllData', () => {
     beforeEach(async () => {

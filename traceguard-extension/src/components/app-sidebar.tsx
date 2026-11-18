@@ -67,12 +67,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div className="flex aspect-square size-8 items-center justify-center group-data-[state=expanded]:-ml-2 group-data-[state=expanded]:-mr-2">
                 <ShieldUser className="size-6 text-foreground" />
               </div>
-              <div className="flex flex-1 items-center text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-lg text-foreground">
-                  {t("TraceGuard")}
-                </span>
-                <span className="truncate font-semibold text-lg text-muted-foreground ml-1">
-                  {t("Dashboard")}
+              <div className="flex min-w-0 flex-1 items-center text-left text-sm leading-tight">
+                {/* One truncation point for the whole title: long translations
+                    such as "Tableau de bord" used to be cut mid-word. */}
+                <span
+                  className="truncate font-semibold text-lg text-foreground"
+                  title={`${t("TraceGuard")} ${t("Dashboard")}`}
+                >
+                  {t("TraceGuard")} <span className="text-muted-foreground">{t("Dashboard")}</span>
                 </span>
               </div>
             </SidebarMenuButton>

@@ -2,6 +2,18 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.25.4
+
+**What was fixed**
+
+- Exporting a backup no longer reports **Export Failed**. Chrome reports a download as `in_progress` before `complete`, and the export treated the first state as a failure. It now waits for a terminal state, catches a file that finished before the listener attached, and stops waiting after a minute instead of leaving the dialog stuck.
+- Saving a theme no longer closes Settings. The theme provider was keyed on the saved theme, so every theme change remounted the app and unmounted the open dialog.
+- **Trackers found** now shows the analyzer's raw tracker count. It used to show the weighted number that feeds the tracking score, so a site with 5 trackers could read "Trackers found 25" next to "Known trackers 5".
+- The privacy score no longer dips while the personal-info confirmation card is open. A handover was priced before its verdict, so trusting the site visibly pushed the score back up. Provisional entries are now excluded until the card is answered.
+- A second field typed while the confirmation card is open is now recorded and settled with the same answer instead of being dropped. Declining a card also no longer suppresses later cards for that site, matching the card's promise that TraceGuard keeps warning.
+- The Settings dialog is taller, so a tab's last card is less likely to be cut off at the bottom.
+- A long translated dashboard title now truncates with an ellipsis instead of being cut mid-word, and the password reveal button's accessible label goes through the translation layer.
+
 ## v1.25.3
 
 **What was fixed**

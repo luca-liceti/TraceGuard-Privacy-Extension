@@ -362,7 +362,14 @@ export function SiteDetails({ currentSite, variant = 'sidepanel' }: SiteDetailsP
                                                     <>
                                                         <div className="flex justify-between">
                                                             <span>{t("Trackers found")}</span>
-                                                            <span className="font-medium">{currentSite?.detectionDetails?.tracking?.count ?? 0}</span>
+                                                            {/* `tracking.count` is the weighted score input, not a count.
+                                                                Show the analyzer's raw total, and keep Known trackers as the
+                                                                deduplicated number. */}
+                                                            <span className="font-medium">
+                                                                {currentSite?.enrichedDetails?.trackers?.summary?.total
+                                                                    ?? currentSite?.detectionDetails?.tracking?.known
+                                                                    ?? 0}
+                                                            </span>
                                                         </div>
                                                         <div className="flex justify-between">
                                                             <span>{t("Known trackers")}</span>

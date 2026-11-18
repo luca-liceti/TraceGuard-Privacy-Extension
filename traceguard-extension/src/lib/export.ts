@@ -52,18 +52,46 @@ export async function downloadJson(json: string, filename: string): Promise<void
 
     if (typeof chrome.downloads?.download === 'function') {
         const id = await chrome.downloads.download({ url, filename, saveAs: false });
+
+        // Chrome reports `in_progress` before `complete`, so only a terminal
+        // state decides the outcome. The listener is attached before the file
+        // can finish, and `search` closes the race where a small file completes
+        // before the first change event reaches us.
         await new Promise<void>((resolve, reject) => {
+            let settled = false;
+            const finish = (error?: Error) => {
+                if (settled) return;
+                settled = true;
+                chrome.downloads.onChanged.removeListener(listener);
+                clearTimeout(timer);
+                URL.revokeObjectURL(url);
+                if (error) reject(error);
+                else resolve();
+            };
             const listener = (delta: chrome.downloads.DownloadDelta) => {
                 if (delta.id !== id || !delta.state) return;
-                chrome.downloads.onChanged.removeListener(listener);
-                URL.revokeObjectURL(url);
                 if (delta.state.current === 'complete') {
-                    resolve();
-                } else {
-                    reject(new Error(`Download ended with state '${delta.state.current}'`));
+                    finish();
+                } else if (delta.state.current === 'interrupted') {
+                    finish(new Error('The download was interrupted before it finished.'));
                 }
             };
+            // A download that never reports a terminal state must not leave the
+            // dialog waiting forever.
+            const timer = setTimeout(
+                () => finish(new Error('The download did not finish in time.')),
+                60_000
+            );
             chrome.downloads.onChanged.addListener(listener);
+
+            chrome.downloads.search({ id })
+                .then(([item]) => {
+                    if (item?.state === 'complete') finish();
+                    else if (item?.state === 'interrupted') {
+                        finish(new Error('The download was interrupted before it finished.'));
+                    }
+                })
+                .catch(() => { /* search is best-effort; the listener still decides */ });
         });
         return;
     }

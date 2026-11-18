@@ -182,6 +182,7 @@ const chromeMock = {
     },
     downloads: {
         download: vi.fn().mockResolvedValue(1),
+        search: vi.fn().mockResolvedValue([]),
         onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
     },
 }
