@@ -527,11 +527,16 @@ export default function ExposurePage() {
     const settings = useSettings()
     const threshold = settings?.wssThreshold ?? 60
 
+    // The window is fixed when the page opens. A digest that slid forward on
+    // every render would drop entries out of the week while it was on screen,
+    // and Date.now() is not allowed in render logic.
+    const [now] = React.useState(() => Date.now())
+
     // The digest shares the records the page already decrypted, so opening Your
     // Footprint does not read the site cache twice.
     const digest = React.useMemo(
-        () => buildWeeklyDigest({ piiEvents, siteCache, now: Date.now(), threshold }),
-        [piiEvents, siteCache, threshold]
+        () => buildWeeklyDigest({ piiEvents, siteCache, now, threshold }),
+        [piiEvents, siteCache, now, threshold]
     )
 
     // One allow list for the whole page rather than a subscription per row, and a

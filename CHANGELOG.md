@@ -2,6 +2,12 @@
 
 Each release ships with **What's new** and/or **What was fixed** describing user-facing changes. The release workflow pulls the top section of this file into the GitHub release body.
 
+## v1.25.7
+
+**What was fixed**
+
+- The weekly digest at the top of Your Footprint now fixes its seven-day window at the moment the page opens. The window used to be recomputed during render, so the week could shift while you were reading it.
+
 ## v1.25.6
 
 **What was fixed**
