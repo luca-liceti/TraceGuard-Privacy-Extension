@@ -4,33 +4,20 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 
 ## v1.25.7
 
+This release covers everything since v1.25.2. Versions 1.25.3 through 1.25.6 were merged but never tagged, so their notes are included here.
+
 **What was fixed**
 
 - The weekly digest at the top of Your Footprint now fixes its seven-day window at the moment the page opens. The window used to be recomputed during render, so the week could shift while you were reading it.
 - Spanish, French, and German now translate the weekly digest and the password show and hide controls, so those strings no longer fall back to English.
 - The dashboard sidebar header now shows the full **TraceGuard Dashboard** title. At 18px the string needed 199px in a 200px slot, so any font wider than Inter, or a scrollbar, cut it to **Dashbo** followed by an ellipsis.
 - The **Grade:** label on a site's detail page now has a space before the letter, so it reads **Grade: E** instead of **Grade:E** under Privacy Policy and Connection Security.
-
-## v1.25.6
-
-**What was fixed**
-
 - The weekly digest toast now opens Your Footprint instead of doing nothing when clicked, and its redundant **View digest** button is gone: the whole toast is the control, including with the keyboard. The digest is a **Last 7 days** section at the top of Your Footprint: the personal-info entries by field type, the sites below your safety threshold with their scores, and the tracker companies seen on those sites.
 - Each weekly digest is now kept in the notification list, so it stays readable after the toast has gone. Its entry in the bell opens Your Footprint.
 - The weekly digest toast now stacks its title and summary instead of squeezing them into one row, and its summary uses the right singular or plural wording, so a single site reads "1 site" rather than "1 sites".
-
-## v1.25.5
-
-**What was fixed**
-
 - The phishing blocklist now loads on the first reputation check, not only at install and browser startup. Chrome stops an idle service worker and wakes it for a navigation without firing either event, so the list came back empty and every site, including domains in the bundled feed, read as **Clean**. A domain from `phishlist.json` now scores 0 for reputation.
 - A page served over plain HTTP is capped at 49 (Fair), and a page with no privacy policy at all is capped at 79 (Good). Detector scores alone used to let a fresh HTTP page with a card form reach 93 (**Excellent**).
 - Expected-use exemptions for personal data now require a privacy policy the extension can verify through ToS;DR. A login form on an unrated site no longer exempts a password or 2FA code, which is the shape of a fresh phishing page. The confirmation card appears instead, and trusting the site still adds it to the allow list.
-
-## v1.25.4
-
-**What was fixed**
-
 - Exporting a backup no longer reports **Export Failed**. Chrome reports a download as `in_progress` before `complete`, and the export treated the first state as a failure. It now waits for a terminal state, catches a file that finished before the listener attached, and stops waiting after a minute instead of leaving the dialog stuck.
 - Saving a theme no longer closes Settings. The theme provider was keyed on the saved theme, so every theme change remounted the app and unmounted the open dialog.
 - **Trackers found** now shows the analyzer's raw tracker count. It used to show the weighted number that feeds the tracking score, so a site with 5 trackers could read "Trackers found 25" next to "Known trackers 5".
@@ -38,11 +25,6 @@ Each release ships with **What's new** and/or **What was fixed** describing user
 - A second field typed while the confirmation card is open is now recorded and settled with the same answer instead of being dropped. Declining a card also no longer suppresses later cards for that site, matching the card's promise that TraceGuard keeps warning.
 - The Settings dialog is taller, so a tab's last card is less likely to be cut off at the bottom.
 - A long translated dashboard title now truncates with an ellipsis instead of being cut mid-word, and the password reveal button's accessible label goes through the translation layer.
-
-## v1.25.3
-
-**What was fixed**
-
 - The dashboard now applies the saved theme as soon as settings load. It used to stay light when the saved theme was dark, because the theme provider kept its initial system value.
 
 ## v1.25.2
